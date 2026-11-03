@@ -9,7 +9,7 @@ export default async(req:Request)=>{
  try{
   const actor=await operationsUser(req),db=getDatabase();
   if(req.method==='GET'){
-   const columns=actor.app==='driver'?await db.sql`SELECT waybill,pickup,dropoff,recipient,vehicle,price::text,payment_method,payment_source,paid_at,completed_at,scheduled_at,return_address,load FROM customer_bookings WHERE assigned_driver=${driverKey(actor.id)} ORDER BY created_at DESC LIMIT 100`:await db.sql`SELECT waybill,pickup,dropoff,vehicle,price::text,original_price::text,counter_offer::text,counter_offer_status,assigned_driver,paid_at,completed_at,refunded_at,payment_source FROM customer_bookings ORDER BY created_at DESC LIMIT 100`;
+   const columns=actor.app==='driver'?await db.sql`SELECT waybill,pickup,dropoff,recipient,vehicle,price::text,payment_method,payment_source,paid_at,completed_at,scheduled_at,return_address,load,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash FROM customer_bookings WHERE assigned_driver=${driverKey(actor.id)} ORDER BY created_at DESC LIMIT 100`:await db.sql`SELECT waybill,pickup,dropoff,vehicle,price::text,original_price::text,counter_offer::text,counter_offer_status,assigned_driver,paid_at,completed_at,refunded_at,payment_source,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash FROM customer_bookings ORDER BY created_at DESC LIMIT 100`;
    return reply({orders:columns});
   }
   const raw=await req.text();if(raw.length>4096)return reply({error:'Request too large'},413);let body;try{body=JSON.parse(raw);}catch{return reply({error:'Invalid request'},400);}
