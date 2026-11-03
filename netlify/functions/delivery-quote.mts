@@ -12,8 +12,10 @@ export default async (req: Request) => {
   let body;
   try {const text=await req.text();if (text.length>4096) return respond({error:'Request too large'},413);body=JSON.parse(text);} catch {return respond({error:'Enter valid delivery details.'},400);}
   if (!body || !validText(body.pickup) || !validText(body.dropoff)) return respond({error:'Enter pickup and drop-off addresses and the packed load details.'},400);
+  const pin=(value:unknown)=>{if(value===undefined||value===null)return null;const p=value as Record<string,unknown>;if(!p||typeof p.latitude!=='number'||!Number.isFinite(p.latitude)||Math.abs(p.latitude)>90||typeof p.longitude!=='number'||!Number.isFinite(p.longitude)||Math.abs(p.longitude)>180)throw new RouteError('Select a valid pickup or drop-off map pin.',400);return {latitude:p.latitude,longitude:p.longitude};};
+  let pickupPin,dropoffPin;try{pickupPin=pin(body.pickup_location);dropoffPin=pin(body.dropoff_location);}catch(error){return respond({error:error instanceof RouteError?error.message:'Invalid map pin.'},400);}
   let route,price,band,load,distanceFee;
-  try {calculateLoad(body.parcel);route=await getDeliveryRoute(body.pickup.trim(),body.dropoff.trim());({price,band,load,distanceFee}=calculateDeliveryFare(body.parcel,route.distance));}
+  try {calculateLoad(body.parcel);route=await getDeliveryRoute(body.pickup.trim(),body.dropoff.trim(),pickupPin,dropoffPin);({price,band,load,distanceFee}=calculateDeliveryFare(body.parcel,route.distance));}
   catch(error) {return respond({error:error instanceof RouteError?error.message:'Unable to calculate the route.'},error instanceof RouteError?error.status:502);}
   try {
     const owner=createHash('sha256').update(`identity:${user.id}`).digest('hex');
