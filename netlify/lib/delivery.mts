@@ -11,7 +11,7 @@ export function calculateFare(vehicle: Vehicle, meters: number) {
   return {price,band};
 }
 type Point = { latitude: number; longitude: number; label: string };
-export async function getDeliveryRoute(pickupAddress: string, dropoffAddress: string) {
+export async function getDeliveryRoute(pickupAddress: string, dropoffAddress: string, pickupPin?: {latitude:number;longitude:number} | null, dropoffPin?: {latitude:number;longitude:number} | null) {
   const getJSON = async (url: URL) => {
     const response = await fetch(url, {signal:AbortSignal.timeout(10000), headers:{Accept:'application/json'}});
     if (!response.ok) throw new Error('Map provider unavailable');
@@ -29,7 +29,8 @@ export async function getDeliveryRoute(pickupAddress: string, dropoffAddress: st
     return {longitude:coords[0],latitude:coords[1],label:label || address};
   };
   try {
-    const [pickup,dropoff] = await Promise.all([geocode(pickupAddress),geocode(dropoffAddress)]);
+    const validPin=(pin: {latitude:number;longitude:number} | null | undefined): pin is {latitude:number;longitude:number} => !!pin && Number.isFinite(pin.latitude) && Number.isFinite(pin.longitude) && Math.abs(pin.latitude)<=90 && Math.abs(pin.longitude)<=180;
+    const [pickup,dropoff] = await Promise.all([validPin(pickupPin)?Promise.resolve({...pickupPin,label:pickupAddress}):geocode(pickupAddress),validPin(dropoffPin)?Promise.resolve({...dropoffPin,label:dropoffAddress}):geocode(dropoffAddress)]);
     if (!pickup || !dropoff) throw new RouteError('We could not locate one of these addresses in South Africa. Enter a more complete street address, suburb and city.',422);
     const url = new URL(`https://router.project-osrm.org/route/v1/driving/${pickup.longitude},${pickup.latitude};${dropoff.longitude},${dropoff.latitude}`);
     url.search = new URLSearchParams({overview:'simplified',geometries:'geojson',alternatives:'false',steps:'false'}).toString();
