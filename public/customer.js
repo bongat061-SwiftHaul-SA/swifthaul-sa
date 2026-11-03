@@ -112,6 +112,8 @@ async function startPayFastCheckout(order, button) {
 async function loadOrders() {
   if (document.body.dataset.guestPreview === 'true') return;
   const version = ++loadVersion;
+  walletAvailableCents = 0;
+  updatePaymentOptions();
   document.getElementById('submit').disabled = true;
   document.getElementById('retry').hidden = true;
   try {
