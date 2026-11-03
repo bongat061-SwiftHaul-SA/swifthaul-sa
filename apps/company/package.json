@@ -1,0 +1,10 @@
+{
+  "name": "swifthaul-company",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@netlify/identity": "^2.0.0",
+    "@netlify/functions": "^6.0.3"
+  }
+}

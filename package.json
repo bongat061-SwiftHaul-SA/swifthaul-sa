@@ -1,0 +1,26 @@
+{
+  "name": "swifthaul-sa",
+  "version": "1.0.0",
+  "description": "SwiftHaul SA Customer platform with independent Driver and Company sites",
+  "repository": {
+    "type": "git",
+    "url": "https://hgit.services-prod.nsvcs.net/bongat061/deft-fairy-aaf04b.git"
+  },
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@netlify/blobs": "^11.1.7",
+    "@netlify/database": "^2.0.1",
+    "@netlify/functions": "^6.0.3",
+    "@netlify/identity": "^2.0.0"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.2.17",
+    "@types/node": "^26.6.5",
+    "typescript": "^7.0.2"
+  },
+  "private": true,
+  "scripts": {
+    "prepare:sites": "node scripts/prepare-sites.cjs"
+  }
+}

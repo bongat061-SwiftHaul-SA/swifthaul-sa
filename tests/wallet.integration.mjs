@@ -1,0 +1,54 @@
+import {fileURLToPath} from 'node:url';
+import {PGlite} from '@electric-sql/pglite';
+import {registerHooks} from 'node:module';
+import {readFile,readdir} from 'node:fs/promises';
+import {randomUUID,createHmac} from 'node:crypto';
+import assert from 'node:assert/strict';
+const root=fileURLToPath(new URL('../',import.meta.url)).replace(/\/$/,''),db=new PGlite();
+for(const file of(await readdir(root+'/netlify/database/migrations')).sort())await db.exec(await readFile(root+'/netlify/database/migrations/'+file,'utf8'));
+let tail=Promise.resolve();
+globalThis.fixtureDb={sql:async(strings,...values)=>{let sql=strings[0];values.forEach((_,i)=>sql+='$'+(i+1)+strings[i+1]);return(await db.query(sql,values)).rows;},pool:{connect:async()=>{const before=tail;let unlock;tail=new Promise(resolve=>unlock=resolve);await before;return{query:(sql,values)=>db.query(sql,values),release:()=>unlock()};}}};
+globalThis.fixtureUser=null;
+const mock={'@netlify/identity':'export const getUser=async()=>globalThis.fixtureUser;export const admin={deleteUser:async()=>{}};','@netlify/database':'export const getDatabase=()=>globalThis.fixtureDb;','@netlify/blobs':'export const getStore=()=>({delete:async()=>{}});'};
+registerHooks({resolve(spec,ctx,next){return mock[spec]?{url:'data:text/javascript,'+encodeURIComponent(mock[spec]),shortCircuit:true}:next(spec,ctx);}});
+const config={PAYSTACK_SECRET_KEY:'synthetic-fixture-only',DRIVER_SITE_ORIGIN:'https://driver.test',COMPANY_SITE_ORIGIN:'https://company.test'};globalThis.Netlify={env:{get:name=>config[name]}};
+let verified={},transfer={};const initialized=[];
+globalThis.fetch=async(url,options={})=>{const u=new URL(url);if(u.origin==='https://driver.test')return Response.json({id:'driver-001',app_metadata:{roles:['driver']}});if(u.origin==='https://company.test')return Response.json({id:'company-admin',app_metadata:{roles:['admin']}});assert.equal(u.origin,'https://api.paystack.co');const body=options.body?JSON.parse(options.body):{};
+ if(u.pathname==='/transaction/initialize'){initialized.push(body);return Response.json({status:true,data:{authorization_url:'https://checkout.paystack.com/fixture-checkout'}});}
+ if(u.pathname.startsWith('/transaction/verify/'))return Response.json({status:true,data:verified});
+ if(u.pathname==='/transferrecipient')return Response.json({status:true,data:{recipient_code:'recipient-fixture'}});
+ if(u.pathname.startsWith('/transfer/verify/'))return Response.json({status:true,data:transfer});
+ if(u.pathname==='/transfer')return Response.json({status:true,data:{status:'pending'}});
+ throw new Error('Unexpected provider operation');};
+const {default:wallet}=await import(root+'/netlify/functions/wallet.mts');const {default:ops}=await import(root+'/netlify/functions/operations.mts');const {default:webhook}=await import(root+'/netlify/functions/payment-webhook.mts');const {default:profile}=await import(root+'/netlify/functions/customer-profile.mts');
+const {ownerHash}=await import(root+'/netlify/lib/wallet.mts');const {confirmCharge,confirmTransfer}=await import(root+'/netlify/lib/payment-events.mts');const {driverKey}=await import(root+'/netlify/lib/operations-auth.mts');
+const user=(id,extra={})=>({id,email:id+'@example.invalid',confirmedAt:new Date().toISOString(),...extra});
+const req=(path,body,extra={})=>new Request('https://customer.test'+path,{method:body?'POST':'GET',headers:{origin:'https://customer.test','Content-Type':'application/json',...extra},...(body?{body:JSON.stringify(body)}:{})});
+const call=async(fn,body,extra)=>{const response=await fn(req('/api/test',body,extra));return{status:response.status,...await response.json()};};
+async function booking(id,price=100,cash=true){const waybill='SH-'+randomUUID();await db.query('INSERT INTO customer_bookings(waybill,owner_hash,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,payment_method,assigned_driver) VALUES($1,$2,$3,$4,$5,$6,$7,$8,1000,$9,$10)',[waybill,ownerHash(id),'1234','Pickup','Drop-off','Recipient','bike',price,cash?'cash':'dispatch',driverKey('driver-001')]);return waybill;}
+async function complete(waybill,cash=true,pin='1234'){return call(ops,{action:'complete',waybill,pin,cash_collected:cash},{'x-swifthaul-app':'driver',authorization:'Bearer fixture'});}
+const getWallet=async id=>{globalThis.fixtureUser=user(id);return call(wallet);};
+assert.equal((await call(wallet)).status,401);
+let ref=await getWallet('referrer');assert.equal(ref.wallet.refund_cents,'0');assert.equal(ref.wallet.promo_cents,'0');const code=ref.wallet.referral_code;
+globalThis.fixtureUser=user('customer',{appMetadata:{signup_referral:code}});assert.equal((await call(wallet)).status,200);
+const first=await booking('customer');assert.equal((await complete(first,true,'0000')).status,400);assert.equal((await complete(first)).status,200);
+let w=await getWallet('customer');assert.equal(w.wallet.promo_cents,'1500');assert.equal((await getWallet('referrer')).wallet.promo_cents,'1500');assert.equal((await complete(first)).status,200);assert.equal((await getWallet('customer')).wallet.promo_cents,'1500');
+const spend=await booking('customer',15,false);globalThis.fixtureUser=user('customer');assert.equal((await call(wallet,{action:'wallet-pay',waybill:spend})).status,200);assert.equal((await getWallet('customer')).wallet.promo_cents,'0');
+globalThis.fixtureUser=user('administrator',{roles:['admin']});assert.equal((await call(ops,{action:'refund',waybill:first})).status,200);w=await getWallet('customer');assert.equal(w.wallet.refund_cents,'10000');assert.equal(w.wallet.promo_debt_cents,'1500');assert.equal((await getWallet('referrer')).wallet.promo_cents,'0');
+for(let i=0;i<3;i++){const next=await booking('customer');assert.equal((await complete(next)).status,200);}
+w=await getWallet('customer');assert.equal(w.wallet.promo_cents,'500');assert.equal(w.wallet.promo_debt_cents,'0');
+const loanBooking=await booking('customer',400,false);globalThis.fixtureUser=user('customer');assert.equal((await call(wallet,{action:'pay-later',waybill:loanBooking})).status,200);const tooMuch=await booking('customer',101,false);assert.equal((await call(wallet,{action:'pay-later',waybill:tooMuch})).status,409);
+w=await getWallet('customer');const loan=w.loans.find(row=>row.waybill===loanBooking);assert.equal(loan.amount_cents,'40000');assert.equal((await call(wallet,{action:'repay',loan_id:loan.id})).status,200);let payment=initialized.at(-1);assert.equal(payment.amount,40000);
+verified={reference:payment.reference,status:'success',currency:'ZAR',amount:40000};await confirmCharge(payment.reference);await confirmCharge(payment.reference);assert((await getWallet('customer')).loans.find(row=>row.id===loan.id).paid_at);
+await db.query('INSERT INTO customer_profiles(owner_hash,account_holder,account_number) VALUES($1,$2,$3)',[ownerHash('customer'),'Synthetic account','123456789']);globalThis.fixtureUser=user('customer');
+const requestId=randomUUID();let withdrawal=await call(wallet,{action:'withdraw',amount:'10',speed:'instant',bank_code:'123456',request_id:requestId});assert.equal(withdrawal.status,201);assert.equal((await call(wallet,{action:'withdraw',amount:'10',speed:'instant',bank_code:'123456',request_id:requestId})).status,200);assert.equal((await getWallet('customer')).wallet.refund_cents,'9000');
+transfer={reference:withdrawal.withdrawal.reference,status:'failed',currency:'ZAR',amount:475};await confirmTransfer(transfer.reference);await confirmTransfer(transfer.reference);assert.equal((await getWallet('customer')).wallet.refund_cents,'10000');
+const card=await booking('customer',50,false);globalThis.fixtureUser=user('customer');assert.equal((await call(wallet,{action:'checkout',waybill:card})).status,200);payment=initialized.at(-1);verified={reference:payment.reference,status:'success',currency:'ZAR',amount:4900};await confirmCharge(payment.reference);assert.equal((await db.query('SELECT paid_at FROM customer_bookings WHERE waybill=$1',[card])).rows[0].paid_at,null);verified.amount=5000;
+const event=JSON.stringify({event:'charge.success',data:{reference:payment.reference}}),signature=createHmac('sha512',config.PAYSTACK_SECRET_KEY).update(event).digest('hex');
+assert.equal((await webhook(new Request('https://customer.test/api/paystack-webhook',{method:'POST',body:event,headers:{'x-paystack-signature':'a'.repeat(128)}}))).status,401);
+for(let i=0;i<2;i++)assert.equal((await webhook(new Request('https://customer.test/api/paystack-webhook',{method:'POST',body:event,headers:{'x-paystack-signature':signature}}))).status,200);
+assert((await db.query('SELECT paid_at FROM customer_bookings WHERE waybill=$1',[card])).rows[0].paid_at);assert.equal((await complete(card,false)).status,200);
+globalThis.fixtureUser=user('customer');const deletion=await profile(new Request('https://customer.test/api/customer-profile',{method:'DELETE',headers:{origin:'https://customer.test'},body:JSON.stringify({confirmation:'DELETE'})}));assert.equal(deletion.status,409);
+assert.equal((await call(wallet,{action:'wallet-pay',waybill:await booking('another',1,false)})).status,404);
+const locked=await booking('customer');for(let i=0;i<5;i++)assert.equal((await complete(locked,true,'0000')).status,400);assert.equal((await complete(locked)).status,429);
+console.log('Passed: all migrations; wallet ownership; assigned-driver PIN completion and lockout; cash confirmation; referral rewards for both parties exactly once; refund and promotional reversal; fourth-delivery loyalty; aggregate pay-later limit and repayment; withdrawal reservation and idempotent failure release; verified payment amounts, signed webhooks and duplicate callbacks; financial deletion guard.');await db.close();
