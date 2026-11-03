@@ -104,7 +104,7 @@ form.addEventListener('submit', async event => {
   if (popup) popup.opener = null;
   const submit = document.getElementById('submit'); bookingBusy=true; submit.disabled = true; report('Saving your booking…');
   try {
-    const response = await fetch('/api/customer-bookings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({quote_id:acceptedQuote.id,recipient:data.recipient,payment_method:data.payment_method,counter_offer:data.counter_offer || null,scheduled_at:data.scheduled_at ? data.scheduled_at+':00+02:00' : null,return_address:data.return_address || null,return_at:data.return_at ? data.return_at+':00+02:00' : null}) });
+    const response = await fetch('/api/customer-bookings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({quote_id:acceptedQuote.id,recipient:data.recipient,payment_method:data.payment_method,counter_offer:data.counter_offer || null,scheduled_at:data.scheduled_at ? data.scheduled_at+':00+02:00' : null,return_address:data.return_address || null,return_at:data.return_at ? data.return_at+':00+02:00' : null,pickup_latitude:data.pickup_latitude?Number(data.pickup_latitude):null,pickup_longitude:data.pickup_longitude?Number(data.pickup_longitude):null,pickup_plus_code:data.pickup_plus_code||null,pickup_geohash:data.pickup_geohash||null,dropoff_latitude:data.dropoff_latitude?Number(data.dropoff_latitude):null,dropoff_longitude:data.dropoff_longitude?Number(data.dropoff_longitude):null,dropoff_plus_code:data.dropoff_plus_code||null,dropoff_geohash:data.dropoff_geohash||null}) });
     const result = await response.json();
     if (epoch !== accountEpoch) {popup?.close();return;}
     if (!response.ok) {if (response.status===409) resetQuote();throw new Error(result.error || 'Unable to save your booking. Please try again.');}
@@ -186,7 +186,7 @@ calculateButton.addEventListener('click', async () => {
   resetQuote();const active=new AbortController();quoteRequest=active;calculateButton.disabled=true;
   quoteStatus.textContent='Mapping the addresses and calculating your fare…';
   try {
-    const response=await fetch('/api/delivery-quote',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pickup:data.pickup,dropoff:data.dropoff,parcel:Object.fromEntries(['weight','length','width','height'].map(key=>[key,Number(data[key])]))}),signal:active.signal,cache:'no-store'});
+    const response=await fetch('/api/delivery-quote',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pickup:data.pickup,dropoff:data.dropoff,pickup_location:data.pickup_latitude?{latitude:Number(data.pickup_latitude),longitude:Number(data.pickup_longitude)}:null,dropoff_location:data.dropoff_latitude?{latitude:Number(data.dropoff_latitude),longitude:Number(data.dropoff_longitude)}:null,parcel:Object.fromEntries(['weight','length','width','height'].map(key=>[key,Number(data[key])]))}),signal:active.signal,cache:'no-store'});
     const result=await response.json();
     if (quoteRequest!==active || active.signal.aborted) return;
     if (!response.ok) throw new Error(result.error || 'Unable to calculate the route.');
