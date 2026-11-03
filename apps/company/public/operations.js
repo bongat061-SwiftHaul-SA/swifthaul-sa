@@ -102,6 +102,11 @@ if (app === 'driver' || app === 'company') {
       scheduled.textContent = 'Requested pickup: ' + new Date(order.scheduled_at).toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg' });
       card.append(scheduled);
     }
+    if (order.proof && app === 'company') {
+      const proof = document.createElement('p');
+      proof.textContent = 'Proof of delivery received' + (order.proof.recipient_name ? ' · ' + order.proof.recipient_name : '') + '.';
+      card.append(proof);
+    }
     if (order.status === 'failed' && order.failure_reason) {
       const reason = document.createElement('p');
       reason.textContent = 'Failure reason: ' + order.failure_reason;
@@ -118,27 +123,87 @@ if (app === 'driver' || app === 'company') {
       if (order.status === 'accepted') makeButton(card, 'Confirm pickup', { waybill: order.waybill, action: 'pickup' });
       if (order.status === 'picked_up') makeButton(card, 'Start delivery', { waybill: order.waybill, action: 'in_transit' });
       if (order.status === 'in_transit') {
-        const form = document.createElement('form');
-        const label = document.createElement('label');
-        label.textContent = 'Recipient four-digit PIN';
-        const pin = document.createElement('input');
-        pin.name = 'pin';
-        pin.inputMode = 'numeric';
-        pin.pattern = '[0-9]{4}';
-        pin.maxLength = 4;
-        pin.required = true;
-        pin.autocomplete = 'off';
-        label.append(pin);
-        const submit = document.createElement('button');
-        submit.type = 'submit';
-        submit.textContent = 'Confirm delivery';
-        form.append(label, submit);
-        form.addEventListener('submit', event => {
-          event.preventDefault();
-          action({ waybill: order.waybill, action: 'complete', pin: pin.value }, submit);
-          pin.value = '';
-        });
-        card.append(form);
+        if (order.proof) {
+          const proofNote = document.createElement('p');
+          proofNote.textContent = 'Proof photo uploaded' + (order.proof.recipient_name ? ' · Recipient: ' + order.proof.recipient_name : '') + '.';
+          card.append(proofNote);
+          const form = document.createElement('form');
+          const label = document.createElement('label');
+          label.textContent = 'Recipient four-digit PIN';
+          const pin = document.createElement('input');
+          pin.name = 'pin';
+          pin.inputMode = 'numeric';
+          pin.pattern = '[0-9]{4}';
+          pin.maxLength = 4;
+          pin.required = true;
+          pin.autocomplete = 'off';
+          label.append(pin);
+          const submit = document.createElement('button');
+          submit.type = 'submit';
+          submit.textContent = 'Confirm delivery';
+          form.append(label, submit);
+          form.addEventListener('submit', event => {
+            event.preventDefault();
+            action({ waybill: order.waybill, action: 'complete', pin: pin.value }, submit);
+            pin.value = '';
+          });
+          card.append(form);
+        } else {
+          const form = document.createElement('form');
+          const fileLabel = document.createElement('label');
+          fileLabel.textContent = 'Proof-of-delivery photo (JPEG, PNG or WebP; max 10 MB)';
+          const file = document.createElement('input');
+          file.type = 'file';
+          file.accept = 'image/jpeg,image/png,image/webp';
+          file.required = true;
+          fileLabel.append(file);
+          const recipientLabel = document.createElement('label');
+          recipientLabel.textContent = 'Recipient name (optional)';
+          const recipient = document.createElement('input');
+          recipient.maxLength = 120;
+          recipientLabel.append(recipient);
+          const notesLabel = document.createElement('label');
+          notesLabel.textContent = 'Delivery notes (optional)';
+          const notes = document.createElement('input');
+          notes.maxLength = 500;
+          notesLabel.append(notes);
+          const submit = document.createElement('button');
+          submit.type = 'submit';
+          submit.textContent = 'Upload proof photo';
+          form.append(fileLabel, recipientLabel, notesLabel, submit);
+          form.addEventListener('submit', async event => {
+            event.preventDefault();
+            const selected = file.files?.[0];
+            if (!selected) return;
+            if (selected.size > 10 * 1024 * 1024) {
+              message.textContent = 'Choose an image smaller than 10 MB.';
+              return;
+            }
+            submit.disabled = true;
+            message.textContent = 'Uploading proof photo…';
+            try {
+              const client = window.swiftHaulSupabase;
+              const { data: upload, error: initError } = await client.functions.invoke('pod-upload', {
+                body: { action: 'create', waybill: order.waybill, content_type: selected.type, size: selected.size }
+              });
+              if (initError || upload?.error) throw new Error(upload?.error || initError.message);
+              const { error: storageError } = await client.storage.from('delivery-proof')
+                .uploadToSignedUrl(upload.path, upload.token, selected, { contentType: selected.type, upsert: false });
+              if (storageError) throw storageError;
+              const { data: confirmed, error: confirmError } = await client.functions.invoke('pod-upload', {
+                body: { action: 'confirm', waybill: order.waybill, path: upload.path, recipient_name: recipient.value, notes: notes.value }
+              });
+              if (confirmError || confirmed?.error) throw new Error(confirmed?.error || confirmError.message);
+              await load();
+              message.textContent = 'Proof photo uploaded. Enter the recipient PIN to complete delivery.';
+            } catch (error) {
+              message.textContent = error.message || 'Unable to upload proof photo.';
+            } finally {
+              submit.disabled = false;
+            }
+          });
+          card.append(form);
+        }
       }
       if (['accepted', 'picked_up', 'in_transit'].includes(order.status)) {
         const form = document.createElement('form');
