@@ -103,7 +103,7 @@ if (app === 'driver' || app === 'company') {
       const location = document.createElement('p');
       location.textContent = label + ' pin: ' + (plus || 'coordinates saved') + (order[kind + '_geohash'] ? ' · Geohash ' + order[kind + '_geohash'] : '');
       card.append(location);
-      if (Number.isFinite(Number(lat)) && Number.isFinite(Number(lng))) {
+      if (lat != null && lng != null && Number.isFinite(Number(lat)) && Number.isFinite(Number(lng))) {
         const mapLink = document.createElement('a');
         mapLink.href = 'https://www.google.com/maps?q=' + encodeURIComponent(lat + ',' + lng);
         mapLink.target = '_blank'; mapLink.rel = 'noopener noreferrer'; mapLink.textContent = 'Open ' + label.toLowerCase() + ' pin in Maps';
