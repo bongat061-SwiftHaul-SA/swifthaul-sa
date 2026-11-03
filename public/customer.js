@@ -28,6 +28,14 @@ function resetQuote() {
 }
 const mass=value=>Number(value).toLocaleString('en-ZA',{maximumFractionDigits:3});
 const money = value => `R${Number(value).toFixed(2)}`;
+async function customerApi(method, body) {
+  const client = window.swiftHaulSupabase;
+  if (!client) throw new Error('Customer sign-in connection is unavailable. Reload the page.');
+  const { data, error } = await client.functions.invoke('customer-portal', { method, ...(body ? { body } : {}) });
+  if (error) throw new Error(data?.error || error.message || 'Customer service is unavailable.');
+  if (data?.error) throw new Error(data.error);
+  return data;
+}
 let ready = false;
 let loadVersion = 0;
 const report = (text, error = false) => { message.textContent = text; message.classList.toggle('error', error); };
@@ -80,10 +88,8 @@ async function loadOrders() {
   document.getElementById('submit').disabled = true;
   document.getElementById('retry').hidden = true;
   try {
-    const response = await fetch('/api/customer-bookings');
-    const data = await response.json();
+    const data = await customerApi('GET');
     if (version !== loadVersion) return;
-    if (!response.ok) throw new Error(data.error);
     document.getElementById('legacy-import').hidden = !data.canImport;
     container.replaceChildren();
     data.orders.forEach(order => addOrder(order));
@@ -116,7 +122,7 @@ form.addEventListener('submit', async event => {
     const response = await fetch('/api/customer-bookings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({quote_id:acceptedQuote.id,recipient:data.recipient,payment_method:data.payment_method,counter_offer:data.counter_offer || null,scheduled_at:data.scheduled_at ? data.scheduled_at+':00+02:00' : null,return_address:data.return_address || null,return_at:data.return_at ? data.return_at+':00+02:00' : null,pickup_latitude:data.pickup_latitude?Number(data.pickup_latitude):null,pickup_longitude:data.pickup_longitude?Number(data.pickup_longitude):null,pickup_plus_code:data.pickup_plus_code||null,pickup_geohash:data.pickup_geohash||null,dropoff_latitude:data.dropoff_latitude?Number(data.dropoff_latitude):null,dropoff_longitude:data.dropoff_longitude?Number(data.dropoff_longitude):null,dropoff_plus_code:data.dropoff_plus_code||null,dropoff_geohash:data.dropoff_geohash||null}) });
     const result = await response.json();
     if (epoch !== accountEpoch) {popup?.close();return;}
-    if (!response.ok) {if (response.status===409) resetQuote();throw new Error(result.error || 'Unable to save your booking. Please try again.');}
+    if (!result.order) throw new Error('Unable to save your booking. Please try again.');
     container.querySelector('.empty')?.remove(); addOrder(result.order, true);
     report('Booking saved. Send the prepared message in WhatsApp, or use Send WhatsApp below.');
     if (popup) popup.location.replace(whatsapp(result.order));
@@ -195,10 +201,9 @@ calculateButton.addEventListener('click', async () => {
   resetQuote();const active=new AbortController();quoteRequest=active;calculateButton.disabled=true;
   quoteStatus.textContent='Mapping the addresses and calculating your fare…';
   try {
-    const response=await fetch('/api/delivery-quote',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pickup:data.pickup,dropoff:data.dropoff,pickup_location:data.pickup_latitude?{latitude:Number(data.pickup_latitude),longitude:Number(data.pickup_longitude)}:null,dropoff_location:data.dropoff_latitude?{latitude:Number(data.dropoff_latitude),longitude:Number(data.dropoff_longitude)}:null,parcel:Object.fromEntries(['weight','length','width','height'].map(key=>[key,Number(data[key])]))}),signal:active.signal,cache:'no-store'});
-    const result=await response.json();
+    const result=await customerApi('POST',{action:'quote',pickup:data.pickup,dropoff:data.dropoff,pickup_location:data.pickup_latitude?{latitude:Number(data.pickup_latitude),longitude:Number(data.pickup_longitude)}:null,dropoff_location:data.dropoff_latitude?{latitude:Number(data.dropoff_latitude),longitude:Number(data.dropoff_longitude)}:null,parcel:Object.fromEntries(['weight','length','width','height'].map(key=>[key,Number(data[key])]))});
     if (quoteRequest!==active || active.signal.aborted) return;
-    if (!response.ok) throw new Error(result.error || 'Unable to calculate the route.');
+    if (!result.quote) throw new Error('Unable to calculate the route.');
     currentQuote=result.quote;updatePaymentOptions();const route=currentQuote.route;
     document.getElementById('quote-result').hidden=false;
     document.getElementById('quote-distance').textContent=`${km(route.distance)} km`;
