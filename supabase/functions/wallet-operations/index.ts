@@ -50,7 +50,7 @@ Deno.serve(async (req: Request) => {
   if (body.action !== "summary") return fail(501, "wallet_actions_not_yet_migrated");
 
   let { data: wallet, error: walletError } = await admin.from("wallet_accounts")
-    .select("owner_hash,referral_code,refund_cents,promo_cents,promo_debt_cents,referred_by")
+    .select("owner_hash,referral_code,refund_cents,promo_cents,promo_debt_cents")
     .eq("owner_hash", user.id).maybeSingle();
   if (walletError) return fail(500, "wallet_lookup_failed");
   if (!wallet) {
@@ -67,7 +67,7 @@ Deno.serve(async (req: Request) => {
       .insert({ owner_hash: user.id, referral_code: code, referred_by: referredBy });
     if (insertError && insertError.code !== "23505") return fail(500, "wallet_initialization_failed");
     const result = await admin.from("wallet_accounts")
-      .select("owner_hash,referral_code,refund_cents,promo_cents,promo_debt_cents,referred_by")
+      .select("owner_hash,referral_code,refund_cents,promo_cents,promo_debt_cents")
       .eq("owner_hash", user.id).maybeSingle();
     wallet = result.data;
     walletError = result.error;
