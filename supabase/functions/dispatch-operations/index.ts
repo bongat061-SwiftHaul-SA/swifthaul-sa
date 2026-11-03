@@ -46,10 +46,18 @@ Deno.serve(async (req: Request) => {
       console.error("Dispatch list failed", error.message);
       return reply(500, { error: "dispatch_list_failed" });
     }
+    const waybills = (data ?? []).map((order: Record<string, unknown>) => order.waybill as string);
+    const { data: proofs } = waybills.length
+      ? await admin.from("proof_of_delivery").select("waybill,recipient_name,created_at").in("waybill", waybills)
+      : { data: [] };
+    const proofMap = new Map((proofs ?? []).map((proof: Record<string, unknown>) => [proof.waybill, proof]));
+    const orders = (data ?? []).map((order: Record<string, unknown>) => ({
+      ...order, proof: proofMap.get(order.waybill) ?? null
+    }));
     const { data: driver } = isDriver
       ? await admin.from("driver_profiles").select("verification_status,availability_status").eq("user_id", actorId).maybeSingle()
       : { data: null };
-    return reply(200, { orders: data ?? [], driverProfile: driver });
+    return reply(200, { orders, driverProfile: driver });
   }
 
   const raw = await req.text();
@@ -128,6 +136,8 @@ Deno.serve(async (req: Request) => {
   }
   if (body.action === "complete") {
     if (order.status !== "in_transit") return reply(409, { error: "delivery_must_be_in_transit" });
+    const { data: proof } = await admin.from("proof_of_delivery").select("id").eq("waybill", order.waybill).maybeSingle();
+    if (!proof) return reply(409, { error: "upload_proof_of_delivery_first" });
     if (typeof body.pin !== "string" || !/^\d{4}$/.test(body.pin)) return reply(400, { error: "enter_recipient_four_digit_pin" });
     if (order.pin_locked_until && new Date(order.pin_locked_until).getTime() > Date.now())
       return reply(429, { error: "pin_entry_locked_retry_later" });
@@ -143,6 +153,7 @@ Deno.serve(async (req: Request) => {
       status: "delivered", completed_at: new Date().toISOString(),
       pin_attempts: 0, pin_locked_until: null,
     }).eq("waybill", order.waybill);
+    await admin.from("proof_of_delivery").update({ recipient_pin_verified_at: new Date().toISOString() }).eq("waybill", order.waybill);
     await admin.from("delivery_status_events").insert({
       waybill: order.waybill, actor_user_id: actorId, previous_status: order.status,
       new_status: "delivered", notes: "Recipient PIN verified",
