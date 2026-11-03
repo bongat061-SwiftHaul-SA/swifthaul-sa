@@ -1,22 +1,197 @@
-const app=document.body.dataset.app;
-if(app==='driver'||app==='company'){
- const panel=document.getElementById('dispatches');const status=document.createElement('p');status.setAttribute('role','status');const refresh=document.createElement('button');refresh.type='button';refresh.textContent='Refresh deliveries';const list=document.createElement('div');list.className='operations-list';panel.replaceChildren(panel.querySelector('h2'),refresh,status,list);let active=false,epoch=0;
- const money=value=>'R'+Number(value).toFixed(2);
- async function load(){if(!active||document.body.dataset.guestPreview==='true')return;const current=++epoch;status.textContent='Loading deliveries…';try{const response=await fetch('/api/operations',{cache:'no-store'}),data=await response.json();if(current!==epoch)return;if(!response.ok)throw new Error(data.error);list.replaceChildren();if(!data.orders.length)list.textContent='No deliveries available for this account.';for(const order of data.orders)render(order);status.textContent='';}catch(error){if(current===epoch)status.textContent=error.message||'Unable to load deliveries.';}}
- async function action(body,button){const current=epoch;button.disabled=true;try{const response=await fetch('/api/operations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}),data=await response.json();if(current!==epoch)return;if(!response.ok)throw new Error(data.error);await load();status.textContent='Delivery updated.';}catch(error){if(current===epoch)status.textContent=error.message;}finally{button.disabled=false;}}
- function render(order){const card=document.createElement('article');card.className='order';const title=document.createElement('h3');title.textContent=order.waybill;const route=document.createElement('p');route.textContent=order.pickup+' → '+order.dropoff;const summary=document.createElement('p');summary.textContent=`${order.vehicle.toUpperCase()} · ${money(order.price)} · ${order.completed_at?'Completed':'Awaiting completion'} · ${order.paid_at?'Paid':'Unpaid'}${order.refunded_at?' · Refunded':''}`;card.append(title,route,summary);list.append(card);
-  function button(text,body){const b=document.createElement('button');b.type='button';b.textContent=text;b.addEventListener('click',()=>action({waybill:order.waybill,...body},b));card.append(b);return b;}
-  if(app==='driver'){
-   const notes=document.createElement('p');notes.textContent=order.recipient;card.append(notes);if(order.scheduled_at){const t=document.createElement('p');t.textContent='Requested pickup: '+new Date(order.scheduled_at).toLocaleString('en-ZA',{timeZone:'Africa/Johannesburg'});card.append(t);}if(order.return_address){const t=document.createElement('p');t.textContent='Return request (separate quote): '+order.return_address;card.append(t);}
-   if(!order.completed_at||(!order.paid_at&&order.payment_method==='cash')){const form=document.createElement('form');const label=document.createElement('label');label.textContent='Recipient PIN';const pin=document.createElement('input');pin.name='pin';pin.inputMode='numeric';pin.pattern='[0-9]{4}';pin.maxLength=4;pin.required=true;pin.autocomplete='off';label.append(pin);form.append(label);const cash=document.createElement('input');cash.type='checkbox';if(order.payment_method==='cash'&&!order.paid_at){const cashLabel=document.createElement('label');cashLabel.textContent='I received the cash payment';cashLabel.prepend(cash);form.append(cashLabel);}const b=document.createElement('button');b.type='submit';b.textContent='Confirm delivery';form.append(b);form.addEventListener('submit',event=>{event.preventDefault();action({action:'complete',waybill:order.waybill,pin:pin.value,cash_collected:cash.checked},b);pin.value='';});card.append(form);}
-  }else{
-   if(!order.completed_at&&!order.refunded_at){const form=document.createElement('form');const label=document.createElement('label');label.textContent='Driver account ID';const id=document.createElement('input');id.required=true;id.maxLength=100;label.append(id);const b=document.createElement('button');b.textContent='Assign driver';b.type='submit';form.append(label,b);form.addEventListener('submit',event=>{event.preventDefault();action({action:'assign',waybill:order.waybill,driver_id:id.value.trim()},b);});card.append(form);}
-   if(order.counter_offer_status==='pending'){const offer=document.createElement('p');offer.textContent='Counteroffer '+money(order.counter_offer)+' · Original fare '+money(order.price);card.append(offer);button('Accept offer',{action:'offer-accept'});button('Decline offer',{action:'offer-decline'});}
-   if(order.paid_at&&!order.refunded_at){const form=document.createElement('form');const label=document.createElement('label');label.textContent='Type REFUND to return the full paid fare to the customer wallet';const confirmation=document.createElement('input');confirmation.required=true;confirmation.pattern='REFUND';label.append(confirmation);const b=document.createElement('button');b.type='submit';b.textContent='Refund to wallet';form.append(label,b);form.addEventListener('submit',event=>{event.preventDefault();action({action:'refund',waybill:order.waybill},b);});card.append(form);}
+const app = document.body.dataset.app;
+if (app === 'driver' || app === 'company') {
+  const panel = document.getElementById('dispatches');
+  const heading = panel.querySelector('h2');
+  const message = document.createElement('p');
+  message.setAttribute('role', 'status');
+  const refresh = document.createElement('button');
+  refresh.type = 'button';
+  refresh.textContent = 'Refresh deliveries';
+  const list = document.createElement('div');
+  list.className = 'operations-list';
+  panel.replaceChildren(heading, refresh, message, list);
+
+  let active = false;
+  let requestNumber = 0;
+  const money = value => 'R' + Number(value || 0).toFixed(2);
+  const statusLabel = value => ({
+    pending: 'Awaiting dispatch', assigned: 'Assigned', accepted: 'Accepted',
+    picked_up: 'Picked up', in_transit: 'In transit', delivered: 'Delivered',
+    failed: 'Failed delivery', cancelled: 'Cancelled'
+  }[value] || value || 'Unknown');
+
+  async function invoke(method, body) {
+    const client = window.swiftHaulSupabase;
+    if (!client) throw new Error('Secure account connection is unavailable. Reload the page.');
+    const { data, error } = await client.functions.invoke('dispatch-operations', {
+      method,
+      ...(body ? { body } : {})
+    });
+    if (error) throw new Error(data?.error || error.message || 'Dispatch request failed.');
+    if (data?.error) throw new Error(data.error);
+    return data;
   }
- }
- refresh.addEventListener('click',load);
- document.addEventListener('account-ready',event=>{active=true;if(app==='driver'){let id=document.getElementById('driver-account-id');if(!id){id=document.createElement('p');id.id='driver-account-id';document.getElementById('account-details').append(id);}id.textContent='Driver account ID for assignment: '+event.detail.id;}load();});
- document.addEventListener('account-cleared',()=>{active=false;epoch++;list.replaceChildren();status.textContent='';const id=document.getElementById('driver-account-id');if(id)id.textContent='';});
- document.addEventListener('guest-preview',()=>{active=false;epoch++;list.replaceChildren();status.textContent='Sign in to access assigned deliveries and company operations.';});
+
+  async function load() {
+    if (!active || document.body.dataset.guestPreview === 'true') return;
+    const current = ++requestNumber;
+    message.textContent = 'Loading deliveries…';
+    try {
+      const data = await invoke('GET');
+      if (current !== requestNumber) return;
+      list.replaceChildren();
+      if (app === 'driver' && data.driverProfile?.verification_status !== 'approved') {
+        const notice = document.createElement('p');
+        notice.textContent = 'Your driver application is awaiting verification. Dispatch access will be enabled after approval.';
+        list.append(notice);
+      }
+      if (!data.orders?.length) {
+        const empty = document.createElement('p');
+        empty.textContent = 'No deliveries are currently assigned to this account.';
+        list.append(empty);
+      }
+      for (const order of data.orders || []) render(order);
+      message.textContent = '';
+    } catch (error) {
+      if (current === requestNumber) message.textContent = error.message || 'Unable to load deliveries.';
+    }
+  }
+
+  async function action(body, button) {
+    const current = requestNumber;
+    button.disabled = true;
+    try {
+      await invoke('POST', body);
+      if (current !== requestNumber) return;
+      await load();
+      message.textContent = 'Delivery updated.';
+    } catch (error) {
+      if (current === requestNumber) message.textContent = error.message || 'Unable to update delivery.';
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  function makeButton(parent, label, body) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = label;
+    button.addEventListener('click', () => action(body, button));
+    parent.append(button);
+    return button;
+  }
+
+  function render(order) {
+    const card = document.createElement('article');
+    card.className = 'order';
+    const title = document.createElement('h3');
+    title.textContent = order.waybill;
+    const route = document.createElement('p');
+    route.textContent = order.pickup + ' → ' + order.dropoff;
+    const summary = document.createElement('p');
+    summary.textContent = [
+      String(order.vehicle || '').toUpperCase(),
+      money(order.price),
+      statusLabel(order.status),
+      order.paid_at ? 'Paid' : 'Payment pending'
+    ].filter(Boolean).join(' · ');
+    card.append(title, route, summary);
+
+    if (order.scheduled_at) {
+      const scheduled = document.createElement('p');
+      scheduled.textContent = 'Requested pickup: ' + new Date(order.scheduled_at).toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg' });
+      card.append(scheduled);
+    }
+    if (order.status === 'failed' && order.failure_reason) {
+      const reason = document.createElement('p');
+      reason.textContent = 'Failure reason: ' + order.failure_reason;
+      card.append(reason);
+    }
+
+    if (app === 'driver') {
+      if (order.recipient) {
+        const recipient = document.createElement('p');
+        recipient.textContent = 'Recipient: ' + order.recipient;
+        card.append(recipient);
+      }
+      if (order.status === 'assigned') makeButton(card, 'Accept delivery', { waybill: order.waybill, action: 'accept' });
+      if (order.status === 'accepted') makeButton(card, 'Confirm pickup', { waybill: order.waybill, action: 'pickup' });
+      if (order.status === 'picked_up') makeButton(card, 'Start delivery', { waybill: order.waybill, action: 'in_transit' });
+      if (order.status === 'in_transit') {
+        const form = document.createElement('form');
+        const label = document.createElement('label');
+        label.textContent = 'Recipient four-digit PIN';
+        const pin = document.createElement('input');
+        pin.name = 'pin';
+        pin.inputMode = 'numeric';
+        pin.pattern = '[0-9]{4}';
+        pin.maxLength = 4;
+        pin.required = true;
+        pin.autocomplete = 'off';
+        label.append(pin);
+        const submit = document.createElement('button');
+        submit.type = 'submit';
+        submit.textContent = 'Confirm delivery';
+        form.append(label, submit);
+        form.addEventListener('submit', event => {
+          event.preventDefault();
+          action({ waybill: order.waybill, action: 'complete', pin: pin.value }, submit);
+          pin.value = '';
+        });
+        card.append(form);
+      }
+      if (['accepted', 'picked_up', 'in_transit'].includes(order.status)) {
+        const form = document.createElement('form');
+        const label = document.createElement('label');
+        label.textContent = 'Reason delivery cannot be completed';
+        const reason = document.createElement('input');
+        reason.maxLength = 300;
+        reason.required = true;
+        label.append(reason);
+        const submit = document.createElement('button');
+        submit.type = 'submit';
+        submit.textContent = 'Report failed delivery';
+        form.append(label, submit);
+        form.addEventListener('submit', event => {
+          event.preventDefault();
+          action({ waybill: order.waybill, action: 'fail', reason: reason.value.trim() }, submit);
+        });
+        card.append(form);
+      }
+    } else if (!['delivered', 'failed', 'cancelled'].includes(order.status)) {
+      const form = document.createElement('form');
+      const label = document.createElement('label');
+      label.textContent = 'Approved driver account ID';
+      const id = document.createElement('input');
+      id.required = true;
+      id.maxLength = 36;
+      id.pattern = '[0-9a-fA-F-]{36}';
+      label.append(id);
+      const submit = document.createElement('button');
+      submit.type = 'submit';
+      submit.textContent = 'Assign driver';
+      form.append(label, submit);
+      form.addEventListener('submit', event => {
+        event.preventDefault();
+        action({ waybill: order.waybill, action: 'assign', driver_id: id.value.trim() }, submit);
+      });
+      card.append(form);
+    }
+    list.append(card);
+  }
+
+  refresh.addEventListener('click', load);
+  document.addEventListener('account-ready', () => { active = true; load(); });
+  document.addEventListener('account-cleared', () => {
+    active = false;
+    requestNumber++;
+    list.replaceChildren();
+    message.textContent = '';
+  });
+  document.addEventListener('guest-preview', () => {
+    active = false;
+    requestNumber++;
+    list.replaceChildren();
+    message.textContent = 'Sign in to access assigned deliveries and company dispatch.';
+  });
 }
