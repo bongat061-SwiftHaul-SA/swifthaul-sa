@@ -153,14 +153,16 @@ Deno.serve(async (req: Request) => {
   if (quoteError || !quote) return reply(409, { error: "quote_expired_recalculate_route" });
 
   const distance = Number(quote.distance_meters);
-  const method = body.payment_method === "cash" && distance < 12000 ? "cash" : "dispatch";
+  const method = body.payment_method ?? "dispatch";
+  if (method !== "cash" && method !== "dispatch") return reply(400, { error: "choose_cash_or_dispatch_payment" });
+  if (method === "cash" && distance >= 12000) return reply(400, { error: "cash_available_only_below_12km" });
   let offer: number | null = null;
   let offerStatus = "none";
   if (body.counter_offer !== undefined && body.counter_offer !== null && body.counter_offer !== "") {
+    if (typeof body.counter_offer !== "string" || !/^\\d{1,10}(?:\\.\\d{1,2})?$/.test(body.counter_offer) ||
+        Number(body.counter_offer) <= 0 || distance >= 24000)
+      return reply(400, { error: "counter_offer_not_eligible_or_invalid_amount" });
     offer = Number(body.counter_offer);
-    if (!Number.isFinite(offer) || offer <= 0 || offer > 10000000 || distance >= 24000)
-      return reply(400, { error: "counter_offer_not_eligible" });
-    offer = Math.round(offer * 100) / 100;
     offerStatus = "pending";
   }
   let pickup, dropoff;
