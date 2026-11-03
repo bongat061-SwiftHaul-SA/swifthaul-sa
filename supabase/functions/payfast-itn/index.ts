@@ -27,9 +27,18 @@ function inCidr(ip: string, cidr: string) {
 }
 const PAYFAST_IPS = ["197.97.145.144/28","41.74.179.192/27","102.216.36.0/28","102.216.36.128/28","144.126.193.139/32"];
 function trustedSource(req: Request) {
-  const forwarded = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip") || "";
-  const ip = forwarded.split(",")[0].trim();
+  const direct = req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip");
+  const forwarded = req.headers.get("x-forwarded-for") || "";
+  // Prefer the proxy-provided client IP. If only X-Forwarded-For is present,
+  // inspect its right-most hop because trusted proxies append to this header.
+  const ip = (direct || forwarded.split(",").at(-1) || "").trim();
   return PAYFAST_IPS.some(range => inCidr(ip, range));
+}
+function constantTimeEqual(a: string, b: string) {
+  if (a.length !== b.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < a.length; i++) mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return mismatch === 0;
 }
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return response(405, "Method not allowed");
@@ -48,7 +57,7 @@ Deno.serve(async (req: Request) => {
   if (payload.merchant_id !== merchantId || !payload.signature || !payload.m_payment_id?.startsWith("SH-PF-"))
     return response(400, "Invalid merchant or payment reference");
   const expected = signature(entries, passphrase);
-  if (expected !== payload.signature.toLowerCase()) return response(400, "Invalid notification signature");
+  if (!constantTimeEqual(expected, payload.signature.toLowerCase())) return response(400, "Invalid notification signature");
 
   const validation = await fetch(SANDBOX_VALIDATE_URL, {
     method: "POST",
