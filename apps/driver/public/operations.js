@@ -96,6 +96,25 @@ if (app === 'driver' || app === 'company') {
       order.paid_at ? 'Paid' : 'Payment pending'
     ].filter(Boolean).join(' · ');
     card.append(title, route, summary);
+    for (const [kind,label] of [['pickup','Pickup'],['dropoff','Drop-off']]) {
+      const plus = order[kind + '_plus_code'];
+      const lat = order[kind + '_latitude'], lng = order[kind + '_longitude'];
+      if (!plus && (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng)))) continue;
+      const location = document.createElement('p');
+      location.textContent = label + ' pin: ' + (plus || 'coordinates saved') + (order[kind + '_geohash'] ? ' · Geohash ' + order[kind + '_geohash'] : '');
+      card.append(location);
+      if (Number.isFinite(Number(lat)) && Number.isFinite(Number(lng))) {
+        const mapLink = document.createElement('a');
+        mapLink.href = 'https://www.google.com/maps?q=' + encodeURIComponent(lat + ',' + lng);
+        mapLink.target = '_blank'; mapLink.rel = 'noopener noreferrer'; mapLink.textContent = 'Open ' + label.toLowerCase() + ' pin in Maps';
+        card.append(mapLink);
+      }
+      if (plus) {
+        const copy = document.createElement('button'); copy.type = 'button'; copy.textContent = 'Copy ' + label.toLowerCase() + ' Plus Code';
+        copy.addEventListener('click', async () => { try { await navigator.clipboard.writeText(plus); message.textContent = label + ' Plus Code copied.'; } catch { message.textContent = 'Copy was blocked; select the code manually: ' + plus; } });
+        card.append(copy);
+      }
+    }
 
     if (order.scheduled_at) {
       const scheduled = document.createElement('p');
