@@ -38,7 +38,7 @@ Deno.serve(async (req: Request) => {
 
   if (req.method === "GET") {
     let query = admin.from("customer_bookings")
-      .select("waybill,pickup,dropoff,recipient,vehicle,price,payment_method,paid_at,completed_at,scheduled_at,return_address,status,driver_user_id,created_at,failure_reason")
+      .select("waybill,pickup,dropoff,recipient,vehicle,price,payment_method,paid_at,completed_at,scheduled_at,return_address,status,driver_user_id,created_at,failure_reason,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash")
       .order("created_at", { ascending: false }).limit(100);
     if (isDriver) query = query.eq("driver_user_id", actorId);
     const { data, error } = await query;
