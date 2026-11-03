@@ -2,6 +2,7 @@ const section=document.getElementById('wallet');
 const status=document.getElementById('wallet-status');
 const content=document.getElementById('wallet-content');
 let version=0,active=false,requestId=crypto.randomUUID();
+const paymentState=new URLSearchParams(location.search).get('payment');
 const rand=value=>'R'+(Number(value)/100).toFixed(2);
 const date=value=>new Date(value).toLocaleString('en-ZA',{timeZone:'Africa/Johannesburg'});
 function clear(){version++;active=false;content.hidden=true;document.getElementById('wallet-entries').replaceChildren();document.getElementById('wallet-loans').replaceChildren();document.getElementById('wallet-withdrawals').replaceChildren();document.getElementById('referral-code').textContent='';document.getElementById('withdraw-form').reset();document.getElementById('withdraw-form').elements.bank_code.replaceChildren();document.getElementById('withdraw-fee').textContent='';status.textContent='';for(const id of ['refund-balance','promo-balance','pay-later-summary','wallet-provider-note','promo-adjustment'])document.getElementById(id).textContent='';requestId=crypto.randomUUID();}
@@ -44,7 +45,7 @@ async function load(){
  const withdrawals=document.getElementById('wallet-withdrawals');withdrawals.replaceChildren();for(const row of data.withdrawals)entry(withdrawals,`${date(row.created_at)} · ${row.speed} · ${row.state} · ${rand(row.gross_cents)} less ${rand(row.fee_cents)} fee = ${rand(row.net_cents)}`);if(!data.withdrawals.length)entry(withdrawals,'No withdrawals yet.');
  document.querySelector('#withdraw-form [type=submit]').disabled=!data.provider_ready||Number(data.wallet.refund_cents)<=0;
  document.getElementById('wallet-provider-note').textContent=data.actions_ready?'Wallet payments and payouts are available.':'Wallet balances and history are available. PayFast loan repayments and bank payouts are not enabled yet; existing balances remain unchanged.';
- status.textContent='';
+ status.textContent=paymentState==='wallet-return'?'PayFast returned you to SwiftHaul. Your loan is marked repaid only after the verified payment notification is received.':paymentState==='wallet-cancel'?'PayFast checkout was cancelled. No repayment has been recorded.':'';
  for(const field of document.querySelectorAll('#withdraw-form input,#withdraw-form select,#withdraw-form button'))field.disabled=true;
  }catch(error){if(current===version)status.textContent=error.message;}
 }
@@ -65,7 +66,3 @@ document.addEventListener('account-ready',()=>{active=true;load();});
 document.addEventListener('account-cleared',clear);
 document.addEventListener('guest-preview',()=>{clear();status.textContent='Guest preview: sign in to see wallet balances, rewards and repayment options.';});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&active)load();});
-
-const paymentState=new URLSearchParams(location.search).get('payment');
-if(paymentState==='wallet-return'){status.textContent='PayFast returned you to SwiftHaul. Your loan is marked repaid only after the verified payment notification is received.';}
-else if(paymentState==='wallet-cancel'){status.textContent='PayFast checkout was cancelled. No repayment has been recorded.';}
