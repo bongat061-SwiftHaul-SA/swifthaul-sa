@@ -112,9 +112,13 @@ Deno.serve(async (req: Request) => {
     if (error) return reply(500, { error: "booking_list_failed" });
     const { data: wallet, error: walletError } = await admin.from("wallet_accounts")
       .select("refund_cents,promo_cents,promo_debt_cents").eq("owner_hash", owner).maybeSingle();
+    const { data: refundRequests, error: refundError } = await admin.from("booking_refund_requests")
+      .select("id,waybill,request_type,reason,refund_amount_cents,refund_source,status,created_at,reviewed_at")
+      .eq("owner_id", owner).order("created_at", { ascending: false }).limit(50);
+    if (refundError) return reply(500, { error: "refund_request_list_failed" });
     if (walletError) return reply(500, { error: "wallet_balance_lookup_failed" });
     const walletAvailable = wallet ? Number(wallet.refund_cents) + Math.max(0, Number(wallet.promo_cents) - Number(wallet.promo_debt_cents)) : 0;
-    return reply(200, { orders: data ?? [], canImport: false, wallet: {
+    return reply(200, { orders: data ?? [], refundRequests: refundRequests ?? [], canImport: false, wallet: {
       refund_cents: wallet ? Number(wallet.refund_cents) : 0,
       promo_cents: wallet ? Number(wallet.promo_cents) : 0,
       promo_debt_cents: wallet ? Number(wallet.promo_debt_cents) : 0,
@@ -126,6 +130,27 @@ Deno.serve(async (req: Request) => {
   if (raw.length > 8192) return reply(413, { error: "request_too_large" });
   let body: Record<string, unknown>;
   try { body = JSON.parse(raw); } catch { return reply(400, { error: "invalid_json" }); }
+
+  if (body.action === "refund_request") {
+    if (typeof body.waybill !== "string" || body.waybill.length > 100 ||
+        (body.request_type !== "cancellation" && body.request_type !== "refund") ||
+        !validText(body.reason)) return reply(400, { error: "enter_valid_refund_request_details" });
+    const { data, error } = await admin.rpc("request_booking_refund", {
+      p_owner_id: owner,
+      p_waybill: body.waybill,
+      p_request_type: body.request_type,
+      p_reason: body.reason.trim(),
+    });
+    if (error || !data?.request) {
+      const message = error?.message || "refund_request_failed";
+      if (/Booking not found/i.test(message)) return reply(404, { error: "booking_not_found" });
+      if (/can no longer be cancelled|Refund requests are available|already refunded/i.test(message))
+        return reply(409, { error: "booking_not_eligible_for_this_request" });
+      console.error("Refund request failed", message);
+      return reply(503, { error: "refund_request_failed" });
+    }
+    return reply(data.already_requested ? 200 : 201, data);
+  }
 
   if (body.action === "quote") {
     if (!validText(body.pickup) || !validText(body.dropoff)) return reply(400, { error: "enter_pickup_and_dropoff" });
