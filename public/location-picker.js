@@ -31,7 +31,7 @@
     <p id="loc-status" role="status" aria-live="polite"></p>`;
   workspace.insertBefore(panel, workspace.firstChild);
   const $ = id => document.getElementById(id);
-  let map, marker, selected = null, fullCode = '';
+  let map, marker, selected = null, fullCode = '', activeField = null;
   const parsePair = value => {
     const m = String(value || '').trim().match(/^\s*(-?\d+(?:\.\d+)?)\s*[, ]\s*(-?\d+(?:\.\d+)?)\s*$/);
     if (!m) return null;
@@ -45,7 +45,7 @@
   }
   function update(lat,lng) {
     if (!window.OpenLocationCode || !window.L) { $('loc-status').textContent='The map or Plus Code library did not load. Check your connection and reload.';return; }
-    selected={lat,lng};fullCode=window.OpenLocationCode.encode(lat,lng,10);
+    selected={lat,lng};fullCode=window.OpenLocationCode.encode(lat,lng,10);\n    if(activeField){const form=activeField.closest('form');const prefix=activeField.name;for(const [suffix,value] of Object.entries({latitude:lat,longitude:lng,plus_code:fullCode,geohash:geohash(lat,lng,9)})){const name=prefix+'_'+suffix;let input=form?.querySelector('[name="'+name+'"]');if(!input&&form){input=document.createElement('input');input.type='hidden';input.name=name;form.append(input)}if(input)input.value=String(value)}const button=activeField.nextElementSibling;if(button?.matches('button'))button.textContent='Pin selected · '+fullCode;}
     $('loc-plus').textContent=fullCode;$('loc-geohash').textContent=geohash(lat,lng,9);$('loc-coords').textContent=lat.toFixed(6)+', '+lng.toFixed(6);
     for(const id of ['loc-copy-plus','loc-copy-geohash','loc-copy-coords','loc-copy-link'])$(id).disabled=false;
     const ref=parsePair($('loc-reference').value);$('loc-copy-short').disabled=!ref;
@@ -84,7 +84,7 @@
   for(const id of ['custPickup','custDropoff']){
     const field=$(id);if(!field)continue;
     const button=document.createElement('button');button.type='button';button.textContent='Pick / copy pin';button.style.margin='8px 0 16px';
-    button.addEventListener('click',()=>{$('loc-map-wrap').hidden=false;initMap();panel.scrollIntoView({behavior:'smooth',block:'start'});setTimeout(()=>map.invalidateSize(),150)});
+    button.addEventListener('click',()=>{activeField=field;$('loc-map-wrap').hidden=false;initMap();panel.scrollIntoView({behavior:'smooth',block:'start'});setTimeout(()=>map.invalidateSize(),150)});
     field.insertAdjacentElement('afterend',button);
   }
 })();
