@@ -58,6 +58,15 @@ function showWorkspace(user) {
   if (banner) banner.hidden = true;
   document.getElementById('sign-out').hidden = false;
   document.querySelectorAll('[data-account-label]').forEach(el => { el.textContent = 'Signed in as'; });
+  if (app === 'driver') {
+    const accountPanel = document.getElementById('account-details');
+    let accountId = document.getElementById('driver-account-id');
+    if (!accountId) { accountId = document.createElement('p'); accountId.id = 'driver-account-id'; accountPanel.append(accountId); }
+    accountId.textContent = 'Driver account ID: ' + user.id;
+    let verification = document.getElementById('driver-verification-status');
+    if (!verification) { verification = document.createElement('p'); verification.id = 'driver-verification-status'; accountPanel.append(verification); }
+    verification.textContent = 'Verification status: ' + (user.driverProfile?.verification_status || 'pending');
+  }
   authScreen.hidden = true;
   workspace.hidden = false;
   document.dispatchEvent(new CustomEvent('account-ready', { detail: user }));
@@ -70,6 +79,7 @@ async function validateAccount(session) {
   if (error) throw new Error(error.message || 'Unable to validate your account.');
   const user = data?.user;
   if (!user) throw new Error('Your account profile could not be loaded.');
+  user.driverProfile = data.driverProfile || null;
   if (app === 'driver' && user.role !== 'driver') {
     throw new Error('This account is not registered as a driver. Create a driver account or contact dispatch.');
   }
