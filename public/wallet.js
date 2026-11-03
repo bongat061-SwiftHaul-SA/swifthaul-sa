@@ -7,7 +7,11 @@ const date=value=>new Date(value).toLocaleString('en-ZA',{timeZone:'Africa/Johan
 function clear(){version++;active=false;content.hidden=true;document.getElementById('wallet-entries').replaceChildren();document.getElementById('wallet-loans').replaceChildren();document.getElementById('wallet-withdrawals').replaceChildren();document.getElementById('referral-code').textContent='';document.getElementById('withdraw-form').reset();document.getElementById('withdraw-form').elements.bank_code.replaceChildren();document.getElementById('withdraw-fee').textContent='';status.textContent='';for(const id of ['refund-balance','promo-balance','pay-later-summary','wallet-provider-note','promo-adjustment'])document.getElementById(id).textContent='';requestId=crypto.randomUUID();}
 async function api(body,query=''){
  if(!active||document.body.dataset.guestPreview==='true')throw new Error('Sign in to access your wallet.');
- const response=await fetch('/api/wallet'+query,{cache:'no-store',...(body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{})});const data=await response.json();if(!response.ok)throw new Error(data.error||'Wallet unavailable. Retry.');return data;
+ if(body||query)throw new Error('Wallet payments and payouts are being migrated to PayFast.');
+ const client=window.swiftHaulSupabase;if(!client)throw new Error('Customer sign-in connection is unavailable.');
+ const {data,error}=await client.functions.invoke('wallet-operations',{body:{action:'summary'}});
+ if(error||!data||data.error)throw new Error(data?.error||error?.message||'Wallet unavailable. Retry.');
+ return data;
 }
 function entry(container,text){const p=document.createElement('p');p.textContent=text;container.append(p);return p;}
 async function load(){
@@ -22,13 +26,13 @@ async function load(){
  const entries=document.getElementById('wallet-entries');entries.replaceChildren();if(!data.entries.length)entry(entries,'No wallet transactions yet.');
  for(const row of data.entries){entry(entries,`${date(row.created_at)} · ${row.description} · Refund ${rand(row.refund_delta)} · Promotional ${rand(row.promo_delta)}${Number(row.promo_debt_delta)?' · Promotional adjustment '+rand(row.promo_debt_delta):''}`);}
  const loans=document.getElementById('wallet-loans');loans.replaceChildren();
- for(const loan of data.loans){const p=entry(loans,`${loan.waybill} · ${rand(loan.amount_cents)} · ${loan.paid_at?'Repaid':'Due '+date(loan.due_at)}`);if(!loan.paid_at){const b=document.createElement('button');b.type='button';b.textContent='Repay with Paystack';b.disabled=!data.provider_ready;b.addEventListener('click',()=>perform({action:'repay',loan_id:loan.id},b));p.append(b);}}
+ for(const loan of data.loans){const p=entry(loans,`${loan.waybill} · ${rand(loan.amount_cents)} · ${loan.paid_at?'Repaid':'Due '+date(loan.due_at)}`);if(!loan.paid_at){const note=document.createElement('small');note.textContent='Online repayment is temporarily unavailable while PayFast repayment is being migrated.';p.append(note);}}
  if(!data.loans.length)entry(loans,'No pay-later balances.');
  const withdrawals=document.getElementById('wallet-withdrawals');withdrawals.replaceChildren();for(const row of data.withdrawals)entry(withdrawals,`${date(row.created_at)} · ${row.speed} · ${row.state} · ${rand(row.gross_cents)} less ${rand(row.fee_cents)} fee = ${rand(row.net_cents)}`);if(!data.withdrawals.length)entry(withdrawals,'No withdrawals yet.');
  document.querySelector('#withdraw-form [type=submit]').disabled=!data.provider_ready||Number(data.wallet.refund_cents)<=0;
- document.getElementById('wallet-provider-note').textContent=data.provider_ready?'Paystack payments and withdrawals are available. Confirmation comes from Paystack; returning from checkout alone does not mark a payment paid.':'Online payments, pay-later activation and withdrawals are unavailable until Paystack is configured. Existing wallet balances remain visible.';
+ document.getElementById('wallet-provider-note').textContent=data.actions_ready?'Wallet payments and payouts are available.':'Wallet balances and history are available. PayFast loan repayments and bank payouts are not enabled yet; existing balances remain unchanged.';
  status.textContent='';
- if(data.provider_ready&&document.getElementById('withdraw-form').elements.bank_code.options.length===0){const banks=await api(null,'?banks');if(current!==version)return;const select=document.getElementById('withdraw-form').elements.bank_code;for(const bank of banks.banks){const opt=document.createElement('option');opt.value=bank.code;opt.textContent=bank.name;select.append(opt);}}
+ for(const field of document.querySelectorAll('#withdraw-form input,#withdraw-form select,#withdraw-form button'))field.disabled=true;
  }catch(error){if(current===version)status.textContent=error.message;}
 }
 async function perform(body,button){
