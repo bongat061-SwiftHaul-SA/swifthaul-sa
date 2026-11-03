@@ -50,9 +50,13 @@ Deno.serve(async (req: Request) => {
     const { data: proofs } = waybills.length
       ? await admin.from("proof_of_delivery").select("waybill,recipient_name,created_at").in("waybill", waybills)
       : { data: [] };
-    const proofMap = new Map((proofs ?? []).map((proof: Record<string, unknown>) => [proof.waybill, proof]));
+    const proofMap = new Map<string, Record<string, unknown>>(
+      (proofs ?? []).map((proof: Record<string, unknown>) =>
+        [String(proof.waybill), proof] as [string, Record<string, unknown>]
+      )
+    );
     const orders = (data ?? []).map((order: Record<string, unknown>) => ({
-      ...order, proof: proofMap.get(order.waybill) ?? null
+      ...order, proof: proofMap.get(String(order.waybill)) ?? null
     }));
     const { data: driver } = isDriver
       ? await admin.from("driver_profiles").select("verification_status,availability_status").eq("user_id", actorId).maybeSingle()
