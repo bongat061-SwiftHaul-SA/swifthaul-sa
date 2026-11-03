@@ -107,7 +107,7 @@ Deno.serve(async (req: Request) => {
 
   if (req.method === "GET") {
     const { data, error } = await admin.from("customer_bookings")
-      .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,status")
+      .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,wallet_refund_used,wallet_promo_used,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,status")
       .eq("owner_hash", owner).order("created_at", { ascending: false }).limit(100);
     if (error) return reply(500, { error: "booking_list_failed" });
     const { data: wallet, error: walletError } = await admin.from("wallet_accounts")
