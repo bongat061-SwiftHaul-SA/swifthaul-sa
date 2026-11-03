@@ -16,7 +16,7 @@ The Customer, Driver and Company/Administrator portals include a shared global p
 3. Copy the full Plus Code, Geohash, coordinates, or a Google Maps URL.
 4. Optionally enter reference coordinates to generate a regional short Plus Code.
 
-The picker uses Leaflet with OpenStreetMap map tiles. Map tile attribution is shown in the map. It does not require a Google Maps API key. The current picker is a client-side utility; the selected pin is not yet written into the booking or dispatch database. The next integration step is to add pickup/drop-off coordinate and Plus Code fields to the booking quote, booking records and dispatch API, then display the persisted pins to drivers and dispatchers. Do not treat copying a code as proof that it has been saved to an order.
+The picker uses Leaflet with OpenStreetMap map tiles. Map tile attribution is shown in the map. It does not require a Google Maps API key. The Customer portal sends selected pickup/drop-off coordinates into route quoting and saves the Plus Code, Geohash and latitude/longitude with the booking through the authenticated booking API. Editing an address clears its old pin so a stale coordinate cannot silently override the new address. Customer booking cards, invoices and WhatsApp dispatch messages include the saved Plus Codes. The Netlify database migration adds the matching fields and validation; the Supabase `customer_bookings` schema has the same fields, and the secured dispatch function returns them to Driver and Administrator workspaces, where they can open the exact map pin and copy the code. Existing bookings remain valid with null location-code fields until a pin is added.
 
 ## Open-source implementation
 
