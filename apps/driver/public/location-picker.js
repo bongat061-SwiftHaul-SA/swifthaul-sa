@@ -45,7 +45,8 @@
   }
   function update(lat,lng) {
     if (!window.OpenLocationCode || !window.L) { $('loc-status').textContent='The map or Plus Code library did not load. Check your connection and reload.';return; }
-    selected={lat,lng};fullCode=window.OpenLocationCode.encode(lat,lng,10);\n    if(activeField){const form=activeField.closest('form');const prefix=activeField.name;for(const [suffix,value] of Object.entries({latitude:lat,longitude:lng,plus_code:fullCode,geohash:geohash(lat,lng,9)})){const name=prefix+'_'+suffix;let input=form?.querySelector('[name="'+name+'"]');if(!input&&form){input=document.createElement('input');input.type='hidden';input.name=name;form.append(input)}if(input)input.value=String(value)}const button=activeField.nextElementSibling;if(button?.matches('button'))button.textContent='Pin selected · '+fullCode;}
+    selected={lat,lng};fullCode=window.OpenLocationCode.encode(lat,lng,10);
+    if(activeField){const form=activeField.closest('form');const prefix=activeField.name;for(const [suffix,value] of Object.entries({latitude:lat,longitude:lng,plus_code:fullCode,geohash:geohash(lat,lng,9)})){const name=prefix+'_'+suffix;let input=form?.querySelector('[name="'+name+'"]');if(!input&&form){input=document.createElement('input');input.type='hidden';input.name=name;form.append(input)}if(input)input.value=String(value)}const button=activeField.nextElementSibling;if(button?.matches('button'))button.textContent='Pin selected · '+fullCode;}
     $('loc-plus').textContent=fullCode;$('loc-geohash').textContent=geohash(lat,lng,9);$('loc-coords').textContent=lat.toFixed(6)+', '+lng.toFixed(6);
     for(const id of ['loc-copy-plus','loc-copy-geohash','loc-copy-coords','loc-copy-link'])$(id).disabled=false;
     const ref=parsePair($('loc-reference').value);$('loc-copy-short').disabled=!ref;
