@@ -68,8 +68,13 @@ Deno.serve(async (req: Request) => {
       id, owner_id: user.id, booking_waybill: booking.waybill,
       m_payment_id: "SH-PF-" + id, amount, provider: "payfast", payment_mode: "sandbox", status: "pending",
     }).select("id,amount").single();
-    if (error || !created) return reply(503, { error: "payment_initialization_failed" });
-    payment = created;
+    if (error || !created) {
+      const { data: raced } = await admin.from("payment_transactions")
+        .select("id,amount").eq("owner_id", user.id).eq("booking_waybill", booking.waybill)
+        .eq("status", "pending").order("created_at", { ascending: false }).limit(1).maybeSingle();
+      if (!raced || Number(raced.amount) !== amount) return reply(503, { error: "payment_initialization_failed" });
+      payment = raced;
+    } else payment = created;
   }
 
   const paymentId = String(payment.id);
