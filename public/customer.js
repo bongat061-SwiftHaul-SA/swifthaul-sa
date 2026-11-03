@@ -39,6 +39,7 @@ async function customerApi(method, body) {
 }
 let ready = false;
 let loadVersion = 0;
+let refundRequestsByWaybill = new Map();
 const report = (text, error = false) => { message.textContent = text; message.classList.toggle('error', error); };
 form.addEventListener('input', event => {if(['pickup','dropoff'].includes(event.target.name)){for(const suffix of ['latitude','longitude','plus_code','geohash']){const hidden=form.elements.namedItem(event.target.name+'_'+suffix);if(hidden)hidden.value='';}const picker=event.target.nextElementSibling;if(picker?.matches('button'))picker.textContent='Pick / copy pin';}if (['pickup','dropoff','weight','length','width','height'].includes(event.target.name)) resetQuote();});
 form.addEventListener('change', event => {if (['weight','length','width','height'].includes(event.target.name)) resetQuote();});
@@ -83,6 +84,32 @@ function addOrder(order, prepend = false) {
     const pay=document.createElement('button');pay.type='button';pay.textContent='Pay securely with PayFast (Sandbox)';
     pay.addEventListener('click',()=>startPayFastCheckout(order,pay));actions.append(pay);
   }
+  const existingRefund = refundRequestsByWaybill.get(order.waybill);
+  if (existingRefund) {
+    const refundStatus=document.createElement('p');
+    refundStatus.textContent='Cancellation/refund request: '+existingRefund.status.replaceAll('_',' ');
+    card.append(refundStatus);
+  } else if (!order.refunded_at && ['pending','assigned','accepted','failed','cancelled'].includes(order.status)) {
+    const requestType=['pending','assigned','accepted'].includes(order.status)?'cancellation':'refund';
+    const requestButton=document.createElement('button');requestButton.type='button';
+    requestButton.textContent=requestType==='cancellation'?'Request cancellation':'Request refund';
+    requestButton.addEventListener('click',async()=>{
+      const reasonInput=document.createElement('input');reasonInput.type='text';reasonInput.maxLength=1000;
+      reasonInput.placeholder='Reason for your request';reasonInput.setAttribute('aria-label','Reason for your request');
+      const send=document.createElement('button');send.type='button';send.textContent='Submit request';
+      const cancel=document.createElement('button');cancel.type='button';cancel.textContent='Keep booking';
+      const formBox=document.createElement('div');formBox.className='order-actions';formBox.append(reasonInput,send,cancel);
+      requestButton.replaceWith(formBox);cancel.addEventListener('click',()=>formBox.replaceWith(requestButton));
+      send.addEventListener('click',async()=>{
+        if(reasonInput.value.trim().length<3){report('Please enter a reason of at least 3 characters.',true);return;}
+        send.disabled=true;report('Submitting your request…');
+        try{const result=await customerApi('POST',{action:'refund_request',waybill:order.waybill,request_type:requestType,reason:reasonInput.value.trim()});
+          if(result.request)refundRequestsByWaybill.set(order.waybill,result.request);
+          await loadOrders();report('Your request has been submitted.');
+        }catch(error){report(error instanceof Error?error.message:'Unable to submit request.',true);send.disabled=false;}
+      });
+    });actions.append(requestButton);
+  }
   actions.append(track, pdf, wa); card.append(head, route, meta, actions);
   if (prepend) container.prepend(card); else container.append(card);
 }
@@ -121,6 +148,7 @@ async function loadOrders() {
     if (version !== loadVersion) return;
     document.getElementById('legacy-import').hidden = !data.canImport;
     container.replaceChildren();
+    refundRequestsByWaybill = new Map((data.refundRequests || []).map(request => [request.waybill, request]));
     data.orders.forEach(order => addOrder(order));
     walletAvailableCents = Number(data.wallet?.available_cents) || 0;
     updatePaymentOptions();
