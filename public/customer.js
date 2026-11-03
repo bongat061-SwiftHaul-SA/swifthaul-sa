@@ -78,10 +78,36 @@ function addOrder(order, prepend = false) {
   const track = document.createElement('button'); track.type = 'button'; track.className = 'track-delivery'; track.textContent = 'Track Delivery'; track.addEventListener('click', () => {
     if (document.body.dataset.guestPreview !== 'true') document.dispatchEvent(new CustomEvent('delivery-route', {detail:{waybill:order.waybill,pickup:order.pickup,dropoff:order.dropoff}}));
   });
-  if(!order.paid_at&&!order.refunded_at){for(const [label,action] of [['Pay with wallet','wallet-pay'],['Pay securely with Paystack','checkout'],['Pay later','pay-later']]){if(order.payment_source==='pay_later')continue;const pay=document.createElement('button');pay.type='button';pay.textContent=label;pay.addEventListener('click',()=>document.dispatchEvent(new CustomEvent('wallet-payment',{detail:{action,waybill:order.waybill}})));actions.append(pay);}}
+  if(!order.paid_at&&!order.refunded_at&&!['cancelled','completed'].includes(order.status)){
+    const pay=document.createElement('button');pay.type='button';pay.textContent='Pay securely with PayFast (Sandbox)';
+    pay.addEventListener('click',()=>startPayFastCheckout(order,pay));actions.append(pay);
+  }
   actions.append(track, pdf, wa); card.append(head, route, meta, actions);
   if (prepend) container.prepend(card); else container.append(card);
 }
+
+async function startPayFastCheckout(order, button) {
+  button.disabled = true; report('Preparing secure PayFast sandbox checkout…');
+  try {
+    const client = window.swiftHaulSupabase;
+    if (!client) throw new Error('Customer sign-in connection is unavailable.');
+    const { data, error } = await client.functions.invoke('payfast-checkout', { body: { action: 'checkout', waybill: order.waybill } });
+    if (error || !data || data.error) throw new Error(data?.error || error?.message || 'Unable to prepare PayFast checkout.');
+    if (data.process_url !== 'https://sandbox.payfast.co.za/eng/process' || data.mode !== 'sandbox' || !data.fields || typeof data.fields !== 'object')
+      throw new Error('PayFast returned an invalid sandbox checkout response.');
+    const checkout = document.createElement('form');
+    checkout.method = 'POST'; checkout.action = data.process_url; checkout.acceptCharset = 'UTF-8'; checkout.hidden = true;
+    for (const [name,value] of Object.entries(data.fields)) {
+      if (typeof value !== 'string' || value.length > 2000) throw new Error('Invalid PayFast checkout field.');
+      const input = document.createElement('input'); input.type = 'hidden'; input.name = name; input.value = value; checkout.append(input);
+    }
+    document.body.append(checkout); checkout.submit();
+  } catch (error) {
+    report(error instanceof Error ? error.message : 'Unable to start PayFast checkout.', true);
+    button.disabled = false;
+  }
+}
+
 async function loadOrders() {
   if (document.body.dataset.guestPreview === 'true') return;
   const version = ++loadVersion;
@@ -162,7 +188,13 @@ function downloadPDF(order) {
     doc.save(`Invoice_${order.waybill}.pdf`);
   } catch { report('The PDF could not be generated. Please try again.', true); }
 }
-document.addEventListener('account-ready', () => {calculateButton.disabled=false;loadOrders();});
+document.addEventListener('account-ready', () => {
+  calculateButton.disabled=false;loadOrders();
+  const params=new URLSearchParams(location.search), payment=params.get('payment');
+  if(payment==='return') report('You returned from PayFast. Payment is awaiting server-side notification and verification; refresh your bookings shortly. Returning here does not itself confirm payment.');
+  else if(payment==='cancel') report('PayFast checkout was cancelled. Your booking remains unpaid.');
+  if(payment){history.replaceState({},'',location.pathname+location.hash);}
+});
 document.addEventListener('account-cleared', () => {accountEpoch++;loadVersion++; ready = false;form.reset();toggleBookingOptions();previewLoad();resetQuote(); container.replaceChildren(); document.getElementById('legacy-import').hidden=true; document.getElementById('submit').disabled = true;});
 
 document.getElementById('import-bookings').addEventListener('click', async event => {
