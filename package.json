@@ -21,6 +21,7 @@
   },
   "private": true,
   "scripts": {
-    "prepare:sites": "node scripts/prepare-sites.cjs"
+    "prepare:sites": "node scripts/prepare-sites.cjs",
+    "build:pages": "node scripts/prepare-sites.cjs && node scripts/build-pages.cjs"
   }
 }
