@@ -44,3 +44,23 @@ This stage covers repayment of an existing SwiftHaul pay-later loan only. It doe
 ## Release gate
 
 Keep this flow disabled until schema migration, both Edge Functions, UI wiring, sandbox ITN testing, and replay/concurrency tests have all passed. No live PayFast credentials or live endpoint are permitted in this migration stage.
+
+## Implementation status
+
+The first implementation slice is now present on the migration branch:
+
+- `public.wallet_payfast_payments` is a dedicated sandbox payment-attempt table; booking payment rows are not reused.
+- The table has RLS enabled, no direct anon/authenticated table privileges, a unique merchant reference, a unique PayFast payment ID, and a partial unique index allowing only one pending attempt per loan.
+- `public.apply_payfast_wallet_repayment` locks the payment and loan rows, validates amount/ownership/unpaid status, marks the loan paid atomically, and writes one zero-delta wallet ledger audit event. It is executable only by service_role.
+- `payfast-wallet-checkout` is deployed with JWT verification enabled. It checks the signed-in active customer, profile deletion status, wallet ownership, loan ownership, and the R5–R500 supported sandbox amount.
+- `payfast-itn` is deployed as version 3 with JWT verification disabled for PayFast's webhook. It retains source-IP, signature, server-side VALID, merchant, amount and payment-ID checks, then routes booking references and wallet references to different RPCs.
+- `public/wallet.js` now displays a **Repay with PayFast (Sandbox)** action for eligible unpaid loans and submits only the returned signed fields to the fixed PayFast sandbox endpoint.
+- Browser return/cancel query parameters do not settle a loan. The verified ITN is the only settlement path.
+
+## Remaining validation / release gate
+
+- No real sandbox wallet repayment has yet been completed; the GitHub Pages customer site still needs to be enabled and an authenticated test loan/customer account is required.
+- A PayFast cancellation is not trusted to alter server payment state; a pending attempt is reused until an authoritative notification/reconciliation changes it.
+- Amounts below R5 cannot use this PayFast sandbox checkout and must be handled through a separate approved support/manual process.
+- Keep the wallet repayment button in sandbox mode. Do not configure live PayFast credentials or enable production payments from this branch.
+- Before release, test successful ITN, duplicate ITN replay, wrong amount, wrong merchant, invalid signature, wrong IP, cancelled checkout, concurrent checkout attempts, already-paid loans, and attempts to access another customer's loan.
