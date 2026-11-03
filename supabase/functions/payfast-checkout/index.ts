@@ -42,11 +42,15 @@ Deno.serve(async (req: Request) => {
     return reply(400, { error: "invalid_payment_request" });
 
   const { data: booking, error: bookingError } = await admin.from("customer_bookings")
-    .select("waybill,owner_hash,price,paid_at,refunded_at,status")
+    .select("waybill,owner_hash,price,paid_at,refunded_at,status,counter_offer_status")
     .eq("waybill", body.waybill).eq("owner_hash", user.id).maybeSingle();
   if (bookingError || !booking) return reply(404, { error: "booking_not_found" });
   if (booking.paid_at || booking.refunded_at || ["cancelled","completed"].includes(booking.status))
     return reply(409, { error: "booking_not_payable" });
+  if (booking.counter_offer_status === "pending")
+    return reply(409, { error: "counter_offer_pending_dispatch_decision" });
+  const { data: deletion } = await admin.from("customer_deletions").select("owner_hash").eq("owner_hash", user.id).maybeSingle();
+  if (deletion) return reply(403, { error: "profile_deletion_pending" });
   const amount = Number(booking.price);
   if (!Number.isFinite(amount) || amount < 5 || amount > 1000000)
     return reply(422, { error: "payfast_sandbox_requires_a_valid_amount_of_at_least_R5" });
@@ -62,6 +66,10 @@ Deno.serve(async (req: Request) => {
     .select("id,amount").eq("owner_id", user.id).eq("booking_waybill", booking.waybill)
     .eq("status", "pending").order("created_at", { ascending: false }).limit(1).maybeSingle();
   if (pending && Number(pending.amount) === amount) payment = pending;
+  else if (pending) {
+    await admin.from("payment_transactions").update({ status: "cancelled", updated_at: new Date().toISOString() })
+      .eq("id", pending.id).eq("status", "pending");
+  }
   if (!payment) {
     const id = crypto.randomUUID();
     const { data: created, error } = await admin.from("payment_transactions").insert({
