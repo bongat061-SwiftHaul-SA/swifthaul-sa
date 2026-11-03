@@ -4,7 +4,7 @@
 
 The signed-in customer can request cancellation for bookings in `pending`, `assigned`, or `accepted` states. Cancellation immediately changes the booking to `cancelled` and creates a pending admin review record. The customer can request a refund for a booking in `failed` or `cancelled` state. Requests are tied to the authenticated Supabase user and the booking owner hash.
 
-A booking can have only one open request. Refund amounts are calculated server-side:
+A booking can have only one open request. Cancelling a booking also closes any pending PayFast checkout, and the payment notification handler refuses to settle cancelled bookings even if a late ITN arrives. Refund amounts are calculated server-side:
 - Unpaid bookings: no refund amount.
 - Wallet-paid bookings: the original refund-credit and promotional-credit split is restored exactly.
 - PayFast-paid bookings: the amount is recorded for a manual external provider refund.
