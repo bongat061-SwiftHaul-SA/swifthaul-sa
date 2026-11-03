@@ -127,6 +127,9 @@ form.addEventListener('submit', async event => {
     }
     if (mode === 'signup') {
       if (app !== 'driver') throw new Error('Company accounts are created by an administrator.');
+      const expiry = new Date(form.elements.licenseExpiry.value + 'T00:00:00');
+      if (!Number.isFinite(expiry.getTime()) || expiry <= new Date(new Date().toDateString()))
+        throw new Error('Enter a valid licence expiry date in the future.');
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
