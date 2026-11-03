@@ -4,7 +4,7 @@ The Customer, Driver and Company/Administrator portals include a shared global p
 
 ## Location format
 
-- **Open Location Code (Plus Code)** is the user-facing global location identifier. SwiftHaul generates a full 10-character code from the selected latitude/longitude. Full codes are shareable globally.
+- **Open Location Code (Plus Code)** is the user-facing global location identifier. SwiftHaul generates a full 10-significant-character code (including the Plus Code separator) from the selected latitude/longitude. Full codes are shareable globally.
 - **Short Plus Codes** can be produced only when a reference coordinate is supplied. The reference is part of the meaning of a short code; do not share a short code without its reference.
 - **Geohash** is generated at precision 9 as a compact technical index for future database queries and proximity searches. It is supplementary and is not the customer-facing location code.
 - Latitude and longitude remain the canonical numeric location values.
