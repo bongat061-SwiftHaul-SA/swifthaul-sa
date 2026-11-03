@@ -54,7 +54,8 @@ Deno.serve(async (req: Request) => {
   }
   const merchantId = Deno.env.get("PAYFAST_MERCHANT_ID") || "10000100";
   const passphrase = Deno.env.get("PAYFAST_PASSPHRASE") || "jt7NOE43FZPn";
-  if (payload.merchant_id !== merchantId || !payload.signature || !payload.m_payment_id?.startsWith("SH-PF-"))
+  if (payload.merchant_id !== merchantId || !payload.signature ||
+      !(payload.m_payment_id?.startsWith("SH-PF-") || payload.m_payment_id?.startsWith("SH-WALLET-PF-")))
     return response(400, "Invalid merchant or payment reference");
   const expected = signature(entries, passphrase);
   if (!constantTimeEqual(expected, payload.signature.toLowerCase())) return response(400, "Invalid notification signature");
@@ -68,8 +69,9 @@ Deno.serve(async (req: Request) => {
   const validationText = (await validation.text()).trim();
   if (!validation.ok || validationText !== "VALID") return response(400, "PayFast notification validation failed");
 
-  const match = /^SH-PF-([0-9a-f-]{36})$/i.exec(payload.m_payment_id);
-  if (!match || !payload.pf_payment_id || payload.pf_payment_id.length > 100)
+  const walletMatch = /^SH-WALLET-PF-([0-9a-f-]{36})$/i.exec(payload.m_payment_id);
+  const bookingMatch = /^SH-PF-([0-9a-f-]{36})$/i.exec(payload.m_payment_id);
+  if ((!walletMatch && !bookingMatch) || !payload.pf_payment_id || payload.pf_payment_id.length > 100)
     return response(400, "Invalid payment identifiers");
   const amount = Number(payload.amount_gross);
   if (payload.payment_status !== "COMPLETE" || !Number.isFinite(amount) || amount < 5)
@@ -78,14 +80,39 @@ Deno.serve(async (req: Request) => {
   const url = Deno.env.get("SUPABASE_URL"), service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !service) return response(500, "Payment confirmation service unavailable");
   const admin = createClient(url, service, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { data: payment } = await admin.from("payment_transactions")
-    .select("id,amount,status").eq("id", match[1]).eq("m_payment_id", payload.m_payment_id).maybeSingle();
+
+  if (walletMatch) {
+    const { data: payment, error: lookupError } = await admin.from("wallet_payfast_payments")
+      .select("id,amount_cents,status").eq("id", walletMatch[1])
+      .eq("m_payment_id", payload.m_payment_id).maybeSingle();
+    if (lookupError) return response(503, "Wallet payment lookup unavailable");
+    if (!payment) return response(404, "Wallet payment reference not found");
+    if (Math.round(Number(payment.amount_cents)) !== Math.round(amount * 100))
+      return response(400, "Payment amount does not match loan amount");
+    const { data: applied, error } = await admin.rpc("apply_payfast_wallet_repayment", {
+      p_payment_id: walletMatch[1],
+      p_pf_payment_id: payload.pf_payment_id,
+      p_amount: amount,
+      p_payload: payload,
+    });
+    if (error) {
+      console.error("PayFast wallet repayment confirmation failed", error.message);
+      return response(503, "Wallet repayment confirmation could not be saved");
+    }
+    if (applied !== true) return response(409, "Wallet loan is no longer eligible for repayment");
+    return response(200, "OK");
+  }
+
+  const bookingId = bookingMatch![1];
+  const { data: payment, error: lookupError } = await admin.from("payment_transactions")
+    .select("id,amount,status").eq("id", bookingId).eq("m_payment_id", payload.m_payment_id).maybeSingle();
+  if (lookupError) return response(503, "Booking payment lookup unavailable");
   if (!payment) return response(404, "Payment reference not found");
   if (Math.round(Number(payment.amount) * 100) !== Math.round(amount * 100))
     return response(400, "Payment amount does not match booking amount");
 
   const { data: applied, error } = await admin.rpc("apply_payfast_payment", {
-    p_payment_id: match[1],
+    p_payment_id: bookingId,
     p_pf_payment_id: payload.pf_payment_id,
     p_amount: amount,
     p_payload: payload,
