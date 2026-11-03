@@ -23,7 +23,7 @@ export default async (req: Request) => {
     const [deleted]=await db.sql`SELECT owner_hash FROM customer_deletions WHERE owner_hash=${owner}`;
     if(deleted) return respond({error:"This profile is being deleted."},403);
     if (req.method === 'GET') {
-      const orders = await db.sql`SELECT waybill, pin, pickup, dropoff, recipient, vehicle, price::text AS price, distance_meters, price_band, load, distance_fee::text AS distance_fee, scheduled_at, return_address, return_at, payment_method, counter_offer::text AS counter_offer, counter_offer_status, original_price::text AS original_price, paid_at, completed_at, payment_source, assigned_driver, refunded_at, created_at FROM customer_bookings WHERE owner_hash = ${owner} ORDER BY created_at DESC LIMIT 100`;
+      const orders = await db.sql`SELECT waybill, pin, pickup, dropoff, recipient, vehicle, price::text AS price, distance_meters, price_band, load, distance_fee::text AS distance_fee, scheduled_at, return_address, return_at, payment_method, counter_offer::text AS counter_offer, counter_offer_status, original_price::text AS original_price, paid_at, completed_at, payment_source, assigned_driver, pickup_latitude, pickup_longitude, pickup_plus_code, pickup_geohash, dropoff_latitude, dropoff_longitude, dropoff_plus_code, dropoff_geohash, refunded_at, created_at FROM customer_bookings WHERE owner_hash = ${owner} ORDER BY created_at DESC LIMIT 100`;
       return respond({ orders, canImport: /(?:^|;\s*)swifthaul_customer=[a-f0-9]{64}(?:;|$)/.test(req.headers.get('cookie') || '') });
     }
     if (Number(req.headers.get('content-length') || 0) > 8192) return respond({ error: 'Request too large' }, 413);
@@ -34,11 +34,20 @@ export default async (req: Request) => {
     }
     await transaction(tx=>account(tx,owner,typeof user.appMetadata?.signup_referral==='string'?user.appMetadata.signup_referral:undefined));
     // Retry a consumed quote safely, including after its original expiry time.
-    const [existing] = await db.sql`SELECT waybill, pin, pickup, dropoff, recipient, vehicle, price::text AS price, distance_meters, price_band, load, distance_fee::text AS distance_fee, scheduled_at, return_address, return_at, payment_method, counter_offer::text AS counter_offer, counter_offer_status, original_price::text AS original_price, paid_at, completed_at, payment_source, assigned_driver, refunded_at, created_at FROM customer_bookings WHERE quote_id = ${body.quote_id} AND owner_hash = ${owner}`;
+    const [existing] = await db.sql`SELECT waybill, pin, pickup, dropoff, recipient, vehicle, price::text AS price, distance_meters, price_band, load, distance_fee::text AS distance_fee, scheduled_at, return_address, return_at, payment_method, counter_offer::text AS counter_offer, counter_offer_status, original_price::text AS original_price, paid_at, completed_at, payment_source, assigned_driver, pickup_latitude, pickup_longitude, pickup_plus_code, pickup_geohash, dropoff_latitude, dropoff_longitude, dropoff_plus_code, dropoff_geohash, refunded_at, created_at FROM customer_bookings WHERE quote_id = ${body.quote_id} AND owner_hash = ${owner}`;
     if (existing) return respond({order:existing});
     const [quote]=await db.sql`SELECT distance_meters FROM delivery_quotes WHERE id=${body.quote_id} AND owner_hash=${owner} AND expires_at>NOW() AND load IS NOT NULL`;
     if(!quote)return respond({error:'This quote has expired or is unavailable. Calculate the route again.'},409);
     let payment;try{payment=validatePaymentOptions(body,quote.distance_meters);}catch(error){return respond({error:error instanceof RouteError?error.message:'Invalid payment options.'},400);}
+    const parseLocation=(prefix:'pickup'|'dropoff')=>{
+      const lat=body[prefix+'_latitude'],lng=body[prefix+'_longitude'],code=body[prefix+'_plus_code'],hash=body[prefix+'_geohash'];
+      const supplied=[lat,lng,code,hash].some(value=>value!==undefined&&value!==null&&value!=='');
+      if(!supplied)return {latitude:null,longitude:null,plusCode:null,geohash:null};
+      if(typeof lat!=='number'||!Number.isFinite(lat)||lat < -90||lat>90||typeof lng!=='number'||!Number.isFinite(lng)||lng < -180||lng>180||typeof code!=='string'||code.length<4||code.length>16||!code.includes('+')||typeof hash!=='string'||! /^[0123456789bcdefghjkmnpqrstuvwxyz]{1,12}$/.test(hash))throw new RouteError('Choose a valid map pin for coordinates and location codes.',400);
+      return {latitude:lat,longitude:lng,plusCode:code,geohash:hash};
+    };
+    let pickupLocation,dropoffLocation;
+    try{pickupLocation=parseLocation('pickup');dropoffLocation=parseLocation('dropoff');}catch(error){return respond({error:error instanceof RouteError?error.message:'Invalid location pin.'},400);}
     const parseTime=(value:unknown)=> typeof value==='string' && /^\d{4}-\d{2}-\d{2}T/.test(value) && Number.isFinite(Date.parse(value)) && Date.parse(value)>Date.now() ? new Date(value).toISOString() : null;
     const scheduled=body.scheduled_at ? parseTime(body.scheduled_at) : null;
     const returnAddress=typeof body.return_address==='string' ? body.return_address.trim() : '';
@@ -46,11 +55,11 @@ export default async (req: Request) => {
     if ((body.scheduled_at && !scheduled) || returnAddress.length>500 || (body.return_at && (!returnAt || !returnAddress)) || (scheduled && returnAt && Date.parse(returnAt)<Date.parse(scheduled))) return respond({error:'Use future pickup/return times, with the return after pickup, and a return address of at most 500 characters.'},400);
     const waybill = 'SH-' + randomUUID().toUpperCase();
     const pin = String(randomInt(1000, 10000));
-    const [order] = await db.sql`INSERT INTO customer_bookings (waybill, owner_hash, pin, pickup, dropoff, recipient, vehicle, price, distance_meters, price_band, quote_id, load, distance_fee, scheduled_at, return_address, return_at, payment_method, counter_offer, counter_offer_status)
+    const [order] = await db.sql`INSERT INTO customer_bookings (waybill, owner_hash, pin, pickup, dropoff, recipient, vehicle, price, distance_meters, price_band, quote_id, load, distance_fee, scheduled_at, return_address, return_at, payment_method, counter_offer, counter_offer_status, pickup_latitude, pickup_longitude, pickup_plus_code, pickup_geohash, dropoff_latitude, dropoff_longitude, dropoff_plus_code, dropoff_geohash)
       SELECT ${waybill}, ${owner}, ${pin}, pickup, dropoff, ${body.recipient.trim()}, vehicle, price, distance_meters, price_band, id, load, distance_fee, ${scheduled}::timestamptz, ${returnAddress || null}, ${returnAt}::timestamptz, ${payment.method}, ${payment.offer}, ${payment.status} FROM delivery_quotes
       WHERE id = ${body.quote_id} AND owner_hash = ${owner} AND expires_at > NOW() AND load IS NOT NULL
       ON CONFLICT (quote_id) DO UPDATE SET quote_id = EXCLUDED.quote_id
-      RETURNING waybill, pin, pickup, dropoff, recipient, vehicle, price::text AS price, distance_meters, price_band, load, distance_fee::text AS distance_fee, scheduled_at, return_address, return_at, payment_method, counter_offer::text AS counter_offer, counter_offer_status, original_price::text AS original_price, paid_at, completed_at, payment_source, assigned_driver, refunded_at, created_at`;
+      RETURNING waybill, pin, pickup, dropoff, recipient, vehicle, price::text AS price, distance_meters, price_band, load, distance_fee::text AS distance_fee, scheduled_at, return_address, return_at, payment_method, counter_offer::text AS counter_offer, counter_offer_status, original_price::text AS original_price, paid_at, completed_at, payment_source, assigned_driver, pickup_latitude, pickup_longitude, pickup_plus_code, pickup_geohash, dropoff_latitude, dropoff_longitude, dropoff_plus_code, dropoff_geohash, refunded_at, created_at`;
     if (!order) return respond({error:'This quote has expired or is unavailable. Calculate the route again.'},409);
     return respond({ order }, 201);
   } catch {
