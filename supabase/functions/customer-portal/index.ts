@@ -110,7 +110,16 @@ Deno.serve(async (req: Request) => {
       .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,status")
       .eq("owner_hash", owner).order("created_at", { ascending: false }).limit(100);
     if (error) return reply(500, { error: "booking_list_failed" });
-    return reply(200, { orders: data ?? [], canImport: false });
+    const { data: wallet, error: walletError } = await admin.from("wallet_accounts")
+      .select("refund_cents,promo_cents,promo_debt_cents").eq("owner_hash", owner).maybeSingle();
+    if (walletError) return reply(500, { error: "wallet_balance_lookup_failed" });
+    const walletAvailable = wallet ? Number(wallet.refund_cents) + Math.max(0, Number(wallet.promo_cents) - Number(wallet.promo_debt_cents)) : 0;
+    return reply(200, { orders: data ?? [], canImport: false, wallet: {
+      refund_cents: wallet ? Number(wallet.refund_cents) : 0,
+      promo_cents: wallet ? Number(wallet.promo_cents) : 0,
+      promo_debt_cents: wallet ? Number(wallet.promo_debt_cents) : 0,
+      available_cents: walletAvailable,
+    } });
   }
 
   const raw = await req.text();
@@ -154,7 +163,7 @@ Deno.serve(async (req: Request) => {
 
   const distance = Number(quote.distance_meters);
   const method = body.payment_method ?? "dispatch";
-  if (method !== "cash" && method !== "dispatch") return reply(400, { error: "choose_cash_or_dispatch_payment" });
+  if (method !== "cash" && method !== "dispatch" && method !== "wallet") return reply(400, { error: "choose_cash_dispatch_or_wallet_payment" });
   if (method === "cash" && distance >= 12000) return reply(400, { error: "cash_available_only_below_12km" });
   let offer: number | null = null;
   let offerStatus = "none";
@@ -165,6 +174,7 @@ Deno.serve(async (req: Request) => {
     offer = Number(body.counter_offer);
     offerStatus = "pending";
   }
+  if (method === "wallet" && offer !== null) return reply(400, { error: "wallet_payment_not_available_with_counteroffers" });
   let pickup, dropoff;
   try { pickup = parseLocation(body, "pickup"); dropoff = parseLocation(body, "dropoff"); }
   catch (e) { return reply(400, { error: e instanceof Error ? e.message : "invalid_location_pin" }); }
@@ -187,6 +197,40 @@ Deno.serve(async (req: Request) => {
     pickup_latitude: pickup.latitude, pickup_longitude: pickup.longitude, pickup_plus_code: pickup.plus_code, pickup_geohash: pickup.geohash,
     dropoff_latitude: dropoff.latitude, dropoff_longitude: dropoff.longitude, dropoff_plus_code: dropoff.plus_code, dropoff_geohash: dropoff.geohash,
   };
+  if (method === "wallet") {
+    const walletBooking = {
+      recipient: insert.recipient,
+      scheduled_at: scheduled,
+      return_address: returnAddress || null,
+      return_at: returnAt,
+      counter_offer: offer,
+      counter_offer_status: offerStatus,
+      pickup_latitude: pickup.latitude,
+      pickup_longitude: pickup.longitude,
+      pickup_plus_code: pickup.plus_code,
+      pickup_geohash: pickup.geohash,
+      dropoff_latitude: dropoff.latitude,
+      dropoff_longitude: dropoff.longitude,
+      dropoff_plus_code: dropoff.plus_code,
+      dropoff_geohash: dropoff.geohash,
+    };
+    const { data: result, error: walletBookingError } = await admin.rpc("create_wallet_funded_booking", {
+      p_owner_hash: owner,
+      p_quote_id: quote.id,
+      p_waybill: waybill,
+      p_pin: pinCode,
+      p_booking: walletBooking,
+    });
+    if (walletBookingError || !result?.order) {
+      const message = walletBookingError?.message || "wallet_booking_failed";
+      if (/Insufficient wallet balance/i.test(message)) return reply(409, { error: "insufficient_wallet_balance" });
+      if (/Quote expired or not found/i.test(message)) return reply(409, { error: "quote_expired_recalculate_route" });
+      console.error("Wallet booking failed", message);
+      return reply(503, { error: "wallet_booking_failed" });
+    }
+    return reply(result.already_created ? 200 : 201, { order: result.order });
+  }
+
   const { data: order, error: insertError } = await admin.from("customer_bookings").insert(insert).select("*").single();
   if (insertError) {
     const { data: retry } = await admin.from("customer_bookings")
