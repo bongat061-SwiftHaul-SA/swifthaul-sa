@@ -19,7 +19,9 @@ The first payout backend is deployed in sandbox/development only. It uses ZAR ce
 
 - No bank transfer is initiated automatically. This release is a controlled manual EFT workflow, not a bank API integration.
 - No bank name, account holder, branch code, or verified company banking credentials were supplied for a company payout rail. The previously supplied Startup Bundle account details have not been inserted as a driver beneficiary or exposed in the application.
-- Driver earnings are not yet automatically calculated from completed deliveries. An audited earnings-credit workflow and agreed driver commission/fee rules must be implemented before balances can become payable.
+- Driver earnings are automatically credited when a booking transitions to `delivered` with an assigned driver and a positive recorded delivery charge. The initial rule is 75% of the final booking `price` (in ZAR); SwiftHaul retains the remaining 25% before other operating costs.
+- The ledger credit is calculated in cents, tied to the waybill, and idempotent: the unique event key prevents duplicate earnings if a completion update is retried. Failed, cancelled, unassigned, or zero-priced bookings do not generate earnings.
+- Vehicle-specific earning rates are deliberately deferred until operating costs have been measured. The 75% rule currently applies equally across vehicle types.
 - Bank-account ownership verification and proof-of-account checks are not integrated.
 - No live transfers or payouts have been made.
 
