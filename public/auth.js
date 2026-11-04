@@ -36,7 +36,7 @@ function setMode(next) {
   status.textContent = '';
 }
 async function validateAccount(session) {
-  const { data, error } = await supabase.functions.invoke('account-me', { headers: { Authorization: 'Bearer ' + session.access_token } });
+  const { data, error } = await supabase.functions.invoke('account-me', { method: 'GET', headers: { Authorization: 'Bearer ' + session.access_token } });
   if (error) throw new Error(data?.error || error.message || 'Unable to validate your account.');
   const user = data?.user;
   if (!user || user.role !== 'customer') throw new Error('This account is not registered as a customer.');
