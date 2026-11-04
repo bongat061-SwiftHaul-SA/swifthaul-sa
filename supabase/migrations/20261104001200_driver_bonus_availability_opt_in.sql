@@ -1,0 +1,1 @@
+alter table public.driver_profiles add column if not exists bonus_availability_opt_in boolean not null default false;
