@@ -6,6 +6,8 @@ on:
       - migration/supabase-github-pages
   workflow_dispatch:
 
+# Publishing the three platform entry points from this migration branch.
+
 permissions:
   contents: read
   pages: write
