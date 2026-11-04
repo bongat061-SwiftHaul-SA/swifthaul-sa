@@ -1,87 +1,237 @@
-import { getUser, login, signup, logout, requestPasswordRecovery, handleAuthCallback, updateUser, acceptInvite, onAuthChange } from 'https://esm.sh/@netlify/identity@2.0.0?bundle';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './supabase-config.js';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+});
+window.swiftHaulSupabase = supabase;
+
 const app = document.body.dataset.app;
-const auth = document.getElementById('auth-screen');
+const authScreen = document.getElementById('auth-screen');
 const workspace = document.getElementById('workspace');
 const form = document.getElementById('auth-form');
 const status = document.getElementById('auth-status');
+const submit = form.querySelector('[type=submit]');
 let mode = 'login';
-let inviteToken;
-const titles = { login: 'Welcome back.', signup: 'Make room for your next delivery.', recovery: 'Forgot your password?', reset: 'Choose a new password.', invite: 'Welcome to the team.' };
+let currentUser = null;
+
+const titles = {
+  login: 'Welcome back.',
+  signup: 'Join the SwiftHaul driver network.',
+  recovery: 'Forgot your password?',
+  reset: 'Choose a new password.'
+};
+
 function setMode(next) {
   mode = next;
-  const referral=document.getElementById('referral-signup-field');if(referral){referral.hidden=mode!=='signup';if(mode==='signup'&&!form.elements.referralCode.value)form.elements.referralCode.value=new URLSearchParams(location.search).get('ref') || '';}
-  const needsTerms = mode === 'signup' || mode === 'invite';
-  document.getElementById('terms-acceptance').hidden = !needsTerms;
-  form.elements.acceptTerms.required = needsTerms;
-  form.elements.acceptTerms.checked = false;
+  const signup = mode === 'signup';
+  const recovery = mode === 'recovery';
+  const reset = mode === 'reset';
   document.getElementById('auth-title').textContent = titles[mode];
-  form.elements.name.closest('label').hidden = mode !== 'signup';
-  form.elements.name.required = mode === 'signup';
-  form.elements.email.closest('label').hidden = ['reset', 'invite'].includes(mode);
-  form.elements.email.required = !['reset', 'invite'].includes(mode);
-  form.elements.password.closest('label').hidden = mode === 'recovery';
-  form.elements.password.required = mode !== 'recovery';
+  form.elements.name.closest('label').hidden = !signup;
+  form.elements.name.required = signup;
+  for (const field of ['phone','licenseNumber','licenseExpiry','vehicleType','vehicleRegistration']) {
+    const control = form.elements[field];
+    if (control) {
+      control.closest('label').hidden = !signup;
+      control.required = signup;
+    }
+  }
+  form.elements.email.closest('label').hidden = reset;
+  form.elements.email.required = !reset;
+  form.elements.password.closest('label').hidden = recovery;
+  form.elements.password.required = !recovery;
   form.elements.password.minLength = mode === 'login' ? 1 : 10;
   form.elements.password.autocomplete = mode === 'login' ? 'current-password' : 'new-password';
-  form.querySelector('[type=submit]').textContent = {login:'Sign in',signup:'Create account',recovery:'Send reset link',reset:'Save password',invite:'Accept invitation'}[mode];
+  document.getElementById('terms-acceptance').hidden = !signup;
+  form.elements.acceptTerms.required = signup;
+  form.elements.acceptTerms.checked = false;
+  submit.textContent = ({login:'Sign in',signup:'Create driver account',recovery:'Send reset link',reset:'Save new password'})[mode];
   status.textContent = '';
 }
-async function openWorkspace() {
-  if (document.body.dataset.guestPreview === 'true') return;
-  const response = await fetch('/api/session', { cache: 'no-store' });
-  if (!response.ok) {
-    if (response.status === 403) throw new Error('Company access requires an invitation and the admin role. Contact your site administrator.');
-    throw new Error('Please sign in to continue.');
-  }
-  const { user } = await response.json();
-  if (document.body.dataset.guestPreview === 'true') return;
+
+function showWorkspace(user) {
+  currentUser = user;
   document.querySelectorAll('[data-user-name]').forEach(el => { el.textContent = user.name || user.email || 'Your account'; });
   document.body.dataset.guestPreview = 'false';
-  document.getElementById('guest-banner').hidden = true;
+  const banner = document.getElementById('guest-banner');
+  if (banner) banner.hidden = true;
   document.getElementById('sign-out').hidden = false;
-  document.querySelectorAll('[data-account-label]').forEach(el => {el.textContent = 'Signed in as';});
-  auth.hidden = true; workspace.hidden = false;
-  document.dispatchEvent(new CustomEvent('account-ready', {detail:user}));
+  document.querySelectorAll('[data-account-label]').forEach(el => { el.textContent = 'Signed in as'; });
+  if (app === 'driver') {
+    const accountPanel = document.getElementById('account-details');
+    let accountId = document.getElementById('driver-account-id');
+    if (!accountId) { accountId = document.createElement('p'); accountId.id = 'driver-account-id'; accountPanel.append(accountId); }
+    accountId.textContent = 'Driver account ID: ' + user.id;
+    let verification = document.getElementById('driver-verification-status');
+    if (!verification) { verification = document.createElement('p'); verification.id = 'driver-verification-status'; accountPanel.append(verification); }
+    verification.textContent = 'Verification status: ' + (user.driverProfile?.verification_status || 'pending');
+  }
+  authScreen.hidden = true;
+  workspace.hidden = false;
+  document.dispatchEvent(new CustomEvent('account-ready', { detail: user }));
 }
+
+async function validateAccount(session) {
+  const { data, error } = await supabase.functions.invoke('account-me', {
+    headers: { Authorization: 'Bearer ' + session.access_token }
+  });
+  if (error) throw new Error(error.message || 'Unable to validate your account.');
+  const user = data?.user;
+  if (!user) throw new Error('Your account profile could not be loaded.');
+  user.driverProfile = data.driverProfile || null;
+  if (app === 'driver' && user.role !== 'driver') {
+    throw new Error('This account is not registered as a driver. Create a driver account or contact dispatch.');
+  }
+  if (app === 'company' && !['admin','dispatcher'].includes(user.role)) {
+    throw new Error('Company access is invitation-only. Please contact your administrator.');
+  }
+  if (user.accountStatus !== 'active') throw new Error('Your account is not active. Please contact SwiftHaul support.');
+  showWorkspace(user);
+}
+
+async function openWorkspace() {
+  if (document.body.dataset.guestPreview === 'true') return;
+  const { data: { session }, error } = await supabase.auth.getSession();
+  if (error || !session) throw new Error('Please sign in to continue.');
+  await validateAccount(session);
+}
+
 form.addEventListener('submit', async event => {
   event.preventDefault();
-  if ((mode === 'signup' || mode === 'invite') && !form.elements.acceptTerms.checked) {status.textContent='Read and accept the terms and conditions to continue.';form.elements.acceptTerms.reportValidity();return;}
-  const button = form.querySelector('[type=submit]');button.disabled = true;status.textContent = 'Please wait…';
+  if (mode === 'signup' && !form.elements.acceptTerms.checked) {
+    status.textContent = 'Read and accept the terms and conditions to continue.';
+    form.elements.acceptTerms.reportValidity();
+    return;
+  }
+  submit.disabled = true;
+  status.textContent = 'Please wait…';
   try {
-    const {email,password,name} = form.elements;
+    const email = form.elements.email.value.trim().toLowerCase();
+    const password = form.elements.password.value;
     if (mode === 'recovery') {
-      await requestPasswordRecovery(email.value.trim());status.textContent = 'If an account exists, a reset link is on its way. Check your inbox.';return;
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.href.split('#')[0]
+      });
+      if (error) throw error;
+      status.textContent = 'If an account exists, a password reset link is on its way. Check your inbox.';
+      return;
+    }
+    if (mode === 'reset') {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      form.elements.password.value = '';
+      status.textContent = 'Password updated. You can now sign in.';
+      setMode('login');
+      return;
     }
     if (mode === 'signup') {
-      const user = await signup(email.value.trim(), password.value, {full_name:name.value.trim(),referral_code:form.elements.referralCode?.value.trim().toUpperCase() || '',terms_accepted:true,terms_version:'2026-10-30-wallet'});
-      password.value = '';
-      if (!user.confirmedAt) {status.textContent = 'Check your email to confirm your account, then sign in.';return;}
-    } else if (mode === 'reset') await updateUser({password:password.value});
-    else if (mode === 'invite') {await acceptInvite(inviteToken,password.value);await updateUser({data:{terms_accepted:true,terms_version:'2026-10-30-wallet'}});}
-    else await login(email.value.trim(),password.value);
-    password.value = '';
-    await openWorkspace();
-  } catch (error) {status.textContent = error?.status === 401 ? 'Unable to sign in. Check your email, password and email confirmation.' : error?.message || 'Unable to connect. Please try again.';}
-  finally {button.disabled = false;}
+      if (app !== 'driver') throw new Error('Company accounts are created by an administrator.');
+      const expiry = new Date(form.elements.licenseExpiry.value + 'T00:00:00');
+      if (!Number.isFinite(expiry.getTime()) || expiry <= new Date(new Date().toDateString()))
+        throw new Error('Enter a valid licence expiry date in the future.');
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: window.location.href.split('#')[0],
+          data: {
+            app_type: 'driver',
+            full_name: form.elements.name.value.trim(),
+            phone: form.elements.phone.value.trim(),
+            license_number: form.elements.licenseNumber.value.trim(),
+            license_expiry: form.elements.licenseExpiry.value,
+            vehicle_type: form.elements.vehicleType.value,
+            vehicle_registration: form.elements.vehicleRegistration.value.trim().toUpperCase(),
+            terms_accepted: true,
+            terms_version: '2026-10-30-wallet'
+          }
+        }
+      });
+      if (error) throw error;
+      form.elements.password.value = '';
+      if (!data.session) {
+        status.textContent = 'Driver account created. Check your email to confirm it, then sign in.';
+        setMode('login');
+        return;
+      }
+      await validateAccount(data.session);
+      return;
+    }
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    form.elements.password.value = '';
+    await validateAccount(data.session);
+  } catch (error) {
+    status.textContent = error?.message || 'Unable to connect. Please try again.';
+  } finally {
+    submit.disabled = false;
+  }
 });
-document.querySelectorAll('[data-auth-mode]').forEach(el => el.addEventListener('click', () => setMode(el.dataset.authMode)));
-document.getElementById('sign-out').addEventListener('click',async () => {
-  try {await logout();window.location.replace('/');}
-  catch {auth.hidden=false;workspace.hidden=true;status.textContent='Unable to finish signing out. Please retry.';}
+
+document.querySelectorAll('[data-auth-mode]').forEach(el => {
+  el.addEventListener('click', () => {
+    const requested = el.dataset.authMode;
+    if (requested === 'signup' && app !== 'driver') return;
+    setMode(requested);
+  });
 });
-onAuthChange((event) => { if (event === 'logout' && document.body.dataset.guestPreview !== 'true') {workspace.hidden=true;auth.hidden=false;document.dispatchEvent(new Event('account-cleared'));} });
+
+document.getElementById('sign-out').addEventListener('click', async () => {
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    status.textContent = 'Unable to finish signing out. Please retry.';
+    return;
+  }
+  currentUser = null;
+  window.location.replace(window.location.pathname);
+});
+
+supabase.auth.onAuthStateChange((event, session) => {
+  if (event === 'PASSWORD_RECOVERY') {
+    setMode('reset');
+    authScreen.hidden = false;
+    workspace.hidden = true;
+    return;
+  }
+  if (event === 'SIGNED_OUT') {
+    currentUser = null;
+    if (document.body.dataset.guestPreview !== 'true') {
+      workspace.hidden = true;
+      authScreen.hidden = false;
+      document.dispatchEvent(new Event('account-cleared'));
+    }
+  }
+  if (event === 'TOKEN_REFRESHED' && session && currentUser) {
+    validateAccount(session).catch(() => {
+      workspace.hidden = true;
+      authScreen.hidden = false;
+      document.dispatchEvent(new Event('account-cleared'));
+    });
+  }
+});
+
 async function init() {
+  setMode('login');
   try {
-    const result = await handleAuthCallback();
-    if (result?.type === 'recovery') {setMode('reset');return;}
-    if (result?.type === 'invite') {inviteToken=result.token;setMode('invite');return;}
-    if (await getUser()) await openWorkspace();
-  } catch (error) {status.textContent = error?.message || 'Sign-in is unavailable. Please try again.';}
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error) throw error;
+    if (session) await validateAccount(session);
+  } catch (error) {
+    status.textContent = error?.message || 'Sign-in is unavailable. Please try again.';
+  }
 }
-setMode('login');init();
-// Revalidate when returning to the app, including after account changes in another tab.
-document.addEventListener('visibilitychange',async () => {
+
+init();
+
+document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState !== 'visible' || workspace.hidden || document.body.dataset.guestPreview === 'true') return;
-  try {await openWorkspace();} catch {workspace.hidden=true;auth.hidden=false;}
+  try { await openWorkspace(); }
+  catch {
+    workspace.hidden = true;
+    authScreen.hidden = false;
+    document.dispatchEvent(new Event('account-cleared'));
+  }
 });
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});

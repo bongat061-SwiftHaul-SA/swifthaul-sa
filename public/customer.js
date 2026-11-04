@@ -6,6 +6,7 @@ let quoteRequest;
 let quoteMap;
 let accountEpoch = 0;
 let bookingBusy = false;
+let walletAvailableCents = 0;
 const quoteStatus = document.getElementById('quote-status');
 const calculateButton = document.getElementById('calculate-route');
 const localTime=value=>new Date(value).toLocaleString('en-ZA',{timeZone:'Africa/Johannesburg'})+' SAST';
@@ -28,13 +29,22 @@ function resetQuote() {
 }
 const mass=value=>Number(value).toLocaleString('en-ZA',{maximumFractionDigits:3});
 const money = value => `R${Number(value).toFixed(2)}`;
+async function customerApi(method, body) {
+  const client = window.swiftHaulSupabase;
+  if (!client) throw new Error('Customer sign-in connection is unavailable. Reload the page.');
+  const { data, error } = await client.functions.invoke('customer-portal', { method, ...(body ? { body } : {}) });
+  if (error) throw new Error(data?.error || error.message || 'Customer service is unavailable.');
+  if (data?.error) throw new Error(data.error);
+  return data;
+}
 let ready = false;
 let loadVersion = 0;
+let refundRequestsByWaybill = new Map();
 const report = (text, error = false) => { message.textContent = text; message.classList.toggle('error', error); };
-form.addEventListener('input', event => {if (['pickup','dropoff','weight','length','width','height'].includes(event.target.name)) resetQuote();});
+form.addEventListener('input', event => {if(['pickup','dropoff'].includes(event.target.name)){for(const suffix of ['latitude','longitude','plus_code','geohash']){const hidden=form.elements.namedItem(event.target.name+'_'+suffix);if(hidden)hidden.value='';}const picker=event.target.nextElementSibling;if(picker?.matches('button'))picker.textContent='Pick / copy pin';}if (['pickup','dropoff','weight','length','width','height'].includes(event.target.name)) resetQuote();});
 form.addEventListener('change', event => {if (['weight','length','width','height'].includes(event.target.name)) resetQuote();});
 function whatsapp(order) {
-  const text = `*SWIFTHAUL SA DISPATCH*\n*Order:* ${order.waybill}\n*Pickup:* ${order.pickup}\n*Drop:* ${order.dropoff}\n*Recipient & notes:* ${order.recipient}\n*Vehicle:* ${order.vehicle.toUpperCase()}${order.load?.truckClass?' ('+order.load.truckClass+')':''}${order.load?'\n*Chargeable weight:* '+mass(order.load.chargeable)+' kg\n*Distance fee:* '+money(order.distance_fee)+'\n*Weight fee:* '+money(order.load.weightFee):''}\n*Outbound fee:* ${money(order.price)}\n*Payment:* ${order.paid_at?'Confirmed via '+order.payment_source:order.payment_source==='pay_later'?'Pay later':order.payment_method==='cash'?'Cash requested (unconfirmed)':'Arrange with dispatch'}${order.counter_offer?'\n*Counteroffer:* '+money(order.counter_offer)+' · '+order.counter_offer_status:''}${order.scheduled_at?'\n*Scheduled pickup:* '+localTime(order.scheduled_at):''}${order.return_address?'\n*Return request (separate quote):* '+order.return_address:''}${order.return_at?'\n*Requested return:* '+localTime(order.return_at):''}`;
+  const text = `*SWIFTHAUL SA DISPATCH*\n*Order:* ${order.waybill}\n*Pickup:* ${order.pickup}${order.pickup_plus_code?'\n*Pickup Plus Code:* '+order.pickup_plus_code:''}\n*Drop:* ${order.dropoff}${order.dropoff_plus_code?'\n*Drop-off Plus Code:* '+order.dropoff_plus_code:''}\n*Recipient & notes:* ${order.recipient}\n*Vehicle:* ${order.vehicle.toUpperCase()}${order.load?.truckClass?' ('+order.load.truckClass+')':''}${order.load?'\n*Chargeable weight:* '+mass(order.load.chargeable)+' kg\n*Distance fee:* '+money(order.distance_fee)+'\n*Weight fee:* '+money(order.load.weightFee):''}\n*Outbound fee:* ${money(order.price)}\n*Payment:* ${order.paid_at?'Confirmed via '+order.payment_source:order.payment_source==='pay_later'?'Pay later':order.payment_method==='cash'?'Cash requested (unconfirmed)':'Arrange with dispatch'}${order.counter_offer?'\n*Counteroffer:* '+money(order.counter_offer)+' · '+order.counter_offer_status:''}${order.scheduled_at?'\n*Scheduled pickup:* '+localTime(order.scheduled_at):''}${order.return_address?'\n*Return request (separate quote):* '+order.return_address:''}${order.return_at?'\n*Requested return:* '+localTime(order.return_at):''}`;
   return `https://wa.me/27615083880?text=${encodeURIComponent(text)}`;
 }
 function addOrder(order, prepend = false) {
@@ -45,12 +55,21 @@ function addOrder(order, prepend = false) {
   const status = document.createElement('span'); status.className = 'status'; status.textContent = order.refunded_at?'REFUNDED':order.completed_at?'COMPLETED':order.assigned_driver?'ASSIGNED':'UNASSIGNED';
   head.append(waybill, status);
   const route = document.createElement('p'); route.className = 'route'; route.textContent = `${order.pickup} → ${order.dropoff}`;
+  for (const [kind,label] of [['pickup','Pickup'],['dropoff','Drop-off']]) {
+    const plus=order[kind+'_plus_code'],lat=order[kind+'_latitude'],lng=order[kind+'_longitude'];
+    if (!plus && (lat==null || lng==null)) continue;
+    const location=document.createElement('p');
+    location.textContent=label+' pin: '+(plus||Number(lat).toFixed(6)+', '+Number(lng).toFixed(6))+(order[kind+'_geohash']?' · Geohash '+order[kind+'_geohash']:'');
+    card.append(location);
+    if(lat!=null&&lng!=null){const mapLink=document.createElement('a');mapLink.href='https://www.google.com/maps?q='+encodeURIComponent(lat+','+lng);mapLink.target='_blank';mapLink.rel='noopener noreferrer';mapLink.textContent='Open '+label.toLowerCase()+' pin in Maps ↗';card.append(mapLink);}
+    if(plus){const copy=document.createElement('button');copy.type='button';copy.textContent='Copy '+label.toLowerCase()+' Plus Code';copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(plus);report(label+' Plus Code copied.');}catch{report('Select and copy this code: '+plus,true);}});card.append(copy);}
+  }
   const meta = document.createElement('div'); meta.className = 'order-meta';
   const pin = document.createElement('span'); pin.textContent = `Recipient PIN: ${order.pin} · Share only after delivery`;
   const fee = document.createElement('span'); fee.textContent = `${order.vehicle.toUpperCase()} · ${money(order.price)}`;
   meta.append(pin, fee);
   if (order.distance_meters != null) {const distance=document.createElement('span');distance.textContent=`${km(order.distance_meters)} km`;meta.append(distance);}
-  const paymentInfo=document.createElement('p');paymentInfo.textContent=order.paid_at?'Payment confirmed · '+order.payment_source:order.payment_source==='pay_later'?'Pay later · repayment due in 7 days':order.payment_method==='cash'?'Payment: Cash requested · payment unconfirmed':'Payment: Arrange with dispatch · payment unconfirmed';card.append(paymentInfo);
+  const paymentInfo=document.createElement('p');paymentInfo.textContent=order.paid_at?'Payment confirmed · '+order.payment_source:order.payment_source==='pay_later'?'Pay later · repayment due in 7 days':order.payment_source==='wallet'?'Paid from SwiftHaul wallet · Refund '+money((order.wallet_refund_used||0)/100)+' + promotional '+money((order.wallet_promo_used||0)/100):order.payment_method==='cash'?'Payment: Cash requested · payment unconfirmed':'Payment: Arrange with dispatch · payment unconfirmed';card.append(paymentInfo);
   if(order.counter_offer){const offer=document.createElement('p');offer.textContent=`Counteroffer: ${money(order.counter_offer)} · ${order.counter_offer_status}. ${order.counter_offer_status==='pending'?'Original fare '+money(order.price)+' remains until company approval.':order.counter_offer_status==='accepted'?'Accepted fare '+money(order.price)+'. Original fare '+money(order.original_price)+'.':'Original fare '+money(order.price)+'.'}`;card.append(offer);}
   if(order.load) {const weight=document.createElement('p');weight.textContent=`${order.load.truckClass || order.vehicle.toUpperCase()} · ${mass(order.load.chargeable)} chargeable kg · Distance ${money(order.distance_fee)} + weight ${money(order.load.weightFee)}`;card.append(weight);}
   if(order.scheduled_at) {const time=document.createElement('p');time.textContent='Requested pickup: '+localTime(order.scheduled_at)+' · Awaiting dispatch confirmation';card.append(time);}
@@ -61,23 +80,78 @@ function addOrder(order, prepend = false) {
   const track = document.createElement('button'); track.type = 'button'; track.className = 'track-delivery'; track.textContent = 'Track Delivery'; track.addEventListener('click', () => {
     if (document.body.dataset.guestPreview !== 'true') document.dispatchEvent(new CustomEvent('delivery-route', {detail:{waybill:order.waybill,pickup:order.pickup,dropoff:order.dropoff}}));
   });
-  if(!order.paid_at&&!order.refunded_at){for(const [label,action] of [['Pay with wallet','wallet-pay'],['Pay securely with Paystack','checkout'],['Pay later','pay-later']]){if(order.payment_source==='pay_later')continue;const pay=document.createElement('button');pay.type='button';pay.textContent=label;pay.addEventListener('click',()=>document.dispatchEvent(new CustomEvent('wallet-payment',{detail:{action,waybill:order.waybill}})));actions.append(pay);}}
+  if(!order.paid_at&&!order.refunded_at&&!['cancelled','completed'].includes(order.status)){
+    const pay=document.createElement('button');pay.type='button';pay.textContent='Pay securely with PayFast (Sandbox)';
+    pay.addEventListener('click',()=>startPayFastCheckout(order,pay));actions.append(pay);
+  }
+  const existingRefund = refundRequestsByWaybill.get(order.waybill);
+  if (existingRefund) {
+    const refundStatus=document.createElement('p');
+    refundStatus.textContent='Cancellation/refund request: '+existingRefund.status.replaceAll('_',' ');
+    card.append(refundStatus);
+  } else if (!order.refunded_at && ['pending','assigned','accepted','failed','cancelled'].includes(order.status)) {
+    const requestType=['pending','assigned','accepted'].includes(order.status)?'cancellation':'refund';
+    const requestButton=document.createElement('button');requestButton.type='button';
+    requestButton.textContent=requestType==='cancellation'?'Request cancellation':'Request refund';
+    requestButton.addEventListener('click',async()=>{
+      const reasonInput=document.createElement('input');reasonInput.type='text';reasonInput.maxLength=1000;
+      reasonInput.placeholder='Reason for your request';reasonInput.setAttribute('aria-label','Reason for your request');
+      const send=document.createElement('button');send.type='button';send.textContent='Submit request';
+      const cancel=document.createElement('button');cancel.type='button';cancel.textContent='Keep booking';
+      const formBox=document.createElement('div');formBox.className='order-actions';formBox.append(reasonInput,send,cancel);
+      requestButton.replaceWith(formBox);cancel.addEventListener('click',()=>formBox.replaceWith(requestButton));
+      send.addEventListener('click',async()=>{
+        if(reasonInput.value.trim().length<3){report('Please enter a reason of at least 3 characters.',true);return;}
+        send.disabled=true;report('Submitting your request…');
+        try{const result=await customerApi('POST',{action:'refund_request',waybill:order.waybill,request_type:requestType,reason:reasonInput.value.trim()});
+          if(result.request)refundRequestsByWaybill.set(order.waybill,result.request);
+          await loadOrders();report('Your request has been submitted.');
+        }catch(error){report(error instanceof Error?error.message:'Unable to submit request.',true);send.disabled=false;}
+      });
+    });actions.append(requestButton);
+  }
   actions.append(track, pdf, wa); card.append(head, route, meta, actions);
   if (prepend) container.prepend(card); else container.append(card);
 }
+
+async function startPayFastCheckout(order, button) {
+  button.disabled = true; report('Preparing secure PayFast sandbox checkout…');
+  try {
+    const client = window.swiftHaulSupabase;
+    if (!client) throw new Error('Customer sign-in connection is unavailable.');
+    const { data, error } = await client.functions.invoke('payfast-checkout', { body: { action: 'checkout', waybill: order.waybill } });
+    if (error || !data || data.error) throw new Error(data?.error || error?.message || 'Unable to prepare PayFast checkout.');
+    if (data.process_url !== 'https://sandbox.payfast.co.za/eng/process' || data.mode !== 'sandbox' || !data.fields || typeof data.fields !== 'object')
+      throw new Error('PayFast returned an invalid sandbox checkout response.');
+    const checkout = document.createElement('form');
+    checkout.method = 'POST'; checkout.action = data.process_url; checkout.acceptCharset = 'UTF-8'; checkout.hidden = true;
+    for (const [name,value] of Object.entries(data.fields)) {
+      if (typeof value !== 'string' || value.length > 2000) throw new Error('Invalid PayFast checkout field.');
+      const input = document.createElement('input'); input.type = 'hidden'; input.name = name; input.value = value; checkout.append(input);
+    }
+    document.body.append(checkout); checkout.submit();
+  } catch (error) {
+    report(error instanceof Error ? error.message : 'Unable to start PayFast checkout.', true);
+    button.disabled = false;
+  }
+}
+
 async function loadOrders() {
   if (document.body.dataset.guestPreview === 'true') return;
   const version = ++loadVersion;
+  walletAvailableCents = 0;
+  updatePaymentOptions();
   document.getElementById('submit').disabled = true;
   document.getElementById('retry').hidden = true;
   try {
-    const response = await fetch('/api/customer-bookings');
-    const data = await response.json();
+    const data = await customerApi('GET');
     if (version !== loadVersion) return;
-    if (!response.ok) throw new Error(data.error);
     document.getElementById('legacy-import').hidden = !data.canImport;
     container.replaceChildren();
+    refundRequestsByWaybill = new Map((data.refundRequests || []).map(request => [request.waybill, request]));
     data.orders.forEach(order => addOrder(order));
+    walletAvailableCents = Number(data.wallet?.available_cents) || 0;
+    updatePaymentOptions();
     if (!data.orders.length) {
       const empty = document.createElement('p'); empty.className = 'empty'; empty.textContent = 'Your next delivery starts here. Submit a quote to create your first booking.'; container.append(empty);
     }
@@ -104,10 +178,9 @@ form.addEventListener('submit', async event => {
   if (popup) popup.opener = null;
   const submit = document.getElementById('submit'); bookingBusy=true; submit.disabled = true; report('Saving your booking…');
   try {
-    const response = await fetch('/api/customer-bookings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({quote_id:acceptedQuote.id,recipient:data.recipient,payment_method:data.payment_method,counter_offer:data.counter_offer || null,scheduled_at:data.scheduled_at ? data.scheduled_at+':00+02:00' : null,return_address:data.return_address || null,return_at:data.return_at ? data.return_at+':00+02:00' : null}) });
-    const result = await response.json();
+    const result = await customerApi('POST', {action:'book',quote_id:acceptedQuote.id,recipient:data.recipient,payment_method:data.payment_method,counter_offer:data.counter_offer || null,scheduled_at:data.scheduled_at ? data.scheduled_at+':00+02:00' : null,return_address:data.return_address || null,return_at:data.return_at ? data.return_at+':00+02:00' : null,pickup_latitude:data.pickup_latitude?Number(data.pickup_latitude):null,pickup_longitude:data.pickup_longitude?Number(data.pickup_longitude):null,pickup_plus_code:data.pickup_plus_code||null,pickup_geohash:data.pickup_geohash||null,dropoff_latitude:data.dropoff_latitude?Number(data.dropoff_latitude):null,dropoff_longitude:data.dropoff_longitude?Number(data.dropoff_longitude):null,dropoff_plus_code:data.dropoff_plus_code||null,dropoff_geohash:data.dropoff_geohash||null});
     if (epoch !== accountEpoch) {popup?.close();return;}
-    if (!response.ok) {if (response.status===409) resetQuote();throw new Error(result.error || 'Unable to save your booking. Please try again.');}
+    if (!result.order) throw new Error('Unable to save your booking. Please try again.');
     container.querySelector('.empty')?.remove(); addOrder(result.order, true);
     report('Booking saved. Send the prepared message in WhatsApp, or use Send WhatsApp below.');
     if (popup) popup.location.replace(whatsapp(result.order));
@@ -132,7 +205,7 @@ function downloadPDF(order) {
     line('SWIFTHAUL SA', 18); line('DELIVERY INVOICE', 13);
     line(`Waybill: ${order.waybill}`);
     line(`Issued: ${new Date(order.created_at).toLocaleDateString('en-ZA')}`);
-    line(`Pickup: ${order.pickup}`); line(`Drop-off: ${order.dropoff}`);
+    line(`Pickup: ${order.pickup}`); if(order.pickup_plus_code)line(`Pickup Plus Code: ${order.pickup_plus_code}`); line(`Drop-off: ${order.dropoff}`); if(order.dropoff_plus_code)line(`Drop-off Plus Code: ${order.dropoff_plus_code}`);
     if (order.distance_meters != null) line(`Mapped driving distance: ${km(order.distance_meters)} km`);
     line(`Recipient and notes: ${order.recipient}`); line(`Vehicle: ${order.vehicle.toUpperCase()}`);
     if(order.load) {line(`Actual: ${mass(order.load.weight)} kg; volumetric: ${mass(order.load.volumetric)} kg; chargeable: ${mass(order.load.chargeable)} kg`);line(`Packed dimensions: ${order.load.length} x ${order.load.width} x ${order.load.height} cm; divisor 5000`);line(`Vehicle class: ${order.load.truckClass || order.vehicle}`);line(`Distance fee: ${money(order.distance_fee)}; extra weight: ${mass(order.load.extra)} kg at ${money(order.load.rate)}/kg = ${money(order.load.weightFee)}`);}
@@ -148,7 +221,13 @@ function downloadPDF(order) {
     doc.save(`Invoice_${order.waybill}.pdf`);
   } catch { report('The PDF could not be generated. Please try again.', true); }
 }
-document.addEventListener('account-ready', () => {calculateButton.disabled=false;loadOrders();});
+document.addEventListener('account-ready', () => {
+  calculateButton.disabled=false;loadOrders();
+  const params=new URLSearchParams(location.search), payment=params.get('payment');
+  if(payment==='return') report('You returned from PayFast. Payment is awaiting server-side notification and verification; refresh your bookings shortly. Returning here does not itself confirm payment.');
+  else if(payment==='cancel') report('PayFast checkout was cancelled. Your booking remains unpaid.');
+  if(payment){history.replaceState({},'',location.pathname+location.hash);}
+});
 document.addEventListener('account-cleared', () => {accountEpoch++;loadVersion++; ready = false;form.reset();toggleBookingOptions();previewLoad();resetQuote(); container.replaceChildren(); document.getElementById('legacy-import').hidden=true; document.getElementById('submit').disabled = true;});
 
 document.getElementById('import-bookings').addEventListener('click', async event => {
@@ -186,10 +265,9 @@ calculateButton.addEventListener('click', async () => {
   resetQuote();const active=new AbortController();quoteRequest=active;calculateButton.disabled=true;
   quoteStatus.textContent='Mapping the addresses and calculating your fare…';
   try {
-    const response=await fetch('/api/delivery-quote',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pickup:data.pickup,dropoff:data.dropoff,parcel:Object.fromEntries(['weight','length','width','height'].map(key=>[key,Number(data[key])]))}),signal:active.signal,cache:'no-store'});
-    const result=await response.json();
+    const result=await customerApi('POST',{action:'quote',pickup:data.pickup,dropoff:data.dropoff,pickup_location:data.pickup_latitude?{latitude:Number(data.pickup_latitude),longitude:Number(data.pickup_longitude)}:null,dropoff_location:data.dropoff_latitude?{latitude:Number(data.dropoff_latitude),longitude:Number(data.dropoff_longitude)}:null,parcel:Object.fromEntries(['weight','length','width','height'].map(key=>[key,Number(data[key])]))});
     if (quoteRequest!==active || active.signal.aborted) return;
-    if (!response.ok) throw new Error(result.error || 'Unable to calculate the route.');
+    if (!result.quote) throw new Error('Unable to calculate the route.');
     currentQuote=result.quote;updatePaymentOptions();const route=currentQuote.route;
     document.getElementById('quote-result').hidden=false;
     document.getElementById('quote-distance').textContent=`${km(route.distance)} km`;
@@ -243,17 +321,23 @@ function updatePaymentOptions(){
   const cash=Number.isFinite(distance)&&distance<12000;
   const counter=Number.isFinite(distance)&&distance<24000;
   document.getElementById('cash-payment-option').disabled=!cash;
-  if(!cash)form.elements.payment_method.value='dispatch';
+  const walletOption=document.getElementById('wallet-payment-option');
+  const walletRequired=currentQuote?Math.round(Number(currentQuote.price)*100):Infinity;
+  const walletEligible=Number.isSafeInteger(walletRequired)&&walletRequired>0&&walletAvailableCents>=walletRequired;
+  walletOption.disabled=!walletEligible;
+  if(form.elements.payment_method.value==='cash'&&!cash)form.elements.payment_method.value='dispatch';
+  if(form.elements.payment_method.value==='wallet'&&!walletEligible)form.elements.payment_method.value='dispatch';
   const checkbox=document.getElementById('make-counter-offer');checkbox.disabled=!counter;
   if(!counter)checkbox.checked=false;
-  const show=counter&&checkbox.checked;
+  const show=counter&&checkbox.checked&&form.elements.payment_method.value!=='wallet';
   document.getElementById('counter-offer-field').hidden=!show;
   document.getElementById('counter-offer-note').hidden=!show;
   form.elements.counter_offer.disabled=!show;form.elements.counter_offer.required=show;
   if(!show)form.elements.counter_offer.value='';
-  document.getElementById('payment-eligibility').textContent=!currentQuote?'Calculate a route to check cash and counteroffer eligibility.':cash?'Cash or payment through dispatch is available. You may submit a counteroffer for company approval.':counter?'Arrange payment through dispatch. You may submit a counteroffer for company approval.':'Arrange payment through dispatch. Cash and counteroffers are unavailable for this distance.';
+  document.getElementById('payment-eligibility').textContent=!currentQuote?'Calculate a route to check cash, wallet and counteroffer eligibility.':walletEligible?'Wallet balance '+money(walletAvailableCents/100)+' is sufficient for this booking. Refund credits are used before promotional credits.': 'Wallet available '+money(walletAvailableCents/100)+'; '+money(walletRequired/100)+' required. '+(cash?'Cash or payment through dispatch is also available.':'Arrange payment through dispatch. Cash is unavailable for this distance.')+(counter?' Counteroffers are available only when paying by dispatch.':'');
 }
 document.getElementById('make-counter-offer').addEventListener('change',updatePaymentOptions);
+form.elements.payment_method.addEventListener('change',updatePaymentOptions);
 updatePaymentOptions();
 
 document.addEventListener('wallet-updated',loadOrders);
