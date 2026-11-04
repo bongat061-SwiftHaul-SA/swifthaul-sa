@@ -19,7 +19,7 @@ Priority dispatch must mean early offer visibility for suitable available driver
 - Payout availability combines earnings and rewards. Payout reservation is applied to the combined wallet balance.
 
 ## Availability bonuses
-Availability bonus entries have a dedicated reward-ledger event type but no amount or qualification schedule has been configured. Admin must define a funded time window and award amount before automated availability bonuses are issued.
+Drivers can opt in or out of administrator-funded availability bonus opportunities from the driver portal. The preference is stored on the driver profile. Availability bonus entries have a dedicated reward-ledger event type, but no amount or qualification schedule has been configured. Admin must define a funded time window and award amount before any availability bonuses are issued.
 
 ## Micro-loans
 - UI reports 45-day tenure, 15 completed delivery thresholds, 25% of 14-day earnings formula and R1,500 cap.
