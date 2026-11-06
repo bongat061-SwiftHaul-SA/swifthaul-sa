@@ -40,7 +40,7 @@
     '.swift-map-marker.pickup{background:#21664e}',
     '.swift-map-marker.dropoff{background:#2475c7}',
     '@media(max-width:650px){#delivery-map-stage{height:min(82svh,790px);min-height:650px;margin:-22px -22px 22px}.swift-location-sheet{left:10px;right:10px;bottom:10px;max-height:72%;padding:15px;border-radius:16px}.swift-location-fields{grid-template-columns:1fr;gap:9px}.swift-location-fields .field input{padding:11px}.swift-sheet-head h3{font-size:15px}.swift-sheet-tools{margin-top:9px}.swift-sheet-quote #quote-result{font-size:11px}}'
-  ]join('\\n');
+  ].join('\n');
   document.head.append(style);
 
   const pickupWrap = pickup.closest('.field');
