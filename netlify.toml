@@ -15,3 +15,8 @@
   [headers.values]
     Referrer-Policy = "strict-origin-when-cross-origin"
     X-Content-Type-Options = "nosniff"
+
+# Deploy Previews expose all three browser apps for testing. Production keeps [build].publish = "public".
+[context.deploy-preview]
+  command = "node scripts/prepare-preview.cjs"
+  publish = "preview-dist"
