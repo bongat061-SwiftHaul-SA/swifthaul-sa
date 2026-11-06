@@ -9,7 +9,7 @@
   let map;
   let request;
   let currentOrder;
-  const clearMap = () => { if (map) {map.stop();map.remove();map = null;} mapElement.hidden = true; };
+  const clearMap = () => { if (map) {map.stop();if(map._swiftHaulController)map._swiftHaulController.destroy();else map.remove();map = null;} mapElement.hidden = true; };
   async function loadRoute() {
     if (!currentOrder || document.body.dataset.guestPreview === 'true') return;
     request?.abort();
