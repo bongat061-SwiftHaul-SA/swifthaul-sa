@@ -119,6 +119,11 @@
       if(input.dataset.justSelected==='true'){delete input.dataset.justSelected;return;}
       if(suppress){suppress=false;return;}
       input.dataset.locationSelected='false';
+      // A manually edited address must not retain coordinates from an older selection.
+      for(const suffix of ['latitude','longitude','plus_code','geohash']){
+        const hidden=form.querySelector('[name="'+input.name+'_'+suffix+'"]');
+        if(hidden)hidden.value='';
+      }
       clearTimeout(timer);controller?.abort();close();
       const query=input.value.trim();
       if(query.length<3){status.textContent='Type at least 3 characters for address suggestions.';return;}
