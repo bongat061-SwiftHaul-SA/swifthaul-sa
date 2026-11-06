@@ -1,5 +1,5 @@
 create or replace function public.apply_payfast_driver_membership(p_membership_id uuid,p_pf_payment_id text,p_amount numeric)
-returns boolean language plpgsql security definer set search_path=public as $$
+returns boolean language plpgsql security invoker set search_path = '' as $$
 declare m public.driver_memberships%rowtype;
 begin
  if p_pf_payment_id is null or length(p_pf_payment_id) not between 1 and 100 or p_amount is null then return false; end if;
