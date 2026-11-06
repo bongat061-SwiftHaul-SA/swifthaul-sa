@@ -139,7 +139,7 @@ if (app === 'driver' || app === 'company') {
     }
     if (order.proof && app === 'company') {
       const proof = document.createElement('p');
-      proof.textContent = (order.proof.notes?.includes('Proof method: recipient signature') ? 'Recipient signature received' : 'Proof of delivery received') + (order.proof.recipient_name ? ' · ' + order.proof.recipient_name : '') + '.';
+      proof.textContent = 'Proof of delivery received' + (order.proof.recipient_name ? ' · ' + order.proof.recipient_name : '') + '.';
       card.append(proof);
     }
     if (order.status === 'failed' && order.failure_reason) {
@@ -160,7 +160,7 @@ if (app === 'driver' || app === 'company') {
       if (order.status === 'in_transit') {
         if (order.proof) {
           const proofNote = document.createElement('p');
-          proofNote.textContent = (order.proof.notes?.includes('Proof method: recipient signature') ? 'Recipient signature uploaded' : 'Proof photo uploaded') + (order.proof.recipient_name ? ' · Recipient: ' + order.proof.recipient_name : '') + '.';
+          proofNote.textContent = 'Proof of delivery submitted' + (order.proof.recipient_name ? ' · Recipient: ' + order.proof.recipient_name : '') + '.';
           card.append(proofNote);
           const form = document.createElement('form');
           const label = document.createElement('label');
