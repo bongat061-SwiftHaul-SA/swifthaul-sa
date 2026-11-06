@@ -14,7 +14,7 @@ CREATE TABLE public.user_profiles (
 CREATE FUNCTION public.handle_new_auth_user()
 RETURNS trigger
 LANGUAGE plpgsql
-SECURITY DEFINER
+SECURITY INVOKER
 SET search_path = ''
 AS $$
 BEGIN
@@ -92,4 +92,12 @@ BEGIN
     EXECUTE format('REVOKE ALL ON TABLE public.%I FROM anon, authenticated', t.tablename);
     EXECUTE format('GRANT ALL ON TABLE public.%I TO service_role', t.tablename);
   END LOOP;
-END $$;
+END $;
+
+-- Auth runs signup triggers as supabase_auth_admin; grant only the two inserts the trigger needs.
+GRANT INSERT ON public.user_profiles, public.driver_profiles TO supabase_auth_admin;
+CREATE POLICY "auth service creates signup profiles" ON public.user_profiles
+  FOR INSERT TO supabase_auth_admin WITH CHECK (true);
+CREATE POLICY "auth service creates pending driver profiles" ON public.driver_profiles
+  FOR INSERT TO supabase_auth_admin
+  WITH CHECK (verification_status='pending' AND availability_status='offline');
