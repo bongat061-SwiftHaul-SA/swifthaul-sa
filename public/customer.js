@@ -75,7 +75,7 @@ function addOrder(order, prepend = false) {
   const pdf = document.createElement('button'); pdf.type = 'button'; pdf.textContent = 'Download PDF Invoice'; pdf.addEventListener('click', () => downloadPDF(order));
   const wa = document.createElement('a'); wa.href = whatsapp(order); wa.target = '_blank'; wa.rel = 'noopener noreferrer'; wa.textContent = 'Send WhatsApp';
   const track = document.createElement('button'); track.type = 'button'; track.className = 'track-delivery'; track.textContent = 'Track Delivery'; track.addEventListener('click', () => {
-    if (document.body.dataset.guestPreview !== 'true') document.dispatchEvent(new CustomEvent('delivery-route', {detail:{waybill:order.waybill,pickup:order.pickup,dropoff:order.dropoff}}));
+    if (document.body.dataset.guestPreview !== 'true') document.dispatchEvent(new CustomEvent('delivery-route', {detail:{waybill:order.waybill,pickup:order.pickup,dropoff:order.dropoff,status:order.status,assigned_driver:order.assigned_driver,created_at:order.created_at,completed_at:order.completed_at}}));
   });
   if(!order.paid_at&&!order.refunded_at&&!['cancelled','completed'].includes(order.status)){
     const pay=document.createElement('button');pay.type='button';pay.textContent='Pay securely with PayFast (Sandbox)';
