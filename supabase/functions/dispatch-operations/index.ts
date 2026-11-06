@@ -48,7 +48,7 @@ Deno.serve(async (req: Request) => {
     }
     const waybills = (data ?? []).map((order: Record<string, unknown>) => order.waybill as string);
     const { data: proofs } = waybills.length
-      ? await admin.from("proof_of_delivery").select("waybill,recipient_name,created_at").in("waybill", waybills)
+      ? await admin.from("proof_of_delivery").select("waybill,recipient_name,notes,created_at").in("waybill", waybills)
       : { data: [] };
     const proofMap = new Map<string, Record<string, unknown>>(
       (proofs ?? []).map((proof: Record<string, unknown>) =>
