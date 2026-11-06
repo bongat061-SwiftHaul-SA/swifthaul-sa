@@ -77,10 +77,12 @@ Deno.serve(async(req:Request)=>{
     if(!dispatcher||typeof body.route_id!=="string"||!Array.isArray(body.stop_ids))return reply(403,{error:"dispatcher_route_reorder_required"});
     const {data:route}=await db.from("dispatch_routes").select("id,status").eq("id",body.route_id).maybeSingle();
     if(!route||!["assigned"].includes(route.status))return reply(404,{error:"editable_route_not_found"});
-    const {data:existing,error}=await db.from("dispatch_route_stops").select("id").eq("route_id",route.id).order("sequence_no");
+    const {data:existing,error}=await db.from("dispatch_route_stops").select("id,waybill,stop_type").eq("route_id",route.id).order("sequence_no");
     if(error)return reply(500,{error:"route_stops_lookup_failed"});
     const ids=(existing??[]).map(x=>x.id);
     if(body.stop_ids.length!==ids.length||new Set(body.stop_ids).size!==ids.length||body.stop_ids.some((id:string)=>!ids.includes(id)))return reply(400,{error:"reorder_must_include_every_route_stop_once"});
+    const proposed=body.stop_ids.map((id:string)=>existing!.find(stop=>stop.id===id)!);
+    for(const stop of proposed){if(stop.stop_type==="dropoff"&&proposed.findIndex(x=>x.waybill===stop.waybill&&x.stop_type==="pickup")>proposed.findIndex(x=>x.id===stop.id))return reply(400,{error:"pickup_must_remain_before_dropoff"});}
     for(let i=0;i<ids.length;i++){const {error:shiftError}=await db.from("dispatch_route_stops").update({sequence_no:31+i}).eq("id",ids[i]).eq("route_id",route.id);if(shiftError)return reply(500,{error:"route_reorder_prepare_failed"});}
     for(let i=0;i<body.stop_ids.length;i++){const {error:updateError}=await db.from("dispatch_route_stops").update({sequence_no:i+1}).eq("id",body.stop_ids[i]).eq("route_id",route.id);if(updateError)return reply(500,{error:"route_reorder_failed"});}
     return reply(200,{reordered:true});
