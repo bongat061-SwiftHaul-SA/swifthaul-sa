@@ -45,8 +45,8 @@ Use these exact GitHub Pages URLs in the Supabase allow-list. Do not use a broad
 ## Apple provider
 
 1. An active Apple Developer Program account is required.
-2. Create a Sign in with Apple **Services ID** for the web app and enable Sign in with Apple.
-3. Register the GitHub Pages hostname as the web domain.
+2. Create a Sign in with Apple **Services ID** associated with a primary Apple App ID that has the Sign in with Apple capability enabled.
+3. In the Services ID's **Website URLs**, register the Supabase project domain `jikstpnvsdjhcibtjilp.supabase.co` (not the GitHub Pages hostname).
 4. Register this Return URL:
    `https://jikstpnvsdjhcibtjilp.supabase.co/auth/v1/callback`
 5. Create the Sign in with Apple key and note the Services ID, Team ID and Key ID.
