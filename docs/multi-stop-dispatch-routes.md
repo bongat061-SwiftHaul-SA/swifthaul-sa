@@ -12,6 +12,13 @@ Development-branch implementation only. The migration and Edge Function are not 
 - A route supports up to 30 stops (15 deliveries) in this first iteration.
 - Tables have RLS enabled and no direct anon/authenticated grants. Only the server-side service role is granted table access; all user access is mediated by the authenticated Edge Function.
 
+## User interface
+
+- Company Admin shows eligible unassigned pending deliveries with selection checkboxes, accepts the approved driver's account ID, creates a route, and provides persistent up/down stop ordering.
+- Driver view displays assigned route stops, identifies the next pending stop, and provides a Start Route action.
+- Driver pickup and final drop-off actions call the route API to synchronize the corresponding stop after the delivery status transition succeeds.
+- Until the migration and Edge Function are released together, the UI displays a staged-service notice and does not expose route creation controls.
+
 ## Edge Function contract: `dispatch-routes`
 
 All requests require a valid Supabase access token.
@@ -27,7 +34,7 @@ All requests require a valid Supabase access token.
 - `create_route`: dispatcher-only; accepts `driver_user_id` and an ordered `stops` array of `{ waybill, stop_type }`. Each booking must be pending and unassigned, the driver must be active and approved, and every pickup must precede its drop-off. The function assigns the selected bookings to the driver.
 - `reorder_route`: dispatcher-only; requires the complete list of stop IDs exactly once. It preserves pickup-before-drop-off ordering and uses a temporary sequence range to avoid unique-key collisions.
 - `start_route`: assigned driver only; transitions an assigned route to in-progress.
-- `sync_waybill`: assigned driver only; marks pickup stops complete after pickup/in-transit status and drop-off stops complete only after the booking reaches delivered (which already requires proof and recipient PIN). A route closes only when every stop is complete.
+- `sync_waybill`: assigned driver only; marks pickup stops complete after pickup/in-transit status and drop-off stops complete only after the booking reaches delivered (which already requires proof and recipient PIN). A route closes only when every stop is complete. The dispatch status endpoint also blocks pickup/drop-off progression when the driver has not started the route or is not at the next pending stop.
 
 ## Important rollout dependencies
 
