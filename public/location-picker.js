@@ -105,7 +105,7 @@
     map = mapController.map;
     map.setView([-26.32516865200042, 28.195352552065742], 14);
     mapController.padding.add(new window.SwiftHaulMaps.MapPaddingSource(stage.querySelector('.swift-location-sheet')), 'customer-booking');
-    L.control.zoom({ position: 'topright' }).addTo(mapController.layers.get('tiles').group);
+    L.control.zoom({ position: 'topright' }).addTo(map);
     map.on('click', event => {
       if (activeField) saveLocation(activeField, event.latlng.lat, event.latlng.lng, 'Map pin adjusted. Check the address and Plus Code.');
     });
@@ -115,11 +115,11 @@
     if (!map) return;
     const points = ['pickup', 'dropoff'].filter(key => state[key]).map(key => [state[key].lat, state[key].lng]);
     if (points.length === 2) {
-      map.fitBounds(points, { padding: [55, 55], maxZoom: 15 });
+      mapController.camera.move({bounds:points,zoom:15},0,'customer-booking');
       if (routeLine) routeLine.setLatLngs(points);
       else routeLine = L.polyline(points, { color: '#173d31', weight: 5, opacity: .92, lineCap: 'round', dashArray: '9 8' }).addTo(mapController.layers.get('routes').group);
     } else if (points.length === 1) {
-      map.setView(points[0], 16);
+      mapController.camera.move({lat:points[0][0],lng:points[0][1],zoom:16},0,'customer-booking');
       if (routeLine) { routeLine.remove(); routeLine = null; }
     }
   }
@@ -172,7 +172,7 @@
       delete state[key];
       if (routeLine) { routeLine.remove(); routeLine = null; }
       const remaining = state.pickup || state.dropoff;
-      if (remaining && map) map.setView([remaining.lat, remaining.lng], 15);
+      if (remaining && map) mapController.camera.move({lat:remaining.lat,lng:remaining.lng,zoom:15},0,'customer-booking');
       const pin = input.parentElement.querySelector('.swift-pin-button');
       if (pin) { pin.setAttribute('aria-pressed', 'false'); pin.textContent = '◎ Adjust ' + label + ' pin on map'; }
     });
@@ -195,7 +195,7 @@
     ensureMap();
     if (!map) { $('loc-status').textContent = 'Map is still loading. Please try again.'; return; }
     fitLocations();
-    if (!state.pickup && !state.dropoff) map.setView([-26.32516865200042, 28.195352552065742], 14);
+    if (!state.pickup && !state.dropoff) mapController.camera.move({lat:-26.32516865200042,lng:28.195352552065742,zoom:14},0,'customer-booking');
     setTimeout(() => map.invalidateSize(), 100);
   });
   $('loc-current').addEventListener('click', () => {
