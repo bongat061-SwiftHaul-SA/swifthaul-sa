@@ -54,23 +54,17 @@ Deno.serve(async(req:Request)=>{
     const {data:bookings,error:bookingError}=await db.from("customer_bookings").select("waybill,status,driver_user_id,refunded_at").in("waybill",unique);
     if(bookingError)return reply(500,{error:"booking_lookup_failed"});
     if((bookings??[]).length!==unique.length||bookings!.some(b=>b.status!=="pending"||b.driver_user_id||b.refunded_at))return reply(409,{error:"all_route_deliveries_must_be_unassigned_pending_bookings"});
-    const {data:route,error:routeError}=await db.from("dispatch_routes").insert({driver_user_id:body.driver_user_id,created_by:actor,status:"assigned"}).select("id").single();
-    if(routeError||!route)return reply(500,{error:"route_create_failed"});
-    const rows=stops.map((s,i)=>({route_id:route.id,waybill:s.waybill,sequence_no:i+1,stop_type:s.stop_type}));
-    const {error:stopsError}=await db.from("dispatch_route_stops").insert(rows);
-    if(stopsError){await db.from("dispatch_routes").delete().eq("id",route.id);return reply(500,{error:"route_stops_create_failed"});}
-    const assigned:string[]=[];
-    for(const waybill of unique){
-      const {data:updated,error:updateError}=await db.from("customer_bookings").update({driver_user_id:body.driver_user_id,assigned_driver:body.driver_user_id,status:"assigned"}).eq("waybill",waybill).eq("status","pending").is("driver_user_id",null).select("waybill").maybeSingle();
-      if(updateError||!updated){
-        for(const prior of assigned)await db.from("customer_bookings").update({driver_user_id:null,assigned_driver:null,status:"pending"}).eq("waybill",prior).eq("driver_user_id",body.driver_user_id).eq("status","assigned");
-        await db.from("dispatch_routes").delete().eq("id",route.id);
-        return reply(409,{error:"route_assignment_conflict_retry_dispatch"});
-      }
-      assigned.push(waybill);
-      await db.from("delivery_status_events").insert({waybill,actor_user_id:actor,previous_status:"pending",new_status:"assigned",notes:"Assigned in multi-stop route "+route.id});
+    const {data:created,error:createError}=await db.rpc("create_dispatch_route",{
+      p_driver_user_id:body.driver_user_id,
+      p_created_by:actor,
+      p_stops:stops
+    });
+    if(createError){
+      console.error("Atomic route creation failed",createError.message);
+      if(/dispatcher|driver|required|pending|conflict/i.test(createError.message))return reply(409,{error:"route_assignment_conflict_retry_dispatch"});
+      return reply(500,{error:"route_create_failed"});
     }
-    return reply(201,{route_id:route.id,assigned_waybills:assigned,stop_count:rows.length});
+    return reply(201,created as Record<string,unknown>);
   }
 
   if(body.action==="reorder_route"){
@@ -83,9 +77,17 @@ Deno.serve(async(req:Request)=>{
     if(body.stop_ids.length!==ids.length||new Set(body.stop_ids).size!==ids.length||body.stop_ids.some((id:string)=>!ids.includes(id)))return reply(400,{error:"reorder_must_include_every_route_stop_once"});
     const proposed=body.stop_ids.map((id:string)=>existing!.find(stop=>stop.id===id)!);
     for(const stop of proposed){if(stop.stop_type==="dropoff"&&proposed.findIndex(x=>x.waybill===stop.waybill&&x.stop_type==="pickup")>proposed.findIndex(x=>x.id===stop.id))return reply(400,{error:"pickup_must_remain_before_dropoff"});}
-    for(let i=0;i<ids.length;i++){const {error:shiftError}=await db.from("dispatch_route_stops").update({sequence_no:31+i}).eq("id",ids[i]).eq("route_id",route.id);if(shiftError)return reply(500,{error:"route_reorder_prepare_failed"});}
-    for(let i=0;i<body.stop_ids.length;i++){const {error:updateError}=await db.from("dispatch_route_stops").update({sequence_no:i+1}).eq("id",body.stop_ids[i]).eq("route_id",route.id);if(updateError)return reply(500,{error:"route_reorder_failed"});}
-    return reply(200,{reordered:true});
+    const {data:result,error:reorderError}=await db.rpc("reorder_dispatch_route",{
+      p_route_id:route.id,
+      p_actor_id:actor,
+      p_stop_ids:body.stop_ids
+    });
+    if(reorderError){
+      console.error("Atomic route reorder failed",reorderError.message);
+      if(/pickup|stop|route|dispatcher/i.test(reorderError.message))return reply(409,{error:"route_reorder_conflict"});
+      return reply(500,{error:"route_reorder_failed"});
+    }
+    return reply(200,result as Record<string,unknown>);
   }
 
   if(body.action==="start_route"){
