@@ -120,24 +120,6 @@ Deno.serve(async (req: Request) => {
   if (order.refunded_at || ["delivered", "failed", "cancelled"].includes(order.status))
     return reply(409, { error: "delivery_is_closed" });
 
-  const transitions: Record<string, { from: string[]; to: string }> = {
-    accept: { from: ["assigned"], to: "accepted" },
-    pickup: { from: ["accepted"], to: "picked_up" },
-    in_transit: { from: ["picked_up"], to: "in_transit" },
-  };
-  if (typeof body.action === "string" && transitions[body.action]) {
-    const transition = transitions[body.action];
-    if (!transition.from.includes(order.status)) return reply(409, { error: "invalid_status_transition" });
-    await setStatus(transition.to);
-    return reply(200, { updated: true, status: transition.to });
-  }
-  if (body.action === "fail") {
-    if (!["accepted", "picked_up", "in_transit"].includes(order.status)) return reply(409, { error: "invalid_status_transition" });
-    if (typeof body.reason !== "string" || body.reason.trim().length < 3 || body.reason.length > 300)
-      return reply(400, { error: "provide_delivery_failure_reason" });
-    await setStatus("failed", body.reason.trim());
-    return reply(200, { updated: true, status: "failed" });
-  }
   if (["pickup","complete"].includes(String(body.action))) {
     const {data:routeStops,error:routeStopError}=await admin.from("dispatch_route_stops")
       .select("id,route_id,waybill,stop_type,sequence_no,status").eq("waybill",order.waybill);
@@ -157,6 +139,25 @@ Deno.serve(async (req: Request) => {
       if(!next||next.waybill!==order.waybill||next.stop_type!==expected)
         return reply(409,{error:"complete_the_next_route_stop_in_sequence"});
     }
+  }
+
+  const transitions: Record<string, { from: string[]; to: string }> = {
+    accept: { from: ["assigned"], to: "accepted" },
+    pickup: { from: ["accepted"], to: "picked_up" },
+    in_transit: { from: ["picked_up"], to: "in_transit" },
+  };
+  if (typeof body.action === "string" && transitions[body.action]) {
+    const transition = transitions[body.action];
+    if (!transition.from.includes(order.status)) return reply(409, { error: "invalid_status_transition" });
+    await setStatus(transition.to);
+    return reply(200, { updated: true, status: transition.to });
+  }
+  if (body.action === "fail") {
+    if (!["accepted", "picked_up", "in_transit"].includes(order.status)) return reply(409, { error: "invalid_status_transition" });
+    if (typeof body.reason !== "string" || body.reason.trim().length < 3 || body.reason.length > 300)
+      return reply(400, { error: "provide_delivery_failure_reason" });
+    await setStatus("failed", body.reason.trim());
+    return reply(200, { updated: true, status: "failed" });
   }
 
   if (body.action === "complete") {
