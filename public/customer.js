@@ -3,7 +3,6 @@ const message = document.getElementById('message');
 const container = document.getElementById('ordersContainer');
 let currentQuote = null;
 let quoteRequest;
-let quoteMap;
 let accountEpoch = 0;
 let bookingBusy = false;
 let walletAvailableCents = 0;
@@ -17,9 +16,7 @@ function updateBookButton() {
 function resetQuote() {
   quoteRequest?.abort();quoteRequest=null;currentQuote=null;
   updatePaymentOptions();
-  if (quoteMap) {quoteMap.stop();quoteMap.remove();quoteMap=null;}
   document.getElementById('quote-result').hidden=true;
-  document.getElementById('quote-map').hidden=true;
   document.getElementById('quote-locations').textContent='';
   document.getElementById('quote-directions').removeAttribute('href');
   document.getElementById('priceBadge').textContent='Calculate fare';
