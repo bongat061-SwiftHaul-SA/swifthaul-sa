@@ -51,6 +51,7 @@
     const pinButton=input.nextElementSibling;
     if(pinButton&&pinButton.textContent.toLowerCase().includes('pin'))pinButton.textContent=code?'Pin selected · '+code:'Pin selected';
     input.dispatchEvent(new Event('change',{bubbles:true}));
+    window.swiftHaulShowAddressOnMap?.(input,lat,lng);
   }
   function attach(input,label){
     const wrap=input.parentElement;
