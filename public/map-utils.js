@@ -10,6 +10,6 @@ window.renderDeliveryMap = (element, route, onTileError = () => {}) => {
     const label=document.createElement('span');label.textContent=title;
     L.circleMarker([point.latitude,point.longitude],{radius:8,color:'#fff',weight:3,fillColor:color,fillOpacity:1}).bindTooltip(label,{permanent:true,direction:'top',offset:[0,-8]}).addTo(controller.layers.get('markers').group);
   }
-  map.fitBounds(line.getBounds().extend([route.pickup.latitude,route.pickup.longitude]).extend([route.dropoff.latitude,route.dropoff.longitude]),{padding:[40,45],maxZoom:15,animate:false});
+  controller.camera.move({bounds:line.getBounds().extend([route.pickup.latitude,route.pickup.longitude]).extend([route.dropoff.latitude,route.dropoff.longitude]),zoom:15},0,'customer-route-preview');
   return map;
 };
