@@ -200,9 +200,14 @@ document.querySelectorAll('[data-social-provider]').forEach(button => button.add
       return;
     }
     const expiry = form.elements.licenseExpiry.value;
-    if (expiry <= new Date().toLocaleDateString('en-CA', { timeZone: 'Africa/Johannesburg' })) {
+    const todayParts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Africa/Johannesburg', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).formatToParts(new Date());
+    const today = todayParts.find(part => part.type === 'year').value + '-' +
+      todayParts.find(part => part.type === 'month').value + '-' +
+      todayParts.find(part => part.type === 'day').value;
+    if (expiry <= today) {
       status.textContent = 'Enter a valid licence expiry date in the future.';
-      form.elements.licenseExpiry.reportValidity();
       return;
     }
     intent.profile = {
