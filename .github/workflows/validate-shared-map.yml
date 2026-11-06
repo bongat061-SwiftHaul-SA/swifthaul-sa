@@ -1,0 +1,37 @@
+name: Validate shared map architecture
+
+on:
+  push:
+    branches:
+      - integration/shared-map-current-main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check JavaScript syntax
+        run: |
+          node --check public/map-core.js
+          node --check public/location-picker.js
+          node --check public/map-utils.js
+          node --check public/route-preview.js
+          node --check apps/driver/public/location-picker.js
+          node --check apps/company/public/location-picker.js
+      - name: Verify all three platforms load the shared core
+        run: |
+          grep -q 'map-core.js' public/customer.html
+          grep -q 'map-core.js' apps/driver/public/index.html
+          grep -q 'map-core.js' apps/company/public/index.html
+          grep -q 'class MapLayerManager' public/map-core.js
+          grep -q 'class MapPaddingProvider' public/map-core.js
+          grep -q 'class MapCameraDirector' public/map-core.js
