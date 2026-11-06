@@ -1,0 +1,35 @@
+name: Social authentication checks
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'public/**'
+      - 'apps/driver/public/**'
+      - 'apps/company/public/**'
+      - 'supabase/functions/social-onboard/**'
+      - 'docs/google-apple-social-auth.md'
+      - 'tests/social-auth-static-check.cjs'
+      - '.github/workflows/social-auth-check.yml'
+  push:
+    branches: [feature/google-apple-social-auth]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-social-auth:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run social authentication security checks
+        run: node tests/social-auth-static-check.cjs
+      - name: Check browser JavaScript syntax
+        shell: bash
+        run: |
+          for file in public/auth.js apps/driver/public/auth.js apps/company/public/auth.js; do
+            node --input-type=module --check < "$file"
+          done

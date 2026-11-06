@@ -176,6 +176,66 @@ document.querySelectorAll('[data-auth-mode]').forEach(el => {
     setMode(requested);
   });
 });
+document.querySelectorAll('[data-social-provider]').forEach(button => button.addEventListener('click', async () => {
+  const provider = button.dataset.socialProvider;
+  if (!['google', 'apple'].includes(provider)) return;
+  if (mode !== 'login' && mode !== 'signup') {
+    status.textContent = 'Return to Sign in or Create account to use Google or Apple.';
+    return;
+  }
+  const intent = { app: 'driver', mode };
+  if (mode === 'signup') {
+    const fields = ['name', 'phone', 'licenseNumber', 'licenseExpiry', 'vehicleType', 'vehicleRegistration'];
+    for (const name of fields) {
+      const field = form.elements[name];
+      if (!field.value.trim() || !field.checkValidity()) {
+        status.textContent = 'Complete all required driver details before continuing.';
+        field.reportValidity();
+        return;
+      }
+    }
+    if (!form.elements.acceptTerms.checked) {
+      status.textContent = 'Read and accept the terms and conditions to continue.';
+      form.elements.acceptTerms.reportValidity();
+      return;
+    }
+    const expiry = form.elements.licenseExpiry.value;
+    const todayParts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Africa/Johannesburg', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).formatToParts(new Date());
+    const today = todayParts.find(part => part.type === 'year').value + '-' +
+      todayParts.find(part => part.type === 'month').value + '-' +
+      todayParts.find(part => part.type === 'day').value;
+    if (expiry <= today) {
+      status.textContent = 'Enter a valid licence expiry date in the future.';
+      return;
+    }
+    intent.profile = {
+      full_name: form.elements.name.value.trim(),
+      phone: form.elements.phone.value.trim(),
+      license_number: form.elements.licenseNumber.value.trim(),
+      license_expiry: expiry,
+      vehicle_type: form.elements.vehicleType.value,
+      vehicle_registration: form.elements.vehicleRegistration.value.trim().toUpperCase(),
+      terms_accepted: true,
+      terms_version: '2026-10-30-wallet'
+    };
+  }
+  button.disabled = true;
+  status.textContent = 'Connecting to ' + (provider === 'google' ? 'Google' : 'Apple') + '…';
+  sessionStorage.setItem('swifthaul-social-intent', JSON.stringify(intent));
+  try {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: location.origin + location.pathname }
+    });
+    if (error) throw error;
+  } catch (error) {
+    sessionStorage.removeItem('swifthaul-social-intent');
+    status.textContent = error?.message || 'Social sign-in could not be started.';
+    button.disabled = false;
+  }
+}));
 
 document.getElementById('sign-out').addEventListener('click', async () => {
   const { error } = await supabase.auth.signOut();
@@ -216,7 +276,23 @@ async function init() {
   try {
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error) throw error;
-    if (session) await validateAccount(session);
+    if (session) {
+      const intentRaw = sessionStorage.getItem('swifthaul-social-intent');
+      if (intentRaw) {
+        const intent = JSON.parse(intentRaw);
+        if (intent.app === 'driver' && intent.mode === 'signup') {
+          const { data: onboardData, error: onboardError } = await supabase.functions.invoke('social-onboard', {
+            body: { ...intent.profile, app_type: 'driver' },
+            headers: { Authorization: 'Bearer ' + session.access_token }
+          });
+          if (onboardError) throw new Error(onboardData?.error || onboardError.message || 'Driver profile setup failed.');
+        }
+        sessionStorage.removeItem('swifthaul-social-intent');
+      }
+      await validateAccount(session);
+    } else {
+      sessionStorage.removeItem('swifthaul-social-intent');
+    }
   } catch (error) {
     status.textContent = error?.message || 'Sign-in is unavailable. Please try again.';
   }
