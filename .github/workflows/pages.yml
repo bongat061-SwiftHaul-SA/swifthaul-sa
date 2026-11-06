@@ -4,9 +4,10 @@ on:
   push:
     branches:
       - migration/supabase-github-pages
+      - feature/customer-smart-address-estimator
   workflow_dispatch:
 
-# Publishing the three platform entry points from this migration branch.
+# Publishing the three platform entry points from the staging migration and customer-estimator branches.
 
 permissions:
   contents: read
