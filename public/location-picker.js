@@ -55,7 +55,7 @@
     '<div class="swift-sheet-head"><div><h3>Where should we collect and deliver?</h3><p>Choose an address, then confirm the exact point on the map.</p></div>' +
     '<div class="swift-route-steps" aria-label="Pickup to drop-off"><span class="step-dot"></span><span>Pickup</span><span class="step-line"></span><span class="step-dot drop"></span><span>Drop-off</span></div></div>' +
     '<div class="swift-location-fields"></div>' +
-    '<div class="swift-sheet-tools"><button type="button" id="loc-current" class="swift-current">◎ Use my location</button><button type="button" id="loc-open">Re-centre map</button><button type="button" id="loc-copy-plus" disabled>Copy Plus Code</button></div>' +
+    '<div class="swift-sheet-tools"><button type="button" id="loc-current" class="swift-current">◎ Use my location</button><button type="button" id="loc-open">Re-centre map</button><button type="button" id="loc-copy-plus" disabled>Copy Plus Code</button><a href="https://www.openstreetmap.org/?mlat=-26.32517&amp;mlon=28.19535#map=14/-26.32517/28.19535&amp;layers=T" target="_blank" rel="noopener noreferrer" style="font-size:10px;color:#21664e;font-weight:700">Open transport map ↗</a></div>' +
     '<div class="swift-pin-meta"><span>Selected pin</span><strong id="loc-plus">Choose pickup or drop-off</strong></div>' +
     '<p id="loc-status" role="status" aria-live="polite">Select a pickup or drop-off field, then tap the map to fine-tune its pin.</p>' +
     '<div class="swift-sheet-quote"></div></section>';
@@ -99,7 +99,7 @@
   });
   function ensureMap() {
     if (map || !window.L) return;
-    map = L.map('global-location-map', { zoomControl: false, worldCopyJump: true }).setView([-26.2041, 28.0473], 11);
+    map = L.map('global-location-map', { zoomControl: false, worldCopyJump: true }).setView([-26.32516865200042, 28.195352552065742], 14);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
       maxZoom: 20,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
@@ -194,7 +194,7 @@
     ensureMap();
     if (!map) { $('loc-status').textContent = 'Map is still loading. Please try again.'; return; }
     fitLocations();
-    if (!state.pickup && !state.dropoff) map.setView([-26.2041, 28.0473], 11);
+    if (!state.pickup && !state.dropoff) map.setView([-26.32516865200042, 28.195352552065742], 14);
     setTimeout(() => map.invalidateSize(), 100);
   });
   $('loc-current').addEventListener('click', () => {
