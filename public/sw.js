@@ -1,4 +1,4 @@
-const CACHE = 'swifthaul-shell-v5';
+const CACHE = 'swifthaul-shell-v6';
 const SCOPE = self.registration.scope;
 const ASSETS = ['app.css', 'icon.svg', 'icon-192.png', 'icon-512.png', 'offline.html', 'location-picker.js', 'openlocationcode.min.js'].map(name => new URL(name, SCOPE).pathname);
 self.addEventListener('install', event => {event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));self.skipWaiting();});
