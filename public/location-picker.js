@@ -4,14 +4,14 @@
   if (!workspace || document.getElementById('global-location-tools')) return;
   const style = document.createElement('style');
   style.textContent = `
-    #global-location-tools{margin:0 0 26px;padding:22px;background:#fff;border:1px solid #d9e1d9;border-radius:14px}
+    #global-location-tools{margin:18px 0 26px;padding:20px;background:#f7f9f4;border:1px solid #d9e1d9;border-radius:16px;box-shadow:0 8px 24px #17352e0c}
     #global-location-tools h2{margin:0 0 8px;font-size:18px}
     #global-location-tools p{font-size:12px;line-height:1.7;color:#61776f}
     #global-location-tools .loc-actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
     #global-location-tools button{border:1px solid #d9e1d9;background:#f7f9f4;color:#17352e;border-radius:8px;padding:10px 14px;font-weight:700;cursor:pointer}
     #global-location-tools button.primary-loc{background:#21664e;color:white;border-color:#21664e}
     #global-location-tools input{box-sizing:border-box;max-width:100%;padding:11px;border:1px solid #c8d3c7;border-radius:8px;margin:5px 8px 5px 0}
-    #global-location-map{height:320px;border-radius:10px;overflow:hidden;margin-top:12px;background:#edf2eb}
+    #global-location-map{height:360px;border-radius:12px;overflow:hidden;margin-top:12px;background:#edf2eb;border:1px solid #d9e1d9}
     #global-location-tools .loc-code{font:700 18px ui-monospace,monospace;letter-spacing:.4px;overflow-wrap:anywhere;color:#173d31}
     #global-location-tools .loc-meta{font:11px ui-monospace,monospace;overflow-wrap:anywhere}
     #global-location-tools .loc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
@@ -21,15 +21,17 @@
   const panel = document.createElement('section');
   panel.id = 'global-location-tools';
   panel.innerHTML = `
-    <h2>Global pin &amp; Plus Code</h2>
-    <p>Drop a pin anywhere on Earth, use your device location, then copy a globally usable Plus Code. Geohash is also generated for technical integrations. No Google Maps API key is required for this pin tool.</p>
-    <div class="loc-actions"><button type="button" id="loc-open" class="primary-loc">Open global pin map</button><button type="button" id="loc-current">Use my current location</button></div>
-    <div id="loc-map-wrap" hidden><label for="loc-search">Jump to coordinates (latitude, longitude)</label><input id="loc-search" placeholder="-26.2041, 28.0473" inputmode="decimal"><button type="button" id="loc-go">Go to coordinates</button><div id="global-location-map" role="application" aria-label="Select a location anywhere in the world by moving the map pin"></div><p>Tap anywhere on the map or drag the pin to the exact entrance, gate or collection point.</p></div>
+    <h2>Confirm your pickup &amp; drop-off locations</h2>
+    <p>Choose an address suggestion above, then fine-tune its exact entrance or collection point on this map. Select a pickup or drop-off field using its <strong>Pick / copy pin</strong> control.</p>
+    <div class="loc-actions"><button type="button" id="loc-open" class="primary-loc">Show / refresh map</button><button type="button" id="loc-current">Use my current location</button></div>
+    <div id="loc-map-wrap"><label for="loc-search">Or jump to coordinates (latitude, longitude)</label><input id="loc-search" placeholder="-26.2041, 28.0473" inputmode="decimal"><button type="button" id="loc-go">Go to coordinates</button><div id="global-location-map" role="application" aria-label="Interactive pickup and drop-off map. Tap to place the pin or drag the marker."></div><p>Tap anywhere on the map or drag the pin to the exact entrance, gate or collection point.</p></div>
     <div class="loc-grid" aria-live="polite"><div class="loc-cell"><p>Full Plus Code</p><div id="loc-plus" class="loc-code">Choose a location</div><button type="button" id="loc-copy-plus" disabled>Copy Plus Code</button></div><div class="loc-cell"><p>Geohash · technical reference</p><div id="loc-geohash" class="loc-meta">—</div><button type="button" id="loc-copy-geohash" disabled>Copy Geohash</button></div><div class="loc-cell"><p>Coordinates</p><div id="loc-coords" class="loc-meta">—</div><button type="button" id="loc-copy-coords" disabled>Copy coordinates</button></div></div>
     <p id="loc-reference-note">Plus Codes can be shared in full globally, or shortened and recovered using a known reference location.</p>
     <label for="loc-reference">Reference coordinates (optional, for a short regional code)</label><input id="loc-reference" placeholder="e.g. -26.2041, 28.0473" inputmode="decimal"><div class="loc-actions"><button type="button" id="loc-copy-short" disabled>Copy short code for this reference</button><button type="button" id="loc-copy-link" disabled>Copy map link</button></div>
     <p id="loc-status" role="status" aria-live="polite"></p>`;
-  workspace.insertBefore(panel, workspace.firstChild);
+  const dropoffField = document.getElementById('custDropoff');
+  if (dropoffField?.parentElement) dropoffField.parentElement.insertAdjacentElement('afterend', panel);
+  else workspace.insertBefore(panel, workspace.firstChild);
   const $ = id => document.getElementById(id);
   let map, marker, selected = null, fullCode = '', activeField = null;
   const parsePair = value => {
@@ -57,7 +59,7 @@
   function initMap() {
     if(map)return;
     if(!window.L){$('loc-status').textContent='Map library is still loading. Try again in a moment.';return;}
-    map=L.map('global-location-map',{worldCopyJump:true}).setView([-15,20],2);
+    map=L.map('global-location-map',{worldCopyJump:true}).setView([-26.2041,28.0473],5);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);
     marker=L.marker([-15,20],{draggable:true}).addTo(map);
     marker.on('dragend',()=>{const p=marker.getLatLng();update(p.lat,p.lng)});
@@ -84,8 +86,18 @@
   // Address fields can launch the same pin tool without silently changing a typed address.
   for(const id of ['custPickup','custDropoff']){
     const field=$(id);if(!field)continue;
-    const button=document.createElement('button');button.type='button';button.textContent='Pick / copy pin';button.style.margin='8px 0 16px';
+    const button=document.createElement('button');button.type='button';button.textContent='Pick / copy pin for '+(id==='custPickup'?'pickup':'drop-off');button.style.margin='8px 0 16px';
     button.addEventListener('click',()=>{activeField=field;$('loc-map-wrap').hidden=false;initMap();panel.scrollIntoView({behavior:'smooth',block:'start'});setTimeout(()=>map.invalidateSize(),150)});
     field.insertAdjacentElement('afterend',button);
   }
+  // The workspace is initially hidden behind sign-in. Initialize only once it becomes visible.
+  const revealObserver = new MutationObserver(() => {
+    if (!document.getElementById('workspace')?.hidden) {
+      initMap();
+      setTimeout(() => map?.invalidateSize(), 180);
+      revealObserver.disconnect();
+    }
+  });
+  revealObserver.observe(document.getElementById('workspace'), { attributes: true, attributeFilter: ['hidden'] });
+  if (!document.getElementById('workspace')?.hidden) { initMap(); setTimeout(() => map?.invalidateSize(), 180); }
 })();
