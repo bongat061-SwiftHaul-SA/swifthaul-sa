@@ -17,6 +17,7 @@ if (app === 'driver' || app === 'company') {
   const viewStyle=document.createElement('style');
   viewStyle.textContent='.driver-next-task{margin:12px 0;padding:14px;border-radius:13px;background:#172b49;color:#fff}.driver-next-task small{display:block;color:#a9c1ee;font-size:9px;font-weight:900;letter-spacing:1px}.driver-next-task strong{display:block;margin:5px 0;font-size:18px}.driver-next-task p{margin:4px 0 10px;color:#d2def2;font-size:11px}.driver-next-task a{display:inline-block;color:#a9c1ff;font-size:11px;font-weight:800}.dispatch-sequence-note{font-size:10px;color:#687486;padding:9px 11px;border:1px dashed #aab5c5;border-radius:10px;margin:8px 0}.dispatch-stop-tools{display:flex;align-items:center;gap:7px;margin-bottom:9px}.dispatch-stop-tools b{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#34518a;color:white;font-size:10px}.dispatch-stop-tools button{padding:6px 9px;font-size:10px}.order[draggable=true]{cursor:grab}.order.dragging{opacity:.45}.order.drag-over{outline:2px dashed #4779f4;outline-offset:3px}';
   document.head.append(viewStyle);
+  const podStyle=document.createElement('style');podStyle.textContent=".pod-action-bar{margin:14px 0;padding:14px;border-radius:14px;background:#172b49;color:#fff}.pod-action-bar p{color:#d4deed;font-size:12px}.pod-action-bar button,.pod-confirm{width:100%;margin-top:8px}.pod-dialog{width:min(94vw,560px);max-height:88vh;border:0;border-radius:18px;padding:0;background:#f7f9fc;color:#172b27;box-shadow:0 18px 60px #0008}.pod-dialog::backdrop{background:#07111dcc;backdrop-filter:blur(3px)}.pod-dialog-body{padding:20px;display:grid;gap:12px;overflow:auto}.pod-dialog-body label{display:grid;gap:6px;font-size:13px;font-weight:700}.pod-dialog-body input{max-width:100%;padding:10px;border:1px solid #ccd5d0;border-radius:9px}.pod-close{justify-self:end}.pod-methods{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pod-pane{display:grid;gap:10px}.pod-photo-preview{width:100%;max-height:260px;object-fit:contain;background:#e8ecea;border-radius:12px}.pod-signature{width:100%;height:180px;border:2px dashed #84968e;border-radius:12px;background:#fff;touch-action:none}.pod-confirm{background:#16834b;color:#fff;font-weight:800;padding:14px;border:0;border-radius:10px}.pod-confirm:disabled{opacity:.6}";document.head.append(podStyle);
   const money = value => 'R' + Number(value || 0).toFixed(2);
   const statusLabel = value => ({
     pending: 'Awaiting dispatch', assigned: 'Assigned', accepted: 'Accepted',
@@ -174,7 +175,7 @@ if (app === 'driver' || app === 'company') {
           label.append(pin);
           const submit = document.createElement('button');
           submit.type = 'submit';
-          submit.textContent = 'Confirm delivery';
+          submit.textContent = 'Complete Stop';
           form.append(label, submit);
           form.addEventListener('submit', event => {
             event.preventDefault();
@@ -183,60 +184,68 @@ if (app === 'driver' || app === 'company') {
           });
           card.append(form);
         } else {
-          const form = document.createElement('form');
-          const fileLabel = document.createElement('label');
-          fileLabel.textContent = 'Proof-of-delivery photo (JPEG, PNG or WebP; max 10 MB)';
-          const file = document.createElement('input');
-          file.type = 'file';
-          file.accept = 'image/jpeg,image/png,image/webp';
-          file.required = true;
-          fileLabel.append(file);
-          const recipientLabel = document.createElement('label');
-          recipientLabel.textContent = 'Recipient name (optional)';
-          const recipient = document.createElement('input');
-          recipient.maxLength = 120;
-          recipientLabel.append(recipient);
-          const notesLabel = document.createElement('label');
-          notesLabel.textContent = 'Delivery notes (optional)';
-          const notes = document.createElement('input');
-          notes.maxLength = 500;
-          notesLabel.append(notes);
-          const submit = document.createElement('button');
-          submit.type = 'submit';
-          submit.textContent = 'Upload proof photo';
-          form.append(fileLabel, recipientLabel, notesLabel, submit);
-          form.addEventListener('submit', async event => {
-            event.preventDefault();
-            const selected = file.files?.[0];
-            if (!selected) return;
-            if (selected.size > 10 * 1024 * 1024) {
-              message.textContent = 'Choose an image smaller than 10 MB.';
-              return;
-            }
-            submit.disabled = true;
-            message.textContent = 'Uploading proof photo…';
-            try {
-              const client = window.swiftHaulSupabase;
-              const { data: upload, error: initError } = await client.functions.invoke('pod-upload', {
-                body: { action: 'create', waybill: order.waybill, content_type: selected.type, size: selected.size }
-              });
-              if (initError || upload?.error) throw new Error(upload?.error || initError.message);
-              const { error: storageError } = await client.storage.from('delivery-proof')
-                .uploadToSignedUrl(upload.path, upload.token, selected, { contentType: selected.type, upsert: false });
-              if (storageError) throw storageError;
-              const { data: confirmed, error: confirmError } = await client.functions.invoke('pod-upload', {
-                body: { action: 'confirm', waybill: order.waybill, path: upload.path, recipient_name: recipient.value, notes: notes.value }
-              });
-              if (confirmError || confirmed?.error) throw new Error(confirmed?.error || confirmError.message);
-              await load();
-              message.textContent = 'Proof photo uploaded. Enter the recipient PIN to complete delivery.';
-            } catch (error) {
-              message.textContent = error.message || 'Unable to upload proof photo.';
-            } finally {
-              submit.disabled = false;
-            }
+          const actionBar=document.createElement('section');actionBar.className='pod-action-bar';
+          const actionTitle=document.createElement('strong');actionTitle.textContent='Proof of Delivery';
+          const actionHint=document.createElement('p');actionHint.textContent='Capture a parcel photo or recipient signature before completing this stop.';
+          const openProof=document.createElement('button');openProof.type='button';openProof.textContent='Open secure proof capture';
+          const dialog=document.createElement('dialog');dialog.className='pod-dialog';
+          const dialogBody=document.createElement('div');dialogBody.className='pod-dialog-body';
+          const close=document.createElement('button');close.type='button';close.textContent='Close';close.className='pod-close';
+          const heading=document.createElement('h3');heading.textContent='Proof of Delivery';
+          const methods=document.createElement('div');methods.className='pod-methods';
+          const photoTab=document.createElement('button');photoTab.type='button';photoTab.textContent='Take a photo';
+          const signatureTab=document.createElement('button');signatureTab.type='button';signatureTab.textContent='Collect signature';
+          methods.append(photoTab,signatureTab);
+          const photoPane=document.createElement('section');photoPane.className='pod-pane';
+          const photoLabel=document.createElement('label');photoLabel.textContent='Parcel / handover photo (JPEG, PNG or WebP; max 10 MB)';
+          const file=document.createElement('input');file.type='file';file.accept='image/jpeg,image/png,image/webp';file.setAttribute('capture','environment');
+          const preview=document.createElement('img');preview.alt='Proof photo preview';preview.hidden=true;preview.className='pod-photo-preview';
+          photoLabel.append(file);photoPane.append(photoLabel,preview);
+          const signPane=document.createElement('section');signPane.className='pod-pane';signPane.hidden=true;
+          const signHelp=document.createElement('p');signHelp.textContent='Ask the recipient to sign in the box below.';
+          const canvas=document.createElement('canvas');canvas.className='pod-signature';canvas.width=900;canvas.height=360;canvas.setAttribute('aria-label','Recipient signature area');
+          const clearSign=document.createElement('button');clearSign.type='button';clearSign.textContent='Clear signature';
+          signPane.append(signHelp,canvas,clearSign);
+          const recipientLabel=document.createElement('label');recipientLabel.textContent='Recipient name (optional)';
+          const recipient=document.createElement('input');recipient.maxLength=120;recipientLabel.append(recipient);
+          const notesLabel=document.createElement('label');notesLabel.textContent='Delivery notes (optional)';
+          const notes=document.createElement('input');notes.maxLength=500;notesLabel.append(notes);
+          const confirm=document.createElement('button');confirm.type='button';confirm.textContent='Confirm Photo';confirm.className='pod-confirm';
+          const status=document.createElement('p');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
+          dialogBody.append(close,heading,methods,photoPane,signPane,recipientLabel,notesLabel,confirm,status);dialog.append(dialogBody);
+          let mode='photo',drawing=false,hasSignature=false,signatureBlob=null;
+          const context=canvas.getContext('2d');context.lineWidth=5;context.lineCap='round';context.lineJoin='round';context.strokeStyle='#142d27';
+          const point=event=>{const rect=canvas.getBoundingClientRect();return{x:(event.clientX-rect.left)*canvas.width/rect.width,y:(event.clientY-rect.top)*canvas.height/rect.height};};
+          canvas.addEventListener('pointerdown',event=>{drawing=true;hasSignature=true;canvas.setPointerCapture(event.pointerId);const p=point(event);context.beginPath();context.moveTo(p.x,p.y);});
+          canvas.addEventListener('pointermove',event=>{if(!drawing)return;const p=point(event);context.lineTo(p.x,p.y);context.stroke();});
+          for(const eventName of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(eventName,()=>{drawing=false;});
+          clearSign.addEventListener('click',()=>{context.clearRect(0,0,canvas.width,canvas.height);hasSignature=false;signatureBlob=null;});
+          file.addEventListener('change',()=>{const selected=file.files?.[0];if(!selected){preview.hidden=true;return;}if(!['image/jpeg','image/png','image/webp'].includes(selected.type)||selected.size>10*1024*1024){status.textContent='Choose a JPEG, PNG or WebP image under 10 MB.';file.value='';return;}preview.src=URL.createObjectURL(selected);preview.hidden=false;});
+          const setMode=next=>{mode=next;photoPane.hidden=next!=='photo';signPane.hidden=next!=='signature';photoTab.disabled=next==='photo';signatureTab.disabled=next==='signature';confirm.textContent=next==='photo'?'Confirm Photo':'Confirm Signature';status.textContent='';};
+          photoTab.addEventListener('click',()=>setMode('photo'));signatureTab.addEventListener('click',()=>setMode('signature'));
+          openProof.addEventListener('click',()=>{if(typeof dialog.showModal==='function')dialog.showModal();else status.textContent='This browser does not support secure proof capture.';});
+          close.addEventListener('click',()=>dialog.close());
+          confirm.addEventListener('click',async()=>{
+            let selected;
+            if(mode==='photo')selected=file.files?.[0];
+            else if(hasSignature){signatureBlob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(signatureBlob)selected=new File([signatureBlob],'recipient-signature.png',{type:'image/png'});}
+            if(!selected){status.textContent=mode==='photo'?'Take or select a proof photo first.':'Collect the recipient signature first.';return;}
+            if(selected.size>10*1024*1024){status.textContent='Proof image must be 10 MB or less.';return;}
+            confirm.disabled=true;status.textContent='Uploading securely…';
+            try{
+              const client=window.swiftHaulSupabase;if(!client)throw new Error('Secure account connection is unavailable.');
+              const {data:upload,error:initError}=await client.functions.invoke('pod-upload',{body:{action:'create',waybill:order.waybill,content_type:selected.type,size:selected.size}});
+              if(initError||upload?.error)throw new Error(upload?.error||initError.message);
+              const {error:storageError}=await client.storage.from('delivery-proof').uploadToSignedUrl(upload.path,upload.token,selected,{contentType:selected.type,upsert:false});
+              if(storageError)throw storageError;
+              const proofNotes=[mode==='signature'?'Proof method: recipient signature':'Proof method: delivery photo',notes.value.trim()].filter(Boolean).join(' · ');
+              const {data:confirmed,error:confirmError}=await client.functions.invoke('pod-upload',{body:{action:'confirm',waybill:order.waybill,path:upload.path,recipient_name:recipient.value,notes:proofNotes}});
+              if(confirmError||confirmed?.error)throw new Error(confirmed?.error||confirmError.message);
+              dialog.close();await load();message.textContent=mode==='signature'?'Recipient signature uploaded. Enter the recipient PIN to complete this stop.':'Proof photo uploaded. Enter the recipient PIN to complete this stop.';
+            }catch(error){status.textContent=error.message||'Unable to upload proof.';}
+            finally{confirm.disabled=false;}
           });
-          card.append(form);
+          actionBar.append(actionTitle,actionHint,openProof);card.append(actionBar,dialog);
         }
       }
       if (['accepted', 'picked_up', 'in_transit'].includes(order.status)) {
