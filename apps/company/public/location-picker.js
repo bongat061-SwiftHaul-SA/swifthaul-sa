@@ -31,7 +31,7 @@
     <p id="loc-status" role="status" aria-live="polite"></p>`;
   workspace.insertBefore(panel, workspace.firstChild);
   const $ = id => document.getElementById(id);
-  let map, marker, selected = null, fullCode = '', activeField = null;
+  let map, mapController, marker, selected = null, fullCode = '', activeField = null;
   const parsePair = value => {
     const m = String(value || '').trim().match(/^\s*(-?\d+(?:\.\d+)?)\s*[, ]\s*(-?\d+(?:\.\d+)?)\s*$/);
     if (!m) return null;
@@ -57,9 +57,11 @@
   function initMap() {
     if(map)return;
     if(!window.L){$('loc-status').textContent='Map library is still loading. Try again in a moment.';return;}
-    map=L.map('global-location-map',{worldCopyJump:true}).setView([-15,20],2);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);
-    marker=L.marker([-15,20],{draggable:true}).addTo(map);
+    mapController=window.SwiftHaulMaps?.createMap('global-location-map',{scope:app+'-global-pin',tileUrl:'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',attribution:'© OpenStreetMap contributors',tileOptions:{maxZoom:19}});
+    if(!mapController){$('loc-status').textContent='Shared map services are unavailable. Reload the page.';return}
+    map=mapController.map;map.setView([-15,20],2);
+    mapController.padding.add(new window.SwiftHaulMaps.MapPaddingSource($('loc-map-wrap')),app+'-global-pin');
+    marker=L.marker([-15,20],{draggable:true}).addTo(mapController.layers.get('markers').group);
     marker.on('dragend',()=>{const p=marker.getLatLng();update(p.lat,p.lng)});
     map.on('click',e=>{marker.setLatLng(e.latlng);update(e.latlng.lat,e.latlng.lng)});
     setTimeout(()=>map.invalidateSize(),100);
