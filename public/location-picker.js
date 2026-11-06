@@ -66,6 +66,15 @@
     map.on('click',e=>{marker.setLatLng(e.latlng);update(e.latlng.lat,e.latlng.lng)});
     setTimeout(()=>map.invalidateSize(),100);
   }
+  window.swiftHaulShowAddressOnMap = (input, lat, lng) => {
+    activeField = input;
+    $('loc-map-wrap').hidden = false;
+    initMap();
+    map.setView([lat,lng], 16);
+    marker.setLatLng([lat,lng]);
+    update(lat,lng);
+    setTimeout(() => map.invalidateSize(), 120);
+  };
   $('loc-open').addEventListener('click',()=>{$('loc-map-wrap').hidden=false;initMap();setTimeout(()=>map?.invalidateSize(),100)});
   $('loc-current').addEventListener('click',()=>{
     if(!navigator.geolocation){$('loc-status').textContent='This device does not support location sharing.';return}
