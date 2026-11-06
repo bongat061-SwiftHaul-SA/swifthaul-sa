@@ -17,26 +17,26 @@ In the Supabase dashboard for project `jikstpnvsdjhcibtjilp`:
 
 1. Open **Authentication → URL Configuration**.
 2. Set the Site URL to the Customer page:
-   `https://bongat061-swift...github.io/swifthaul-sa/public/customer.html`
+   `https://bongat061-swifthaul-sa.github.io/swifthaul-sa/public/customer.html`
 3. Add the exact app callback pages below to **Redirect URLs**. Include both directory and explicit-file forms because GitHub Pages may be opened either way.
 
 ```text
-https://bongat061-swift...github.io/swifthaul-sa/public/customer.html
-https://bongat061-swift...github.io/swifthaul-sa/public/
-https://bongat061-swift...github.io/swifthaul-sa/public/index.html
-https://bongat061-swift...github.io/swifthaul-sa/apps/driver/public/
-https://bongat061-swift...github.io/swifthaul-sa/apps/driver/public/index.html
-https://bongat061-swift...github.io/swifthaul-sa/apps/company/public/
-https://bongat061-swift...github.io/swifthaul-sa/apps/company/public/index.html
+https://bongat061-swifthaul-sa.github.io/swifthaul-sa/public/customer.html
+https://bongat061-swifthaul-sa.github.io/swifthaul-sa/public/
+https://bongat061-swifthaul-sa.github.io/swifthaul-sa/public/index.html
+https://bongat061-swifthaul-sa.github.io/swifthaul-sa/apps/driver/public/
+https://bongat061-swifthaul-sa.github.io/swifthaul-sa/apps/driver/public/index.html
+https://bongat061-swifthaul-sa.github.io/swifthaul-sa/apps/company/public/
+https://bongat061-swifthaul-sa.github.io/swifthaul-sa/apps/company/public/index.html
 ```
 
-Replace the abbreviated host above with the exact GitHub Pages hostname shown in the repository's Pages settings before saving. Do not use a broad wildcard when exact paths are available.
+Use these exact GitHub Pages URLs in the Supabase allow-list. Do not use a broad wildcard when exact paths are available.
 
 ## Google provider
 
 1. In Google Cloud Console, create an OAuth Client ID with application type **Web application**.
 2. Add this Authorized JavaScript origin:
-   `https://bongat061-swift...github.io`
+   `https://bongat061-swifthaul-sa.github.io`
 3. Add this Authorized redirect URI:
    `https://jikstpnvsdjhcibtjilp.supabase.co/auth/v1/callback`
 4. In Supabase **Authentication → Providers → Google**, enable Google and enter the Client ID and Client Secret.
