@@ -280,9 +280,7 @@ calculateButton.addEventListener('click', async () => {
     document.getElementById('quote-breakdown').textContent=`Distance ${money(currentQuote.distanceFee)} + extra weight ${mass(currentQuote.load.extra)} kg × ${money(currentQuote.load.rate)}/kg = ${money(currentQuote.load.weightFee)}. Outbound total ${money(currentQuote.price)}.`;
     const directions=new URL('https://www.google.com/maps/dir/');directions.search=new URLSearchParams({api:'1',origin:data.pickup,destination:data.dropoff,travelmode:'driving'}).toString();
     document.getElementById('quote-directions').href=directions.href;
-    const note=document.getElementById('quote-map-note');note.textContent='Planned road route. Live driver location is not included.';
-    try {quoteMap=window.renderDeliveryMap(document.getElementById('quote-map'),route,()=>{note.textContent='Some map tiles could not load. Use the directions link to verify your locations.';});}
-    catch {document.getElementById('quote-map').hidden=true;note.textContent='The map could not load. Check the matched addresses above or open Google Maps.';}
+    document.getElementById('quote-locations').textContent += ' Use the optional pin selector to verify exact entrances; open directions for navigation.';
     quoteStatus.textContent='Route calculated. Review the matched locations and fare before booking.';
     updateBookButton();
   } catch(error) {if (!active.signal.aborted && quoteRequest===active) quoteStatus.textContent=error.message || 'Unable to calculate the quote. Please try again.';}
