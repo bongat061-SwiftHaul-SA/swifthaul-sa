@@ -20,7 +20,7 @@ The picker works without loading a map: users can enter coordinates or a Plus Co
 
 ## Open-source implementation
 
-The Plus Code implementation is loaded from Google's official Open Location Code repository, pinned to commit `83986da0156bbf51fba33d0327d8ca4b7f955c89`:
+The Plus Code implementation is bundled locally from Google's official Open Location Code repository, pinned to commit `83986da0156bbf51fba33d0327d8ca4b7f955c89`. The customer, driver and company service workers cache the library with the location picker so Plus Code entry and encoding can continue offline after the first successful app load:
 
 https://github.com/google/open-location-code
 
