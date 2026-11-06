@@ -151,6 +151,28 @@ document.querySelectorAll('[data-auth-mode]').forEach(el => {
     setMode(requested);
   });
 });
+document.querySelectorAll('[data-social-provider]').forEach(button => button.addEventListener('click', async () => {
+  const provider = button.dataset.socialProvider;
+  if (!['google', 'apple'].includes(provider)) return;
+  if (mode !== 'login') {
+    status.textContent = 'Return to Sign in to use Google or Apple.';
+    return;
+  }
+  button.disabled = true;
+  status.textContent = 'Connecting to ' + (provider === 'google' ? 'Google' : 'Apple') + '…';
+  sessionStorage.setItem('swifthaul-social-intent', JSON.stringify({ app: 'company', mode: 'login' }));
+  try {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: location.origin + location.pathname }
+    });
+    if (error) throw error;
+  } catch (error) {
+    sessionStorage.removeItem('swifthaul-social-intent');
+    status.textContent = error?.message || 'Social sign-in could not be started.';
+    button.disabled = false;
+  }
+}));
 
 document.getElementById('sign-out').addEventListener('click', async () => {
   const { error } = await supabase.auth.signOut();
@@ -191,7 +213,12 @@ async function init() {
   try {
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error) throw error;
-    if (session) await validateAccount(session);
+    if (session) {
+      sessionStorage.removeItem('swifthaul-social-intent');
+      await validateAccount(session);
+    } else {
+      sessionStorage.removeItem('swifthaul-social-intent');
+    }
   } catch (error) {
     status.textContent = error?.message || 'Sign-in is unavailable. Please try again.';
   }
