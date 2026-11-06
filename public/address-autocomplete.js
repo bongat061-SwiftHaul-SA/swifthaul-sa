@@ -48,7 +48,7 @@
       ensureHidden(prefix+'_'+suffix).value=String(value);
     }
     input.dataset.locationSelected='true';
-    const pinButton=input.parentElement.parentElement.querySelector('button');
+    const pinButton=input.nextElementSibling;
     if(pinButton&&pinButton.textContent.toLowerCase().includes('pin'))pinButton.textContent=code?'Pin selected · '+code:'Pin selected';
     input.dispatchEvent(new Event('change',{bubbles:true}));
   }
