@@ -1,5 +1,6 @@
-const CACHE = 'swifthaul-shell-v2';
-const ASSETS = ['/app.css', '/icon.svg', '/icon-192.png', '/icon-512.png', '/offline.html', '/location-picker.js'];
+const CACHE = 'swifthaul-shell-v3';
+const SCOPE = self.registration.scope;
+const ASSETS = ['app.css', 'icon.svg', 'icon-192.png', 'icon-512.png', 'offline.html', 'location-picker.js', 'openlocationcode.min.js'].map(name => new URL(name, SCOPE).pathname);
 self.addEventListener('install', event => {event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));self.skipWaiting();});
 self.addEventListener('activate', event => {event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))));self.clients.claim();});
 self.addEventListener('fetch', event => {
