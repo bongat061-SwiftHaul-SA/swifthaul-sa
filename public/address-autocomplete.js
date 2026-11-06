@@ -41,6 +41,7 @@
     if(!Number.isFinite(lat)||!Number.isFinite(lng))return;
     const prefix=input.name;
     input.value=addressLabel(feature.properties)||input.value;
+    input.dataset.justSelected='true';
     input.dispatchEvent(new Event('input',{bubbles:true}));
     const code=window.OpenLocationCode?.encode(lat,lng,10)||'';
     for(const [suffix,value] of Object.entries({latitude:lat,longitude:lng,plus_code:code,geohash:geohash(lat,lng)})){
@@ -115,6 +116,7 @@
       }
     }
     input.addEventListener('input',()=>{
+      if(input.dataset.justSelected==='true'){delete input.dataset.justSelected;return;}
       if(suppress){suppress=false;return;}
       input.dataset.locationSelected='false';
       clearTimeout(timer);controller?.abort();close();
