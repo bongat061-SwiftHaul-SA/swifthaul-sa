@@ -37,6 +37,12 @@ Deno.serve(async (req: Request) => {
   });
   const { data: authData, error: authError } = await authClient.auth.getUser(match[1]);
   if (authError || !authData.user) return respond(401, { error: "invalid_or_expired_session" });
+  const linkedProviders = Array.isArray(authData.user.app_metadata?.providers)
+    ? authData.user.app_metadata.providers
+    : [authData.user.app_metadata?.provider].filter(Boolean);
+  if (!linkedProviders.some((provider: string) => provider === "google" || provider === "apple")) {
+    return respond(403, { error: "google_or_apple_identity_required" });
+  }
   if (!authData.user.email_confirmed_at && !authData.user.confirmed_at) {
     return respond(403, { error: "verified_provider_email_required" });
   }
