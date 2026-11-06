@@ -1,4 +1,4 @@
-const CACHE = 'swifthaul-shell-v4';
+const CACHE = 'swifthaul-shell-v5';
 const SCOPE = self.registration.scope;
 const ASSETS = ['app.css', 'icon.svg', 'icon-192.png', 'icon-512.png', 'offline.html', 'location-picker.js', 'openlocationcode.min.js']
   .map(name => new URL(name, SCOPE).pathname);
