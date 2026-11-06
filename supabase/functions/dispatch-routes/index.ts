@@ -81,8 +81,7 @@ Deno.serve(async(req:Request)=>{
     if(error)return reply(500,{error:"route_stops_lookup_failed"});
     const ids=(existing??[]).map(x=>x.id);
     if(body.stop_ids.length!==ids.length||new Set(body.stop_ids).size!==ids.length||body.stop_ids.some((id:string)=>!ids.includes(id)))return reply(400,{error:"reorder_must_include_every_route_stop_once"});
-    const {error:shiftError}=await db.from("dispatch_route_stops").update({sequence_no:31}).eq("route_id",route.id);
-    if(shiftError)return reply(500,{error:"route_reorder_prepare_failed"});
+    for(let i=0;i<ids.length;i++){const {error:shiftError}=await db.from("dispatch_route_stops").update({sequence_no:31+i}).eq("id",ids[i]).eq("route_id",route.id);if(shiftError)return reply(500,{error:"route_reorder_prepare_failed"});}
     for(let i=0;i<body.stop_ids.length;i++){const {error:updateError}=await db.from("dispatch_route_stops").update({sequence_no:i+1}).eq("id",body.stop_ids[i]).eq("route_id",route.id);if(updateError)return reply(500,{error:"route_reorder_failed"});}
     return reply(200,{reordered:true});
   }
