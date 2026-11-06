@@ -3,11 +3,12 @@ name: Publish SwiftHaul platforms to GitHub Pages
 on:
   push:
     branches:
+      - main
       - migration/supabase-github-pages
       - feature/customer-smart-address-estimator
   workflow_dispatch:
 
-# Publishing the three platform entry points from the staging migration and customer-estimator branches.
+# Publishing the three platform entry points from the validated main branch and legacy staging branches.
 
 permissions:
   contents: read
