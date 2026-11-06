@@ -74,6 +74,7 @@ function showWorkspace(user) {
 
 async function validateAccount(session) {
   const { data, error } = await supabase.functions.invoke('account-me', {
+    method: 'GET',
     headers: { Authorization: 'Bearer ' + session.access_token }
   });
   if (error) throw new Error(error.message || 'Unable to validate your account.');
