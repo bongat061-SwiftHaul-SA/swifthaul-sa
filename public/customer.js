@@ -41,6 +41,13 @@ let ready = false;
 let loadVersion = 0;
 let refundRequestsByWaybill = new Map();
 const report = (text, error = false) => { message.textContent = text; message.classList.toggle('error', error); };
+// Surface native form-validation failures in the customer booking status instead of silently blocking submission.
+form.addEventListener('invalid', event => {
+  const field = event.target;
+  const label = field.labels?.[0]?.textContent?.trim() || field.name || 'a required field';
+  const reason = field.validity.valueMissing ? 'is required' : field.validity.rangeUnderflow ? 'is below the minimum' : field.validity.rangeOverflow ? 'is above the maximum' : field.validity.stepMismatch ? 'has an invalid increment' : 'is invalid';
+  report(`${label} ${reason}. Please correct it before booking.`, true);
+}, true);
 form.addEventListener('input', event => {if(['pickup','dropoff'].includes(event.target.name)){for(const suffix of ['latitude','longitude','plus_code','geohash']){const hidden=form.elements.namedItem(event.target.name+'_'+suffix);if(hidden)hidden.value='';}const picker=event.target.nextElementSibling;if(picker?.matches('button'))picker.textContent='Pick / copy pin';}if (['pickup','dropoff','weight','length','width','height'].includes(event.target.name)) resetQuote();});
 form.addEventListener('change', event => {if (['weight','length','width','height'].includes(event.target.name)) resetQuote();});
 function whatsapp(order) {
