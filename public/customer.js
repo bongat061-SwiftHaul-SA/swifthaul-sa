@@ -268,6 +268,16 @@ calculateButton.addEventListener('click', async () => {
     currentQuote=result.quote;updatePaymentOptions();const route=currentQuote.route;
     document.getElementById('quote-result').hidden=false;
     document.getElementById('quote-distance').textContent=`${km(route.distance)} km`;
+    const driveMinutes=Math.max(1,Math.round(Number(route.duration||0)/60));
+    const driveHours=Math.floor(driveMinutes/60),remainingMinutes=driveMinutes%60;
+    const driveLabel=driveHours?driveHours+' hr '+remainingMinutes+' min':driveMinutes+' min';
+    document.getElementById('quote-stop-a').textContent=route.pickup.label;
+    document.getElementById('quote-stop-b').textContent=route.dropoff.label;
+    document.getElementById('quote-route-total-distance').textContent=km(route.distance)+' km';
+    document.getElementById('quote-route-total-time').textContent=driveLabel;
+    document.getElementById('quote-tier-name').textContent='SwiftHaul Standard · '+(currentQuote.load.truckClass||currentQuote.vehicle.toUpperCase());
+    document.getElementById('quote-tier-eta').textContent='Estimated driving time: '+driveLabel+' · traffic not included';
+    document.getElementById('quote-tier-price').textContent=money(currentQuote.price);
     document.getElementById('quote-price').textContent=money(currentQuote.price);
     document.getElementById('priceBadge').textContent=money(currentQuote.price);
     document.getElementById('quote-band').textContent=`Fare band: ${currentQuote.band*12} km to below ${(currentQuote.band+1)*12} km. Every new 12 km band doubles the fare.`;
