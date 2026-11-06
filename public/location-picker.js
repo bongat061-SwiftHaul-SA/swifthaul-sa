@@ -162,6 +162,19 @@
   };
 
   for (const [input, label] of [[pickup, 'pickup'], [dropoff, 'drop-off']]) {
+    const key = input.name === 'pickup' ? 'pickup' : 'dropoff';
+    input.addEventListener('focus', () => { activeField = input; });
+    input.addEventListener('input', () => {
+      if (input.dataset.justSelected === 'true') return;
+      const previous = state[key];
+      if (previous?.marker && map) map.removeLayer(previous.marker);
+      delete state[key];
+      if (routeLine) { routeLine.remove(); routeLine = null; }
+      const remaining = state.pickup || state.dropoff;
+      if (remaining && map) map.setView([remaining.lat, remaining.lng], 15);
+      const pin = input.parentElement.querySelector('.swift-pin-button');
+      if (pin) { pin.setAttribute('aria-pressed', 'false'); pin.textContent = '◎ Adjust ' + label + ' pin on map'; }
+    });
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'swift-pin-button';
