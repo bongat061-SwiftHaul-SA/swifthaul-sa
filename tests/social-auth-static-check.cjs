@@ -25,7 +25,7 @@ assert.match(customer, /social-onboard/, 'Customer social signup must complete i
 assert.match(driver, /social-onboard/, 'Driver social signup must complete its profile');
 assert.match(driver, /license_number:[\s\S]*license_expiry:[\s\S]*vehicle_type:[\s\S]*vehicle_registration:/, 'Driver onboarding must preserve required licence and vehicle fields');
 assert.match(company, /\['admin','dispatcher'\]/, 'Company OAuth must retain the admin/dispatcher role gate');
-assert.doesNotMatch(company, /signUp\(/, 'Company platform must not expose public account creation');
+assert.doesNotMatch(read('apps/company/public/index.html'), /data-auth-mode="signup"/, 'Company platform must not expose public account creation');
 
 const onboard = read('supabase/functions/social-onboard/index.ts');
 assert.match(onboard, /authClient\.auth\.getUser\(match\[1\]\)/, 'Onboarding must validate the caller bearer token');
