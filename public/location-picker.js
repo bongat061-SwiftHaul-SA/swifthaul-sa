@@ -71,6 +71,7 @@
   const $ = id => document.getElementById(id);
   const state = { pickup: null, dropoff: null };
   let map = null;
+  let mapController = null;
   let activeField = pickup;
   let routeLine = null;
   let selectedCode = '';
@@ -99,12 +100,12 @@
   });
   function ensureMap() {
     if (map || !window.L) return;
-    map = L.map('global-location-map', { zoomControl: false, worldCopyJump: true }).setView([-26.32516865200042, 28.195352552065742], 14);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 20,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-    }).addTo(map);
-    L.control.zoom({ position: 'topright' }).addTo(map);
+    mapController = window.SwiftHaulMaps?.createMap('global-location-map', {scope:'customer-booking'});
+    if (!mapController) { $('loc-status').textContent = 'Shared map services are unavailable. Reload the page.'; return; }
+    map = mapController.map;
+    map.setView([-26.32516865200042, 28.195352552065742], 14);
+    mapController.padding.add(new window.SwiftHaulMaps.MapPaddingSource(stage.querySelector('.swift-location-sheet')), 'customer-booking');
+    L.control.zoom({ position: 'topright' }).addTo(mapController.layers.get('tiles').group);
     map.on('click', event => {
       if (activeField) saveLocation(activeField, event.latlng.lat, event.latlng.lng, 'Map pin adjusted. Check the address and Plus Code.');
     });
@@ -116,7 +117,7 @@
     if (points.length === 2) {
       map.fitBounds(points, { padding: [55, 55], maxZoom: 15 });
       if (routeLine) routeLine.setLatLngs(points);
-      else routeLine = L.polyline(points, { color: '#173d31', weight: 5, opacity: .92, lineCap: 'round', dashArray: '9 8' }).addTo(map);
+      else routeLine = L.polyline(points, { color: '#173d31', weight: 5, opacity: .92, lineCap: 'round', dashArray: '9 8' }).addTo(mapController.layers.get('routes').group);
     } else if (points.length === 1) {
       map.setView(points[0], 16);
       if (routeLine) { routeLine.remove(); routeLine = null; }
@@ -143,7 +144,7 @@
     $('loc-status').textContent = message || (key === 'pickup' ? 'Pickup pin saved.' : 'Drop-off pin saved.');
     if (map) {
       if (state[key].marker) state[key].marker.setLatLng([lat, lng]);
-      else state[key].marker = L.marker([lat, lng], { draggable: true, icon: markerIcon(key), title: key === 'pickup' ? 'Pickup point' : 'Drop-off point' }).addTo(map);
+      else state[key].marker = L.marker([lat, lng], { draggable: true, icon: markerIcon(key), title: key === 'pickup' ? 'Pickup point' : 'Drop-off point' }).addTo(mapController.layers.get('markers').group);
       state[key].marker.off('dragend');
       state[key].marker.on('dragend', event => {
         const p = event.target.getLatLng();
