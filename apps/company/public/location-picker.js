@@ -59,20 +59,20 @@
     if(!window.L){$('loc-status').textContent='Map library is still loading. Try again in a moment.';return;}
     mapController=window.SwiftHaulMaps?.createMap('global-location-map',{scope:app+'-global-pin',tileUrl:'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',attribution:'© OpenStreetMap contributors',tileOptions:{maxZoom:19}});
     if(!mapController){$('loc-status').textContent='Shared map services are unavailable. Reload the page.';return}
-    map=mapController.map;map.setView([-15,20],2);
+    map=mapController.map;mapController.camera.move({lat:-15,lng:20,zoom:2},0,app+'-global-pin');
     mapController.padding.add(new window.SwiftHaulMaps.MapPaddingSource($('loc-map-wrap')),app+'-global-pin');
     marker=L.marker([-15,20],{draggable:true}).addTo(mapController.layers.get('markers').group);
     marker.on('dragend',()=>{const p=marker.getLatLng();update(p.lat,p.lng)});
     map.on('click',e=>{marker.setLatLng(e.latlng);update(e.latlng.lat,e.latlng.lng)});
-    setTimeout(()=>map.invalidateSize(),100);
+    setTimeout(()=>{map.invalidateSize();mapController.padding.refresh()},100);
   }
-  $('loc-open').addEventListener('click',()=>{$('loc-map-wrap').hidden=false;initMap();setTimeout(()=>map?.invalidateSize(),100)});
+  $('loc-open').addEventListener('click',()=>{$('loc-map-wrap').hidden=false;initMap();setTimeout(()=>{map?.invalidateSize();mapController?.padding.refresh()},100)});
   $('loc-current').addEventListener('click',()=>{
     if(!navigator.geolocation){$('loc-status').textContent='This device does not support location sharing.';return}
     $('loc-status').textContent='Requesting device location permission…';
-    navigator.geolocation.getCurrentPosition(pos=>{const {latitude:lat,longitude:lng}=pos.coords;$('loc-map-wrap').hidden=false;initMap();map.setView([lat,lng],17);marker.setLatLng([lat,lng]);update(lat,lng);setTimeout(()=>map.invalidateSize(),100)},err=>{$('loc-status').textContent=err.code===1?'Location permission was denied. You can still drop a pin manually.':'Could not get your location. Drop a pin manually instead.'},{enableHighAccuracy:true,timeout:15000,maximumAge:30000});
+    navigator.geolocation.getCurrentPosition(pos=>{const {latitude:lat,longitude:lng}=pos.coords;$('loc-map-wrap').hidden=false;initMap();mapController.camera.move({lat,lng,zoom:17},0,app+'-global-pin');marker.setLatLng([lat,lng]);update(lat,lng);setTimeout(()=>map.invalidateSize(),100)},err=>{$('loc-status').textContent=err.code===1?'Location permission was denied. You can still drop a pin manually.':'Could not get your location. Drop a pin manually instead.'},{enableHighAccuracy:true,timeout:15000,maximumAge:30000});
   });
-  $('loc-go').addEventListener('click',()=>{const p=parsePair($('loc-search').value);if(!p){$('loc-status').textContent='Enter valid latitude, longitude (for example -26.2041, 28.0473).';return}initMap();map.setView(p,17);marker.setLatLng(p);update(...p)});
+  $('loc-go').addEventListener('click',()=>{const p=parsePair($('loc-search').value);if(!p){$('loc-status').textContent='Enter valid latitude, longitude (for example -26.2041, 28.0473).';return}initMap();mapController.camera.move({lat:p[0],lng:p[1],zoom:17},0,app+'-global-pin');marker.setLatLng(p);update(...p)});
   $('loc-reference').addEventListener('input',()=>{const ref=parsePair($('loc-reference').value);$('loc-copy-short').disabled=!ref||!selected});
   async function copy(value){try{await navigator.clipboard.writeText(value);$('loc-status').textContent='Copied: '+value}catch{$('loc-status').textContent='Copy was blocked by the browser. Select the code and copy it manually.'}}
   $('loc-copy-plus').addEventListener('click',()=>selected&&copy(fullCode));
