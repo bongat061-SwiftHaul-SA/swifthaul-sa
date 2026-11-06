@@ -6,7 +6,7 @@ on:
       - feature/shared-map-architecture
   pull_request:
     branches:
-      - feature/shared-map-architecture
+      - main
 
 permissions:
   contents: read
