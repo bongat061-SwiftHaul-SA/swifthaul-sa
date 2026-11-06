@@ -71,11 +71,9 @@ if (app === 'driver' || app === 'company') {
         const state=document.createElement('small');state.textContent=stop.status==='completed'?'Completed':booking.status==='delivered'?'Delivery complete':'Pending';
         item.append(label,address,state);
         if(app==='company'&&route.status==='assigned'){
-          const move=document.createElement('button');move.type='button';move.textContent=i===0?'↓':'↑';move.disabled=i===0;
-          move.setAttribute('aria-label','Move stop up');
-          move.addEventListener('click',async()=>{const reordered=stops.slice();[reordered[i-1],reordered[i]]=[reordered[i],reordered[i-1]];move.disabled=true;try{await routeInvoke('POST',{action:'reorder_route',route_id:route.id,stop_ids:reordered.map(x=>x.id)});await load();}catch(e){message.textContent=e.message;}finally{move.disabled=false;}});
-          item.append(move);
-          if(i===0&&stops.length>1){const down=document.createElement('button');down.type='button';down.textContent='↓';down.setAttribute('aria-label','Move stop down');down.addEventListener('click',async()=>{const reordered=stops.slice();[reordered[0],reordered[1]]=[reordered[1],reordered[0]];down.disabled=true;try{await routeInvoke('POST',{action:'reorder_route',route_id:route.id,stop_ids:reordered.map(x=>x.id)});await load();}catch(e){message.textContent=e.message;}finally{down.disabled=false;}});item.append(down);}
+          const persistOrder=async(nextStops,button)=>{button.disabled=true;try{await routeInvoke('POST',{action:'reorder_route',route_id:route.id,stop_ids:nextStops.map(x=>x.id)});await load();}catch(e){message.textContent=e.message;}finally{button.disabled=false;}};
+          if(i>0){const up=document.createElement('button');up.type='button';up.textContent='↑';up.setAttribute('aria-label','Move stop up');up.addEventListener('click',()=>{const next=stops.slice();[next[i-1],next[i]]=[next[i],next[i-1]];persistOrder(next,up);});item.append(up);}
+          if(i<stops.length-1){const down=document.createElement('button');down.type='button';down.textContent='↓';down.setAttribute('aria-label','Move stop down');down.addEventListener('click',()=>{const next=stops.slice();[next[i],next[i+1]]=[next[i+1],next[i]];persistOrder(next,down);});item.append(down);}
         }
         listStops.append(item);
       }
