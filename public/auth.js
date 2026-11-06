@@ -36,8 +36,16 @@ function setMode(next) {
   status.textContent = '';
 }
 async function validateAccount(session) {
-  const { data, error } = await supabase.functions.invoke('account-me', { headers: { Authorization: 'Bearer ' + session.access_token } });
-  if (error) throw new Error(data?.error || error.message || 'Unable to validate your account.');
+  // account-me is a GET-only Edge Function; functions.invoke() sends POST by default.
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/account-me`, {
+    method: 'GET',
+    headers: {
+      apikey: SUPABASE_PUBLISHABLE_KEY,
+      Authorization: 'Bearer ' + session.access_token
+    }
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data?.error || `Account validation failed (${response.status}).`);
   const user = data?.user;
   if (!user || user.role !== 'customer') throw new Error('This account is not registered as a customer.');
   if (user.accountStatus !== 'active') throw new Error('Your customer account is not active. Contact SwiftHaul support.');
