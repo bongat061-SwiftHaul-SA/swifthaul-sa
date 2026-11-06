@@ -103,7 +103,7 @@
     mapController = window.SwiftHaulMaps?.createMap('global-location-map', {scope:'customer-booking'});
     if (!mapController) { $('loc-status').textContent = 'Shared map services are unavailable. Reload the page.'; return; }
     map = mapController.map;
-    map.setView([-26.32516865200042, 28.195352552065742], 14);
+    mapController.camera.move({lat:-26.32516865200042,lng:28.195352552065742,zoom:14},0,'customer-booking');
     mapController.padding.add(new window.SwiftHaulMaps.MapPaddingSource(stage.querySelector('.swift-location-sheet')), 'customer-booking');
     L.control.zoom({ position: 'topright' }).addTo(map);
     map.on('click', event => {
