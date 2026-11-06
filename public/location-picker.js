@@ -1,91 +1,54 @@
 (() => {
-  const app = document.body.dataset.app;
-  const workspace = document.querySelector('#workspace .page');
-  if (!workspace || document.getElementById('global-location-tools')) return;
-  const style = document.createElement('style');
-  style.textContent = `
-    #global-location-tools{margin:0 0 26px;padding:22px;background:#fff;border:1px solid #d9e1d9;border-radius:14px}
-    #global-location-tools h2{margin:0 0 8px;font-size:18px}
-    #global-location-tools p{font-size:12px;line-height:1.7;color:#61776f}
-    #global-location-tools .loc-actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
-    #global-location-tools button{border:1px solid #d9e1d9;background:#f7f9f4;color:#17352e;border-radius:8px;padding:10px 14px;font-weight:700;cursor:pointer}
-    #global-location-tools button.primary-loc{background:#21664e;color:white;border-color:#21664e}
-    #global-location-tools input{box-sizing:border-box;max-width:100%;padding:11px;border:1px solid #c8d3c7;border-radius:8px;margin:5px 8px 5px 0}
-    #global-location-map{height:320px;border-radius:10px;overflow:hidden;margin-top:12px;background:#edf2eb}
-    #global-location-tools .loc-code{font:700 18px ui-monospace,monospace;letter-spacing:.4px;overflow-wrap:anywhere;color:#173d31}
-    #global-location-tools .loc-meta{font:11px ui-monospace,monospace;overflow-wrap:anywhere}
-    #global-location-tools .loc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
-    #global-location-tools .loc-cell{padding:12px;background:#f7f9f4;border-radius:9px;min-width:0}
-  `;
+  const workspace=document.querySelector('#workspace .page');
+  if(!workspace||document.getElementById('global-location-tools'))return;
+  const style=document.createElement('style');
+  style.textContent="#global-location-tools{margin:0 0 26px;padding:22px;background:#fff;border:1px solid #d9e1d9;border-radius:14px}#global-location-tools h2{margin:0 0 8px;font-size:18px}#global-location-tools p{font-size:12px;line-height:1.7;color:#61776f}#global-location-tools .loc-actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}#global-location-tools button{border:1px solid #d9e1d9;background:#f7f9f4;color:#17352e;border-radius:8px;padding:10px 14px;font-weight:700;cursor:pointer}#global-location-tools button.primary-loc{background:#21664e;color:white;border-color:#21664e}#global-location-tools input{box-sizing:border-box;max-width:100%;padding:11px;border:1px solid #c8d3c7;border-radius:8px;margin:5px 8px 5px 0}#global-location-tools .loc-code{font:700 18px ui-monospace,monospace;letter-spacing:.4px;overflow-wrap:anywhere;color:#173d31}#global-location-tools .loc-meta{font:11px ui-monospace,monospace;overflow-wrap:anywhere}#global-location-tools .loc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}#global-location-tools .loc-cell{padding:12px;background:#f7f9f4;border-radius:9px;min-width:0}#global-location-tools .loc-field{margin:14px 0}#global-location-tools .loc-field input{width:min(100%,420px)}#global-location-map{height:300px;border-radius:10px;overflow:hidden;margin-top:12px;background:#edf2eb}";
   document.head.append(style);
-  const panel = document.createElement('section');
-  panel.id = 'global-location-tools';
-  panel.innerHTML = `
-    <h2>Global pin &amp; Plus Code</h2>
-    <p>Drop a pin anywhere on Earth, use your device location, then copy a globally usable Plus Code. Geohash is also generated for technical integrations. No Google Maps API key is required for this pin tool.</p>
-    <div class="loc-actions"><button type="button" id="loc-open" class="primary-loc">Open global pin map</button><button type="button" id="loc-current">Use my current location</button></div>
-    <div id="loc-map-wrap" hidden><label for="loc-search">Jump to coordinates (latitude, longitude)</label><input id="loc-search" placeholder="-26.2041, 28.0473" inputmode="decimal"><button type="button" id="loc-go">Go to coordinates</button><div id="global-location-map" role="application" aria-label="Select a location anywhere in the world by moving the map pin"></div><p>Tap anywhere on the map or drag the pin to the exact entrance, gate or collection point.</p></div>
-    <div class="loc-grid" aria-live="polite"><div class="loc-cell"><p>Full Plus Code</p><div id="loc-plus" class="loc-code">Choose a location</div><button type="button" id="loc-copy-plus" disabled>Copy Plus Code</button></div><div class="loc-cell"><p>Geohash · technical reference</p><div id="loc-geohash" class="loc-meta">—</div><button type="button" id="loc-copy-geohash" disabled>Copy Geohash</button></div><div class="loc-cell"><p>Coordinates</p><div id="loc-coords" class="loc-meta">—</div><button type="button" id="loc-copy-coords" disabled>Copy coordinates</button></div></div>
-    <p id="loc-reference-note">Plus Codes can be shared in full globally, or shortened and recovered using a known reference location.</p>
-    <label for="loc-reference">Reference coordinates (optional, for a short regional code)</label><input id="loc-reference" placeholder="e.g. -26.2041, 28.0473" inputmode="decimal"><div class="loc-actions"><button type="button" id="loc-copy-short" disabled>Copy short code for this reference</button><button type="button" id="loc-copy-link" disabled>Copy map link</button></div>
-    <p id="loc-status" role="status" aria-live="polite"></p>`;
-  workspace.insertBefore(panel, workspace.firstChild);
-  const $ = id => document.getElementById(id);
-  let map, marker, selected = null, fullCode = '', activeField = null;
-  const parsePair = value => {
-    const m = String(value || '').trim().match(/^\s*(-?\d+(?:\.\d+)?)\s*[, ]\s*(-?\d+(?:\.\d+)?)\s*$/);
-    if (!m) return null;
-    const lat = Number(m[1]), lng = Number(m[2]);
-    return Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? [lat,lng] : null;
-  };
-  function geohash(lat, lng, precision=9) {
-    const alphabet='0123456789bcdefghjkmnpqrstuvwxyz';let latR=[-90,90],lngR=[-180,180],even=true,bits=0,ch=0,out='';
-    while(out.length<precision){const range=even?lngR:latR,mid=(range[0]+range[1])/2;ch<<=1;if((even?lng:lat)>=mid){ch|=1;range[0]=mid}else range[1]=mid;even=!even;if(++bits===5){out+=alphabet[ch];bits=0;ch=0}}
-    return out;
-  }
-  function update(lat,lng) {
-    if (!window.OpenLocationCode || !window.L) { $('loc-status').textContent='The map or Plus Code library did not load. Check your connection and reload.';return; }
+  const panel=document.createElement('section');panel.id='global-location-tools';
+  panel.innerHTML='<h2>Global location &amp; Plus Code</h2><p>Plus Codes are the primary shareable location reference. Enter coordinates or a Plus Code without opening a map. Open the lightweight map only when you want to select or adjust a pin.</p><div class="loc-field"><label for="loc-search">Coordinates (latitude, longitude)</label><input id="loc-search" placeholder="-26.2041, 28.0473" inputmode="decimal"><button type="button" id="loc-go">Use coordinates</button></div><div class="loc-field"><label for="loc-plus-input">Enter a Plus Code</label><input id="loc-plus-input" placeholder="e.g. 5PVM...+..." autocomplete="off"><button type="button" id="loc-resolve-plus">Resolve Plus Code</button></div><div class="loc-actions"><button type="button" id="loc-current">Use my current location</button><button type="button" id="loc-open" class="primary-loc">Choose / adjust pin on map</button></div><div id="loc-map-wrap" hidden><div id="global-location-map" role="application" aria-label="Optional map for selecting a location pin"></div><p>Tap the map or drag the marker to select the exact entrance, gate or collection point.</p></div><div class="loc-grid" aria-live="polite"><div class="loc-cell"><p>Full Plus Code</p><div id="loc-code-output" class="loc-code">Enter a location</div><button type="button" id="loc-copy-plus" disabled>Copy Plus Code</button></div><div class="loc-cell"><p>Geohash · technical reference</p><div id="loc-geohash" class="loc-meta">—</div><button type="button" id="loc-copy-geohash" disabled>Copy Geohash</button></div><div class="loc-cell"><p>Coordinates</p><div id="loc-coords" class="loc-meta">—</div><button type="button" id="loc-copy-coords" disabled>Copy coordinates</button></div></div><div class="loc-field"><label for="loc-reference">Reference coordinates (optional, for a short regional code)</label><input id="loc-reference" placeholder="e.g. -26.2041, 28.0473" inputmode="decimal"><button type="button" id="loc-copy-short" disabled>Copy short code with reference</button></div><div class="loc-actions"><button type="button" id="loc-copy-link" disabled>Copy external map link</button></div><p id="loc-status" role="status" aria-live="polite"></p>';
+  workspace.insertBefore(panel,workspace.firstChild);
+  const $=id=>document.getElementById(id);
+  let map,marker,selected=null,fullCode='',activeField=null,leafletPromise=null;
+  const parsePair=value=>{const m=String(value||'').trim().match(/^\s*(-?\d+(?:\.\d+)?)\s*[, ]\s*(-?\d+(?:\.\d+)?)\s*$/);if(!m)return null;const lat=Number(m[1]),lng=Number(m[2]);return Number.isFinite(lat)&&Number.isFinite(lng)&&Math.abs(lat)<=90&&Math.abs(lng)<=180?[lat,lng]:null;};
+  function geohash(lat,lng,precision=9){const a='0123456789bcdefghjkmnpqrstuvwxyz';let lr=[-90,90],gr=[-180,180],even=true,bits=0,ch=0,out='';while(out.length<precision){const r=even?gr:lr,mid=(r[0]+r[1])/2;ch<<=1;if((even?lng:lat)>=mid){ch|=1;r[0]=mid;}else r[1]=mid;even=!even;if(++bits===5){out+=a[ch];bits=0;ch=0;}}return out;}
+  function update(lat,lng){
+    if(!window.OpenLocationCode){$('loc-status').textContent='Plus Code library is unavailable. Reload while connected to the internet.';return;}
     selected={lat,lng};fullCode=window.OpenLocationCode.encode(lat,lng,10);
-    if(activeField){const form=activeField.closest('form');const prefix=activeField.name;for(const [suffix,value] of Object.entries({latitude:lat,longitude:lng,plus_code:fullCode,geohash:geohash(lat,lng,9)})){const name=prefix+'_'+suffix;let input=form?.querySelector('[name="'+name+'"]');if(!input&&form){input=document.createElement('input');input.type='hidden';input.name=name;form.append(input)}if(input)input.value=String(value)}const button=activeField.nextElementSibling;if(button?.matches('button'))button.textContent='Pin selected · '+fullCode;}
-    $('loc-plus').textContent=fullCode;$('loc-geohash').textContent=geohash(lat,lng,9);$('loc-coords').textContent=lat.toFixed(6)+', '+lng.toFixed(6);
+    if(activeField){const form=activeField.closest('form'),prefix=activeField.name;for(const [suffix,value] of Object.entries({latitude:lat,longitude:lng,plus_code:fullCode,geohash:geohash(lat,lng,9)})){const name=prefix+'_'+suffix;let input=form?.querySelector('[name="'+name+'"]');if(!input&&form){input=document.createElement('input');input.type='hidden';input.name=name;form.append(input);}if(input)input.value=String(value);}const button=activeField.nextElementSibling;if(button?.matches('button'))button.textContent='Pin selected · '+fullCode;}
+    $('loc-code-output').textContent=fullCode;$('loc-plus-input').value=fullCode;$('loc-geohash').textContent=geohash(lat,lng,9);$('loc-coords').textContent=lat.toFixed(6)+', '+lng.toFixed(6);
     for(const id of ['loc-copy-plus','loc-copy-geohash','loc-copy-coords','loc-copy-link'])$(id).disabled=false;
-    const ref=parsePair($('loc-reference').value);$('loc-copy-short').disabled=!ref;
-    $('loc-reference-note').textContent=ref?'Full code is always globally unique. The short code below is only meaningful with the reference coordinates entered.':'Plus Codes can be shared in full globally, or shortened and recovered using a known reference location.';
+    $('loc-copy-short').disabled=!parsePair($('loc-reference').value);
     if(marker)marker.setLatLng([lat,lng]);
-    $('loc-status').textContent='Pin selected. Copy the full Plus Code to share it anywhere.';
+    $('loc-status').textContent='Location ready. The full Plus Code can be shared globally; the map is optional.';
   }
-  function initMap() {
-    if(map)return;
-    if(!window.L){$('loc-status').textContent='Map library is still loading. Try again in a moment.';return;}
-    map=L.map('global-location-map',{worldCopyJump:true}).setView([-15,20],2);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);
-    marker=L.marker([-15,20],{draggable:true}).addTo(map);
-    marker.on('dragend',()=>{const p=marker.getLatLng();update(p.lat,p.lng)});
-    map.on('click',e=>{marker.setLatLng(e.latlng);update(e.latlng.lat,e.latlng.lng)});
-    setTimeout(()=>map.invalidateSize(),100);
+  function loadLeaflet(){
+    if(window.L)return Promise.resolve();
+    if(leafletPromise)return leafletPromise;
+    leafletPromise=new Promise((resolve,reject)=>{
+      if(!document.querySelector('link[data-swift-leaflet]')){const css=document.createElement('link');css.rel='stylesheet';css.href='https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css';css.dataset.swiftLeaflet='true';document.head.append(css);}
+      const script=document.createElement('script');script.src='https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js';script.async=true;script.onload=()=>window.L?resolve():reject(new Error('Map library did not initialize.'));script.onerror=()=>reject(new Error('Optional map could not load. Coordinates and Plus Codes still work.'));document.head.append(script);
+    }).catch(error=>{leafletPromise=null;throw error;});
+    return leafletPromise;
   }
-  $('loc-open').addEventListener('click',()=>{$('loc-map-wrap').hidden=false;initMap();setTimeout(()=>map?.invalidateSize(),100)});
-  $('loc-current').addEventListener('click',()=>{
-    if(!navigator.geolocation){$('loc-status').textContent='This device does not support location sharing.';return}
-    $('loc-status').textContent='Requesting device location permission…';
-    navigator.geolocation.getCurrentPosition(pos=>{const {latitude:lat,longitude:lng}=pos.coords;$('loc-map-wrap').hidden=false;initMap();map.setView([lat,lng],17);marker.setLatLng([lat,lng]);update(lat,lng);setTimeout(()=>map.invalidateSize(),100)},err=>{$('loc-status').textContent=err.code===1?'Location permission was denied. You can still drop a pin manually.':'Could not get your location. Drop a pin manually instead.'},{enableHighAccuracy:true,timeout:15000,maximumAge:30000});
+  async function openMap(){
+    $('loc-map-wrap').hidden=false;
+    try{await loadLeaflet();if(!map){map=L.map('global-location-map',{worldCopyJump:true,scrollWheelZoom:false}).setView(selected?[selected.lat,selected.lng]:[-15,20],selected?16:2);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);marker=L.marker(selected?[selected.lat,selected.lng]:[-15,20],{draggable:true}).addTo(map);marker.on('dragend',()=>{const p=marker.getLatLng();update(p.lat,p.lng);});map.on('click',e=>{marker.setLatLng(e.latlng);update(e.latlng.lat,e.latlng.lng);});}else if(selected){map.setView([selected.lat,selected.lng],16);marker.setLatLng([selected.lat,selected.lng]);}setTimeout(()=>map.invalidateSize(),100);}
+    catch(error){$('loc-status').textContent=error.message;}
+  }
+  $('loc-open').addEventListener('click',openMap);
+  $('loc-go').addEventListener('click',()=>{const p=parsePair($('loc-search').value);if(!p){$('loc-status').textContent='Enter valid latitude, longitude (for example -26.2041, 28.0473).';return;}update(...p);if(map){map.setView(p,16);marker.setLatLng(p);}});
+  $('loc-resolve-plus').addEventListener('click',()=>{
+    if(!window.OpenLocationCode){$('loc-status').textContent='Plus Code library is unavailable. Reload while connected.';return;}
+    let code=$('loc-plus-input').value.trim().toUpperCase().replace(/\s/g,'');const ref=parsePair($('loc-reference').value);
+    try{if(!window.OpenLocationCode.isValid(code))throw new Error('Enter a valid full Plus Code, or a short code with reference coordinates.');if(!window.OpenLocationCode.isFull(code)){if(!ref)throw new Error('A short Plus Code needs reference coordinates.');code=window.OpenLocationCode.recoverNearest(code,ref[0],ref[1]);}const area=window.OpenLocationCode.decode(code);update(area.latitudeCenter,area.longitudeCenter);$('loc-status').textContent='Plus Code resolved to the centre of its encoded area. Verify the exact entrance if needed.';if(map){map.setView([area.latitudeCenter,area.longitudeCenter],16);marker.setLatLng([area.latitudeCenter,area.longitudeCenter]);}}catch(error){$('loc-status').textContent=error.message||'Could not resolve this Plus Code.';}
   });
-  $('loc-go').addEventListener('click',()=>{const p=parsePair($('loc-search').value);if(!p){$('loc-status').textContent='Enter valid latitude, longitude (for example -26.2041, 28.0473).';return}initMap();map.setView(p,17);marker.setLatLng(p);update(...p)});
-  $('loc-reference').addEventListener('input',()=>{const ref=parsePair($('loc-reference').value);$('loc-copy-short').disabled=!ref||!selected});
-  async function copy(value){try{await navigator.clipboard.writeText(value);$('loc-status').textContent='Copied: '+value}catch{$('loc-status').textContent='Copy was blocked by the browser. Select the code and copy it manually.'}}
+  $('loc-current').addEventListener('click',()=>{if(!navigator.geolocation){$('loc-status').textContent='This device does not support location sharing.';return;}$('loc-status').textContent='Requesting device location permission…';navigator.geolocation.getCurrentPosition(pos=>update(pos.coords.latitude,pos.coords.longitude),err=>{$('loc-status').textContent=err.code===1?'Location permission was denied. Enter coordinates or a Plus Code instead.':'Could not get your location. Enter coordinates or a Plus Code instead.';},{enableHighAccuracy:true,timeout:15000,maximumAge:30000});});
+  $('loc-reference').addEventListener('input',()=>{$('loc-copy-short').disabled=!parsePair($('loc-reference').value)||!selected;});
+  async function copy(value){try{await navigator.clipboard.writeText(value);$('loc-status').textContent='Copied: '+value;}catch{$('loc-status').textContent='Copy was blocked by the browser. Select the value and copy it manually.';}}
   $('loc-copy-plus').addEventListener('click',()=>selected&&copy(fullCode));
   $('loc-copy-geohash').addEventListener('click',()=>selected&&copy(geohash(selected.lat,selected.lng,9)));
   $('loc-copy-coords').addEventListener('click',()=>selected&&copy(selected.lat.toFixed(6)+', '+selected.lng.toFixed(6)));
   $('loc-copy-link').addEventListener('click',()=>selected&&copy('https://www.google.com/maps?q='+selected.lat+','+selected.lng));
-  $('loc-copy-short').addEventListener('click',()=>{
-    const ref=parsePair($('loc-reference').value);if(!ref||!selected)return;
-    try{const short=window.OpenLocationCode.shorten(fullCode,ref[0],ref[1]);copy(short+' (reference: '+ref.join(', ')+')')}catch{$('loc-status').textContent='This location is too far from the reference for a safe short code. Copy the full Plus Code instead.'}
-  });
-  // Address fields can launch the same pin tool without silently changing a typed address.
-  for(const id of ['custPickup','custDropoff']){
-    const field=$(id);if(!field)continue;
-    const button=document.createElement('button');button.type='button';button.textContent='Pick / copy pin';button.style.margin='8px 0 16px';
-    button.addEventListener('click',()=>{activeField=field;$('loc-map-wrap').hidden=false;initMap();panel.scrollIntoView({behavior:'smooth',block:'start'});setTimeout(()=>map.invalidateSize(),150)});
-    field.insertAdjacentElement('afterend',button);
-  }
+  $('loc-copy-short').addEventListener('click',()=>{const ref=parsePair($('loc-reference').value);if(!ref||!selected)return;try{const short=window.OpenLocationCode.shorten(fullCode,ref[0],ref[1]);copy(short+' (reference: '+ref.join(', ')+')');}catch{$('loc-status').textContent='This location is too far from the reference for a safe short code. Copy the full Plus Code instead.';}});
+  for(const id of ['custPickup','custDropoff']){const field=$(id);if(!field)continue;const button=document.createElement('button');button.type='button';button.textContent='Select pin (optional)';button.style.margin='8px 0 16px';button.addEventListener('click',()=>{activeField=field;panel.scrollIntoView({behavior:'smooth',block:'start'});openMap();});field.insertAdjacentElement('afterend',button);}
 })();
