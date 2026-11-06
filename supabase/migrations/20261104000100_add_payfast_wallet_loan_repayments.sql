@@ -21,7 +21,7 @@ revoke all on public.wallet_payfast_payments from anon, authenticated;
 
 create or replace function public.apply_payfast_wallet_repayment(
   p_payment_id uuid, p_pf_payment_id text, p_amount numeric, p_payload jsonb
-) returns boolean language plpgsql security definer set search_path = public as $$
+) returns boolean language plpgsql security invoker set search_path = '' as $$
 declare v_payment public.wallet_payfast_payments%rowtype; v_loan public.wallet_loans%rowtype; v_rows integer;
 begin
   select * into v_payment from public.wallet_payfast_payments where id=p_payment_id for update;
