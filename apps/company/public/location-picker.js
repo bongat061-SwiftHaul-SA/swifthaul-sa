@@ -60,7 +60,6 @@
     mapController=window.SwiftHaulMaps?.createMap('global-location-map',{scope:app+'-global-pin',tileUrl:'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',attribution:'© OpenStreetMap contributors',tileOptions:{maxZoom:19}});
     if(!mapController){$('loc-status').textContent='Shared map services are unavailable. Reload the page.';return}
     map=mapController.map;mapController.camera.move({lat:-15,lng:20,zoom:2},0,app+'-global-pin');
-    mapController.padding.add(new window.SwiftHaulMaps.MapPaddingSource($('loc-map-wrap')),app+'-global-pin');
     marker=L.marker([-15,20],{draggable:true}).addTo(mapController.layers.get('markers').group);
     marker.on('dragend',()=>{const p=marker.getLatLng();update(p.lat,p.lng)});
     map.on('click',e=>{marker.setLatLng(e.latlng);update(e.latlng.lat,e.latlng.lng)});
