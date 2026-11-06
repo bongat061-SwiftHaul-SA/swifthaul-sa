@@ -5,7 +5,6 @@ window.renderDeliveryMap = (element, route, onTileError = () => {}) => {
   if(!controller) throw new Error('Shared map services are unavailable. Reload this page.');
   const map=controller.map;
   map._swiftHaulController=controller;
-  controller.padding.add(new window.SwiftHaulMaps.MapPaddingSource(element),'customer-route-preview');
   const line = L.polyline(route.coordinates.map(([lon,lat])=>[lat,lon]),{color:'#21664e',weight:5,opacity:0.9}).addTo(controller.layers.get('routes').group);
   for (const [title,point,color] of [['Pickup',route.pickup,'#21664e'],['Drop-off',route.dropoff,'#a56924']]) {
     const label=document.createElement('span');label.textContent=title;
