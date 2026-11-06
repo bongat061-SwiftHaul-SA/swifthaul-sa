@@ -38,6 +38,7 @@ if (app === 'driver' || app === 'company') {
   }
 
   let selectedWaybills = new Set();
+  let routeApiReady = false;
   async function routeInvoke(method, body) {
     const client=window.swiftHaulSupabase;
     if(!client)throw new Error('Secure account connection is unavailable.');
@@ -68,7 +69,7 @@ if (app === 'driver' || app === 'company') {
         const stop=stops[i],booking=stop.customer_bookings||{},item=document.createElement('li');
         const label=document.createElement('strong');label.textContent=(stop.stop_type==='pickup'?'Pickup':'Drop-off')+' · '+stop.waybill;
         const address=document.createElement('span');address.textContent=stop.stop_type==='pickup'?(booking.pickup||'Pickup address unavailable'):(booking.dropoff||'Drop-off address unavailable');
-        const state=document.createElement('small');state.textContent=stop.status==='completed'?'Completed':booking.status==='delivered'?'Delivery complete':'Pending';
+        const state=document.createElement('small');state.textContent=stop.status==='completed'?'Completed':i===stops.findIndex(x=>x.status!=='completed')?'NEXT STOP':'Queued';
         item.append(label,address,state);
         if(app==='company'&&route.status==='assigned'){
           const persistOrder=async(nextStops,button)=>{button.disabled=true;try{await routeInvoke('POST',{action:'reorder_route',route_id:route.id,stop_ids:nextStops.map(x=>x.id)});await load();}catch(e){message.textContent=e.message;}finally{button.disabled=false;}};
@@ -78,6 +79,7 @@ if (app === 'driver' || app === 'company') {
         listStops.append(item);
       }
       routeCard.append(listStops);
+      if(route.route_distance_meters!=null||route.estimated_duration_seconds!=null){const metrics=document.createElement('p');const km=route.route_distance_meters==null?'':(Number(route.route_distance_meters)/1000).toFixed(1)+' km';const mins=route.estimated_duration_seconds==null?'':Math.round(Number(route.estimated_duration_seconds)/60)+' min';metrics.textContent=['Route distance '+km,'Estimated travel time '+mins].filter(x=>!x.endsWith(' ')).join(' · ');routeCard.append(metrics);}else{const pendingMetrics=document.createElement('small');pendingMetrics.textContent='Traffic-aware distance and ETA will appear when the routing engine is connected.';routeCard.append(pendingMetrics);}
       if(app==='driver'&&route.status==='assigned'){const start=document.createElement('button');start.type='button';start.textContent='Start route';start.addEventListener('click',async()=>{start.disabled=true;try{await routeInvoke('POST',{action:'start_route',route_id:route.id});await load();}catch(e){message.textContent=e.message;}finally{start.disabled=false;}});routeCard.append(start);}
       panelRoute.append(routeCard);
     }
@@ -91,7 +93,7 @@ if (app === 'driver' || app === 'company') {
     try {
       const data = await invoke('GET');
       let routeData={routes:[]},routeServiceUnavailable=false;
-      try{routeData=await routeInvoke('GET');}catch{routeServiceUnavailable=true;}
+      try{routeData=await routeInvoke('GET');routeApiReady=true;}catch{routeServiceUnavailable=true;routeApiReady=false;}
       if (current !== requestNumber) return;
       list.replaceChildren();
       selectedWaybills=new Set([...selectedWaybills].filter(id=>(data.orders||[]).some(order=>order.waybill===id)));
@@ -155,7 +157,7 @@ if (app === 'driver' || app === 'company') {
       order.paid_at ? 'Paid' : 'Payment pending'
     ].filter(Boolean).join(' · ');
     card.append(title, route, summary);
-    if(app==='company'&&order.status==='pending'&&!order.driver_user_id&&!order.refunded_at){const pickLabel=document.createElement('label');pickLabel.className='dispatch-route-select';const pick=document.createElement('input');pick.type='checkbox';pick.checked=selectedWaybills.has(order.waybill);pick.addEventListener('change',()=>{if(pick.checked)selectedWaybills.add(order.waybill);else selectedWaybills.delete(order.waybill);});pickLabel.append(pick,document.createTextNode(' Include in multi-stop route'));card.append(pickLabel);}
+    if(app==='company'&&routeApiReady&&order.status==='pending'&&!order.driver_user_id&&!order.refunded_at){const pickLabel=document.createElement('label');pickLabel.className='dispatch-route-select';const pick=document.createElement('input');pick.type='checkbox';pick.checked=selectedWaybills.has(order.waybill);pick.addEventListener('change',()=>{if(pick.checked)selectedWaybills.add(order.waybill);else selectedWaybills.delete(order.waybill);});pickLabel.append(pick,document.createTextNode(' Include in multi-stop route'));card.append(pickLabel);}
     if(app==='driver'){
       const next=document.createElement('section');next.className='driver-next-task';
       const kicker=document.createElement('small');kicker.textContent='NEXT TASK';
