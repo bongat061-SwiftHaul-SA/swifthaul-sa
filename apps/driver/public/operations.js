@@ -37,14 +37,68 @@ if (app === 'driver' || app === 'company') {
     return data;
   }
 
+  let selectedWaybills = new Set();
+  let routeApiReady = false;
+  async function routeInvoke(method, body) {
+    const client=window.swiftHaulSupabase;
+    if(!client)throw new Error('Secure account connection is unavailable.');
+    const {data,error}=await client.functions.invoke('dispatch-routes',{method,...(body?{body}:{})});
+    if(error)throw new Error(data?.error||error.message||'Route service unavailable.');
+    if(data?.error)throw new Error(data.error);
+    return data;
+  }
+  function renderRoutePanel(routes, orders) {
+    const panelRoute=document.createElement('section');panelRoute.className='dispatch-route-panel';
+    const title=document.createElement('h3');title.textContent=app==='company'?'Multi-stop route planner':'Your assigned route';
+    panelRoute.append(title);
+    if(app==='company'){
+      const driverLabel=document.createElement('label');driverLabel.textContent='Approved driver account ID';
+      const driverInput=document.createElement('input');driverInput.placeholder='Paste driver user ID';driverInput.autocomplete='off';driverLabel.append(driverInput);
+      const help=document.createElement('p');help.textContent='Select pending deliveries below, then create a route. Each delivery is inserted as pickup followed by drop-off. Up to 15 deliveries per route.';
+      const create=document.createElement('button');create.type='button';create.textContent='Create route from selected deliveries';
+      create.addEventListener('click',async()=>{const chosen=(orders||[]).filter(o=>selectedWaybills.has(o.waybill));if(!driverInput.value.trim()||!chosen.length){message.textContent='Enter an approved driver ID and select at least one pending delivery.';return;}if(chosen.length>15){message.textContent='A route can contain up to 15 deliveries.';return;}create.disabled=true;try{const stops=chosen.flatMap(o=>[{waybill:o.waybill,stop_type:'pickup'},{waybill:o.waybill,stop_type:'dropoff'}]);await routeInvoke('POST',{action:'create_route',driver_user_id:driverInput.value.trim(),stops});selectedWaybills.clear();await load();message.textContent='Multi-stop route assigned.';}catch(e){message.textContent=e.message||'Unable to create route.';}finally{create.disabled=false;}});
+      panelRoute.append(driverLabel,help,create);
+    }
+    if(!routes?.length){const empty=document.createElement('p');empty.textContent=app==='company'?'No multi-stop routes have been created yet.':'No multi-stop route is assigned to you.';panelRoute.append(empty);}
+    for(const route of routes||[]){
+      const routeCard=document.createElement('article');routeCard.className='dispatch-route-card';
+      const meta=document.createElement('p');meta.textContent='Route '+String(route.id).slice(0,8)+' · '+String(route.status).replace('_',' ');routeCard.append(meta);
+      const listStops=document.createElement('ol');listStops.className='dispatch-route-stops';
+      const stops=[...(route.stops||[])].sort((a,b)=>a.sequence_no-b.sequence_no);
+      for(let i=0;i<stops.length;i++){
+        const stop=stops[i],booking=stop.customer_bookings||{},item=document.createElement('li');
+        const label=document.createElement('strong');label.textContent=(stop.stop_type==='pickup'?'Pickup':'Drop-off')+' · '+stop.waybill;
+        const address=document.createElement('span');address.textContent=stop.stop_type==='pickup'?(booking.pickup||'Pickup address unavailable'):(booking.dropoff||'Drop-off address unavailable');
+        const state=document.createElement('small');state.textContent=stop.status==='completed'?'Completed':i===stops.findIndex(x=>x.status!=='completed')?'NEXT STOP':'Queued';
+        item.append(label,address,state);
+        if(app==='company'&&route.status==='assigned'){
+          const persistOrder=async(nextStops,button)=>{button.disabled=true;try{await routeInvoke('POST',{action:'reorder_route',route_id:route.id,stop_ids:nextStops.map(x=>x.id)});await load();}catch(e){message.textContent=e.message;}finally{button.disabled=false;}};
+          if(i>0){const up=document.createElement('button');up.type='button';up.textContent='↑';up.setAttribute('aria-label','Move stop up');up.addEventListener('click',()=>{const next=stops.slice();[next[i-1],next[i]]=[next[i],next[i-1]];persistOrder(next,up);});item.append(up);}
+          if(i<stops.length-1){const down=document.createElement('button');down.type='button';down.textContent='↓';down.setAttribute('aria-label','Move stop down');down.addEventListener('click',()=>{const next=stops.slice();[next[i],next[i+1]]=[next[i+1],next[i]];persistOrder(next,down);});item.append(down);}
+        }
+        listStops.append(item);
+      }
+      routeCard.append(listStops);
+      if(route.route_distance_meters!=null||route.estimated_duration_seconds!=null){const metrics=document.createElement('p');const km=route.route_distance_meters==null?'':(Number(route.route_distance_meters)/1000).toFixed(1)+' km';const mins=route.estimated_duration_seconds==null?'':Math.round(Number(route.estimated_duration_seconds)/60)+' min';metrics.textContent=['Route distance '+km,'Estimated travel time '+mins].filter(x=>!x.endsWith(' ')).join(' · ');routeCard.append(metrics);}else{const pendingMetrics=document.createElement('small');pendingMetrics.textContent='Traffic-aware distance and ETA will appear when the routing engine is connected.';routeCard.append(pendingMetrics);}
+      if(app==='driver'&&route.status==='assigned'){const start=document.createElement('button');start.type='button';start.textContent='Start route';start.addEventListener('click',async()=>{start.disabled=true;try{await routeInvoke('POST',{action:'start_route',route_id:route.id});await load();}catch(e){message.textContent=e.message;}finally{start.disabled=false;}});routeCard.append(start);}
+      panelRoute.append(routeCard);
+    }
+    list.prepend(panelRoute);
+  }
+
   async function load() {
     if (!active || document.body.dataset.guestPreview === 'true') return;
     const current = ++requestNumber;
     message.textContent = 'Loading deliveries…';
     try {
       const data = await invoke('GET');
+      let routeData={routes:[]},routeServiceUnavailable=false;
+      try{routeData=await routeInvoke('GET');routeApiReady=true;}catch{routeServiceUnavailable=true;routeApiReady=false;}
       if (current !== requestNumber) return;
       list.replaceChildren();
+      selectedWaybills=new Set([...selectedWaybills].filter(id=>(data.orders||[]).some(order=>order.waybill===id)));
+      if(routeServiceUnavailable){const routeNotice=document.createElement('p');routeNotice.className='dispatch-sequence-note';routeNotice.textContent='Persistent route planning is staged in development and awaits its Supabase migration and Edge Function release.';list.append(routeNotice);}
+      else renderRoutePanel(routeData.routes||[],data.orders||[]);
       if(app==='company'){const note=document.createElement('p');note.className='dispatch-sequence-note';note.textContent='Route sequence draft: drag jobs or use the arrow controls to arrange a local planning order. This does not change dispatch assignments or calculate an optimised multi-stop route.';list.append(note);}
       if (app === 'driver' && data.driverProfile?.verification_status !== 'approved') {
         const notice = document.createElement('p');
@@ -68,6 +122,7 @@ if (app === 'driver' || app === 'company') {
     button.disabled = true;
     try {
       await invoke('POST', body);
+      if(app==='driver'&&['pickup','complete'].includes(body.action)){try{await routeInvoke('POST',{action:'sync_waybill',waybill:body.waybill});}catch{}}
       if (current !== requestNumber) return;
       await load();
       message.textContent = 'Delivery updated.';
@@ -102,6 +157,7 @@ if (app === 'driver' || app === 'company') {
       order.paid_at ? 'Paid' : 'Payment pending'
     ].filter(Boolean).join(' · ');
     card.append(title, route, summary);
+    if(app==='company'&&routeApiReady&&order.status==='pending'&&!order.driver_user_id&&!order.refunded_at){const pickLabel=document.createElement('label');pickLabel.className='dispatch-route-select';const pick=document.createElement('input');pick.type='checkbox';pick.checked=selectedWaybills.has(order.waybill);pick.addEventListener('change',()=>{if(pick.checked)selectedWaybills.add(order.waybill);else selectedWaybills.delete(order.waybill);});pickLabel.append(pick,document.createTextNode(' Include in multi-stop route'));card.append(pickLabel);}
     if(app==='driver'){
       const next=document.createElement('section');next.className='driver-next-task';
       const kicker=document.createElement('small');kicker.textContent='NEXT TASK';
