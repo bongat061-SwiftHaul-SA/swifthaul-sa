@@ -1,5 +1,5 @@
 create or replace function public.award_premium_delivery_rewards()
-returns trigger language plpgsql security definer set search_path=public as $$
+returns trigger language plpgsql security invoker set search_path = '' as $$
 declare v_driver uuid; v_month_start timestamptz; v_month_end timestamptz; v_monthly_rebates bigint; v_rebate bigint; v_margin bigint; v_completed integer; v_subscription_pool bigint; v_at timestamptz;
 begin
  if new.status<>'delivered' or old.status='delivered' or new.driver_user_id is null or new.price is null or new.price<=0 then return new; end if;
