@@ -13,6 +13,10 @@ if (app === 'driver' || app === 'company') {
 
   let active = false;
   let requestNumber = 0;
+  let draggedCard = null;
+  const viewStyle=document.createElement('style');
+  viewStyle.textContent='.driver-next-task{margin:12px 0;padding:14px;border-radius:13px;background:#172b49;color:#fff}.driver-next-task small{display:block;color:#a9c1ee;font-size:9px;font-weight:900;letter-spacing:1px}.driver-next-task strong{display:block;margin:5px 0;font-size:18px}.driver-next-task p{margin:4px 0 10px;color:#d2def2;font-size:11px}.driver-next-task a{display:inline-block;color:#a9c1ff;font-size:11px;font-weight:800}.dispatch-sequence-note{font-size:10px;color:#687486;padding:9px 11px;border:1px dashed #aab5c5;border-radius:10px;margin:8px 0}.dispatch-stop-tools{display:flex;align-items:center;gap:7px;margin-bottom:9px}.dispatch-stop-tools b{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#34518a;color:white;font-size:10px}.dispatch-stop-tools button{padding:6px 9px;font-size:10px}.order[draggable=true]{cursor:grab}.order.dragging{opacity:.45}.order.drag-over{outline:2px dashed #4779f4;outline-offset:3px}';
+  document.head.append(viewStyle);
   const money = value => 'R' + Number(value || 0).toFixed(2);
   const statusLabel = value => ({
     pending: 'Awaiting dispatch', assigned: 'Assigned', accepted: 'Accepted',
@@ -40,6 +44,7 @@ if (app === 'driver' || app === 'company') {
       const data = await invoke('GET');
       if (current !== requestNumber) return;
       list.replaceChildren();
+      if(app==='company'){const note=document.createElement('p');note.className='dispatch-sequence-note';note.textContent='Route sequence draft: drag jobs or use the arrow controls to arrange a local planning order. This does not change dispatch assignments or calculate an optimised multi-stop route.';list.append(note);}
       if (app === 'driver' && data.driverProfile?.verification_status !== 'approved') {
         const notice = document.createElement('p');
         notice.textContent = 'Your driver application is awaiting verification. Dispatch access will be enabled after approval.';
@@ -96,6 +101,16 @@ if (app === 'driver' || app === 'company') {
       order.paid_at ? 'Paid' : 'Payment pending'
     ].filter(Boolean).join(' · ');
     card.append(title, route, summary);
+    if(app==='driver'){
+      const next=document.createElement('section');next.className='driver-next-task';
+      const kicker=document.createElement('small');kicker.textContent='NEXT TASK';
+      const instruction=document.createElement('strong');
+      const guidance=document.createElement('p');
+      const task=({assigned:['Review this delivery','Accept only when you are ready to collect the parcel.'],accepted:['Navigate to pickup','Travel to the pickup point and confirm collection when the parcel is in your possession.'],picked_up:['Start delivery','The parcel is collected. Begin the trip to the drop-off point.'],in_transit:['Complete delivery','Follow the route, capture proof of delivery and confirm the recipient PIN.']})[order.status]||['Delivery update',statusLabel(order.status)];
+      instruction.textContent=task[0];guidance.textContent=task[1];next.append(kicker,instruction,guidance);
+      const directions=document.createElement('a');const origin=order.pickup_latitude!=null&&order.pickup_longitude!=null?order.pickup_latitude+','+order.pickup_longitude:order.pickup;const destination=order.dropoff_latitude!=null&&order.dropoff_longitude!=null?order.dropoff_latitude+','+order.dropoff_longitude:order.dropoff;
+      directions.href='https://www.google.com/maps/dir/?api=1&'+new URLSearchParams({origin,destination,travelmode:'driving'}).toString();directions.target='_blank';directions.rel='noopener noreferrer';directions.textContent='Open turn-by-turn directions ↗';next.append(directions);card.append(next);
+    }
     for (const [kind,label] of [['pickup','Pickup'],['dropoff','Drop-off']]) {
       const plus = order[kind + '_plus_code'];
       const lat = order[kind + '_latitude'], lng = order[kind + '_longitude'];
@@ -261,9 +276,27 @@ if (app === 'driver' || app === 'company') {
       });
       card.append(form);
     }
+    if(app==='company'){
+      card.draggable=true;card.dataset.waybill=order.waybill;
+      const tools=document.createElement('div');tools.className='dispatch-stop-tools';
+      const stop=document.createElement('b');stop.textContent=String(list.querySelectorAll('.order').length+1);
+      const label=document.createElement('span');label.textContent='Draft stop sequence';
+      const up=document.createElement('button');up.type='button';up.textContent='Move up';up.setAttribute('aria-label','Move '+order.waybill+' up');
+      const down=document.createElement('button');down.type='button';down.textContent='Move down';down.setAttribute('aria-label','Move '+order.waybill+' down');
+      up.addEventListener('click',()=>{const prev=card.previousElementSibling;if(prev?.classList.contains('order'))list.insertBefore(card,prev);refreshSequence();});
+      down.addEventListener('click',()=>{const next=card.nextElementSibling;if(next?.classList.contains('order'))list.insertBefore(next,card);refreshSequence();});
+      tools.append(stop,label,up,down);card.prepend(tools);
+      card.addEventListener('dragstart',()=>{draggedCard=card;card.classList.add('dragging');});
+      card.addEventListener('dragend',()=>{card.classList.remove('dragging');draggedCard=null;refreshSequence();});
+      card.addEventListener('dragover',event=>{if(!draggedCard||draggedCard===card)return;event.preventDefault();card.classList.add('drag-over');});
+      card.addEventListener('dragleave',()=>card.classList.remove('drag-over'));
+      card.addEventListener('drop',event=>{event.preventDefault();card.classList.remove('drag-over');if(draggedCard&&draggedCard!==card){const rect=card.getBoundingClientRect();list.insertBefore(draggedCard,event.clientY<rect.top+rect.height/2?card:card.nextSibling);refreshSequence();}});
+    }
     list.append(card);
+    if(app==='company')refreshSequence();
   }
 
+  function refreshSequence(){if(app!=='company')return;[...list.querySelectorAll('.order')].forEach((card,index)=>{const badge=card.querySelector('.dispatch-stop-tools b');if(badge)badge.textContent=String(index+1);});}
   refresh.addEventListener('click', load);
   document.addEventListener('account-ready', () => { active = true; load(); });
   document.addEventListener('account-cleared', () => {
