@@ -138,6 +138,27 @@ Deno.serve(async (req: Request) => {
     await setStatus("failed", body.reason.trim());
     return reply(200, { updated: true, status: "failed" });
   }
+  if (["pickup","complete"].includes(String(body.action))) {
+    const {data:routeStops,error:routeStopError}=await admin.from("dispatch_route_stops")
+      .select("id,route_id,waybill,stop_type,sequence_no,status").eq("waybill",order.waybill);
+    if(routeStopError)return reply(500,{error:"route_sequence_lookup_failed"});
+    if((routeStops??[]).length){
+      const routeIds=[...new Set((routeStops??[]).map(stop=>stop.route_id))];
+      const {data:routes,error:routeError}=await admin.from("dispatch_routes")
+        .select("id,status,driver_user_id").in("id",routeIds).eq("driver_user_id",actorId);
+      if(routeError)return reply(500,{error:"route_lookup_failed"});
+      const active=(routes??[]).find(route=>route.status==="in_progress");
+      if(!active)return reply(409,{error:"start_assigned_route_before_executing_stops"});
+      const {data:pendingStops,error:pendingError}=await admin.from("dispatch_route_stops")
+        .select("waybill,stop_type,sequence_no").eq("route_id",active.id).eq("status","pending").order("sequence_no",{ascending:true}).limit(1);
+      if(pendingError)return reply(500,{error:"next_route_stop_lookup_failed"});
+      const next=pendingStops?.[0];
+      const expected=body.action==="pickup"?"pickup":"dropoff";
+      if(!next||next.waybill!==order.waybill||next.stop_type!==expected)
+        return reply(409,{error:"complete_the_next_route_stop_in_sequence"});
+    }
+  }
+
   if (body.action === "complete") {
     if (order.status !== "in_transit") return reply(409, { error: "delivery_must_be_in_transit" });
     const { data: proof } = await admin.from("proof_of_delivery").select("id").eq("waybill", order.waybill).maybeSingle();
