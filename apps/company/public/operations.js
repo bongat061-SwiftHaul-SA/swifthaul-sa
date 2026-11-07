@@ -101,6 +101,23 @@ if (app === 'driver' || app === 'company') {
       const assistance=document.createElement('p');
       assistance.textContent='Customer requested handling assistance · '+Number(order.assistance_minutes||0)+' min · '+money((Number(order.assistance_fee_cents)||0)/100)+' · '+String(order.assistance_status||'pending confirmation').replaceAll('_',' ');
       card.append(assistance);
+      if(order.assistance_status==='requested_pending_dispatch_confirmation'){
+        const actions=document.createElement('div');actions.className='order-actions';
+        for(const [decision,label] of [['accepted','Confirm assistance'],['declined','Decline assistance']]){
+          const control=document.createElement('button');control.type='button';control.textContent=label;
+          control.addEventListener('click',async()=>{
+            control.disabled=true;
+            try{
+              const result=await invoke('POST',{action:'assistance_decision',waybill:order.waybill,decision});
+              order.assistance_status=result.assistance_status;
+              assistance.textContent='Customer requested handling assistance · '+Number(order.assistance_minutes||0)+' min · '+money((Number(order.assistance_fee_cents)||0)/100)+' · '+order.assistance_status;
+              actions.remove();
+            }catch(error){message.textContent=error.message||'Unable to update assistance request.';control.disabled=false;}
+          });
+          actions.append(control);
+        }
+        card.append(actions);
+      }
     }
     const fullMap=document.createElement('a');fullMap.className='open-booking-map';fullMap.textContent='Open full-screen tracking map ↗';
     fullMap.href='map.html';
