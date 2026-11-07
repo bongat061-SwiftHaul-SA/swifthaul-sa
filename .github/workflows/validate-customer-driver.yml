@@ -1,0 +1,42 @@
+name: Validate customer and driver updates
+
+on:
+  pull_request:
+    branches:
+      - feature/secure-driver-live-location
+      - main
+  push:
+    branches:
+      - feature/customer-booking-checkout-fixes
+
+permissions:
+  contents: read
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Check customer JavaScript
+        run: |
+          node --check public/customer.js
+          node --check public/cargo-estimator.js
+          node --check public/location-picker.js
+          node --check public/map-utils.js
+          node --check public/settings.js
+      - name: Check driver application JavaScript
+        run: |
+          node --check apps/driver/public/auth.js
+          node --check apps/driver/public/driver-application.js
+          node --check apps/company/public/driver-admin.js
+      - name: Type-check new Supabase Edge Functions
+        run: |
+          deno check supabase/functions/customer-settings/index.ts
+          deno check supabase/functions/driver-documents/index.ts
+          deno check supabase/functions/driver-application-notify/index.ts
