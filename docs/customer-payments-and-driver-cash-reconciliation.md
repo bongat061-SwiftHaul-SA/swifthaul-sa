@@ -81,3 +81,20 @@ Generate a unique, non-reusable deposit reference per driver deposit instruction
 - Cash booking is currently only a requested/unconfirmed method. The existing dispatch interface does not yet have the signed driver cash receipt workflow or the company deposit reconciliation ledger described above.
 - Optional handling assistance is currently a separately recorded fee request; it is not yet included in PayFast checkout or wallet collection.
 - This document is a design checkpoint only. It does not claim that any cash receipt, driver cash wallet, or deposit workflow is implemented.
+
+
+## Driver and Company cash screens (development branch update)
+
+The driver app now includes a Cash & deposits page. It captures the customer's signed name and signature image, the assigned waybill and exact amount. The database receipt RPC accepts a receipt only after the booking is marked delivered, only from the assigned driver, only for a cash booking, and only for the exact confirmed booking total (including a dispatch-accepted assistance fee). The receipt and the full cash-held liability are written atomically.
+
+The Company Admin cash reconciliation page now displays:
+- Pending driver deposit instructions and their private proof files.
+- Signed customer cash receipts and private signature evidence.
+- Exact outstanding cash-held totals aggregated in the database for each driver.
+- Reconciliation and rejection controls. Reconciliation requires an actual bank-statement reference and reduces the liability only after the admin RPC succeeds.
+
+A driver-uploaded proof is not confirmation that the company received money. The participating-store channel remains a future/manual option and is not connected to a retail deposit network. Company bank details and provider payment-request integration are not configured. The unique SHD reference is currently an internal deposit reference to be included in the EFT/store payment description, not a PayFast payment link.
+
+The migration serializes new cash receipts and payout approvals using a per-driver transaction lock. It also prevents payout requests/approval/payment while positive cash-held liability remains. Driver earnings are credited at 75% only when both delivery and payment are confirmed; the 25% platform share is unchanged.
+
+These screens and database changes are still branch-only. Apply and test the migration and Edge Function in an isolated staging Supabase project before enabling the workflow. Do not apply this migration to production without explicit approval.
