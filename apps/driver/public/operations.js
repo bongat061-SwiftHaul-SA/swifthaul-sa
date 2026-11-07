@@ -119,13 +119,13 @@ if (app === 'driver' || app === 'company') {
           updated.className = 'tracking-updated';
           updated.textContent = 'Your location is off.';
           sheet.append(etaRow, actions, note, updated);
-          preview.append(head, stage, sheet);
+          preview.append(head, sheet, stage);
           list.append(preview);
 
           let previewMap = null, marker = null, ring = null, watch = null, lastPoint = null;
           if (window.L) {
             previewMap = L.map(mapElement, { zoomControl: false, attributionControl: true });
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
               maxZoom: 20, attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
             }).addTo(previewMap);
             previewMap.setView([-29.0, 24.0], 5);
@@ -325,7 +325,7 @@ if (app === 'driver' || app === 'company') {
       trackingUpdated.className = 'tracking-updated';
       trackingUpdated.textContent = 'Allow location access to show your live position.';
       tripSheet.append(etaRow, routeProgress, trackingActions, trackingNote, trackingUpdated);
-      tracking.append(trackingHead, mapStage, tripSheet);
+      tracking.append(trackingHead, tripSheet, mapStage);
       card.append(tracking);
 
       let map = null, driverMarker = null, accuracyRing = null, routeLine = null, watchId = null;
@@ -371,7 +371,7 @@ if (app === 'driver' || app === 'company') {
 
       if (window.L && points.length) {
         map = L.map(trackingMap, { zoomControl: false, scrollWheelZoom: true, attributionControl: true });
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
           maxZoom: 20, attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
         }).addTo(map);
         if (validPoint(pickup)) L.marker([pickup.lat, pickup.lng]).addTo(map).bindPopup('Pickup');

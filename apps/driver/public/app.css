@@ -284,3 +284,12 @@ body[data-app="driver"] #workspace .driver-tracking .leaflet-control-attribution
  body[data-app="driver"] #workspace .tracking-map-legend{left:9px;bottom:9px;gap:8px;padding:8px 10px}
  body[data-app="driver"] #workspace .tracking-map-legend span{font-size:8px}
 }
+
+
+/* Driver tracking: trip details lead, map follows as a full-width surface. */
+body[data-app="driver"] #workspace .tracking-trip-sheet{border-top:0;border-bottom:1px solid #e9eeeb;background:linear-gradient(180deg,#fff 0%,#fbfcfb 100%)}
+body[data-app="driver"] #workspace .tracking-map-stage{height:clamp(340px,52vw,560px);border-top:1px solid #e3ebe6}
+body[data-app="driver"] #workspace .tracking-map-tool{backdrop-filter:blur(8px)}
+body[data-app="driver"] #workspace .driver-tracking-map .leaflet-tile{filter:saturate(.92) contrast(1.02)}
+body[data-app="driver"] #workspace .driver-tracking-map .leaflet-control-zoom a{border:0;color:#173d31}
+@media(max-width:600px){body[data-app="driver"] #workspace .tracking-map-stage{height:54dvh;min-height:340px}}
