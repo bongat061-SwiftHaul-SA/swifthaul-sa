@@ -13,6 +13,24 @@
   const payouts = root.querySelector('#payouts');
   const offers = root.querySelector('#offer-dispatch');
   const finance = root.querySelector('#financial-dashboard');
+  const reports = document.createElement('section');
+  reports.id = 'monthly-reports';
+  reports.className = 'panel';
+  reports.innerHTML = '<h2>Monthly performance reports</h2><p class="subtle">Download a finance snapshot for your records. The current secure finance service returns cumulative totals, so exports clearly identify their reporting scope rather than presenting lifetime totals as month-only figures.</p><label for="report-month">Report month</label><input id="report-month" type="month"><button type="button" id="download-monthly-report">Download CSV snapshot</button><p id="report-status" role="status" aria-live="polite">Sign in as an administrator and refresh the Financial dashboard before exporting.</p>';
+  finance?.insertAdjacentElement('afterend', reports);
+  const reportStatus = reports.querySelector('#report-status');
+  const reportMonth = reports.querySelector('#report-month');
+  const downloadReport = reports.querySelector('#download-monthly-report');
+  downloadReport.addEventListener('click', () => {
+    const month = reportMonth.value;
+    if (!month) { reportStatus.textContent = 'Choose a report month first.'; return; }
+    const cards = [...(finance?.querySelectorAll('#financial-content .stat') || [])];
+    if (!cards.length) { reportStatus.textContent = 'Refresh the administrator Financial dashboard first. No financial figures are available to export.'; return; }
+    const rows = [['SwiftHaul SA monthly performance report'],['Selected month',month],['Generated at',new Date().toISOString()],['Data scope','Cumulative snapshot from current admin-financials service; figures are not month-filtered.'],['Metric','Value','Scope']];
+    cards.forEach(card => { const label=card.querySelector('span')?.textContent || 'Metric'; const value=card.querySelector('strong')?.textContent || ''; const note=card.querySelector('p')?.textContent || ''; rows.push([label,value,note]); });
+    const csv=rows.map(row=>row.map(value=>'"'+String(value).replaceAll('"','""')+'"').join(',')).join('\r\n');
+    const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='swifthaul-monthly-performance-'+month+'-snapshot.csv';a.click();URL.revokeObjectURL(url);reportStatus.textContent='CSV snapshot downloaded. Note: figures are cumulative, not month-filtered.';
+  });
   const pages = {
     overview: { title:'Operations overview.', description:'A company-wide snapshot of delivery activity and fleet availability.', show:['stats'] },
     dispatch: { title:'Dispatch desk.', description:'Monitor assigned deliveries and inspect planned pickup-to-drop-off routes.', show:['dispatches'] },
@@ -21,9 +39,10 @@
     payouts: { title:'Driver payouts.', description:'Review payout requests and record completed manual EFT payments.', show:['payouts'] },
     offers: { title:'Delivery offer dispatch.', description:'Manage premium-first offers for eligible unassigned deliveries.', show:['offers'] },
     finance: { title:'Financial dashboard.', description:'Review reconciled platform, driver, payment and payout figures.', show:['finance'] },
+    reports: { title:'Monthly reports.', description:'Export a dated CSV snapshot of the current administrator financial summary.', show:['reports'] },
     account: { title:'Company account.', description:'Company administrator profile and support information.', show:['account'] }
   };
-  const nodes = { stats, dispatches, drivers, account, refunds, payouts, offers, finance };
+  const nodes = { stats, dispatches, drivers, account, refunds, payouts, offers, finance, reports };
   function render(key, updateUrl) {
     const page = pages[key] || pages.overview;
     Object.entries(nodes).forEach(([name,node]) => { if(node) node.hidden = !page.show.includes(name); });
