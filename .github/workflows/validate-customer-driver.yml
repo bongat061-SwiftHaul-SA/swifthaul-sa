@@ -37,6 +37,10 @@ jobs:
           node --input-type=module --check < apps/driver/public/driver-application.js
           node --input-type=module --check < apps/driver/public/premium.js
           node --input-type=module --check < apps/driver/public/insurance-claims.js
+          node --input-type=module --check < apps/driver/public/live-location.js
+          node --input-type=module --check < apps/driver/public/section-pages.js
+          node --input-type=module --check < apps/company/public/section-pages.js
+          node --input-type=module --check < apps/company/public/insurance-admin.js
           node --input-type=module --check < apps/company/public/insurance-claims-admin.js
           node --input-type=module --check < apps/company/public/driver-admin.js
           node --input-type=module --check < apps/company/public/insurance-admin.js
@@ -49,6 +53,7 @@ jobs:
           deno check --node-modules-dir=auto supabase/functions/driver-admin/index.ts
           deno check --node-modules-dir=auto supabase/functions/driver-insurance-status/index.ts
           deno check --node-modules-dir=auto supabase/functions/driver-insurance-claims/index.ts
+          deno check --node-modules-dir=auto supabase/functions/driver-location/index.ts
           deno check --node-modules-dir=auto supabase/functions/driver-insurance-admin/index.ts
           deno check --node-modules-dir=auto supabase/functions/driver-premium/index.ts
           deno check --node-modules-dir=auto supabase/functions/driver-membership-checkout/index.ts
