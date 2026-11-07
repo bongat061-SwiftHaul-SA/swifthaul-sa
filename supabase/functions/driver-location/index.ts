@@ -62,9 +62,15 @@ Deno.serve(async (req: Request) => {
         typeof lng !== "number" || !Number.isFinite(lng) || Math.abs(lng) > 180 ||
         (accuracy !== undefined && (typeof accuracy !== "number" || !Number.isFinite(accuracy) || accuracy < 0 || accuracy > 100000)))
       return reply(400, { error: "invalid_location" });
+    const { data: previousLocation, error: previousError } = await admin.from("driver_live_locations")
+      .select("updated_at").eq("waybill", booking.waybill).maybeSingle();
+    if (previousError) return reply(500, { error: "location_rate_check_failed" });
+    if (previousLocation && Date.now() - Date.parse(previousLocation.updated_at) < 5000)
+      return reply(429, { error: "location_update_too_frequent" });
+    const updatedAt = new Date().toISOString();
     const { error } = await admin.from("driver_live_locations").upsert({
       waybill: booking.waybill, driver_user_id: actorId, latitude: lat, longitude: lng,
-      accuracy_m: accuracy ?? null, updated_at: new Date().toISOString(),
+      accuracy_m: accuracy ?? null, updated_at: updatedAt,
     }, { onConflict: "waybill" });
     if (error) return reply(500, { error: "location_update_failed" });
     return reply(200, { sharing: true, updated_at: new Date().toISOString() });
