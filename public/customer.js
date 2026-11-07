@@ -41,10 +41,10 @@ let ready = false;
 let loadVersion = 0;
 let refundRequestsByWaybill = new Map();
 const report = (text, error = false) => { message.textContent = text; message.classList.toggle('error', error); };
-form.addEventListener('input', event => {if(['pickup','dropoff'].includes(event.target.name)){for(const suffix of ['latitude','longitude','plus_code','geohash']){const hidden=form.elements.namedItem(event.target.name+'_'+suffix);if(hidden)hidden.value='';}const picker=event.target.nextElementSibling;if(picker?.matches('button'))picker.textContent='Pick / copy pin';}if (['pickup','dropoff','weight','length','width','height'].includes(event.target.name)) resetQuote();});
+form.addEventListener('input', event => {if(['pickup','dropoff'].includes(event.target.name)){for(const suffix of ['latitude','longitude']){const hidden=form.elements.namedItem(event.target.name+'_'+suffix);if(hidden)hidden.value='';}const picker=event.target.nextElementSibling;if(picker?.matches('button'))picker.textContent='Pick / copy pin';}if (['pickup','dropoff','weight','length','width','height'].includes(event.target.name)) resetQuote();});
 form.addEventListener('change', event => {if (['weight','length','width','height'].includes(event.target.name)) resetQuote();});
 function whatsapp(order) {
-  const text = `*SWIFTHAUL SA DISPATCH*\n*Order:* ${order.waybill}\n*Pickup:* ${order.pickup}${order.pickup_plus_code?'\n*Pickup Plus Code:* '+order.pickup_plus_code:''}\n*Drop:* ${order.dropoff}${order.dropoff_plus_code?'\n*Drop-off Plus Code:* '+order.dropoff_plus_code:''}\n*Recipient & notes:* ${order.recipient}\n*Vehicle:* ${order.vehicle.toUpperCase()}${order.load?.truckClass?' ('+order.load.truckClass+')':''}${order.load?'\n*Chargeable weight:* '+mass(order.load.chargeable)+' kg\n*Distance fee:* '+money(order.distance_fee)+'\n*Weight fee:* '+money(order.load.weightFee):''}\n*Outbound fee:* ${money(order.price)}\n*Payment:* ${order.paid_at?'Confirmed via '+order.payment_source:order.payment_source==='pay_later'?'Pay later':order.payment_method==='cash'?'Cash requested (unconfirmed)':'Arrange with dispatch'}${order.counter_offer?'\n*Counteroffer:* '+money(order.counter_offer)+' · '+order.counter_offer_status:''}${order.scheduled_at?'\n*Scheduled pickup:* '+localTime(order.scheduled_at):''}${order.return_address?'\n*Return request (separate quote):* '+order.return_address:''}${order.return_at?'\n*Requested return:* '+localTime(order.return_at):''}`;
+  const text = `*SWIFTHAUL SA DISPATCH*\n*Order:* ${order.waybill}\n*Pickup:* ${order.pickup}\n*Drop:* ${order.dropoff}\n*Recipient & notes:* ${order.recipient}\n*Vehicle:* ${order.vehicle.toUpperCase()}${order.load?.truckClass?' ('+order.load.truckClass+')':''}${order.load?'\n*Chargeable weight:* '+mass(order.load.chargeable)+' kg\n*Distance fee:* '+money(order.distance_fee)+'\n*Weight fee:* '+money(order.load.weightFee):''}\n*Outbound fee:* ${money(order.price)}\n*Payment:* ${order.paid_at?'Confirmed via '+order.payment_source:order.payment_source==='pay_later'?'Pay later':order.payment_method==='cash'?'Cash requested (unconfirmed)':'Arrange with dispatch'}${order.counter_offer?'\n*Counteroffer:* '+money(order.counter_offer)+' · '+order.counter_offer_status:''}${order.scheduled_at?'\n*Scheduled pickup:* '+localTime(order.scheduled_at):''}${order.return_address?'\n*Return request (separate quote):* '+order.return_address:''}${order.return_at?'\n*Requested return:* '+localTime(order.return_at):''}`;
   return `https://wa.me/27615083880?text=${encodeURIComponent(text)}`;
 }
 function addOrder(order, prepend = false) {
@@ -56,13 +56,12 @@ function addOrder(order, prepend = false) {
   head.append(waybill, status);
   const route = document.createElement('p'); route.className = 'route'; route.textContent = `${order.pickup} → ${order.dropoff}`;
   for (const [kind,label] of [['pickup','Pickup'],['dropoff','Drop-off']]) {
-    const plus=order[kind+'_plus_code'],lat=order[kind+'_latitude'],lng=order[kind+'_longitude'];
-    if (!plus && (lat==null || lng==null)) continue;
+    const lat=order[kind+'_latitude'],lng=order[kind+'_longitude'];
+    if (lat==null || lng==null) continue;
     const location=document.createElement('p');
-    location.textContent=label+' pin: '+(plus||Number(lat).toFixed(6)+', '+Number(lng).toFixed(6))+(order[kind+'_geohash']?' · Geohash '+order[kind+'_geohash']:'');
+    location.textContent=label+' coordinates: '+Number(lat).toFixed(6)+', '+Number(lng).toFixed(6);
     card.append(location);
     if(lat!=null&&lng!=null){const mapLink=document.createElement('a');mapLink.href='https://www.google.com/maps?q='+encodeURIComponent(lat+','+lng);mapLink.target='_blank';mapLink.rel='noopener noreferrer';mapLink.textContent='Open '+label.toLowerCase()+' pin in Maps ↗';card.append(mapLink);}
-    if(plus){const copy=document.createElement('button');copy.type='button';copy.textContent='Copy '+label.toLowerCase()+' Plus Code';copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(plus);report(label+' Plus Code copied.');}catch{report('Select and copy this code: '+plus,true);}});card.append(copy);}
   }
   const meta = document.createElement('div'); meta.className = 'order-meta';
   const pin = document.createElement('span'); pin.textContent = `Recipient PIN: ${order.pin} · Share only after delivery`;
@@ -209,7 +208,7 @@ function downloadPDF(order) {
     line('SWIFTHAUL SA', 18); line('DELIVERY INVOICE', 13);
     line(`Waybill: ${order.waybill}`);
     line(`Issued: ${new Date(order.created_at).toLocaleDateString('en-ZA')}`);
-    line(`Pickup: ${order.pickup}`); if(order.pickup_plus_code)line(`Pickup Plus Code: ${order.pickup_plus_code}`); line(`Drop-off: ${order.dropoff}`); if(order.dropoff_plus_code)line(`Drop-off Plus Code: ${order.dropoff_plus_code}`);
+    line(`Pickup: ${order.pickup}`); line(`Drop-off: ${order.dropoff}`); if(order.dropoff_plus_code)line(`Drop-off Plus Code: ${order.dropoff_plus_code}`);
     if (order.distance_meters != null) line(`Mapped driving distance: ${km(order.distance_meters)} km`);
     line(`Recipient and notes: ${order.recipient}`); line(`Vehicle: ${order.vehicle.toUpperCase()}`);
     if(order.load) {line(`Actual: ${mass(order.load.weight)} kg; volumetric: ${mass(order.load.volumetric)} kg; chargeable: ${mass(order.load.chargeable)} kg`);line(`Packed dimensions: ${order.load.length} x ${order.load.width} x ${order.load.height} cm; divisor 5000`);line(`Vehicle class: ${order.load.truckClass || order.vehicle}`);line(`Distance fee: ${money(order.distance_fee)}; extra weight: ${mass(order.load.extra)} kg at ${money(order.load.rate)}/kg = ${money(order.load.weightFee)}`);}
