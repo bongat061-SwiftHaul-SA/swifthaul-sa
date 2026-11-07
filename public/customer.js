@@ -82,8 +82,6 @@ function addOrder(order, prepend = false) {
     if (document.body.dataset.guestPreview !== 'true') document.dispatchEvent(new CustomEvent('delivery-route', {detail:{waybill:order.waybill,pickup:order.pickup,dropoff:order.dropoff}}));
   });
   if(!order.paid_at&&!order.refunded_at&&!['cancelled','completed'].includes(order.status)){
-    const pay=document.createElement('button');pay.type='button';pay.textContent='Pay with PayFast';pay.addEventListener('click',()=>startPayFastCheckout(order,pay));
-    const cardPay=document.createElement('button');cardPay.type='button';cardPay.textContent='Pay by card · PayFast';cardPay.addEventListener('click',()=>startPayFastCheckout(order,cardPay));
     const eft=document.createElement('button');eft.type='button';eft.textContent='EFT payment instructions';eft.addEventListener('click',()=>{
       const box=document.createElement('div');box.className='eft-instructions';
       const heading=document.createElement('strong');heading.textContent='Pay by EFT';
@@ -91,7 +89,7 @@ function addOrder(order, prepend = false) {
       const contact=document.createElement('a');contact.href='https://wa.me/27615083880?text='+encodeURIComponent('Please send verified EFT payment details for booking '+order.waybill+'.');contact.target='_blank';contact.rel='noopener noreferrer';contact.textContent='Request bank details on WhatsApp';
       box.append(heading,info,contact);eft.replaceWith(box);
     });
-    actions.append(pay,cardPay,eft);
+    actions.append(eft);
   }
   const existingRefund = refundRequestsByWaybill.get(order.waybill);
   if (existingRefund) {
@@ -123,27 +121,6 @@ function addOrder(order, prepend = false) {
   if (prepend) container.prepend(card); else container.append(card);
 }
 
-async function startPayFastCheckout(order, button) {
-  button.disabled = true; report('Preparing secure PayFast sandbox checkout…');
-  try {
-    const client = window.swiftHaulSupabase;
-    if (!client) throw new Error('Customer sign-in connection is unavailable.');
-    const { data, error } = await client.functions.invoke('payfast-checkout', { body: { action: 'checkout', waybill: order.waybill } });
-    if (error || !data || data.error) throw new Error(data?.error || error?.message || 'Unable to prepare PayFast checkout.');
-    if (data.process_url !== 'https://sandbox.payfast.co.za/eng/process' || data.mode !== 'sandbox' || !data.fields || typeof data.fields !== 'object')
-      throw new Error('PayFast returned an invalid sandbox checkout response.');
-    const checkout = document.createElement('form');
-    checkout.method = 'POST'; checkout.action = data.process_url; checkout.acceptCharset = 'UTF-8'; checkout.hidden = true;
-    for (const [name,value] of Object.entries(data.fields)) {
-      if (typeof value !== 'string' || value.length > 2000) throw new Error('Invalid PayFast checkout field.');
-      const input = document.createElement('input'); input.type = 'hidden'; input.name = name; input.value = value; checkout.append(input);
-    }
-    document.body.append(checkout); checkout.submit();
-  } catch (error) {
-    report(error instanceof Error ? error.message : 'Unable to start PayFast checkout.', true);
-    button.disabled = false;
-  }
-}
 
 async function loadOrders() {
   if (document.body.dataset.guestPreview === 'true') return;
@@ -208,7 +185,7 @@ form.addEventListener('submit', async event => {
     if (epoch !== accountEpoch) return;
     if (!result.order) throw new Error('Unable to save your booking. Please try again.');
     container.querySelector('.empty')?.remove(); addOrder(result.order, true);
-    report('Booking created. Choose PayFast, card checkout or EFT instructions below. WhatsApp sharing is a separate action.');
+    report('Booking created. Choose cash (if eligible) or EFT instructions below. WhatsApp sharing is a separate action.');
     resetQuote();
   } catch (error) {
     if (epoch!==accountEpoch) return;
@@ -252,8 +229,7 @@ function downloadPDF(order) {
 document.addEventListener('account-ready', () => {
   calculateButton.disabled=false;loadOrders();
   const params=new URLSearchParams(location.search), payment=params.get('payment');
-  if(payment==='return') report('You returned from PayFast. Payment is awaiting server-side notification and verification; refresh your bookings shortly. Returning here does not itself confirm payment.');
-  else if(payment==='cancel') report('PayFast checkout was cancelled. Your booking remains unpaid.');
+  if(payment==='return'||payment==='cancel') report('Card payments are currently unavailable. Choose EFT or eligible cash for your booking.');
   if(payment){history.replaceState({},'',location.pathname+location.hash);}
 });
 document.addEventListener('account-cleared', () => {accountEpoch++;loadVersion++; ready = false;form.reset();toggleBookingOptions();previewLoad();resetQuote(); container.replaceChildren(); document.getElementById('legacy-import').hidden=true; document.getElementById('submit').disabled = true;});
