@@ -195,6 +195,8 @@ if (app === 'driver' || app === 'company') {
         }
       }
       for (const order of data.orders || []) render(order);
+      if (app === 'driver' && historyList() && !historyList().children.length) { const empty=document.createElement('p'); empty.textContent='No completed, failed or cancelled deliveries yet.'; historyList().append(empty); }
+      if (app === 'driver' && !list.children.length) { const empty=document.createElement('p'); empty.textContent='No active deliveries are assigned right now.'; list.append(empty); }
       message.textContent = '';
     } catch (error) {
       if (current === requestNumber) message.textContent = error.message || 'Unable to load deliveries.';
@@ -617,7 +619,7 @@ if (app === 'driver' || app === 'company') {
       });
       card.append(form);
     }
-    if (app === 'driver' && ['delivered','failed','cancelled'].includes(order.status) && historyList()) { const history=historyList(); if(history.children.length===1 && history.firstElementChild?.textContent?.includes('No completed deliveries yet')) history.replaceChildren(); history.append(card); }
+    if (app === 'driver' && ['delivered','failed','cancelled'].includes(order.status) && historyList()) { const history=historyList(); if(history.children.length===1 && history.firstElementChild?.textContent?.includes('No completed')) history.replaceChildren(); history.append(card); }
     else list.append(card);
   }
 
