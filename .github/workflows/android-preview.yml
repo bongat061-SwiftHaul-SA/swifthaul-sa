@@ -10,12 +10,7 @@ on:
       - 'apps/driver/android-wrapper/**'
       - 'apps/company/android-wrapper/**'
       - 'scripts/copy-android-web.cjs'
-      - 'scripts/prepare-sites.cjs'
       - 'docs/android-apps.md'
-      - 'shared/**'
-      - 'public/**'
-      - 'apps/driver/public/**'
-      - 'apps/company/public/**'
       - '.github/workflows/android-preview.yml'
 
 permissions:
@@ -37,8 +32,15 @@ jobs:
             app: apps/company/android-wrapper
 
     steps:
-      - name: Check out development branch
+      - name: Check out Android wrapper development branch
         uses: actions/checkout@v4
+
+      - name: Check out the exact source branch used by the new preview site
+        uses: actions/checkout@v4
+        with:
+          repository: bongat061-SwiftHaul-SA/swifthaul-sa
+          ref: feature/secure-driver-live-location
+          path: preview-source
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -61,9 +63,24 @@ jobs:
         working-directory: ${{ matrix.app }}
         run: npx cap add android
 
-      - name: Copy platform web app and sync native project
+      - name: Copy matching preview interface and sync native project
         working-directory: ${{ matrix.app }}
+        env:
+          SWIFTHAUL_SOURCE_DIR: ${{ github.workspace }}/preview-source
         run: npm run cap:sync
+
+      - name: Verify the packaged interface is the preview version
+        working-directory: ${{ matrix.app }}
+        run: |
+          test -f www/index.html
+          grep -R -q '20261107' www
+          if [ "${{ matrix.label }}" = "Customer" ]; then
+            grep -q 'customer-multi-pages-20261107' www/index.html
+          elif [ "${{ matrix.label }}" = "Driver" ]; then
+            grep -q 'driver-home-uber-refresh-20261107' www/index.html
+          else
+            grep -q 'company-web-console-20261107' www/index.html
+          fi
 
       - name: Assemble debug APK
         working-directory: ${{ matrix.app }}/android
@@ -72,7 +89,7 @@ jobs:
       - name: Upload preview APK
         uses: actions/upload-artifact@v4
         with:
-          name: swifthaul-${{ matrix.label }}-debug-apk
+          name: swifthaul-${{ matrix.label }}-new-preview-debug-apk
           path: ${{ matrix.app }}/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
