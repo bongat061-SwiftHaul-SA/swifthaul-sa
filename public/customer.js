@@ -109,10 +109,7 @@ function addOrder(order, prepend = false) {
       });
     });actions.append(requestButton);
   }
-  const fullMap=document.createElement('a');fullMap.className='track-delivery-map';fullMap.textContent='Open full-screen booking map ↗';
-  fullMap.href='map.html';
-  fullMap.addEventListener('click',()=>{try{sessionStorage.setItem('swiftHaulMapContext',JSON.stringify({waybill:order.waybill,pickup:order.pickup,dropoff:order.dropoff,status:order.status||'Booking route',pickupLat:order.pickup_latitude,pickupLng:order.pickup_longitude,dropoffLat:order.dropoff_latitude,dropoffLng:order.dropoff_longitude}));}catch{} });
-  actions.append(track, pdf, wa, fullMap); card.append(head, route, meta, actions);
+  actions.append(track, pdf, wa); card.append(head, route, meta, actions);
   if (prepend) container.prepend(card); else container.append(card);
 }
 
