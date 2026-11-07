@@ -11,6 +11,7 @@ on:
       - 'apps/company/android-wrapper/**'
       - 'scripts/copy-android-web.cjs'
       - 'scripts/prepare-sites.cjs'
+      - 'docs/android-apps.md'
       - 'shared/**'
       - 'public/**'
       - 'apps/driver/public/**'
