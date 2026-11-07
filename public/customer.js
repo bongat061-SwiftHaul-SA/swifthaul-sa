@@ -82,8 +82,8 @@ function addOrder(order, prepend = false) {
     if (document.body.dataset.guestPreview !== 'true') document.dispatchEvent(new CustomEvent('delivery-route', {detail:{waybill:order.waybill,pickup:order.pickup,dropoff:order.dropoff}}));
   });
   if(!order.paid_at&&!order.refunded_at&&!['cancelled','completed'].includes(order.status)){
-    const pay=document.createElement('button');pay.type='button';pay.textContent='Pay with PayFast';pay.addEventListener('click',()=>startPayFastCheckout(order,pay));
-    const cardPay=document.createElement('button');cardPay.type='button';cardPay.textContent='Pay by card · PayFast';cardPay.addEventListener('click',()=>startPayFastCheckout(order,cardPay));
+    const paystack=document.createElement('button');paystack.type='button';paystack.className='primary';paystack.textContent='Pay online · Paystack';paystack.addEventListener('click',()=>startPaystackCheckout(order,paystack));
+    const pay=document.createElement('button');pay.type='button';pay.textContent='PayFast backup';pay.addEventListener('click',()=>startPayFastCheckout(order,pay));
     const eft=document.createElement('button');eft.type='button';eft.textContent='EFT payment instructions';eft.addEventListener('click',()=>{
       const box=document.createElement('div');box.className='eft-instructions';
       const heading=document.createElement('strong');heading.textContent='Pay by EFT';
@@ -91,7 +91,7 @@ function addOrder(order, prepend = false) {
       const contact=document.createElement('a');contact.href='https://wa.me/27615083880?text='+encodeURIComponent('Please send verified EFT payment details for booking '+order.waybill+'.');contact.target='_blank';contact.rel='noopener noreferrer';contact.textContent='Request bank details on WhatsApp';
       box.append(heading,info,contact);eft.replaceWith(box);
     });
-    actions.append(pay,cardPay,eft);
+    actions.append(paystack,pay,eft);
   }
   const existingRefund = refundRequestsByWaybill.get(order.waybill);
   if (existingRefund) {
@@ -121,6 +121,26 @@ function addOrder(order, prepend = false) {
   }
   actions.append(track, pdf, wa); card.append(head, route, meta, actions);
   if (prepend) container.prepend(card); else container.append(card);
+}
+
+async function startPaystackCheckout(order, button) {
+  button.disabled = true; report('Preparing secure Paystack checkout…');
+  try {
+    const client = window.swiftHaulSupabase;
+    if (!client) throw new Error('Customer sign-in connection is unavailable.');
+    const { data, error } = await client.functions.invoke('paystack-checkout', { body: { waybill: order.waybill } });
+    if (error || !data || data.error) throw new Error(data?.error || error?.message || 'Unable to prepare Paystack checkout.');
+    if (typeof data.authorization_url !== 'string' || typeof data.reference !== 'string' ||
+        !/^SHPS-[A-Fa-f0-9]{32}$/.test(data.reference)) throw new Error('Paystack returned an invalid checkout response.');
+    const checkoutUrl = new URL(data.authorization_url);
+    if (checkoutUrl.protocol !== 'https:' || checkoutUrl.hostname !== 'checkout.paystack.com')
+      throw new Error('Paystack returned an untrusted checkout destination.');
+    report('Redirecting to Paystack secure checkout…');
+    window.location.assign(checkoutUrl.href);
+  } catch (error) {
+    report(error instanceof Error ? error.message : 'Unable to start Paystack checkout.', true);
+    button.disabled = false;
+  }
 }
 
 async function startPayFastCheckout(order, button) {
@@ -208,7 +228,7 @@ form.addEventListener('submit', async event => {
     if (epoch !== accountEpoch) return;
     if (!result.order) throw new Error('Unable to save your booking. Please try again.');
     container.querySelector('.empty')?.remove(); addOrder(result.order, true);
-    report('Booking created. Choose PayFast, card checkout or EFT instructions below. WhatsApp sharing is a separate action.');
+    report('Booking created. Choose Paystack online checkout, PayFast backup or EFT instructions below. WhatsApp sharing is a separate action.');
     resetQuote();
   } catch (error) {
     if (epoch!==accountEpoch) return;
