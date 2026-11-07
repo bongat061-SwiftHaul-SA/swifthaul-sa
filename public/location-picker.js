@@ -340,5 +340,5 @@
     }
   });
   revealObserver.observe(document.getElementById('workspace'), { attributes: true, attributeFilter: ['hidden'] });
-  if (!document.getElementById('workspace')?.hidden) { ensureMap(); setTimeout(() => map && map.invalidateSize(), 180); }
+  if (!document.getElementById('workspace')?.hidden) { ensureMap(); setTimeout(() => map && map.resize(), 180); }
 })();
