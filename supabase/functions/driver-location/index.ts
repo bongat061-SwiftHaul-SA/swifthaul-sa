@@ -15,7 +15,7 @@ const activeStatuses = ["accepted", "picked_up", "in_transit"];
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (!["GET", "POST"].includes(req.method)) return reply(405, { error: "method_not_allowed" });
-  const token = (req.headers.get("Authorization") ?? "").match(/^Bearer\\s+(.+)$/i)?.[1];
+  const token = (req.headers.get("Authorization") ?? "").match(/^Bearer\s+(.+)$/i)?.[1];
   if (!token) return reply(401, { error: "missing_bearer_token" });
   const url = Deno.env.get("SUPABASE_URL"), anon = Deno.env.get("SUPABASE_ANON_KEY");
   const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
