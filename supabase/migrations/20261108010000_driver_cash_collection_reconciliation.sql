@@ -15,6 +15,19 @@ create policy driver_cash_receipt_signature_read on storage.objects
 for select to authenticated
 using (bucket_id='driver-cash-receipts' and (storage.foldername(name))[1]=auth.uid()::text);
 
+insert into storage.buckets (id,name,public,file_size_limit,allowed_mime_types)
+values ('driver-cash-deposit-proofs','driver-cash-deposit-proofs',false,10485760,array['image/jpeg','image/png','image/webp','application/pdf'])
+on conflict (id) do update set public=false,file_size_limit=10485760,allowed_mime_types=excluded.allowed_mime_types;
+
+drop policy if exists driver_cash_deposit_proof_upload on storage.objects;
+create policy driver_cash_deposit_proof_upload on storage.objects
+for insert to authenticated
+with check (bucket_id='driver-cash-deposit-proofs' and (storage.foldername(name))[1]=auth.uid()::text);
+drop policy if exists driver_cash_deposit_proof_read on storage.objects;
+create policy driver_cash_deposit_proof_read on storage.objects
+for select to authenticated
+using (bucket_id='driver-cash-deposit-proofs' and (storage.foldername(name))[1]=auth.uid()::text);
+
 create table if not exists public.driver_cash_receipts (
   id uuid primary key default gen_random_uuid(),
   waybill text not null references public.customer_bookings(waybill) on delete restrict,
@@ -191,6 +204,10 @@ begin
     raise exception 'Approved active driver required' using errcode='42501';
   end if;
   perform pg_advisory_xact_lock(hashtextextended(v_driver::text, 0));
+  if exists(select 1 from public.driver_cash_deposits
+    where driver_user_id=v_driver and status in ('awaiting_deposit','proof_submitted')) then
+    raise exception 'A cash deposit instruction is already awaiting completion' using errcode='23505';
+  end if;
   select coalesce(sum(amount_cents),0) into v_outstanding
     from public.driver_cash_clearing_ledger where driver_user_id=v_driver;
   if p_amount_cents > v_outstanding then
@@ -217,7 +234,10 @@ declare
   v_deposit public.driver_cash_deposits%rowtype;
 begin
   if v_driver is null or p_deposit_id is null or p_proof_object is null
+    or p_proof_object not like v_driver::text || '/%'
     or length(trim(p_proof_object)) not between 3 and 500
+    or not exists (select 1 from storage.objects so
+      where so.bucket_id='driver-cash-deposit-proofs' and so.name=trim(p_proof_object))
     or (p_driver_note is not null and length(p_driver_note)>500) then
     raise exception 'Valid deposit proof is required' using errcode='22023';
   end if;
