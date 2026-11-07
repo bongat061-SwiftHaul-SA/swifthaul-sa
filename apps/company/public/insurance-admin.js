@@ -47,7 +47,7 @@
       ? 'INSURANCE ACTIVE · '+policy.insurer_name+' · '+policy.policy_reference+' · '+new Date(policy.coverage_starts_at).toLocaleDateString('en-ZA')+' – '+new Date(policy.coverage_ends_at).toLocaleDateString('en-ZA')
       : 'Insurance status: '+(policy?.status||'not registered')+(policy?.policy_reference?' · '+policy.policy_reference:''));
     card.append(title,detail,subscription,eligibility,coverage);
-    const limits=element('p','Benefit limits: vehicle R30,000 · accidental disability R100,000 · accident daily benefit R1,000 per eligible day.');
+    const limits=element('p','Benefit limits: vehicle R30,000 · accidental disability R100,000 · accident daily benefit R1,000 per eligible day, maximum 5 days / R5,000 per accident claim. Cover is only for an accepted assigned dispatch while travelling to pickup or from pickup to delivery; unexplained stops or diversions may invalidate a claim.');
     limits.className='subtle';card.append(limits);
     const fields=element('div',undefined,'workspace-grid');
     const insurerLabel=element('label','Insurer / underwriting partner');
