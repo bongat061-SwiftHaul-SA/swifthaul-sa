@@ -5,6 +5,7 @@ create or replace function public.apply_paystack_booking_payment(
   p_paystack_transaction_id text,
   p_amount_cents bigint,
   p_currency text,
+  p_payment_mode text,
   p_payload jsonb
 ) returns boolean
 language plpgsql
@@ -17,7 +18,8 @@ declare
 begin
   if p_reference is null or length(p_reference) > 100
      or p_paystack_transaction_id is null or length(p_paystack_transaction_id) > 100
-     or p_amount_cents < 500 or p_currency <> 'ZAR' then
+     or p_amount_cents < 500 or p_currency <> 'ZAR'
+     or p_payment_mode not in ('sandbox','live') then
     return false;
   end if;
 
@@ -27,6 +29,7 @@ begin
   for update;
 
   if not found then return false; end if;
+  if v_payment.payment_mode <> p_payment_mode then return false; end if;
   if v_payment.status = 'complete' then
     return v_payment.provider_reference = p_reference
        and v_payment.currency = p_currency
@@ -63,7 +66,7 @@ begin
 end;
 $$;
 
-revoke all on function public.apply_paystack_booking_payment(text,text,bigint,text,jsonb) from public, anon, authenticated;
-grant execute on function public.apply_paystack_booking_payment(text,text,bigint,text,jsonb) to service_role;
+revoke all on function public.apply_paystack_booking_payment(text,text,bigint,text,text,jsonb) from public, anon, authenticated;
+grant execute on function public.apply_paystack_booking_payment(text,text,bigint,text,text,jsonb) to service_role;
 
 commit;
