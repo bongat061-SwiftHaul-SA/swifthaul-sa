@@ -13,6 +13,7 @@ if (app === 'driver' || app === 'company') {
 
   let active = false;
   let requestNumber = 0;
+  const activeTrackingCleanups = new Set();
   const money = value => 'R' + Number(value || 0).toFixed(2);
   const statusLabel = value => ({
     pending: 'Awaiting dispatch', assigned: 'Assigned', accepted: 'Accepted',
@@ -39,6 +40,8 @@ if (app === 'driver' || app === 'company') {
     try {
       const data = await invoke('GET');
       if (current !== requestNumber) return;
+      for (const cleanup of activeTrackingCleanups) cleanup();
+      activeTrackingCleanups.clear();
       list.replaceChildren();
       if (app === 'driver' && data.driverProfile?.verification_status !== 'approved') {
         const notice = document.createElement('p');
@@ -225,6 +228,13 @@ if (app === 'driver' || app === 'company') {
           startTracking.disabled = false;
         }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 });
       });
+      const cleanupTracking = () => {
+        if (watchId !== null && navigator.geolocation) navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+        if (map) { map.remove(); map = null; }
+        activeTrackingCleanups.delete(cleanupTracking);
+      };
+      activeTrackingCleanups.add(cleanupTracking);
       stopTracking.addEventListener('click', () => {
         if (watchId !== null) navigator.geolocation.clearWatch(watchId);
         watchId = null;
@@ -235,10 +245,6 @@ if (app === 'driver' || app === 'company') {
         if (driverMarker) { driverMarker.remove(); driverMarker = null; }
         if (accuracyRing) { accuracyRing.remove(); accuracyRing = null; }
       });
-      tracking.addEventListener('DOMNodeRemoved', () => {
-        if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-        if (map) map.remove();
-      }, { once: true });
     }
     for (const [kind,label] of [['pickup','Pickup'],['dropoff','Drop-off']]) {
       const plus = order[kind + '_plus_code'];
@@ -413,6 +419,8 @@ if (app === 'driver' || app === 'company') {
   document.addEventListener('account-cleared', () => {
     active = false;
     requestNumber++;
+    for (const cleanup of activeTrackingCleanups) cleanup();
+    activeTrackingCleanups.clear();
     list.replaceChildren();
     message.textContent = '';
   });
