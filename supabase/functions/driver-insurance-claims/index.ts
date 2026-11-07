@@ -85,7 +85,7 @@ Deno.serve(async(req:Request)=>{
   let body:Record<string,unknown>={},files:File[]=[];
   if(contentType.includes("multipart/form-data")){
     const form=await req.formData();
-    for(const key of ["action","waybill","incident_at","incident_type","description","requested_days","claim_id","route_compliance","route_review_note","approved_days","insurer_name","insurer_claim_reference","insurer_decision_note","payment_reference"])
+    for(const key of ["action","waybill","incident_at","incident_type","description","requested_days","claim_consent","claim_id","route_compliance","route_review_note","approved_days","insurer_name","insurer_claim_reference","insurer_decision_note","payment_reference"])
       {const value=form.get(key);if(typeof value==="string")body[key]=value;}
     files=form.getAll("evidence").filter((v):v is File=>v instanceof File);
   }else{
@@ -100,6 +100,7 @@ Deno.serve(async(req:Request)=>{
     const type=String(body.incident_type??"");
     const description=typeof body.description==="string"?body.description.trim():"";
     const days=Number(body.requested_days);
+    if(body.claim_consent!=="true")return reply(400,{error:"claim_evidence_processing_consent_required"});
     if(!waybill||waybill.length>100||!Number.isFinite(incidentAt)||incidentAt>Date.now()||!["vehicle_accident","driver_injury","third_party_injury","vehicle_damage","other"].includes(type)||description.length<30||description.length>4000||!Number.isInteger(days)||days<1||days>MAX_DAYS)
       return reply(400,{error:"invalid_claim_details_maximum_five_days"});
     if(files.length>5||files.some(f=>f.size>MAX_FILE||!allowedTypes.has(f.type)))
