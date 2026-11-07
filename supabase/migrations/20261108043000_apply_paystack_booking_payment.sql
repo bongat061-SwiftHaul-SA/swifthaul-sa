@@ -19,6 +19,7 @@ begin
   if p_reference is null or length(p_reference) > 100
      or p_paystack_transaction_id is null or length(p_paystack_transaction_id) > 100
      or p_amount_cents < 500 or p_currency <> 'ZAR'
+     or p_payment_mode is null
      or p_payment_mode not in ('sandbox','live') then
     return false;
   end if;
