@@ -1,0 +1,6 @@
+/* Separate, addressable Company management pages */
+body[data-app="company"] .section-links a.is-active{background:#176b50;color:#fff}
+body[data-app="company"] .page [hidden]{display:none!important}
+body[data-app="company"] .page-heading h1{min-height:1.15em}
+body[data-app="company"] .page>section.panel{margin-top:0!important}
+body[data-app="company"] .workspace-grid[hidden],body[data-app="company"] .workspace-grid aside[hidden]{display:none!important}
