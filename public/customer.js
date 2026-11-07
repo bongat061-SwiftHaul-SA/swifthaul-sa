@@ -109,7 +109,12 @@ function addOrder(order, prepend = false) {
       });
     });actions.append(requestButton);
   }
-  actions.append(track, pdf, wa); card.append(head, route, meta, actions);
+  const fullMap=document.createElement('a');fullMap.className='track-delivery-map';fullMap.textContent='Open full-screen booking map ↗';
+  const mapUrl=new URL('map.html',location.href);
+  for(const [key,value] of Object.entries({waybill:order.waybill,pickup:order.pickup,dropoff:order.dropoff,status:order.status||'Booking route'}))if(value!=null)mapUrl.searchParams.set(key,String(value));
+  for(const kind of ['pickup','dropoff']){const lat=order[kind+'_latitude'],lng=order[kind+'_longitude'];if(lat!=null&&lng!=null){mapUrl.searchParams.set(kind+'Lat',String(lat));mapUrl.searchParams.set(kind+'Lng',String(lng));}}
+  fullMap.href=mapUrl.href;fullMap.target='_blank';fullMap.rel='noopener noreferrer';
+  actions.append(track, pdf, wa, fullMap); card.append(head, route, meta, actions);
   if (prepend) container.prepend(card); else container.append(card);
 }
 
