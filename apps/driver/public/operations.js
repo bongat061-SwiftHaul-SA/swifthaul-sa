@@ -125,25 +125,44 @@ if (app === 'driver' || app === 'company') {
           list.append(preview);
 
           let previewMap = null, marker = null, ring = null, watch = null, lastPoint = null;
-          if (window.L) {
-            previewMap = L.map(mapElement, { zoomControl: false, attributionControl: true });
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-              maxZoom: 20, attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
-            }).addTo(previewMap);
-            previewMap.setView([-29.0, 24.0], 5);
-            requestAnimationFrame(() => previewMap && previewMap.invalidateSize());
+          if (window.maplibregl) {
+            previewMap = new maplibregl.Map({
+              container: mapElement,
+              style: {
+                version: 8,
+                sources: { carto: { type: 'raster', tiles: [
+                  'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                  'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+                  'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'
+                ], tileSize: 256, attribution: '&copy; OpenStreetMap contributors &copy; CARTO' } },
+                layers: [{ id: 'carto-voyager', type: 'raster', source: 'carto' }]
+              },
+              center: [24.0,-29.0], zoom: 5, attributionControl: true
+            });
+            previewMap.addControl(new maplibregl.NavigationControl({showCompass:false}),'top-right');
+            requestAnimationFrame(() => previewMap && previewMap.resize());
           } else {
-            mapElement.textContent = 'Map tiles are unavailable. Check your connection.';
+            mapElement.textContent = 'Map library unavailable. Check your connection.';
           }
           const showPosition = position => {
             const { latitude, longitude, accuracy } = position.coords;
             lastPoint = [latitude, longitude];
-            if (previewMap) {
-              if (!marker) marker = L.circleMarker(lastPoint, { radius: 10, color: '#fff', weight: 4, fillColor: '#176b52', fillOpacity: 1 }).addTo(previewMap);
-              else marker.setLatLng(lastPoint);
-              if (ring) ring.remove();
-              ring = L.circle(lastPoint, { radius: Math.max(10, accuracy || 10), color: '#176b52', weight: 1, fillColor: '#176b52', fillOpacity: .09 }).addTo(previewMap);
-              previewMap.setView(lastPoint, 15, { animate: true });
+            if (previewMap && previewMap.loaded()) {
+              if (!marker) {
+                const node=document.createElement('div');
+                node.style.cssText='width:20px;height:20px;border:4px solid #fff;border-radius:50%;background:#176b52;box-shadow:0 1px 10px #0006';
+                marker=new maplibregl.Marker({element:node}).setLngLat([longitude,latitude]).addTo(previewMap);
+              } else marker.setLngLat([longitude,latitude]);
+              const radius=Math.max(10,accuracy||10), latRadius=radius/111320;
+              const lngRadius=radius/(111320*Math.max(.01,Math.cos(latitude*Math.PI/180)));
+              const ringCoordinates=Array.from({length:65},(_,i)=>{const angle=i*Math.PI*2/64;return [longitude+Math.cos(angle)*lngRadius,latitude+Math.sin(angle)*latRadius];});
+              const feature={type:'Feature',properties:{},geometry:{type:'Polygon',coordinates:[ringCoordinates]}};
+              if(!previewMap.getSource('preview-accuracy')){
+                previewMap.addSource('preview-accuracy',{type:'geojson',data:feature});
+                previewMap.addLayer({id:'preview-accuracy-fill',type:'fill',source:'preview-accuracy',paint:{'fill-color':'#176b52','fill-opacity':.10}});
+                previewMap.addLayer({id:'preview-accuracy-line',type:'line',source:'preview-accuracy',paint:{'line-color':'#176b52','line-width':1}});
+              } else previewMap.getSource('preview-accuracy').setData(feature);
+              previewMap.flyTo({center:[longitude,latitude],zoom:15});
             }
             state.textContent = '● GPS active';
             updated.textContent = 'Updated ' + new Date(position.timestamp).toLocaleTimeString('en-ZA') + ' · accuracy ±' + Math.round(accuracy || 0) + ' m';
@@ -182,8 +201,8 @@ if (app === 'driver' || app === 'company') {
             stop.disabled = true;
           });
           recenter.addEventListener('click', () => {
-            if (previewMap && lastPoint) previewMap.setView(lastPoint, 16, { animate: true });
-            else if (previewMap) previewMap.setView([-29.0, 24.0], 5, { animate: true });
+            if (previewMap && lastPoint) previewMap.flyTo({center:[lastPoint[1],lastPoint[0]],zoom:16});
+            else if (previewMap) previewMap.flyTo({center:[24.0,-29.0],zoom:5});
           });
           const cleanupPreview = () => {
             if (watch !== null && navigator.geolocation) navigator.geolocation.clearWatch(watch);
