@@ -154,6 +154,8 @@
     const fieldset = form.querySelector(selector)?.closest('fieldset');
     if (fieldset) moreContent.append(fieldset);
   }
+  const pricingNote = form.querySelector('a[href="terms.html#pricing"]')?.closest('p');
+  if (pricingNote) moreContent.append(pricingNote);
   sheet.insertBefore(moreOptions, quoteArea);
 
   const quoteStatus = document.getElementById('quote-status');
