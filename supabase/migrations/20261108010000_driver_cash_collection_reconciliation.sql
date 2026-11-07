@@ -349,7 +349,7 @@ returns table(driver_user_id uuid, amount_cents bigint)
 language plpgsql
 security definer
 set search_path = public
-as $
+as $$
 begin
   if not exists (
     select 1 from public.user_profiles
@@ -364,7 +364,7 @@ begin
     having sum(l.amount_cents) <> 0
     order by l.driver_user_id;
 end;
-$;
+$$;
 revoke all on function public.get_admin_driver_cash_balances() from public, anon;
 grant execute on function public.get_admin_driver_cash_balances() to authenticated;
 
