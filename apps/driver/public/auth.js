@@ -105,9 +105,16 @@ async function validateAccount(session) {
     throw new Error('Company access is invitation-only. Please contact your administrator.');
   }
   if (user.accountStatus !== 'active') throw new Error('Your account is not active. Please contact SwiftHaul support.');
-  if (app === 'driver') {
-    // Notifications are idempotent server-side. Passwords are never sent by email.
-    await supabase.functions.invoke('driver-application-notify', { body: {} }).catch(() => {});
+  if (app === 'driver' && session?.access_token) {
+    // Only run after an authenticated session exists and account-me validates the driver.
+    // With email confirmation enabled, this first runs on sign-in after confirmation.
+    const { data: notificationResult, error: notificationError } =
+      await supabase.functions.invoke('driver-application-notify', {
+        body: {},
+        headers: { Authorization: 'Bearer ' + session.access_token }
+      });
+    if (notificationError) console.warn('Driver onboarding notifications pending:', notificationError.message);
+    else if (notificationResult?.success !== true) console.warn('Driver onboarding notifications were not completed.');
   }
   showWorkspace(user);
 }
