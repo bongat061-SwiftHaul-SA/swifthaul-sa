@@ -32,7 +32,7 @@
     const title = document.createElement("strong");
     title.textContent = "Live location sharing";
     const explanation = document.createElement("p");
-    explanation.textContent = "Share your GPS position with this delivery’s customer and authorised dispatch staff. Sharing is optional and stops when you turn it off or the delivery closes.";
+    explanation.textContent = "Share your GPS position with this delivery’s customer and authorised dispatch staff. For dispatch-bound insurance evidence, keep GPS sharing active from acceptance while travelling to pickup and through the delivery route. Sharing stops when you turn it off or the delivery closes; a tracking gap may affect claim eligibility.";
     const status = document.createElement("p");
     status.setAttribute("role", "status");
     status.textContent = "Not sharing";
