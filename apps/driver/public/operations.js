@@ -1,6 +1,7 @@
 const app = document.body.dataset.app;
 if (app === 'driver' || app === 'company') {
   const panel = document.getElementById('dispatches');
+  const historyList = document.getElementById('driver-delivery-history-list');
   const heading = panel.querySelector('h2');
   const message = document.createElement('p');
   message.setAttribute('role', 'status');
@@ -43,6 +44,7 @@ if (app === 'driver' || app === 'company') {
       for (const cleanup of activeTrackingCleanups) cleanup();
       activeTrackingCleanups.clear();
       list.replaceChildren();
+      historyList?.replaceChildren();
       if (app === 'driver' && data.driverProfile?.verification_status !== 'approved') {
         const notice = document.createElement('p');
         notice.textContent = 'Your driver application is awaiting verification. Dispatch access will be enabled after approval.';
@@ -457,22 +459,16 @@ if (app === 'driver' || app === 'company') {
       activeTrackingCleanups.add(cleanupTracking);
     }
     for (const [kind,label] of [['pickup','Pickup'],['dropoff','Drop-off']]) {
-      const plus = order[kind + '_plus_code'];
       const lat = order[kind + '_latitude'], lng = order[kind + '_longitude'];
-      if (!plus && (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng)))) continue;
+      if (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng))) continue;
       const location = document.createElement('p');
-      location.textContent = label + ' pin: ' + (plus || 'coordinates saved') + (order[kind + '_geohash'] ? ' · Geohash ' + order[kind + '_geohash'] : '');
+      location.textContent = label + ' coordinates: ' + Number(lat).toFixed(6) + ', ' + Number(lng).toFixed(6);
       card.append(location);
       if (lat != null && lng != null && Number.isFinite(Number(lat)) && Number.isFinite(Number(lng))) {
         const mapLink = document.createElement('a');
         mapLink.href = 'https://www.google.com/maps?q=' + encodeURIComponent(lat + ',' + lng);
         mapLink.target = '_blank'; mapLink.rel = 'noopener noreferrer'; mapLink.textContent = 'Open ' + label.toLowerCase() + ' pin in Maps';
         card.append(mapLink);
-      }
-      if (plus) {
-        const copy = document.createElement('button'); copy.type = 'button'; copy.textContent = 'Copy ' + label.toLowerCase() + ' Plus Code';
-        copy.addEventListener('click', async () => { try { await navigator.clipboard.writeText(plus); message.textContent = label + ' Plus Code copied.'; } catch { message.textContent = 'Copy was blocked; select the code manually: ' + plus; } });
-        card.append(copy);
       }
     }
 
@@ -621,7 +617,8 @@ if (app === 'driver' || app === 'company') {
       });
       card.append(form);
     }
-    list.append(card);
+    if (app === 'driver' && ['delivered','failed','cancelled'].includes(order.status) && historyList) historyList.append(card);
+    else list.append(card);
   }
 
   refresh.addEventListener('click', load);
