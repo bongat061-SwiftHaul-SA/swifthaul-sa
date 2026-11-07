@@ -23,7 +23,7 @@
   document.getElementById('load-summary')?.remove();
   const panel = document.createElement('section');
   panel.id = 'cargo-estimator';
-  panel.innerHTML = '<h3>What are you sending?</h3><p class="cargo-intro">Choose the closest parcel type. We’ll use a typical packed size and weight as a starting estimate.</p><div class="cargo-categories" role="group" aria-label="Parcel categories"></div><div class="cargo-choice-row"><div><label for="cargo-item">Choose your item</label><select id="cargo-item" disabled><option>Select a category first</option></select></div><div><label for="cargo-quantity">Quantity</label><input id="cargo-quantity" type="number" min="1" max="50" step="1" value="1" disabled></div></div><p class="cargo-estimate-note" id="cargo-estimate-note" aria-live="polite">Select a category to see the estimated load and recommended vehicle.</p><div class="cargo-dimensions"><div class="cargo-dimensions-title">Estimated packed dimensions · editable</div><div class="load-grid"><label>Length (cm)<input type="number" name="length" min="0.001" max="100000" step="any" required placeholder="Estimated"></label><label>Width (cm)<input type="number" name="width" min="0.001" max="100000" step="any" required placeholder="Estimated"></label><label>Height (cm)<input type="number" name="height" min="0.001" max="100000" step="any" required placeholder="Estimated"></label></div></div><div class="cargo-vehicle" aria-live="polite"><div class="cargo-vehicle-head"><strong>Recommended vehicle</strong><span id="cargo-vehicle-tag">Awaiting selection</span></div><div class="cargo-vehicle-visual" id="cargo-vehicle-visual"><span class="cargo-empty">Your vehicle recommendation will appear here</span></div><p class="cargo-vehicle-copy" id="cargo-vehicle-copy">Select a parcel category to preview a suitable vehicle.</p></div>';
+  panel.innerHTML = '<h3>What are you sending?</h3><p class="cargo-intro">Choose the closest parcel type. We’ll use a typical packed size and weight as a starting estimate.</p><div class="cargo-categories" role="group" aria-label="Parcel categories"></div><div class="cargo-choice-row"><div><label for="cargo-item">Choose your item</label><select id="cargo-item" disabled><option>Select a category first</option></select></div><div><label for="cargo-quantity">Quantity</label><input id="cargo-quantity" type="number" min="1" max="50" step="1" value="1" disabled></div></div><button type="button" id="cargo-add-item" class="cargo-add-item" disabled>Add item to load</button><div id="cargo-selected-list" class="cargo-selected-list" aria-live="polite"><p class="cargo-empty">No parcels added yet. Select a category and add an item.</p></div><p class="cargo-estimate-note" id="cargo-estimate-note" aria-live="polite">Select a category to see the estimated load and recommended vehicle.</p><div class="cargo-dimensions"><div class="cargo-dimensions-title">Estimated packed dimensions · editable</div><div class="load-grid"><label>Length (cm)<input type="number" name="length" min="0.001" max="100000" step="any" required placeholder="Estimated"></label><label>Width (cm)<input type="number" name="width" min="0.001" max="100000" step="any" required placeholder="Estimated"></label><label>Height (cm)<input type="number" name="height" min="0.001" max="100000" step="any" required placeholder="Estimated"></label></div></div><div class="cargo-vehicle" aria-live="polite"><div class="cargo-vehicle-head"><strong>Recommended vehicle</strong><span id="cargo-vehicle-tag">Awaiting selection</span></div><div class="cargo-vehicle-visual" id="cargo-vehicle-visual"><span class="cargo-empty">Your vehicle recommendation will appear here</span></div><p class="cargo-vehicle-copy" id="cargo-vehicle-copy">Select a parcel category to preview a suitable vehicle.</p></div>';
   parcel.insertBefore(panel, parcel.querySelector('.load-grid'));
 
   const $ = id => document.getElementById(id);
@@ -34,6 +34,9 @@
   const itemSelect = $('cargo-item');
   let selectedCategory = null;
   let selectedItem = null;
+  const cargoItems = [];
+  const addItemButton = $('cargo-add-item');
+  const selectedList = $('cargo-selected-list');
 
   const vehicleSvg = type => {
     const defs = '<defs><linearGradient id="veh-side" x1="0" x2="0.9" y1="0" y2="1"><stop stop-color="#3f8b70"/><stop offset="1" stop-color="#15523d"/></linearGradient><linearGradient id="veh-top" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#a9d2bb"/><stop offset="1" stop-color="#4b9877"/></linearGradient><linearGradient id="veh-glass" x1="0" x2="1"><stop stop-color="#d9eff1"/><stop offset="1" stop-color="#78a8ae"/></linearGradient></defs>';
@@ -62,46 +65,76 @@
       : 'Select a parcel category to preview a suitable vehicle.';
   }
 
-  function updateLoad() {
-    if (!selectedItem) return;
-    const count = Math.max(1, Math.min(50, Number(quantity.value) || 1));
-    quantity.value = String(count);
-    const columns = Math.ceil(Math.sqrt(count));
-    const rows = Math.ceil(count / columns);
-    const dims = { length:selectedItem.l * columns, width:selectedItem.w * rows, height:selectedItem.h };
-    for (const [key, value] of Object.entries(dims)) {
-      const input = form.elements.namedItem(key);
-      if (input) { input.value = String(value); input.dispatchEvent(new Event('input', {bubbles:true})); }
+  function renderSelectedItems() {
+    selectedList.replaceChildren();
+    if (!cargoItems.length) {
+      const empty=document.createElement('p');empty.className='cargo-empty';empty.textContent='No parcels added yet. Select a category and add an item.';selectedList.append(empty);
+      return;
     }
-    if (weight) { weight.value = String(selectedItem.weight * count); weight.dispatchEvent(new Event('input', {bubbles:true})); }
-    $('cargo-estimate-note').textContent = count + ' × ' + selectedItem.name + ' · estimated total ' + (selectedItem.weight * count).toFixed(1) + ' kg. Dimensions are a typical starting estimate; adjust them below if needed.';
-    const chargeable = Math.max(selectedItem.weight * count, dims.length * dims.width * dims.height / 5000);
-    const type = chargeable <= 20 ? 'bike' : chargeable <= 1000 ? 'van' : 'truck';
-    renderVehicle(type, chargeable);
+    cargoItems.forEach((entry,index)=>{
+      const row=document.createElement('div');row.className='cargo-selected-row';
+      const copy=document.createElement('span');copy.textContent=entry.category+' · '+entry.name+' × '+entry.quantity;
+      const remove=document.createElement('button');remove.type='button';remove.className='cargo-remove-item';remove.textContent='Remove';remove.setAttribute('aria-label','Remove '+entry.name);
+      remove.addEventListener('click',()=>{cargoItems.splice(index,1);renderSelectedItems();updateLoad();});
+      row.append(copy,remove);selectedList.append(row);
+    });
+  }
+
+  function updateLoad() {
+    if (!cargoItems.length) {
+      $('cargo-estimate-note').textContent='Add parcels from more than one category to build your combined load.';
+      renderVehicle(null,0);
+      if (weight) weight.value='';
+      return;
+    }
+    const totalWeight=cargoItems.reduce((sum,item)=>sum+item.weight*item.quantity,0);
+    const totalPieces=cargoItems.reduce((sum,item)=>sum+item.quantity,0);
+    const maxLength=Math.max(...cargoItems.map(item=>item.l));
+    const maxWidth=Math.max(...cargoItems.map(item=>item.w));
+    const maxHeight=Math.max(...cargoItems.map(item=>item.h));
+    const columns=Math.ceil(Math.sqrt(totalPieces));
+    const rows=Math.ceil(totalPieces/columns);
+    const dims={length:maxLength*columns,width:maxWidth*rows,height:maxHeight};
+    for(const [key,value] of Object.entries(dims)){
+      const input=form.elements.namedItem(key);
+      if(input){input.value=String(value);input.dispatchEvent(new Event('input',{bubbles:true}));}
+    }
+    if(weight){weight.value=String(totalWeight);weight.dispatchEvent(new Event('input',{bubbles:true}));}
+    const chargeable=Math.max(totalWeight,dims.length*dims.width*dims.height/5000);
+    const type=chargeable<=20?'bike':chargeable<=1000?'van':'truck';
+    $('cargo-estimate-note').textContent=totalPieces+' parcel item(s) across '+new Set(cargoItems.map(item=>item.category)).size+' categories · estimated total '+totalWeight.toFixed(1)+' kg. Combined dimensions are a starting estimate; adjust below if needed.';
+    renderVehicle(type,chargeable);
   }
 
   function chooseCategory(id) {
-    selectedCategory = categories.find(category => category.id === id);
-    selectedItem = selectedCategory.items[0];
-    categoriesNode.querySelectorAll('button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.category === id)));
-    itemSelect.disabled = false;
-    itemSelect.replaceChildren(...selectedCategory.items.map((item, index) => {
-      const option = document.createElement('option');
-      option.value = String(index);
-      option.textContent = item.name + ' · approx. ' + item.weight + ' kg';
-      return option;
+    selectedCategory=categories.find(category=>category.id===id);
+    selectedItem=selectedCategory.items[0];
+    categoriesNode.querySelectorAll('button').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.category===id||cargoItems.some(item=>item.categoryId===button.dataset.category))));
+    itemSelect.disabled=false;
+    itemSelect.replaceChildren(...selectedCategory.items.map((item,index)=>{
+      const option=document.createElement('option');option.value=String(index);option.textContent=item.name+' · approx. '+item.weight+' kg';return option;
     }));
-    quantity.disabled = false;
-    quantity.value = '1';
+    quantity.disabled=false;quantity.value='1';addItemButton.disabled=false;
     updateLoad();
   }
 
-  itemSelect.addEventListener('change', () => {
-    if (!selectedCategory) return;
-    selectedItem = selectedCategory.items[Number(itemSelect.value)] || selectedCategory.items[0];
-    updateLoad();
+  function addCurrentItem() {
+    if(!selectedCategory||!selectedItem)return;
+    const count=Math.max(1,Math.min(50,Number(quantity.value)||1));
+    const existing=cargoItems.find(item=>item.categoryId===selectedCategory.id&&item.name===selectedItem.name);
+    if(existing)existing.quantity=Math.min(50,existing.quantity+count);
+    else cargoItems.push({...selectedItem,category:selectedCategory.name,categoryId:selectedCategory.id,quantity:count});
+    categoriesNode.querySelectorAll('button').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.category===selectedCategory.id||cargoItems.some(item=>item.categoryId===button.dataset.category))));
+    quantity.value='1';renderSelectedItems();updateLoad();
+  }
+
+  itemSelect.addEventListener('change',()=>{
+    if(!selectedCategory)return;
+    selectedItem=selectedCategory.items[Number(itemSelect.value)]||selectedCategory.items[0];
   });
-  quantity.addEventListener('input', updateLoad);
+  quantity.addEventListener('input',()=>{quantity.value=String(Math.max(1,Math.min(50,Number(quantity.value)||1)));});
+  addItemButton.addEventListener('click',addCurrentItem);
+  renderSelectedItems();
 
   window.swiftHaulUpdateVehiclePreview = (type, chargeable, label) => renderVehicle(type, chargeable, label);
 })();
