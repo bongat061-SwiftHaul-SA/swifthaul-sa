@@ -154,11 +154,6 @@ if (app === 'driver' || app === 'company') {
       const points = [];
       if (validPoint(pickup)) points.push([pickup.lat, pickup.lng]);
       if (validPoint(dropoff)) points.push([dropoff.lat, dropoff.lng]);
-      const fitRoute = () => {
-        if (!map || !points.length) return;
-        if (points.length > 1) map.fitBounds(points, { padding: [42, 42], maxZoom: 15 });
-        else map.setView(points[0], 14);
-      };
       if (window.maplibregl && points.length) {
         map = new maplibregl.Map({
           container: mapElement,
@@ -209,7 +204,7 @@ if (app === 'driver' || app === 'company') {
         };
         recenter.addEventListener('click', fitRoute);
         map.on('error', () => { note.textContent = 'Map tiles could not be loaded. Check your connection; pickup and drop-off details remain available.'; });
-      } else { else {
+      } else {
         mapElement.hidden = true;
         stage.classList.add('company-tracking-map-unavailable');
         note.textContent = 'Map coordinates are not available for this delivery yet. The pickup and drop-off details remain visible above.';
