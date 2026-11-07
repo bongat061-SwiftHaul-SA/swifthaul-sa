@@ -7,7 +7,14 @@ const output = path.join(root, 'preview-dist');
 const copy = (source, destination) => {
   const from = path.join(root, source);
   if (!fs.existsSync(from)) throw new Error('Required preview source is missing: ' + source);
-  fs.cpSync(from, path.join(output, destination), { recursive: true });
+  const target = path.join(output, destination);
+  if (!destination) {
+    for (const entry of fs.readdirSync(from, { withFileTypes: true })) {
+      fs.cpSync(path.join(from, entry.name), path.join(target, entry.name), { recursive: true });
+    }
+  } else {
+    fs.cpSync(from, target, { recursive: true });
+  }
 };
 
 fs.rmSync(output, { recursive: true, force: true });
