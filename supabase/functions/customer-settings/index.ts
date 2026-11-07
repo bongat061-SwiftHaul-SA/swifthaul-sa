@@ -43,7 +43,13 @@ Deno.serve(async(req:Request)=>{
  if(typeof b.replace_bank!=="boolean")return reply(400,{error:"choose_whether_to_replace_banking_details"});
  const bank=[bank_name,account_holder,account_number,branch_code];
  if(b.replace_bank&&bank.some(x=>x.trim())&&!bank.every(x=>x.trim()))return reply(400,{error:"complete_all_bank_fields_or_leave_all_empty"});
- const {error}=await admin.from("customer_profiles").upsert({owner_hash:owner,full_name:full_name.trim(),phone:phone.trim(),details:details.trim(),...(b.replace_bank?{bank_name:bank_name.trim(),account_holder:account_holder.trim(),account_number,branch_code}: {})},{onConflict:"owner_hash"});
+ // Preserve the existing bank fields when a customer edits only their profile details.
+ const {data:existing,error:existingError}=await admin.from("customer_profiles").select("bank_name,account_holder,account_number,branch_code").eq("owner_hash",owner).maybeSingle();
+ if(existingError)return reply(500,{error:"profile_lookup_failed"});
+ const bankFields=b.replace_bank
+  ? {bank_name:bank_name.trim()||null,account_holder:account_holder.trim()||null,account_number:account_number||null,branch_code:branch_code||null}
+  : {bank_name:existing?.bank_name??null,account_holder:existing?.account_holder??null,account_number:existing?.account_number??null,branch_code:existing?.branch_code??null};
+ const {error}=await admin.from("customer_profiles").upsert({owner_hash:owner,full_name:full_name.trim(),phone:phone.trim(),details:details.trim(),...bankFields},{onConflict:"owner_hash"});
  if(error)return reply(500,{error:"profile_save_failed"});
  const {error:userUpdateError}=await admin.from("user_profiles").update({full_name:full_name.trim(),phone:phone.trim()}).eq("id",owner);
  if(userUpdateError)return reply(500,{error:"account_profile_sync_failed"});
