@@ -19,6 +19,8 @@
     {id:'documents',name:'Documents',hint:'Files & envelopes',items:[{name:'Document envelope',weight:0.5,l:35,w:25,h:2},{name:'Archive box',weight:8,l:45,w:35,h:30},{name:'File carton',weight:12,l:50,w:40,h:35}]}
   ];
 
+  parcel.querySelector('.load-grid')?.remove();
+  document.getElementById('load-summary')?.remove();
   const panel = document.createElement('section');
   panel.id = 'cargo-estimator';
   panel.innerHTML = '<h3>What are you sending?</h3><p class="cargo-intro">Choose the closest parcel type. We’ll use a typical packed size and weight as a starting estimate.</p><div class="cargo-categories" role="group" aria-label="Parcel categories"></div><div class="cargo-choice-row"><div><label for="cargo-item">Choose your item</label><select id="cargo-item" disabled><option>Select a category first</option></select></div><div><label for="cargo-quantity">Quantity</label><input id="cargo-quantity" type="number" min="1" max="50" step="1" value="1" disabled></div></div><p class="cargo-estimate-note" id="cargo-estimate-note" aria-live="polite">Select a category to see the estimated load and recommended vehicle.</p><div class="cargo-dimensions"><div class="cargo-dimensions-title">Estimated packed dimensions · editable</div><div class="load-grid"><label>Length (cm)<input type="number" name="length" min="0.001" max="100000" step="any" required placeholder="Estimated"></label><label>Width (cm)<input type="number" name="width" min="0.001" max="100000" step="any" required placeholder="Estimated"></label><label>Height (cm)<input type="number" name="height" min="0.001" max="100000" step="any" required placeholder="Estimated"></label></div></div><div class="cargo-vehicle" aria-live="polite"><div class="cargo-vehicle-head"><strong>Recommended vehicle</strong><span id="cargo-vehicle-tag">Awaiting selection</span></div><div class="cargo-vehicle-visual" id="cargo-vehicle-visual"><span class="cargo-empty">Your vehicle recommendation will appear here</span></div><p class="cargo-vehicle-copy" id="cargo-vehicle-copy">Select a parcel category to preview a suitable vehicle.</p></div>';
@@ -64,14 +66,16 @@
     if (!selectedItem) return;
     const count = Math.max(1, Math.min(50, Number(quantity.value) || 1));
     quantity.value = String(count);
-    const dims = { length:selectedItem.l, width:selectedItem.w, height:selectedItem.h };
+    const columns = Math.ceil(Math.sqrt(count));
+    const rows = Math.ceil(count / columns);
+    const dims = { length:selectedItem.l * columns, width:selectedItem.w * rows, height:selectedItem.h };
     for (const [key, value] of Object.entries(dims)) {
       const input = form.elements.namedItem(key);
       if (input) { input.value = String(value); input.dispatchEvent(new Event('input', {bubbles:true})); }
     }
     if (weight) { weight.value = String(selectedItem.weight * count); weight.dispatchEvent(new Event('input', {bubbles:true})); }
     $('cargo-estimate-note').textContent = count + ' × ' + selectedItem.name + ' · estimated total ' + (selectedItem.weight * count).toFixed(1) + ' kg. Dimensions are a typical starting estimate; adjust them below if needed.';
-    const chargeable = Math.max(selectedItem.weight * count, selectedItem.l * selectedItem.w * selectedItem.h * count / 5000);
+    const chargeable = Math.max(selectedItem.weight * count, dims.length * dims.width * dims.height / 5000);
     const type = chargeable <= 20 ? 'bike' : chargeable <= 1000 ? 'van' : 'truck';
     renderVehicle(type, chargeable);
   }
