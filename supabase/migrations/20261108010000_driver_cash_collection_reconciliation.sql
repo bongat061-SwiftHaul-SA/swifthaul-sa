@@ -2,6 +2,19 @@
 -- Apply only to an isolated test/staging Supabase project after review.
 begin;
 
+insert into storage.buckets (id,name,public,file_size_limit,allowed_mime_types)
+values ('driver-cash-receipts','driver-cash-receipts',false,5242880,array['image/jpeg','image/png','image/webp'])
+on conflict (id) do update set public=false,file_size_limit=5242880,allowed_mime_types=excluded.allowed_mime_types;
+
+drop policy if exists driver_cash_receipt_signature_upload on storage.objects;
+create policy driver_cash_receipt_signature_upload on storage.objects
+for insert to authenticated
+with check (bucket_id='driver-cash-receipts' and (storage.foldername(name))[1]=auth.uid()::text);
+drop policy if exists driver_cash_receipt_signature_read on storage.objects;
+create policy driver_cash_receipt_signature_read on storage.objects
+for select to authenticated
+using (bucket_id='driver-cash-receipts' and (storage.foldername(name))[1]=auth.uid()::text);
+
 create table if not exists public.driver_cash_receipts (
   id uuid primary key default gen_random_uuid(),
   waybill text not null references public.customer_bookings(waybill) on delete restrict,
@@ -102,7 +115,11 @@ begin
   if v_driver is null or p_waybill is null or length(trim(p_waybill)) not between 3 and 100
     or p_amount_cents is null or p_amount_cents <= 0
     or p_customer_signed_name is null or length(trim(p_customer_signed_name)) not between 2 and 120
-    or p_customer_signature_object is null or length(trim(p_customer_signature_object)) not between 3 and 500 then
+    or p_customer_signature_object is null
+    or p_customer_signature_object not like v_driver::text || '/%'
+    or length(trim(p_customer_signature_object)) not between 3 and 500
+    or not exists (select 1 from storage.objects so
+      where so.bucket_id='driver-cash-receipts' and so.name=trim(p_customer_signature_object)) then
     raise exception 'Valid cash receipt details and customer signature are required' using errcode='22023';
   end if;
 
