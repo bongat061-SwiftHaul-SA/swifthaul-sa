@@ -10,8 +10,8 @@
   const history = document.createElement('section');
   history.id = 'driver-delivery-history';
   history.className = 'panel';
-  history.innerHTML = '<h2>Delivery history</h2><p class="subtle">Completed, failed and cancelled deliveries are listed here after your account loads its dispatch records.</p><div id="driver-delivery-history-list" class="operations-list"><p>Sign in to load your delivery history.</p></div>';
-  dispatches?.insertAdjacentElement('afterend', history);
+  history.innerHTML = '<h2>Delivery history</h2><p class="subtle">Completed, failed and cancelled deliveries are listed here after your account loads its dispatch records.</p><div id="driver-delivery-history-list" class="operations-list"><p>No completed deliveries yet.</p></div>';
+  grid?.insertAdjacentElement('afterend', history);
   const account = root.querySelector('#account-details');
   const availability = root.querySelector('#availability');
   const payouts = root.querySelector('#payouts');
