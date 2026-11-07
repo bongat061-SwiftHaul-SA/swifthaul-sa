@@ -52,7 +52,21 @@ Deno.serve(async(req:Request)=>{
     for(const claim of claims??[]){
       const docs=await documents(claim.id);
       let trace:Record<string,unknown>[]=[];
+      let trip:Record<string,unknown>|null=null;
       if(isAdmin){
+        const {data:booking,error:bookingError}=await db.from("customer_bookings")
+          .select("pickup,dropoff,quote_id,status,accepted_at,picked_up_at,in_transit_at,completed_at")
+          .eq("waybill",claim.waybill).maybeSingle();
+        if(bookingError)return reply(500,{error:"claim_dispatch_details_lookup_failed"});
+        let plannedRoute:unknown=null;
+        if(booking?.quote_id){
+          const {data:quote,error:quoteError}=await db.from("delivery_quotes").select("route").eq("id",booking.quote_id).maybeSingle();
+          if(quoteError)return reply(500,{error:"claim_planned_route_lookup_failed"});
+          plannedRoute=quote?.route??null;
+        }
+        trip=booking?{pickup:booking.pickup,dropoff:booking.dropoff,status:booking.status,
+          accepted_at:booking.accepted_at,picked_up_at:booking.picked_up_at,in_transit_at:booking.in_transit_at,
+          completed_at:booking.completed_at,planned_route:plannedRoute}:null;
         const {data:events,error:eventError}=await db.from("driver_insurance_trip_location_events")
           .select("latitude,longitude,accuracy_m,recorded_at").eq("waybill",claim.waybill)
           .eq("driver_user_id",claim.driver_user_id)
@@ -62,7 +76,7 @@ Deno.serve(async(req:Request)=>{
         if(eventError)return reply(500,{error:"route_evidence_lookup_failed"});
         trace=events??[];
       }
-      results.push({...claim,documents:docs, ...(isAdmin?{route_trace:trace}: {})});
+      results.push({...claim,documents:docs, ...(isAdmin?{route_trace:trace,trip}: {})});
     }
     return reply(200,{claims:results,daily_benefit_cents:DAILY_CENTS,max_days_per_claim:MAX_DAYS,max_benefit_cents:DAILY_CENTS*MAX_DAYS});
   }
