@@ -18,7 +18,8 @@ Deno.serve(async(req:Request)=>{
  if(req.method==="GET"){
   const {data,error}=await admin.from("customer_profiles").select("full_name,phone,details,bank_name,account_holder,account_number,branch_code").eq("owner_hash",owner).maybeSingle();
   if(error)return reply(500,{error:"profile_lookup_failed"});
-  const {data:userProfile}=await admin.from("user_profiles").select("full_name,phone").eq("id",owner).maybeSingle();
+  const {data:userProfile,error:userProfileError}=await admin.from("user_profiles").select("full_name,phone").eq("id",owner).maybeSingle();
+  if(userProfileError)return reply(500,{error:"account_profile_lookup_failed"});
   const profile={...(userProfile||{}),...(data||{})};
   const {data:photo}=await admin.storage.from("customer-photos").createSignedUrl(owner+".jpg",300);
   return reply(200,{profile:{full_name:profile.full_name||"",phone:profile.phone||"",details:profile.details||"",bank_name:profile.bank_name||"",bank_last_four:profile.account_number?String(profile.account_number).slice(-4):""},photo_url:photo?.signedUrl||null});
