@@ -18,7 +18,8 @@ Deno.serve(async(req:Request)=>{
  if(req.method==="GET"){
   const {data,error}=await admin.from("customer_profiles").select("full_name,phone,details,bank_name,account_holder,account_number,branch_code").eq("owner_hash",owner).maybeSingle();
   if(error)return reply(500,{error:"profile_lookup_failed"});
-  const profile=data||{};
+  const {data:userProfile}=await admin.from("user_profiles").select("full_name,phone").eq("id",owner).maybeSingle();
+  const profile={...(userProfile||{}),...(data||{})};
   const {data:photo}=await admin.storage.from("customer-photos").createSignedUrl(owner+".jpg",300);
   return reply(200,{profile:{full_name:profile.full_name||"",phone:profile.phone||"",details:profile.details||"",bank_name:profile.bank_name||"",bank_last_four:profile.account_number?String(profile.account_number).slice(-4):""},photo_url:photo?.signedUrl||null});
  }
@@ -44,5 +45,7 @@ Deno.serve(async(req:Request)=>{
  if(b.replace_bank&&bank.some(x=>x.trim())&&!bank.every(x=>x.trim()))return reply(400,{error:"complete_all_bank_fields_or_leave_all_empty"});
  const {error}=await admin.from("customer_profiles").upsert({owner_hash:owner,full_name:full_name.trim(),phone:phone.trim(),details:details.trim(),...(b.replace_bank?{bank_name:bank_name.trim(),account_holder:account_holder.trim(),account_number,branch_code}: {})},{onConflict:"owner_hash"});
  if(error)return reply(500,{error:"profile_save_failed"});
+ const {error:userUpdateError}=await admin.from("user_profiles").update({full_name:full_name.trim(),phone:phone.trim()}).eq("id",owner);
+ if(userUpdateError)return reply(500,{error:"account_profile_sync_failed"});
  return reply(200,{saved:true});
 });
