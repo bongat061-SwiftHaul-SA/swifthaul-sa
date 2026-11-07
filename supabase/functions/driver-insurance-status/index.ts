@@ -14,7 +14,7 @@ const reply = (status: number, body: Record<string, unknown>) =>
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers });
   if (req.method !== "GET") return reply(405, { error: "method_not_allowed" });
-  const token = (req.headers.get("Authorization") ?? "").match(/^Bearer\\s+(.+)$/i)?.[1];
+  const token = (req.headers.get("Authorization") ?? "").match(/^Bearer\s+(.+)$/i)?.[1];
   if (!token) return reply(401, { error: "missing_bearer_token" });
 
   const url = Deno.env.get("SUPABASE_URL");
