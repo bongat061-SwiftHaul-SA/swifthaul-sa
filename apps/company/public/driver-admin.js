@@ -29,6 +29,11 @@ if(panel){
     }catch(error){if(current===epoch)status.textContent=error.message;}
   }
   async function review(driver,action,button){
+    if(action==='approve'){
+      const required=['id_document','proof_of_address','bank_confirmation','drivers_licence','vehicle_document'];
+      const missing=required.filter(type=>!(driver.documents||[]).some(doc=>doc.document_type===type&&doc.review_status==='accepted'));
+      if(missing.length){status.textContent='Approval blocked. Accept these documents first: '+missing.map(type=>type.replaceAll('_',' ')).join(', ')+'.';return;}
+    }
     button.disabled=true;
     try{await call('POST',{user_id:driver.user_id,action});await load();status.textContent='Driver status updated.';}
     catch(error){status.textContent=error.message;}
