@@ -1,0 +1,17 @@
+{
+  "name": "@swifthaul/company-android",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "copy:web": "node ../../../scripts/copy-android-web.cjs company",
+    "cap:sync": "npm run copy:web && cap sync android",
+    "android:open": "cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/core": "^7.4.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.3"
+  }
+}
