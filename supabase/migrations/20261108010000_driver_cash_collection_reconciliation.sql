@@ -28,6 +28,16 @@ create policy driver_cash_deposit_proof_read on storage.objects
 for select to authenticated
 using (bucket_id='driver-cash-deposit-proofs' and (storage.foldername(name))[1]=auth.uid()::text);
 
+-- The current PayFast ITN RPC writes payment_source='payfast'. The linked
+-- database check constraint omitted that value, which would reject the ITN update.
+alter table public.customer_bookings
+  drop constraint if exists customer_bookings_payment_source_check;
+alter table public.customer_bookings
+  add constraint customer_bookings_payment_source_check
+  check (payment_source is null or payment_source = any (
+    array['cash','wallet','payfast','paystack','pay_later']::text[]
+  ));
+
 create table if not exists public.driver_cash_receipts (
   id uuid primary key default gen_random_uuid(),
   waybill text not null references public.customer_bookings(waybill) on delete restrict,
