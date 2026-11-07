@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - integration/shared-map-current-main
+      - main
   pull_request:
     branches:
       - main
