@@ -82,8 +82,11 @@ function addOrder(order, prepend = false) {
     if (document.body.dataset.guestPreview !== 'true') document.dispatchEvent(new CustomEvent('delivery-route', {detail:{waybill:order.waybill,pickup:order.pickup,dropoff:order.dropoff}}));
   });
   if(!order.paid_at&&!order.refunded_at&&!['cancelled','completed'].includes(order.status)){
-    const paystack=document.createElement('button');paystack.type='button';paystack.className='primary';paystack.textContent='Pay online · Paystack';paystack.addEventListener('click',()=>startPaystackCheckout(order,paystack));
-    const pay=document.createElement('button');pay.type='button';pay.textContent='PayFast backup';pay.addEventListener('click',()=>startPayFastCheckout(order,pay));
+    if(['pending','assigned'].includes(order.status)){
+      const paystack=document.createElement('button');paystack.type='button';paystack.className='primary';paystack.textContent='Pay online · Paystack';paystack.addEventListener('click',()=>startPaystackCheckout(order,paystack));
+      const pay=document.createElement('button');pay.type='button';pay.textContent='PayFast backup';pay.addEventListener('click',()=>startPayFastCheckout(order,pay));
+      actions.append(paystack,pay);
+    }
     const eft=document.createElement('button');eft.type='button';eft.textContent='EFT payment instructions';eft.addEventListener('click',()=>{
       const box=document.createElement('div');box.className='eft-instructions';
       const heading=document.createElement('strong');heading.textContent='Pay by EFT';
@@ -91,7 +94,7 @@ function addOrder(order, prepend = false) {
       const contact=document.createElement('a');contact.href='https://wa.me/27615083880?text='+encodeURIComponent('Please send verified EFT payment details for booking '+order.waybill+'.');contact.target='_blank';contact.rel='noopener noreferrer';contact.textContent='Request bank details on WhatsApp';
       box.append(heading,info,contact);eft.replaceWith(box);
     });
-    actions.append(paystack,pay,eft);
+    actions.append(eft);
   }
   const existingRefund = refundRequestsByWaybill.get(order.waybill);
   if (existingRefund) {
@@ -274,6 +277,7 @@ document.addEventListener('account-ready', () => {
   const params=new URLSearchParams(location.search), payment=params.get('payment');
   if(payment==='return') report('You returned from PayFast. Payment is awaiting server-side notification and verification; refresh your bookings shortly. Returning here does not itself confirm payment.');
   else if(payment==='cancel') report('PayFast checkout was cancelled. Your booking remains unpaid.');
+  else if(payment==='paystack-return') report('You returned from Paystack. We are refreshing your bookings; payment is only confirmed after SwiftHaul verifies it with Paystack.');
   if(payment){history.replaceState({},'',location.pathname+location.hash);}
 });
 document.addEventListener('account-cleared', () => {accountEpoch++;loadVersion++; ready = false;form.reset();toggleBookingOptions();previewLoad();resetQuote(); container.replaceChildren(); document.getElementById('legacy-import').hidden=true; document.getElementById('submit').disabled = true;});
