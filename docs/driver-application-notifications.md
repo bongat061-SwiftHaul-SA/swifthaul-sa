@@ -20,7 +20,7 @@ Drivers create accounts with their own password. They can sign in while driver_p
 
 The welcome email confirms the registered email address and explains that approval is pending. Passwords are never emailed or sent over WhatsApp. Drivers sign in with the email and password they chose, or use password recovery.
 
-The notification function is invoked after an authenticated driver session exists. If email confirmation is enabled, welcome and administrator notifications are sent on the driver's first successful sign-in after confirming their email. Configure Supabase Auth's normal confirmation email separately.
+The administrator email and WhatsApp destination are preconfigured in the function defaults from the details supplied by the account owner. The notification function is invoked after an authenticated driver session exists. If email confirmation is enabled, welcome and administrator notifications are sent on the driver's first successful sign-in after confirming their email. Configure Supabase Auth's normal confirmation email separately.
 
 ## Documents
 
