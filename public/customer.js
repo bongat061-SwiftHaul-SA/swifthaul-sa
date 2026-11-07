@@ -179,6 +179,8 @@ form.addEventListener('submit', async event => {
   if (!currentQuote || new Date(currentQuote.expires_at).getTime() <= Date.now()) {resetQuote();report('Calculate a fresh route quote before booking.',true);return;}
   const epoch=accountEpoch;
   const acceptedQuote=currentQuote;
+  const termsAcknowledgement=document.getElementById('booking-terms-accepted');
+  if(!termsAcknowledgement?.checked){termsAcknowledgement?.focus();report('Please read and acknowledge the customer protection and handling terms before booking.',true);return;}
   const data = Object.fromEntries(new FormData(form));
   if (['pickup', 'dropoff', 'recipient'].some(key => !data[key].trim())) { report('Enter pickup, drop-off and recipient details.', true); return; }
   const submit = document.getElementById('submit'); bookingBusy=true; submit.disabled = true; report('Saving your booking…');
