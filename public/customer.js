@@ -177,7 +177,7 @@ form.addEventListener('submit', async event => {
   if (popup) popup.opener = null;
   const submit = document.getElementById('submit'); bookingBusy=true; submit.disabled = true; report('Saving your booking…');
   try {
-    const result = await customerApi('POST', {action:'book',quote_id:acceptedQuote.id,recipient:data.recipient,payment_method:data.payment_method,counter_offer:data.counter_offer || null,scheduled_at:data.scheduled_at ? data.scheduled_at+':00+02:00' : null,return_address:data.return_address || null,return_at:data.return_at ? data.return_at+':00+02:00' : null,pickup_latitude:data.pickup_latitude?Number(data.pickup_latitude):null,pickup_longitude:data.pickup_longitude?Number(data.pickup_longitude):null,pickup_plus_code:data.pickup_plus_code||null,pickup_geohash:data.pickup_geohash||null,dropoff_latitude:data.dropoff_latitude?Number(data.dropoff_latitude):null,dropoff_longitude:data.dropoff_longitude?Number(data.dropoff_longitude):null,dropoff_plus_code:data.dropoff_plus_code||null,dropoff_geohash:data.dropoff_geohash||null});
+    const result = await customerApi('POST', {action:'book',quote_id:acceptedQuote.id,recipient:data.recipient,payment_method:data.payment_method,counter_offer:data.counter_offer || null,scheduled_at:data.scheduled_at ? data.scheduled_at+':00+02:00' : null,return_address:data.return_address || null,return_at:data.return_at ? data.return_at+':00+02:00' : null,pickup_latitude:data.pickup_latitude?Number(data.pickup_latitude):null,pickup_longitude:data.pickup_longitude?Number(data.pickup_longitude):null,dropoff_latitude:data.dropoff_latitude?Number(data.dropoff_latitude):null,dropoff_longitude:data.dropoff_longitude?Number(data.dropoff_longitude):null});
     if (epoch !== accountEpoch) {popup?.close();return;}
     if (!result.order) throw new Error('Unable to save your booking. Please try again.');
     container.querySelector('.empty')?.remove(); addOrder(result.order, true);
@@ -208,7 +208,7 @@ function downloadPDF(order) {
     line('SWIFTHAUL SA', 18); line('DELIVERY INVOICE', 13);
     line(`Waybill: ${order.waybill}`);
     line(`Issued: ${new Date(order.created_at).toLocaleDateString('en-ZA')}`);
-    line(`Pickup: ${order.pickup}`); line(`Drop-off: ${order.dropoff}`); if(order.dropoff_plus_code)line(`Drop-off Plus Code: ${order.dropoff_plus_code}`);
+    line(`Pickup: ${order.pickup}`); line(`Drop-off: ${order.dropoff}`);
     if (order.distance_meters != null) line(`Mapped driving distance: ${km(order.distance_meters)} km`);
     line(`Recipient and notes: ${order.recipient}`); line(`Vehicle: ${order.vehicle.toUpperCase()}`);
     if(order.load) {line(`Actual: ${mass(order.load.weight)} kg; volumetric: ${mass(order.load.volumetric)} kg; chargeable: ${mass(order.load.chargeable)} kg`);line(`Packed dimensions: ${order.load.length} x ${order.load.width} x ${order.load.height} cm; divisor 5000`);line(`Vehicle class: ${order.load.truckClass || order.vehicle}`);line(`Distance fee: ${money(order.distance_fee)}; extra weight: ${mass(order.load.extra)} kg at ${money(order.load.rate)}/kg = ${money(order.load.weightFee)}`);}
