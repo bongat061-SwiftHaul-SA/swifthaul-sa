@@ -52,6 +52,145 @@ if (app === 'driver' || app === 'company') {
         const empty = document.createElement('p');
         empty.textContent = 'No deliveries are currently assigned to this account.';
         list.append(empty);
+
+        // Keep the parcel-style map visible even before the first dispatch is assigned.
+        if (app === 'driver') {
+          const preview = document.createElement('section');
+          preview.className = 'driver-tracking';
+          const head = document.createElement('div');
+          head.className = 'tracking-head';
+          const heading = document.createElement('h4');
+          heading.textContent = 'Live delivery map';
+          const state = document.createElement('span');
+          state.className = 'tracking-state';
+          state.textContent = 'Awaiting assignment';
+          head.append(heading, state);
+
+          const stage = document.createElement('div');
+          stage.className = 'tracking-map-stage';
+          const mapElement = document.createElement('div');
+          mapElement.className = 'driver-tracking-map';
+          mapElement.setAttribute('role', 'region');
+          mapElement.setAttribute('aria-label', 'Driver location map preview');
+          const tools = document.createElement('div');
+          tools.className = 'tracking-map-tools';
+          const recenter = document.createElement('button');
+          recenter.type = 'button';
+          recenter.className = 'tracking-map-tool';
+          recenter.textContent = '◎  Recenter';
+          tools.append(recenter);
+          stage.append(mapElement, tools);
+
+          const sheet = document.createElement('div');
+          sheet.className = 'tracking-trip-sheet';
+          const etaRow = document.createElement('div');
+          etaRow.className = 'tracking-eta-row';
+          const eta = document.createElement('div');
+          eta.className = 'tracking-eta';
+          const etaValue = document.createElement('strong');
+          etaValue.textContent = '—';
+          const etaLabel = document.createElement('span');
+          etaLabel.textContent = 'Estimated arrival';
+          eta.append(etaValue, etaLabel);
+          const distance = document.createElement('div');
+          distance.className = 'tracking-distance';
+          const distanceValue = document.createElement('strong');
+          distanceValue.textContent = 'No active route';
+          const distanceLabel = document.createElement('span');
+          distanceLabel.textContent = 'Route appears when a delivery is assigned';
+          distance.append(distanceValue, distanceLabel);
+          etaRow.append(eta, distance);
+
+          const actions = document.createElement('div');
+          actions.className = 'tracking-actions';
+          const start = document.createElement('button');
+          start.type = 'button';
+          start.className = 'primary';
+          start.textContent = 'Show my location';
+          const stop = document.createElement('button');
+          stop.type = 'button';
+          stop.textContent = 'Stop';
+          stop.disabled = true;
+          actions.append(start, stop);
+          const note = document.createElement('p');
+          note.className = 'tracking-note';
+          note.textContent = 'Your map is ready. Once dispatch assigns a delivery, its pickup, destination, route and ETA will appear here. Location stays on this device in this preview.';
+          const updated = document.createElement('small');
+          updated.className = 'tracking-updated';
+          updated.textContent = 'Your location is off.';
+          sheet.append(etaRow, actions, note, updated);
+          preview.append(head, stage, sheet);
+          list.append(preview);
+
+          let previewMap = null, marker = null, ring = null, watch = null, lastPoint = null;
+          if (window.L) {
+            previewMap = L.map(mapElement, { zoomControl: false, attributionControl: true });
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+              maxZoom: 20, attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+            }).addTo(previewMap);
+            previewMap.setView([-29.0, 24.0], 5);
+            requestAnimationFrame(() => previewMap && previewMap.invalidateSize());
+          } else {
+            mapElement.textContent = 'Map tiles are unavailable. Check your connection.';
+          }
+          const showPosition = position => {
+            const { latitude, longitude, accuracy } = position.coords;
+            lastPoint = [latitude, longitude];
+            if (previewMap) {
+              if (!marker) marker = L.circleMarker(lastPoint, { radius: 10, color: '#fff', weight: 4, fillColor: '#176b52', fillOpacity: 1 }).addTo(previewMap);
+              else marker.setLatLng(lastPoint);
+              if (ring) ring.remove();
+              ring = L.circle(lastPoint, { radius: Math.max(10, accuracy || 10), color: '#176b52', weight: 1, fillColor: '#176b52', fillOpacity: .09 }).addTo(previewMap);
+              previewMap.setView(lastPoint, 15, { animate: true });
+            }
+            state.textContent = '● GPS active';
+            updated.textContent = 'Updated ' + new Date(position.timestamp).toLocaleTimeString('en-ZA') + ' · accuracy ±' + Math.round(accuracy || 0) + ' m';
+          };
+          start.addEventListener('click', () => {
+            if (!navigator.geolocation) {
+              updated.textContent = 'This browser does not support device location.';
+              return;
+            }
+            if (watch !== null) return;
+            state.textContent = 'Getting GPS fix…';
+            start.disabled = true;
+            navigator.geolocation.getCurrentPosition(position => {
+              showPosition(position);
+              watch = navigator.geolocation.watchPosition(showPosition, error => {
+                state.textContent = 'GPS signal interrupted';
+                updated.textContent = error.code === 1 ? 'Location permission denied. Enable it in browser settings.' : 'Could not refresh GPS. Check device location services.';
+                start.disabled = false;
+                stop.disabled = true;
+                if (watch !== null) navigator.geolocation.clearWatch(watch);
+                watch = null;
+              }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 });
+              stop.disabled = false;
+            }, error => {
+              state.textContent = 'GPS permission needed';
+              updated.textContent = error.code === 1 ? 'Allow location access to show your position.' : 'Could not get a GPS fix. Check device location services.';
+              start.disabled = false;
+            }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 });
+          });
+          stop.addEventListener('click', () => {
+            if (watch !== null) navigator.geolocation.clearWatch(watch);
+            watch = null;
+            state.textContent = 'Tracking paused';
+            updated.textContent = 'Location updates have stopped on this device.';
+            start.disabled = false;
+            stop.disabled = true;
+          });
+          recenter.addEventListener('click', () => {
+            if (previewMap && lastPoint) previewMap.setView(lastPoint, 16, { animate: true });
+            else if (previewMap) previewMap.setView([-29.0, 24.0], 5, { animate: true });
+          });
+          const cleanupPreview = () => {
+            if (watch !== null && navigator.geolocation) navigator.geolocation.clearWatch(watch);
+            watch = null;
+            if (previewMap) { previewMap.remove(); previewMap = null; }
+            activeTrackingCleanups.delete(cleanupPreview);
+          };
+          activeTrackingCleanups.add(cleanupPreview);
+        }
       }
       for (const order of data.orders || []) render(order);
       message.textContent = '';
