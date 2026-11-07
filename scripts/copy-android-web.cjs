@@ -1,5 +1,6 @@
 // Prepare a self-contained web asset directory for one Capacitor Android app.
-// Run prepare:sites first so shared files and platform-specific functions are current.
+// Refresh shared files and platform-specific assets before packaging.
+require('./prepare-sites.cjs');
 const fs = require('node:fs');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
