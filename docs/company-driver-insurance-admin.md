@@ -19,3 +19,13 @@ These controls record an insurer-issued policy; they do not create insurance. Do
 ## Deployment
 
 Apply the already committed migration `20261107220000_driver_premium_insurance_benefits.sql`, deploy `driver-insurance-admin`, and publish the Company app update in a controlled environment. No migration, function deployment, merge or production publication is performed by this branch update.
+
+## Insurance claims review and dispatch-only cover
+
+The Company console includes an Insurance Claims page. It displays the assigned waybill, incident time, GPS points around the incident, the planned route where retained, and private evidence links. Admin must record a route-compliance decision with a written note. A route breach prevents insurer approval in the workflow.
+
+The R1,000 daily accident benefit is capped at five days per accident claim (R5,000 maximum). The backend enforces this limit for both requested and insurer-approved days. Claim submission is restricted to the assigned driver and an incident during an accepted dispatch, either travelling to pickup or travelling from pickup to delivery. It also requires an active insurer policy and Premium eligibility at the incident time plus a GPS evidence point within two minutes of the incident.
+
+GPS pings are recorded privately only while the driver shares location for an accepted/picked-up/in-transit dispatch. The app does not yet automatically determine whether a stop or deviation is unnecessary; admins must compare the evidence trace with the planned route and insurer-approved exceptions. Do not approve claims solely on the presence of GPS points.
+
+Supporting evidence is stored in a private bucket. Signed download links expire after five minutes. Agree a POPIA-aligned retention period, medical-data access rules and insurer data-sharing agreement before production use.
