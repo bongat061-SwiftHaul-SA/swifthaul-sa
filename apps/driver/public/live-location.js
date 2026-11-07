@@ -1,6 +1,6 @@
 (() => {
   if (document.body.dataset.app !== "driver") return;
-  const activeStatuses = new Set(["assigned", "accepted", "picked_up", "in_transit"]);
+  const activeStatuses = new Set(["accepted", "picked_up", "in_transit"]);
   const style = document.createElement("style");
   style.textContent = ".live-location-control{margin-top:14px;padding:14px;border:1px solid #dbe7df;border-radius:16px;background:#f7faf7}.live-location-control strong{display:block;color:#173d31}.live-location-control p{font-size:13px;color:#60746a;line-height:1.5}.live-location-control button{margin:4px 8px 0 0;padding:10px 14px;border:0;border-radius:10px;background:#173d31;color:#fff;font-weight:700}.live-location-control button:disabled{opacity:.5}.live-location-control button+button{background:#e8eeea;color:#173d31}";
   document.head.append(style);
