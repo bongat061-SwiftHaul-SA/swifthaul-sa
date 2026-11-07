@@ -31,7 +31,7 @@ jobs:
           node --check scripts/prepare-preview.cjs
       - name: Verify all three platforms load the shared core
         run: |
-          grep -q 'map-core.js' public/customer.html
+          grep -q 'map-utils.js' public/customer.html
           grep -q 'map-core.js' apps/driver/public/index.html
           grep -q 'map-core.js' apps/company/public/index.html
           grep -q 'class MapLayerManager' public/map-core.js
