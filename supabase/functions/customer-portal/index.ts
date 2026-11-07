@@ -166,6 +166,7 @@ Deno.serve(async (req: Request) => {
         id, owner_hash: owner, pickup: body.pickup.trim(), dropoff: body.dropoff.trim(),
         vehicle: load.vehicle, distance_meters: route.distance, price_band: band, price: cents / 100,
         route, load, distance_fee: distanceFee,
+        expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
       }).select("id,expires_at").single();
       if (error || !quote) return reply(503, { error: "quote_save_failed" });
       return reply(200, { quote: { id: quote.id, expires_at: quote.expires_at, price: cents / 100, band, vehicle: load.vehicle, route, load, distanceFee } });
@@ -182,9 +183,12 @@ Deno.serve(async (req: Request) => {
     .eq("quote_id", body.quote_id).eq("owner_hash", owner).maybeSingle();
   if (existing) return reply(200, { order: existing });
   const { data: quote, error: quoteError } = await admin.from("delivery_quotes")
-    .select("id,pickup,dropoff,vehicle,distance_meters,price_band,price,load,distance_fee")
-    .eq("id", body.quote_id).eq("owner_hash", owner).gt("expires_at", new Date().toISOString()).not("load", "is", null).maybeSingle();
-  if (quoteError || !quote) return reply(409, { error: "quote_expired_recalculate_route" });
+    .select("id,pickup,dropoff,vehicle,distance_meters,price_band,price,load,distance_fee,expires_at")
+    .eq("id", body.quote_id).eq("owner_hash", owner).maybeSingle();
+  if (quoteError) return reply(503, { error: "quote_lookup_failed" });
+  if (!quote) return reply(409, { error: "quote_not_found_recalculate_route" });
+  if (Date.parse(quote.expires_at) <= Date.now()) return reply(409, { error: "quote_expired_recalculate_route" });
+  if (!quote.load) return reply(409, { error: "quote_incomplete_recalculate_route" });
 
   const distance = Number(quote.distance_meters);
   const method = body.payment_method ?? "dispatch";
