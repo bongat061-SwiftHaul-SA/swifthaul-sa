@@ -23,6 +23,14 @@
     card.append(el("p","Incident: "+c.description));
     const trace=c.route_trace||[];
     card.append(el("p","GPS evidence: "+trace.length+" point(s) within 30 minutes either side of incident. Review the complete trip and check for unexplained stops or route diversions."));
+    if(c.trip){
+      card.append(el("p","Authorised dispatch: "+(c.trip.pickup||"Pickup unavailable")+" → "+(c.trip.dropoff||"Delivery unavailable")+" · status "+c.trip.status));
+      if(c.trip.planned_route){
+        const routeDetails=el("details"),routeSummary=el("summary","View saved planned-route data");
+        const routeText=el("pre",JSON.stringify(c.trip.planned_route,null,2).slice(0,6000));
+        routeDetails.append(routeSummary,routeText);card.append(routeDetails);
+      }else card.append(el("p","No saved planned-route geometry is available. Route compliance cannot be confirmed."));
+    }
     if(trace.length){
       const details=el("details"),summary=el("summary","View GPS route evidence");details.append(summary);
       trace.forEach(p=>details.append(el("p",new Date(p.recorded_at).toLocaleTimeString("en-ZA")+" · "+Number(p.latitude).toFixed(6)+", "+Number(p.longitude).toFixed(6)+" · ±"+Math.round(p.accuracy_m||0)+"m")));
