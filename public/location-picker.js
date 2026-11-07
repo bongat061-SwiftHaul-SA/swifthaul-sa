@@ -40,6 +40,35 @@
     '.swift-map-marker.pickup{background:#21664e}',
     '.swift-map-marker.dropoff{background:#2475c7}',
     '@media(max-width:650px){#delivery-map-stage{height:min(82svh,790px);min-height:650px;margin:-22px -22px 22px}.swift-location-sheet{left:10px;right:10px;bottom:10px;max-height:72%;padding:15px;border-radius:16px}.swift-location-fields{grid-template-columns:1fr;gap:9px}.swift-location-fields .field input{padding:11px}.swift-sheet-head h3{font-size:15px}.swift-sheet-tools{margin-top:9px}.swift-sheet-quote #quote-result{font-size:11px}}'
+    '#delivery-map-stage{height:clamp(650px,82vh,900px);min-height:650px;margin:-30px -30px 28px;border-radius:0 0 22px 22px;background:#e8eeea;box-shadow:0 12px 30px #12251d18}',
+    '#global-location-map{background:#e9efec}',
+    '#global-location-map .leaflet-tile-pane{filter:saturate(.78) brightness(1.035)}',
+    '#global-location-map .leaflet-control-zoom{margin:18px;border:0;border-radius:13px;overflow:hidden;box-shadow:0 4px 16px #102c2524}',
+    '#global-location-map .leaflet-control-zoom a{width:42px;height:42px;line-height:42px;border:0;color:#142d23;font-size:20px}',
+    '.swift-location-sheet{left:16px;right:16px;bottom:16px;max-height:56%;padding:20px 22px;border:1px solid #e7ece8;border-radius:24px;box-shadow:0 18px 55px #102c2530}',
+    '.swift-sheet-head{align-items:flex-start;margin-bottom:16px}',
+    '.swift-sheet-head h3{font-size:18px;font-weight:850;letter-spacing:-.6px;color:#14231e}',
+    '.swift-sheet-head p{font-size:11px;color:#77837d}',
+    '.swift-route-steps{padding:8px 11px;border-radius:999px;background:#f1f5f2;font-size:9px;white-space:nowrap}',
+    '.swift-location-fields{grid-template-columns:1fr;gap:8px}',
+    '.swift-location-fields .field{position:relative;padding-left:22px}',
+    '.swift-location-fields .field:before{content:"";position:absolute;left:3px;top:17px;width:10px;height:10px;border-radius:50%;background:#176b52;box-shadow:0 0 0 4px #e5f1ea}',
+    '.swift-location-fields .field:nth-child(2):before{border-radius:3px;background:#2675c8;box-shadow:0 0 0 4px #e7f0fa}',
+    '.swift-location-fields .field label{font-size:9px;letter-spacing:.8px;text-transform:uppercase;color:#77837d}',
+    '.swift-location-fields input{height:43px;min-height:43px;margin-top:4px;padding:10px 13px;border-radius:11px;background:#f8faf8;font-size:12px}',
+    '.swift-pin-button{margin:4px 0 0!important;padding:5px 8px!important;border-radius:8px!important;font-size:9px!important}',
+    '.swift-sheet-tools{justify-content:flex-start;margin-top:10px}',
+    '.swift-sheet-tools button{min-height:36px;padding:8px 11px;border-radius:10px;font-size:10px}',
+    '.swift-sheet-tools .swift-current{background:#142d23;border-color:#142d23}',
+    '.swift-pin-meta{margin-top:9px;border-radius:10px;background:#f5f7f5}',
+    '#loc-status{font-size:10px}',
+    '.swift-sheet-quote{margin-top:10px}',
+    '.swift-sheet-quote #calculate-route{min-height:48px;border-radius:13px;background:#142d23;border-color:#142d23;font-size:12px;font-weight:800}',
+    '.swift-sheet-quote #quote-result{padding-top:12px}',
+    '.swift-sheet-quote #quote-map{height:190px;border-radius:14px}',
+    '.swift-map-marker{width:38px;height:38px;border-radius:50% 50% 50% 8px}',
+    '.swift-map-marker span{font-size:15px}',
+    '@media(max-width:650px){#delivery-map-stage{height:78svh;min-height:650px;margin:-22px -18px 22px;border-radius:0 0 20px 20px}.swift-location-sheet{left:10px;right:10px;bottom:10px;max-height:58%;padding:15px 16px;border-radius:21px}.swift-sheet-head{gap:8px}.swift-sheet-head h3{font-size:15px}.swift-route-steps{gap:5px;padding:7px 8px;font-size:8px}.swift-location-fields{gap:6px}.swift-location-fields input{height:40px;min-height:40px}.swift-sheet-tools{gap:6px}.swift-sheet-tools button{padding:7px 9px;font-size:9px}.swift-pin-meta{margin-top:7px}.swift-sheet-quote #quote-result{font-size:10px}}'
   ].join('\n');
   document.head.append(style);
 
@@ -123,6 +152,19 @@
       if (routeLine) { routeLine.remove(); routeLine = null; }
     }
   }
+  window.swiftHaulSetRoadRoute = route => {
+    ensureMap();
+    if (!map || !route?.coordinates?.length) return false;
+    const points = route.coordinates.map(([longitude, latitude]) => [latitude, longitude]);
+    if (routeLine) routeLine.setLatLngs(points);
+    else routeLine = L.polyline(points, { color:'#176b52', weight:6, opacity:.96, lineCap:'round', lineJoin:'round' }).addTo(mapController.layers.get('routes').group);
+    const bounds = routeLine.getBounds();
+    mapController.camera.move({bounds, maxZoom:15}, 250, 'customer-booking');
+    setTimeout(() => map.invalidateSize(), 80);
+    $('loc-status').textContent = 'Road route loaded. Adjust either pin if the pickup or drop-off entrance is incorrect.';
+    return true;
+  };
+
   function saveLocation(input, lat, lng, message) {
     if (!window.OpenLocationCode || !Number.isFinite(lat) || !Number.isFinite(lng)) {
       $('loc-status').textContent = 'The Plus Code library is still loading. Please try again shortly.';
