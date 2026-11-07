@@ -15,8 +15,8 @@ const BENEFITS = {
   accidental_disability_cover_limit_cents: 10000000,
   daily_accident_benefit_cents: 100000,
 };
-type Membership = { id: string; plan: string; status: string; starts_at: string; ends_at: string; provider_payment_id: string | null };
-async function subscriptionEligibility(db: ReturnType<typeof createClient>, userId: string, now: Date) {
+type Membership = { id: string; driver_user_id: string; plan: string; status: string; starts_at: string; ends_at: string; provider_payment_id: string | null };
+async function subscriptionEligibility(db: any, userId: string, now: Date) {
   const { data: active, error } = await db.from("driver_memberships")
     .select("id,plan,status,starts_at,ends_at,provider_payment_id")
     .eq("driver_user_id", userId).eq("status", "active").not("provider_payment_id", "is", null)
@@ -26,7 +26,7 @@ async function subscriptionEligibility(db: ReturnType<typeof createClient>, user
   if (!active) return { eligible: false, basis: null as string | null, membership: null };
   if (active.plan === "yearly") return { eligible: true, basis: "yearly_prepaid", membership: active };
   if (active.plan !== "monthly") return { eligible: false, basis: null, membership: active };
-  const previousWindow = new Date(Date.parse(active.starts_at) - 7 * 86400000).toISOString();
+  const previousWindow = new Date(Date.parse(String(active.starts_at)) - 7 * 86400000).toISOString();
   const { data: previous, error: previousError } = await db.from("driver_memberships")
     .select("id").eq("driver_user_id", userId).eq("plan", "monthly")
     .not("provider_payment_id", "is", null).lt("ends_at", active.starts_at)
