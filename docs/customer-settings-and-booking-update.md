@@ -8,6 +8,17 @@ Apply migration `20261107210000_customer_settings_private_photos.sql` and deploy
 
 Profile data includes name, phone, delivery notes and optional bank name/account holder/account number/branch code. The interface only shows the last four digits of a saved account number. Password changes use Supabase Auth directly. Profile deletion remains a support-assisted operation because open bookings, wallet balances and financial records must be reconciled before deletion.
 
+## Customer welcome email
+
+The `customer-welcome-notify` Edge Function sends a welcome email only after the customer has an authenticated Supabase session and `account-me` has confirmed an active customer role. If email confirmation is enabled, the function is called on the first successful sign-in after confirmation. The email contains an app link and account guidance, never a password. Successful delivery is recorded in `customer_welcome_notifications` so normal subsequent sign-ins do not resend it.
+
+Configure:
+- `RESEND_API_KEY` — Resend API key.
+- `CUSTOMER_EMAIL_FROM` — verified sender (or reuse `DRIVER_EMAIL_FROM`).
+- `CUSTOMER_APP_URL` — customer app URL (defaults to the current preview URL).
+
+Apply migration `20261107213000_customer_welcome_notifications.sql` and deploy `customer-welcome-notify` before publishing the updated customer site. Provider credentials are not included in the repository. If the email provider is not configured or delivery fails, the app remains usable and logs that the welcome email is pending; the function does not mark an undelivered email as sent.
+
 ## Customer booking improvements
 
 - OSM raster tiles replace the CARTO tile endpoint that displayed the API-key-required watermark. OpenStreetMap attribution is retained. The public OSM tile service has a usage policy and is suitable for preview/light usage, not a high-volume production SLA.
