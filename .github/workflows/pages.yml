@@ -6,6 +6,7 @@ on:
       - main
       - migration/supabase-github-pages
       - feature/customer-smart-address-estimator
+      - feature/secure-driver-live-location
   workflow_dispatch:
 
 # Publishing the three platform entry points from the validated main branch and legacy staging branches.

@@ -38,7 +38,7 @@ Deno.serve(async (req: Request) => {
 
   if (req.method === "GET") {
     let query = admin.from("customer_bookings")
-      .select("waybill,pickup,dropoff,recipient,vehicle,price,payment_method,paid_at,completed_at,scheduled_at,return_address,status,driver_user_id,created_at,failure_reason,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash")
+      .select("waybill,pickup,dropoff,recipient,vehicle,price,payment_method,paid_at,completed_at,scheduled_at,return_address,status,driver_user_id,created_at,failure_reason,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash")
       .order("created_at", { ascending: false }).limit(100);
     if (isDriver) query = query.eq("driver_user_id", actorId);
     const { data, error } = await query;
@@ -71,10 +71,21 @@ Deno.serve(async (req: Request) => {
   if (typeof body.waybill !== "string" || body.waybill.length > 100) return reply(400, { error: "invalid_waybill" });
 
   const { data: order, error: orderError } = await admin.from("customer_bookings")
-    .select("waybill,status,driver_user_id,pin,pin_attempts,pin_locked_until,completed_at,refunded_at")
+    .select("waybill,status,driver_user_id,pin,pin_attempts,pin_locked_until,completed_at,refunded_at,assistance_requested,assistance_status")
     .eq("waybill", body.waybill).maybeSingle();
   if (orderError) return reply(500, { error: "delivery_lookup_failed" });
   if (!order) return reply(404, { error: "delivery_not_found" });
+
+  if (isDispatcher && body.action === "assistance_decision") {
+    if (!order.assistance_requested || order.assistance_status !== "requested_pending_dispatch_confirmation")
+      return reply(409, { error: "no_pending_assistance_request" });
+    if (body.decision !== "accepted" && body.decision !== "declined")
+      return reply(400, { error: "choose_accept_or_decline" });
+    const { error } = await admin.from("customer_bookings")
+      .update({ assistance_status: body.decision }).eq("waybill", order.waybill);
+    if (error) return reply(500, { error: "assistance_decision_save_failed" });
+    return reply(200, { updated: true, assistance_status: body.decision });
+  }
 
   const setStatus = async (next: string, notes?: string) => {
     const update: Record<string, unknown> = { status: next };

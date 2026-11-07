@@ -14,7 +14,7 @@
   };
   const categories = [
     {id:'boxes',name:'Boxes',hint:'Cartons & parcels',items:[{name:'Small box',weight:5,l:40,w:30,h:30},{name:'Medium box',weight:15,l:60,w:40,h:40},{name:'Large box',weight:25,l:80,w:60,h:60},{name:'Moving boxes (5)',weight:50,l:100,w:80,h:80}]},
-    {id:'furniture',name:'Furniture',hint:'Home & office',items:[{name:'Dining chair',weight:8,l:60,w:60,h:90},{name:'Office desk',weight:30,l:120,w:60,h:75},{name:'2-seater couch',weight:45,l:180,w:90,h:85},{name:'3-seater couch',weight:65,l:220,w:95,h:90}]},
+    {id:'furniture',name:'Furniture',hint:'Home & office',items:[{name:'Dining chair',weight:8,l:60,w:60,h:90},{name:'Single bed & mattress',weight:55,l:200,w:100,h:60},{name:'Double bed & mattress',weight:80,l:200,w:140,h:60},{name:'Queen bed & mattress',weight:95,l:203,w:153,h:65},{name:'King bed & mattress',weight:120,l:203,w:183,h:65},{name:'King bed frame (disassembled)',weight:75,l:210,w:45,h:35},{name:'Bunk bed frame',weight:85,l:205,w:100,h:45},{name:'Office desk',weight:30,l:120,w:60,h:75},{name:'2-seater couch',weight:45,l:180,w:90,h:85},{name:'3-seater couch',weight:65,l:220,w:95,h:90}]},
     {id:'appliances',name:'Appliances',hint:'White goods & tech',items:[{name:'Microwave',weight:15,l:50,w:40,h:35},{name:'Washing machine',weight:70,l:60,w:65,h:85},{name:'Fridge',weight:90,l:70,w:70,h:180},{name:'Chest freezer',weight:55,l:100,w:65,h:85}]},
     {id:'documents',name:'Documents',hint:'Files & envelopes',items:[{name:'Document envelope',weight:0.5,l:35,w:25,h:2},{name:'Archive box',weight:8,l:45,w:35,h:30},{name:'File carton',weight:12,l:50,w:40,h:35}]}
   ];
