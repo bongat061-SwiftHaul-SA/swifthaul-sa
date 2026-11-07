@@ -41,9 +41,9 @@
   });
   $('cargo-apply-dimensions').addEventListener('click',()=>{
     if(!lastEstimate?.dimensions_cm)return;
-    for(const key of ['length','width','height']){const input=form.elements.namedItem(key);if(input)input.value=String(Math.max(0.1,Number(lastEstimate.dimensions_cm[key])));}
-    const weight=form.elements.namedItem('weight');if(weight)weight.value=String(Math.max(0.1,Number(lastEstimate.weight_kg_range.max)));
-    form.dispatchEvent(new Event('input',{bubbles:true}));form.dispatchEvent(new Event('change',{bubbles:true}));
+    for(const key of ['length','width','height']){const input=form.elements.namedItem(key);if(input){input.value=String(Math.max(0.1,Number(lastEstimate.dimensions_cm[key])));input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));}}
+    const weight=form.elements.namedItem('weight');if(weight){weight.value=String(Math.max(0.1,Number(lastEstimate.weight_kg_range.max)));weight.dispatchEvent(new Event('input',{bubbles:true}));weight.dispatchEvent(new Event('change',{bubbles:true}));}
+    const summary=$('load-summary');if(summary)summary.textContent='Load estimate applied · '+Number(lastEstimate.weight_kg_range.min).toFixed(1)+'–'+Number(lastEstimate.weight_kg_range.max).toFixed(1)+' kg estimated; upper range used for pricing.';
     $('cargo-status').textContent='Estimated dimensions and weight applied. Review the values before calculating your fare.';
     form.elements.namedItem('length')?.focus();
   });
