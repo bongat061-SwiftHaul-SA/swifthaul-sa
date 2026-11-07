@@ -89,7 +89,9 @@ Deno.serve(async (req: Request) => {
     .select("latitude,longitude,accuracy_m,updated_at").eq("waybill", waybill)
     .eq("driver_user_id", booking.driver_user_id).maybeSingle();
   if (error) return reply(500, { error: "location_lookup_failed" });
-  if (!location || Date.now() - Date.parse(location.updated_at) > 120000)
+  if (!location || Date.now() - Date.parse(location.updated_at) > 120000) {
+    if (location) await admin.from("driver_live_locations").delete().eq("waybill", waybill);
     return reply(200, { sharing: false, location: null, message: "Driver location is not currently being shared." });
+  }
   return reply(200, { sharing: true, location });
 });
