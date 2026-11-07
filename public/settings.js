@@ -1,4 +1,3 @@
-import { updateUser } from './auth.js';
 const status=document.getElementById('settings-status'),content=document.getElementById('settings-content'),profile=document.getElementById('profile-form'),picture=document.getElementById('profile-photo');
 let epoch=0,photoURL=null,loaded=false;
 const client=()=>window.swiftHaulSupabase;
