@@ -353,15 +353,18 @@ declare v_outstanding bigint;
 begin
   select coalesce(sum(amount_cents),0) into v_outstanding
     from public.driver_cash_clearing_ledger where driver_user_id=new.driver_user_id;
-  if v_outstanding > 0 then
-    raise exception 'Outstanding cash held for SwiftHaul must be reconciled before payout' using errcode='55000';
+  if v_outstanding > 0 and (
+    (tg_op = 'INSERT') or
+    (tg_op = 'UPDATE' and new.status in ('approved','paid'))
+  ) then
+    raise exception 'Outstanding cash held for SwiftHaul must be reconciled before payout approval or payment' using errcode='55000';
   end if;
   return new;
 end;
 $$;
 drop trigger if exists guard_driver_payout_cash_liability on public.driver_payout_requests;
 create trigger guard_driver_payout_cash_liability
-before insert on public.driver_payout_requests
+before insert or update of status on public.driver_payout_requests
 for each row execute function public.guard_driver_payout_cash_liability();
 
 grant execute on function public.record_driver_cash_receipt(text,bigint,text,text) to authenticated;
