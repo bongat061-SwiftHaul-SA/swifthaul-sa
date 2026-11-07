@@ -38,6 +38,7 @@
     drivers: { title:'Driver management.', description:'Review driver availability, applications and verification information.', show:['drivers'] },
     refunds: { title:'Cancellations & refunds.', description:'Review customer cancellation requests and refund records.', show:['refunds'] },
     payouts: { title:'Driver payouts.', description:'Review payout requests and record completed manual EFT payments.', show:['payouts'] },
+    'cash-reconciliation': { title:'Cash reconciliation.', description:'Verify driver cash deposits against company bank records and clear cash-held liabilities.', show:['cash-reconciliation'] },
     offers: { title:'Delivery offer dispatch.', description:'Manage premium-first offers for eligible unassigned deliveries.', show:['offers'] },
     finance: { title:'Financial dashboard.', description:'Review reconciled platform, driver, payment and payout figures.', show:['finance'] },
     reports: { title:'Monthly reports.', description:'Export a dated CSV snapshot of the current administrator financial summary.', show:['reports'] },
@@ -45,7 +46,7 @@
     'insurance-claims': { title:'Insurance claims review.', description:'Review dispatch-bound GPS evidence, route compliance and insurer decisions.', show:['insurance-claims'] },
     account: { title:'Company account.', description:'Company administrator profile and support information.', show:['account'] }
   };
-  const nodes = { stats, dispatches, drivers, account, refunds, payouts, offers, finance, reports, insurance, "insurance-claims": root.querySelector("#insurance-claims-admin") };
+  const nodes = { stats, dispatches, drivers, account, refunds, payouts, offers, finance, reports, insurance, "insurance-claims": root.querySelector("#insurance-claims-admin"), "cash-reconciliation": root.querySelector("#cash-reconciliation") };
   function render(key, updateUrl) {
     const page = pages[key] || pages.overview;
     Object.entries(nodes).forEach(([name,node]) => { if(node) node.hidden = !page.show.includes(name); });
