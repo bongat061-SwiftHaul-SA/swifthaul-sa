@@ -31,3 +31,16 @@ body[data-app="customer"] .order-actions a,body[data-app="customer"] .order-acti
  body[data-app="customer"] .customer-wallet,body[data-app="customer"] .customer-settings{padding:15px;margin-top:10px}
  body[data-app="customer"] .account [data-user-name]{display:none}
 }
+
+/* Multi-parcel selection and dedicated account pages */
+#cargo-estimator .cargo-add-item{width:100%;margin-top:9px;background:#173d31;color:#fff;border-color:#173d31;border-radius:11px;font-weight:850}
+#cargo-estimator .cargo-add-item:disabled{opacity:.45}
+#cargo-estimator .cargo-selected-list{display:grid;gap:6px;margin-top:9px}
+#cargo-estimator .cargo-selected-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border:1px solid #dce7df;border-radius:10px;background:#fff;color:#33483c;font-size:10px;font-weight:750}
+#cargo-estimator .cargo-remove-item{min-height:30px;padding:5px 8px;border-radius:8px;color:#8a4337;font-size:9px}
+body[data-customer-view="wallet"] .page-heading,body[data-customer-view="settings"] .page-heading,
+body[data-customer-view="wallet"] .workspace-grid,body[data-customer-view="settings"] .workspace-grid{display:none!important}
+body[data-customer-view="wallet"] #wallet,body[data-customer-view="settings"] #settings{display:block!important;margin:18px auto;max-width:1040px}
+body[data-customer-view="wallet"] #settings,body[data-customer-view="settings"] #wallet{display:none!important}
+body[data-customer-view="wallet"] .section-links a[href="wallet.html"],body[data-customer-view="settings"] .section-links a[href="settings.html"]{background:#142d23;color:#fff}
+body[data-customer-view="wallet"] .section-links a:first-child,body[data-customer-view="settings"] .section-links a:first-child{background:transparent;color:#65716c}
