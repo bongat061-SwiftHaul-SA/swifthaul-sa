@@ -81,8 +81,16 @@ function addOrder(order, prepend = false) {
     if (document.body.dataset.guestPreview !== 'true') document.dispatchEvent(new CustomEvent('delivery-route', {detail:{waybill:order.waybill,pickup:order.pickup,dropoff:order.dropoff}}));
   });
   if(!order.paid_at&&!order.refunded_at&&!['cancelled','completed'].includes(order.status)){
-    const pay=document.createElement('button');pay.type='button';pay.textContent='Pay securely with PayFast (Sandbox)';
-    pay.addEventListener('click',()=>startPayFastCheckout(order,pay));actions.append(pay);
+    const pay=document.createElement('button');pay.type='button';pay.textContent='Pay with PayFast';pay.addEventListener('click',()=>startPayFastCheckout(order,pay));
+    const cardPay=document.createElement('button');cardPay.type='button';cardPay.textContent='Pay by card · PayFast';cardPay.addEventListener('click',()=>startPayFastCheckout(order,cardPay));
+    const eft=document.createElement('button');eft.type='button';eft.textContent='EFT payment instructions';eft.addEventListener('click',()=>{
+      const box=document.createElement('div');box.className='eft-instructions';
+      const heading=document.createElement('strong');heading.textContent='Pay by EFT';
+      const info=document.createElement('p');info.textContent='Use your booking reference '+order.waybill+' as the EFT reference. For verified SwiftHaul bank account details, contact dispatch on WhatsApp before transferring. Your booking remains unpaid until the transfer is checked and confirmed.';
+      const contact=document.createElement('a');contact.href='https://wa.me/27615083880?text='+encodeURIComponent('Please send verified EFT payment details for booking '+order.waybill+'.');contact.target='_blank';contact.rel='noopener noreferrer';contact.textContent='Request bank details on WhatsApp';
+      box.append(heading,info,contact);eft.replaceWith(box);
+    });
+    actions.append(pay,cardPay,eft);
   }
   const existingRefund = refundRequestsByWaybill.get(order.waybill);
   if (existingRefund) {
@@ -173,20 +181,15 @@ form.addEventListener('submit', async event => {
   const acceptedQuote=currentQuote;
   const data = Object.fromEntries(new FormData(form));
   if (['pickup', 'dropoff', 'recipient'].some(key => !data[key].trim())) { report('Enter pickup, drop-off and recipient details.', true); return; }
-  // Open during the user gesture so browsers can permit the WhatsApp tab.
-  const popup = window.open('about:blank', '_blank');
-  if (popup) popup.opener = null;
   const submit = document.getElementById('submit'); bookingBusy=true; submit.disabled = true; report('Saving your booking…');
   try {
     const result = await customerApi('POST', {action:'book',quote_id:acceptedQuote.id,recipient:data.recipient,payment_method:data.payment_method,counter_offer:data.counter_offer || null,scheduled_at:data.scheduled_at ? data.scheduled_at+':00+02:00' : null,return_address:data.return_address || null,return_at:data.return_at ? data.return_at+':00+02:00' : null,pickup_latitude:data.pickup_latitude?Number(data.pickup_latitude):null,pickup_longitude:data.pickup_longitude?Number(data.pickup_longitude):null,dropoff_latitude:data.dropoff_latitude?Number(data.dropoff_latitude):null,dropoff_longitude:data.dropoff_longitude?Number(data.dropoff_longitude):null});
-    if (epoch !== accountEpoch) {popup?.close();return;}
+    if (epoch !== accountEpoch) return;
     if (!result.order) throw new Error('Unable to save your booking. Please try again.');
     container.querySelector('.empty')?.remove(); addOrder(result.order, true);
-    report('Booking saved. Send the prepared message in WhatsApp, or use Send WhatsApp below.');
-    if (popup) popup.location.replace(whatsapp(result.order));
+    report('Booking created. Choose PayFast, card checkout or EFT instructions below. WhatsApp sharing is a separate action.');
     resetQuote();
   } catch (error) {
-    if (popup) popup.close();
     if (epoch!==accountEpoch) return;
     const reason = error instanceof Error ? error.message : 'Unable to save your booking.';
     if (reason === 'quote_expired_recalculate_route' || reason === 'quote_not_found_recalculate_route') {
