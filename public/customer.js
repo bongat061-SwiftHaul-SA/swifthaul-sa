@@ -308,14 +308,22 @@ toggleBookingOptions();
 
 function previewLoad(){
   const values=['weight','length','width','height'].map(key=>Number(form.elements.namedItem(key).value));
-  let vehicle='',text='Add weight and dimensions to find your vehicle.';
+  let vehicle='',text='Choose a parcel category to estimate your load and vehicle.';
+  let chargeable=0,label='';
   if(values.every(value=>Number.isFinite(value)&&value>0)){
-    const [weight,length,width,height]=values,volumetric=length*width*height/5000,chargeable=Math.max(weight,volumetric);
+    const [estimatedWeight,length,width,height]=values,volumetric=length*width*height/5000;
+    chargeable=Math.max(estimatedWeight,volumetric);
     if(chargeable>8000)text='Above 8,000 chargeable kg: contact dispatch for a manual quote.';
-    else{vehicle=chargeable<=20?'bike':chargeable<=1000?'van':'truck';const label=vehicle==='truck'?(chargeable<=4000?'4-ton Truck':'8-ton Truck'):vehicle.toUpperCase();text=`${label} recommended · ${mass(chargeable)} chargeable kg (actual ${mass(weight)} kg; volumetric ${mass(volumetric)} kg). Physical cargo fit and access require dispatch confirmation.`;}
+    else{
+      vehicle=chargeable<=20?'bike':chargeable<=1000?'van':'truck';
+      label=vehicle==='truck'?(chargeable<=4000?'4-ton Truck':'8-ton Truck'):vehicle.toUpperCase();
+      text=label+' recommended · '+mass(chargeable)+' chargeable kg (estimated weight '+mass(estimatedWeight)+' kg; volumetric '+mass(volumetric)+' kg). Physical cargo fit and access require dispatch confirmation.';
+    }
   }
   form.querySelectorAll('[name=vehicle]').forEach(input=>{input.checked=input.value===vehicle;});
-  document.getElementById('load-summary').textContent=text;
+  const summary=document.getElementById('load-summary');
+  if(summary)summary.textContent=text;
+  window.swiftHaulUpdateVehiclePreview?.(vehicle,chargeable,label);
 }
 form.addEventListener('input',event=>{if(['weight','length','width','height'].includes(event.target.name))previewLoad();});
 previewLoad();
