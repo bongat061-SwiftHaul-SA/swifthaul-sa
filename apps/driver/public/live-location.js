@@ -18,13 +18,12 @@
   }
   function stopLocal(waybill, notify = true) {
     const entry = watches.get(waybill);
-    if (!entry) return;
-    if (entry.watch !== null) navigator.geolocation.clearWatch(entry.watch);
+    if (entry && entry.watch !== null) navigator.geolocation.clearWatch(entry.watch);
     watches.delete(waybill);
-    if (notify) locationRequest({ waybill, sharing: false }).catch(() => {});
-    entry.status.textContent = "Location sharing is off.";
-    entry.start.disabled = false;
-    entry.stop.disabled = true;
+    if (entry && notify) locationRequest({ waybill, sharing: false }).catch(() => {});
+    if (entry) entry.status.textContent = "Location sharing is off.";
+    if (entry) entry.start.disabled = false;
+    if (entry) entry.stop.disabled = true;
   }
   function attach(card, order) {
     if (card.querySelector(".live-location-control")) return;
