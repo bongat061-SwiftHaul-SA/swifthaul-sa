@@ -34,7 +34,7 @@ Deno.serve(async (req: Request) => {
   if (req.method === "POST") {
     if (profile.role !== "driver") return reply(403, { error: "driver_account_required" });
     const { data: driverProfile, error: driverProfileError } = await admin.from("driver_profiles")
-      .select("verification_status").eq("user_id", actorId).maybeSingle();
+      .select("verification_status,is_online").eq("user_id", actorId).maybeSingle();
     if (driverProfileError) return reply(500, { error: "driver_profile_lookup_failed" });
     if (!driverProfile || driverProfile.verification_status !== "approved")
       return reply(403, { error: "approved_driver_required" });
@@ -73,7 +73,21 @@ Deno.serve(async (req: Request) => {
       accuracy_m: accuracy ?? null, updated_at: updatedAt,
     }, { onConflict: "waybill" });
     if (error) return reply(500, { error: "location_update_failed" });
-    return reply(200, { sharing: true, updated_at: new Date().toISOString() });
+    const { data: insurancePolicy, error: insurancePolicyError } = await admin.from("driver_insurance_policies")
+      .select("id").eq("driver_user_id", actorId).eq("status", "active")
+      .lte("coverage_starts_at", updatedAt).gt("coverage_ends_at", updatedAt).maybeSingle();
+    if (insurancePolicyError) return reply(500, { error: "insurance_evidence_policy_lookup_failed" });
+    if (insurancePolicy && driverProfile.is_online === true) {
+      const { error: evidenceError } = await admin.from("driver_insurance_trip_location_events").insert({
+        waybill: booking.waybill, driver_user_id: actorId, latitude: lat, longitude: lng,
+        accuracy_m: accuracy ?? null, driver_was_online: true,
+      });
+      if (evidenceError) {
+        console.error("Insurance trip evidence insert failed", evidenceError.message);
+        return reply(500, { error: "trip_evidence_record_failed" });
+      }
+    }
+    return reply(200, { sharing: true, trip_evidence_recorded: Boolean(insurancePolicy), updated_at: updatedAt });
   }
 
   const waybill = new URL(req.url).searchParams.get("waybill");

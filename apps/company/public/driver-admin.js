@@ -29,9 +29,22 @@ if(panel){
     }catch(error){if(current===epoch)status.textContent=error.message;}
   }
   async function review(driver,action,button){
+    if(action==='approve'){
+      const required=['id_document','proof_of_address','bank_confirmation','drivers_licence','vehicle_document'];
+      const missing=required.filter(type=>!(driver.documents||[]).some(doc=>doc.document_type===type&&doc.review_status==='accepted'));
+      if(missing.length){status.textContent='Approval blocked. Accept these documents first: '+missing.map(type=>type.replaceAll('_',' ')).join(', ')+'.';return;}
+    }
     button.disabled=true;
     try{await call('POST',{user_id:driver.user_id,action});await load();status.textContent='Driver status updated.';}
     catch(error){status.textContent=error.message;}
+    finally{button.disabled=false;}
+  }
+  async function reviewDocument(driver,doc,reviewStatus,button){
+    button.disabled=true;
+    try{
+      await call('POST',{action:'review_document',user_id:driver.user_id,document_id:doc.id,review_status:reviewStatus});
+      await load();status.textContent='Document review saved.';
+    }catch(error){status.textContent=error.message;}
     finally{button.disabled=false;}
   }
   function render(driver){
@@ -41,6 +54,24 @@ if(panel){
     details.textContent=[driver.phone,driver.license_number?'Licence '+driver.license_number:'Licence missing',driver.license_expiry?'Expires '+driver.license_expiry:'Expiry missing',String(driver.vehicle_type||'Vehicle missing').toUpperCase(),driver.vehicle_registration||'Registration missing'].join(' · ');
     const state=document.createElement('p');state.textContent='Verification: '+driver.verification_status;
     card.append(title,details,state);
+    const docsTitle=document.createElement('strong');docsTitle.textContent='Verification documents';
+    card.append(docsTitle);
+    const docs=driver.documents||[];
+    if(!docs.length){const missing=document.createElement('p');missing.textContent='No documents uploaded yet.';card.append(missing);}
+    for(const doc of docs){
+      const row=document.createElement('p');
+      row.textContent=doc.document_type.replaceAll('_',' ')+' · '+doc.review_status+' · '+doc.original_name+' ';
+      if(doc.signed_url){const link=document.createElement('a');link.href=doc.signed_url;link.target='_blank';link.rel='noopener noreferrer';link.textContent='View securely';row.append(link);}
+      card.append(row);
+      if(doc.review_status!=='accepted'){
+        const accept=document.createElement('button');accept.type='button';accept.textContent='Accept document';
+        accept.addEventListener('click',()=>reviewDocument(driver,doc,'accepted',accept));card.append(accept);
+      }
+      if(doc.review_status!=='rejected'){
+        const reject=document.createElement('button');reject.type='button';reject.textContent='Reject document';
+        reject.addEventListener('click',()=>reviewDocument(driver,doc,'rejected',reject));card.append(reject);
+      }
+    }
     const button=(label,action)=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.addEventListener('click',()=>review(driver,action,b));card.append(b);};
     if(driver.verification_status!=='approved')button('Approve driver','approve');
     if(driver.verification_status!=='rejected')button('Reject application','reject');

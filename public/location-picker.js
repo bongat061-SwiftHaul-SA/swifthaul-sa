@@ -187,10 +187,10 @@
   const mapStyle = {
     version:8,
     sources:{carto:{type:'raster',tiles:[
-      'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-      'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-      'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'
-    ],tileSize:256,attribution:'&copy; OpenStreetMap contributors &copy; CARTO'}},
+      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+    ],tileSize:256,attribution:'&copy; OpenStreetMap contributors'}},
     layers:[{id:'carto-voyager',type:'raster',source:'carto'}]
   };
   const cameraMove = (center, zoom=14) => { if(map) map.flyTo({center,zoom,duration:350}); };
