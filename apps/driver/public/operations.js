@@ -96,6 +96,150 @@ if (app === 'driver' || app === 'company') {
       order.paid_at ? 'Paid' : 'Payment pending'
     ].filter(Boolean).join(' · ');
     card.append(title, route, summary);
+
+    // Driver-only GPS tracking preview. Location remains on this device; no customer
+    // or dispatcher sharing is claimed until a secure server-side tracking endpoint exists.
+    if (app === 'driver' && ['accepted', 'picked_up', 'in_transit'].includes(order.status)) {
+      const pickup = { lat: Number(order.pickup_latitude), lng: Number(order.pickup_longitude) };
+      const dropoff = { lat: Number(order.dropoff_latitude), lng: Number(order.dropoff_longitude) };
+      const validPoint = point => Number.isFinite(point.lat) && Number.isFinite(point.lng) &&
+        Math.abs(point.lat) <= 90 && Math.abs(point.lng) <= 180 &&
+        !(point.lat === 0 && point.lng === 0);
+      const tracking = document.createElement('section');
+      tracking.className = 'driver-tracking';
+      const trackingHead = document.createElement('div');
+      trackingHead.className = 'tracking-head';
+      const trackingTitle = document.createElement('h4');
+      trackingTitle.textContent = 'Delivery tracking';
+      const trackingState = document.createElement('span');
+      trackingState.className = 'tracking-state';
+      trackingState.textContent = 'GPS not started';
+      trackingHead.append(trackingTitle, trackingState);
+      const trackingMap = document.createElement('div');
+      trackingMap.className = 'driver-tracking-map';
+      trackingMap.setAttribute('role', 'region');
+      trackingMap.setAttribute('aria-label', 'Delivery route and driver GPS map');
+      const trackingNote = document.createElement('p');
+      trackingNote.className = 'tracking-note';
+      trackingNote.textContent = 'Your GPS position is displayed on this device only. It is not being shared with the customer or dispatch. The line between pins is a route overview, not turn-by-turn road guidance.';
+      const trackingActions = document.createElement('div');
+      trackingActions.className = 'tracking-actions';
+      const startTracking = document.createElement('button');
+      startTracking.type = 'button';
+      startTracking.className = 'primary';
+      startTracking.textContent = 'Start GPS tracking';
+      const stopTracking = document.createElement('button');
+      stopTracking.type = 'button';
+      stopTracking.textContent = 'Stop tracking';
+      stopTracking.disabled = true;
+      const trackingUpdated = document.createElement('small');
+      trackingUpdated.className = 'tracking-updated';
+      trackingUpdated.textContent = 'Allow location access to show your current position.';
+      trackingActions.append(startTracking, stopTracking);
+      tracking.append(trackingHead, trackingMap, trackingNote, trackingActions, trackingUpdated);
+      card.append(tracking);
+
+      let map = null, driverMarker = null, accuracyRing = null, watchId = null;
+      const points = [];
+      if (validPoint(pickup)) points.push([pickup.lat, pickup.lng]);
+      if (validPoint(dropoff)) points.push([dropoff.lat, dropoff.lng]);
+      if (window.L && points.length) {
+        map = L.map(trackingMap, { zoomControl: true, scrollWheelZoom: false });
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+          maxZoom: 20,
+          attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+        }).addTo(map);
+        if (validPoint(pickup)) L.marker([pickup.lat, pickup.lng]).addTo(map).bindPopup('Pickup');
+        if (validPoint(dropoff)) L.marker([dropoff.lat, dropoff.lng]).addTo(map).bindPopup('Drop-off');
+        if (points.length === 2) {
+          L.polyline(points, { color: '#176b52', weight: 4, opacity: .8, dashArray: '8 8' }).addTo(map);
+          map.fitBounds(points, { padding: [28, 28] });
+        } else map.setView(points[0], 14);
+        requestAnimationFrame(() => map && map.invalidateSize());
+      } else {
+        trackingMap.hidden = true;
+        trackingNote.textContent = 'Pickup and drop-off map pins are not both available for this delivery. GPS can still be checked on this device, but a route map cannot be drawn.';
+      }
+
+      startTracking.addEventListener('click', () => {
+        if (!navigator.geolocation) {
+          trackingState.textContent = 'GPS unavailable';
+          trackingUpdated.textContent = 'This browser does not support device location.';
+          return;
+        }
+        if (watchId !== null) return;
+        trackingState.textContent = 'Requesting permission…';
+        startTracking.disabled = true;
+        navigator.geolocation.getCurrentPosition(position => {
+          const p = position.coords;
+          const latlng = [p.latitude, p.longitude];
+          if (map) {
+            if (!driverMarker) driverMarker = L.circleMarker(latlng, {
+              radius: 9, color: '#fff', weight: 3, fillColor: '#176b52', fillOpacity: 1
+            }).addTo(map).bindPopup('Your current position');
+            else driverMarker.setLatLng(latlng);
+            if (accuracyRing) accuracyRing.remove();
+            accuracyRing = L.circle(latlng, {
+              radius: Math.max(10, p.accuracy || 10), color: '#176b52',
+              weight: 1, fillColor: '#176b52', fillOpacity: .08
+            }).addTo(map);
+            const bounds = [...points, latlng];
+            map.fitBounds(bounds, { padding: [28, 28], maxZoom: 15 });
+          }
+          trackingState.textContent = 'GPS active · this device';
+          trackingUpdated.textContent = 'Last position: ' + new Date(position.timestamp).toLocaleTimeString('en-ZA') +
+            ' · accuracy ±' + Math.round(p.accuracy || 0) + ' m';
+          startTracking.disabled = true;
+          stopTracking.disabled = false;
+          watchId = navigator.geolocation.watchPosition(next => {
+            const coords = next.coords, nextPoint = [coords.latitude, coords.longitude];
+            if (map) {
+              if (!driverMarker) driverMarker = L.circleMarker(nextPoint, {
+                radius: 9, color: '#fff', weight: 3, fillColor: '#176b52', fillOpacity: 1
+              }).addTo(map);
+              else driverMarker.setLatLng(nextPoint);
+              if (accuracyRing) accuracyRing.remove();
+              accuracyRing = L.circle(nextPoint, {
+                radius: Math.max(10, coords.accuracy || 10), color: '#176b52',
+                weight: 1, fillColor: '#176b52', fillOpacity: .08
+              }).addTo(map);
+            }
+            trackingState.textContent = 'GPS active · this device';
+            trackingUpdated.textContent = 'Updated: ' + new Date(next.timestamp).toLocaleTimeString('en-ZA') +
+              ' · accuracy ±' + Math.round(coords.accuracy || 0) + ' m';
+          }, error => {
+            trackingState.textContent = 'GPS signal interrupted';
+            trackingUpdated.textContent = error.code === 1
+              ? 'Location permission was denied. Enable location access in your browser settings.'
+              : 'Unable to refresh GPS position. Check device location services and try again.';
+            startTracking.disabled = false;
+            stopTracking.disabled = true;
+            if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+            watchId = null;
+          }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 });
+        }, error => {
+          trackingState.textContent = 'GPS permission needed';
+          trackingUpdated.textContent = error.code === 1
+            ? 'Location permission was denied. Allow location access to start tracking.'
+            : 'Could not get a GPS fix. Check location services and try again.';
+          startTracking.disabled = false;
+        }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 });
+      });
+      stopTracking.addEventListener('click', () => {
+        if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+        trackingState.textContent = 'Tracking stopped';
+        trackingUpdated.textContent = 'GPS updates have stopped on this device.';
+        startTracking.disabled = false;
+        stopTracking.disabled = true;
+        if (driverMarker) { driverMarker.remove(); driverMarker = null; }
+        if (accuracyRing) { accuracyRing.remove(); accuracyRing = null; }
+      });
+      tracking.addEventListener('DOMNodeRemoved', () => {
+        if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+        if (map) map.remove();
+      }, { once: true });
+    }
     for (const [kind,label] of [['pickup','Pickup'],['dropoff','Drop-off']]) {
       const plus = order[kind + '_plus_code'];
       const lat = order[kind + '_latitude'], lng = order[kind + '_longitude'];
