@@ -268,7 +268,7 @@ calculateButton.addEventListener('click', async () => {
     const result=await customerApi('POST',{action:'quote',pickup:data.pickup,dropoff:data.dropoff,pickup_location:data.pickup_latitude?{latitude:Number(data.pickup_latitude),longitude:Number(data.pickup_longitude)}:null,dropoff_location:data.dropoff_latitude?{latitude:Number(data.dropoff_latitude),longitude:Number(data.dropoff_longitude)}:null,parcel:Object.fromEntries(['weight','length','width','height'].map(key=>[key,Number(data[key])]))});
     if (quoteRequest!==active || active.signal.aborted) return;
     if (!result.quote) throw new Error('Unable to calculate the route.');
-    currentQuote=result.quote;updatePaymentOptions();const route=currentQuote.route;
+    currentQuote=result.quote;updatePaymentOptions();const route=currentQuote.route;window.swiftHaulSetRoadRoute?.(route);
     document.getElementById('quote-result').hidden=false;
     document.getElementById('quote-distance').textContent=`${km(route.distance)} km`;
     document.getElementById('quote-price').textContent=money(currentQuote.price);
