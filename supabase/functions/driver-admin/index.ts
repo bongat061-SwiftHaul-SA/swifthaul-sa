@@ -56,6 +56,25 @@ Deno.serve(async (req: Request) => {
   if (raw.length > 2048) return reply(413, { error: "request_too_large" });
   let body: Record<string, unknown>;
   try { body = JSON.parse(raw); } catch { return reply(400, { error: "invalid_json" }); }
+  if (body.action === "review_document") {
+    if (typeof body.document_id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.document_id))
+      return reply(400, { error: "invalid_document_id" });
+    if (!["accepted", "rejected"].includes(String(body.review_status)))
+      return reply(400, { error: "invalid_document_review_status" });
+    const note = typeof body.review_note === "string" ? body.review_note.trim().slice(0, 500) : "";
+    const { data: document, error: documentError } = await admin.from("driver_documents")
+      .select("id,driver_user_id,review_status").eq("id", body.document_id).maybeSingle();
+    if (documentError) return reply(500, { error: "document_lookup_failed" });
+    if (!document) return reply(404, { error: "driver_document_not_found" });
+    const { data: reviewed, error: reviewError } = await admin.from("driver_documents")
+      .update({ review_status: body.review_status, review_note: note || null,
+        reviewed_by: authResult.user.id, reviewed_at: new Date().toISOString() })
+      .eq("id", body.document_id).select("id,driver_user_id,document_type,review_status,review_note,reviewed_at").maybeSingle();
+    if (reviewError) return reply(500, { error: "document_review_update_failed" });
+    if (!reviewed) return reply(404, { error: "driver_document_not_found" });
+    return reply(200, { document: reviewed });
+  }
+
   if (typeof body.user_id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.user_id))
     return reply(400, { error: "invalid_driver_id" });
   if (!["approve", "reject", "suspend"].includes(String(body.action)))
