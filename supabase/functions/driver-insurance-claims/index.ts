@@ -104,6 +104,9 @@ Deno.serve(async(req:Request)=>{
       return reply(400,{error:"invalid_claim_details_maximum_five_days"});
     if(files.length>5||files.some(f=>f.size>MAX_FILE||!allowedTypes.has(f.type)))
       return reply(400,{error:"evidence_files_must_be_pdf_or_image_up_to_10mb_each_max_five"});
+    const {data:driverProfile,error:driverProfileError}=await db.from("driver_profiles").select("verification_status").eq("user_id",actorId).maybeSingle();
+    if(driverProfileError)return reply(500,{error:"driver_profile_lookup_failed"});
+    if(!driverProfile||driverProfile.verification_status!=="approved")return reply(403,{error:"approved_driver_required"});
     const {data:booking,error:bookingError}=await db.from("customer_bookings")
       .select("waybill,driver_user_id,status,accepted_at,picked_up_at,in_transit_at,completed_at,refunded_at")
       .eq("waybill",waybill).maybeSingle();
@@ -176,6 +179,14 @@ Deno.serve(async(req:Request)=>{
     if(!["compliant","breach"].includes(compliance))return reply(400,{error:"route_review_must_be_compliant_or_breach"});
     const note=typeof body.route_review_note==="string"?body.route_review_note.trim().slice(0,1000):"";
     if(note.length<10)return reply(400,{error:"route_review_note_required"});
+    if(compliance==="compliant"){
+      const {data:booking,error:bookingError}=await db.from("customer_bookings").select("quote_id").eq("waybill",claim.waybill).maybeSingle();
+      if(bookingError)return reply(500,{error:"planned_route_lookup_failed"});
+      if(!booking?.quote_id)return reply(409,{error:"planned_tracking_route_missing_cannot_confirm_compliance"});
+      const {data:quote,error:quoteError}=await db.from("delivery_quotes").select("route").eq("id",booking.quote_id).maybeSingle();
+      if(quoteError)return reply(500,{error:"planned_route_lookup_failed"});
+      if(!quote?.route)return reply(409,{error:"planned_tracking_route_missing_cannot_confirm_compliance"});
+    }
     const {error}=await db.from("driver_insurance_claims").update({
       route_compliance:compliance,route_review_note:note,status:"under_review",reviewed_by:actorId,reviewed_at:now,updated_at:now,
     }).eq("id",claimId);
