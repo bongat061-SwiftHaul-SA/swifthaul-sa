@@ -315,6 +315,9 @@ begin
   if not found or v_deposit.status <> 'proof_submitted' then
     raise exception 'Deposit is not awaiting reconciliation' using errcode='55000';
   end if;
+  -- Serialize reconciliation against new cash receipts and payout approval
+  -- for the same driver.
+  perform pg_advisory_xact_lock(hashtextextended(v_deposit.driver_user_id::text, 0));
   if p_action='reject' then
     if p_reason is null or length(trim(p_reason)) not between 3 and 500 then
       raise exception 'A reason is required to reject a deposit' using errcode='22023';
