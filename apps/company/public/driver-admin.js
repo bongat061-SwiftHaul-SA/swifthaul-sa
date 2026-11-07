@@ -34,6 +34,14 @@ if(panel){
     catch(error){status.textContent=error.message;}
     finally{button.disabled=false;}
   }
+  async function reviewDocument(driver,doc,reviewStatus,button){
+    button.disabled=true;
+    try{
+      await call('POST',{action:'review_document',user_id:driver.user_id,document_id:doc.id,review_status:reviewStatus});
+      await load();status.textContent='Document review saved.';
+    }catch(error){status.textContent=error.message;}
+    finally{button.disabled=false;}
+  }
   function render(driver){
     const card=document.createElement('article');card.className='order';
     const title=document.createElement('h3');title.textContent=driver.user_profiles?.full_name||'Driver applicant';
@@ -50,6 +58,14 @@ if(panel){
       row.textContent=doc.document_type.replaceAll('_',' ')+' · '+doc.review_status+' · '+doc.original_name+' ';
       if(doc.signed_url){const link=document.createElement('a');link.href=doc.signed_url;link.target='_blank';link.rel='noopener noreferrer';link.textContent='View securely';row.append(link);}
       card.append(row);
+      if(doc.review_status!=='accepted'){
+        const accept=document.createElement('button');accept.type='button';accept.textContent='Accept document';
+        accept.addEventListener('click',()=>reviewDocument(driver,doc,'accepted',accept));card.append(accept);
+      }
+      if(doc.review_status!=='rejected'){
+        const reject=document.createElement('button');reject.type='button';reject.textContent='Reject document';
+        reject.addEventListener('click',()=>reviewDocument(driver,doc,'rejected',reject));card.append(reject);
+      }
     }
     const button=(label,action)=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.addEventListener('click',()=>review(driver,action,b));card.append(b);};
     if(driver.verification_status!=='approved')button('Approve driver','approve');
