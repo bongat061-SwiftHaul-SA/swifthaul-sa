@@ -3,6 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.49.1";
 const cors={ "Access-Control-Allow-Origin":"*", "Access-Control-Allow-Headers":"authorization, apikey, content-type, x-client-info", "Access-Control-Allow-Methods":"POST, OPTIONS", "Content-Type":"application/json" };
 const reply=(s:number,b:Record<string,unknown>)=>new Response(JSON.stringify(b),{status:s,headers:cors});
 const clean=(v:unknown,n=200)=>typeof v==="string"?v.trim().slice(0,n):"";
+const escapeHtml=(v:unknown)=>String(v??"").replace(/[&<>"]/g,(ch)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]||ch));
 async function sendEmail(key:string,from:string,to:string[],subject:string,html:string){
  const r=await fetch("https://api.resend.com/emails",{method:"POST",headers:{"Authorization":"Bearer "+key,"Content-Type":"application/json"},body:JSON.stringify({from,to,subject,html})});
  if(!r.ok)throw new Error("email_provider_"+r.status);
@@ -28,10 +29,10 @@ Deno.serve(async(req:Request)=>{
  const appUrl=Deno.env.get("DRIVER_APP_URL")||"https://bongat061-swifthaul-sa.github.io/swifthaul-sa-preview/apps/driver/public/";
  const name=clean(p.full_name||a.user.user_metadata?.full_name,120);
  const details=[["Name",name],["Email",email],["Phone",clean(d.phone,30)],["Licence",clean(d.license_number,80)],["Licence expiry",clean(d.license_expiry,20)],["Vehicle",clean(d.vehicle_type,30)],["Registration",clean(d.vehicle_registration,30)],["Documents",docSummary]];
- const welcomeHtml="<div style='font-family:Arial,sans-serif;color:#173d31'><h2>Welcome to SwiftHaul SA</h2><p>Your driver account is registered. Your application is awaiting administrator approval. You can sign in now, upload your documents and check your application status.</p><p><a href='"+appUrl+"'>Open SwiftHaul Driver</a></p><p>For security, SwiftHaul never emails passwords. Sign in with the email address and password you created.</p></div>";
+ const welcomeHtml="<div style='font-family:Arial,sans-serif;color:#173d31'><h2>Welcome to SwiftHaul SA</h2><p>Your driver account is registered. Your application is awaiting administrator approval. You can sign in now, upload your documents and check your application status.</p><p><a href='"+escapeHtml(appUrl)+"'>Open SwiftHaul Driver</a></p><p>For security, SwiftHaul never emails passwords. Sign in with the email address and password you created.</p></div>";
  if(key&&email&&!welcome){try{await sendEmail(key,from,[email],"Welcome to SwiftHaul SA — application received",welcomeHtml);welcome=true;}catch(e){console.error("Driver welcome email failed",String(e));}}
  const adminTo=Deno.env.get("DRIVER_APPLICATION_NOTIFY_EMAIL");
- const adminHtml="<div style='font-family:Arial,sans-serif;color:#173d31'><h2>New driver application</h2>"+details.map(x=>"<p><strong>"+x[0]+":</strong> "+x[1]+"</p>").join("")+"<p><a href='"+appUrl+"'>Open Driver platform</a></p></div>";
+ const adminHtml="<div style='font-family:Arial,sans-serif;color:#173d31'><h2>New driver application</h2>"+details.map(x=>"<p><strong>"+escapeHtml(x[0])+":</strong> "+escapeHtml(x[1])+"</p>").join("")+"<p><a href='"+appUrl+"'>Open Driver platform</a></p></div>";
  if(key&&adminTo&&!adminEmail){try{await sendEmail(key,from,[adminTo],"New SwiftHaul driver application",adminHtml);adminEmail=true;}catch(e){console.error("Driver admin email failed",String(e));}}
  const waToken=Deno.env.get("WHATSAPP_ACCESS_TOKEN"),phoneId=Deno.env.get("WHATSAPP_PHONE_NUMBER_ID"),recipient=Deno.env.get("WHATSAPP_ADMIN_RECIPIENT");
  if(waToken&&phoneId&&recipient&&!wa){const message="New SwiftHaul driver application\n"+name+"\n"+email+"\n"+clean(d.phone,30)+"\nVehicle: "+clean(d.vehicle_type,30)+" "+clean(d.vehicle_registration,30)+"\nDocuments: "+docSummary+"\nReview in Company Admin.";
