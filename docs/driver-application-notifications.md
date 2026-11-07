@@ -6,7 +6,7 @@ Configure these secrets in Supabase before deploying the new functions:
 
 - RESEND_API_KEY — Resend API key.
 - DRIVER_EMAIL_FROM — verified sender, e.g. SwiftHaul SA <noreply@your-verified-domain>.
-- DRIVER_APPLICATION_NOTIFY_EMAIL — administrator inbox for new driver applications.
+- DRIVER_APPLICATION_NOTIFY_EMAIL — `centurionfleetweb@gmail.com` (administrator inbox for new driver applications).
 - WHATSAPP_ACCESS_TOKEN — Meta WhatsApp Cloud API access token.
 - WHATSAPP_PHONE_NUMBER_ID — WhatsApp Business phone-number ID.
 - WHATSAPP_ADMIN_RECIPIENT — administrator WhatsApp destination in international format, digits only.
