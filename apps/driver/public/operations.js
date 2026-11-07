@@ -629,12 +629,14 @@ if (app === 'driver' || app === 'company') {
     for (const cleanup of activeTrackingCleanups) cleanup();
     activeTrackingCleanups.clear();
     list.replaceChildren();
+    historyList()?.replaceChildren();
     message.textContent = '';
   });
   document.addEventListener('guest-preview', () => {
     active = false;
     requestNumber++;
     list.replaceChildren();
+    historyList()?.replaceChildren();
     message.textContent = 'Sign in to access assigned deliveries and company dispatch.';
   });
 }
