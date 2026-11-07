@@ -25,7 +25,7 @@
  function init(){
   if(!window.maplibregl){fail('The map library did not load. Check your connection or content blocker, then reload this page.');return;}
   try{
-   map=new maplibregl.Map({container:canvas,center,zoom:4.55,minZoom:3,maxZoom:18,style:{version:8,sources:{carto:{type:'raster',tiles:['https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png','https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png','https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'],tileSize:256,attribution:'© OpenStreetMap contributors © CARTO'}},layers:[{id:'carto-voyager',type:'raster',source:'carto'}]},attributionControl:true});
+   map=new maplibregl.Map({container:canvas,center,zoom:4.55,minZoom:3,maxZoom:18,style:{version:8,sources:{carto:{type:'raster',tiles:['https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png','https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png','https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'],tileSize:256,attribution:'© OpenStreetMap contributors © CARTO'}},layers:[{id:'carto-voyager',type:'raster',source:'carto'}]},attributionControl:true});window.swiftHaulMap=map;
    map.addControl(new maplibregl.NavigationControl({showCompass:false}),'top-left');
    const query=document.getElementById('address-query'), searchButton=document.getElementById('address-search'), results=document.getElementById('address-results'), pinCoords=document.getElementById('pin-coordinates'), pinLabel=document.getElementById('pin-label'), copyPin=document.getElementById('copy-pin');
    const pinKind=document.getElementById('pin-kind'); const pins={pickup:null,dropoff:null}; let activePin=pinKind?pinKind.value:'selected', searchTimer=null, searchController=null;
@@ -55,4 +55,4 @@
  if(window.maplibregl)init();else window.addEventListener('load',init,{once:true});
 })();
 </script>
-</body></html>
+<script defer src="../../map-context.js?v=booking-map-context-20261107"></script></body></html>
