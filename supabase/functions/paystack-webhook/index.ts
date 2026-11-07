@@ -4,37 +4,19 @@ import { createClient } from "npm:@supabase/supabase-js@2.49.1";
 const response = (status: number, body: string) =>
   new Response(body, { status, headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" } });
 
-function hex(bytes: ArrayBuffer) {
-  return Array.from(new Uint8Array(bytes), b => b.toString(16).padStart(2, "0")).join("");
-}
-function equalHex(a: string, b: string) {
-  if (!/^[a-f0-9]{128}$/i.test(a) || !/^[a-f0-9]{128}$/i.test(b) || a.length !== b.length) return false;
-  let mismatch = 0;
-  for (let i = 0; i < a.length; i++) mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return mismatch === 0;
-}
-async function hmac(secret: string, message: string) {
-  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-512" }, false, ["sign"]);
-  return hex(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(message)));
-}
+import { verifyLegacySignature, verifyModernSignature } from "./signature.ts";
+
 async function validSignature(req: Request, raw: string) {
   const modern = req.headers.get("Paystack-Signature");
   if (modern) {
     const signingSecret = Deno.env.get("PAYSTACK_WEBHOOK_SECRET");
-    if (!signingSecret) return false;
-    const parts = modern.split(",");
-    const timestamp = parts.find(p => p.trim().startsWith("t="))?.trim().slice(2);
-    const timestampNumber = Number(timestamp);
-    if (!timestamp || !Number.isInteger(timestampNumber) || Math.abs(Date.now() / 1000 - timestampNumber) > 300) return false;
-    const signed = await hmac(signingSecret, timestamp + "." + raw);
-    const signatures = parts.filter(p => p.trim().startsWith("v1="))
-      .map(p => p.trim().slice(3).split(":").at(-1) || "");
-    return signatures.some(s => equalHex(s, signed));
+    return await verifyModernSignature(modern, raw, signingSecret ?? "");
   }
-  const legacy = req.headers.get("x-paystack-signature");
-  const secret = Deno.env.get("PAYSTACK_SECRET_KEY");
-  if (!legacy || !secret) return false;
-  return equalHex(legacy, await hmac(secret, raw));
+  return await verifyLegacySignature(
+    req.headers.get("x-paystack-signature"),
+    raw,
+    Deno.env.get("PAYSTACK_SECRET_KEY") ?? "",
+  );
 }
 
 Deno.serve(async (req: Request) => {
