@@ -76,3 +76,27 @@ Add an EFT review queue showing waybill, customer identity, expected amount, tra
 - Only after successful staging tests, prepare a GitHub Pages release for Customer and Company Admin. Driver UI should change only if a tested driver workflow requires it.
 - Production Supabase migration/function deployment and production Pages publication are separate approvals. No production backend change is authorized by this specification.
 - Card payments remain disabled. EFT and cash remain separate methods.
+
+
+## Repository-specific implementation findings (verified on main, 2026-11-08)
+
+- The Customer Portal authenticates the bearer token with Supabase Auth, derives `owner = authData.user.id`, and requires `user_profiles.role='customer'` plus `account_status='active'`.
+- Customer bookings use `customer_bookings.owner_hash` as the authenticated user's UUID. EFT ownership checks should follow this same server-derived identity.
+- Company Admin cash reconciliation uses `user_profiles.role='admin'` and `account_status='active'`. The EFT admin queue should use the same active-admin gate, not user metadata.
+- The current customer booking creation allow-list is exactly `cash`, `dispatch`, and `wallet`. Introducing EFT requires coordinated updates to the customer UI, customer-portal Edge Function, and database constraints; changing only the UI would fail server validation.
+- The existing `customer_bookings.payment_source` check constraint currently allows null, cash, wallet, payfast, paystack, and pay_later. It does **not** allow `eft`. The EFT migration must add `eft` while preserving all existing allowed values.
+- The existing cash reconciliation implementation confirms that customer cash receipt proof and driver cash deposit proof use separate private buckets and separate ledgers. Customer EFT proof must have its own private bucket and table; it must not be stored in either driver cash bucket.
+- The existing customer portal currently returns booking payment metadata but has no EFT submission records or transfer-reference workflow.
+
+## Implementation sequencing decision
+
+Do not change the existing `customer-portal` booking method allow-list to include EFT until the matching schema migration, submission/review Edge Function, and customer/admin interfaces are committed together. Otherwise a customer could select EFT but have no reliable way to submit evidence or get the payment verified.
+
+The implementation PR should therefore be a coordinated feature branch containing:
+1. Migration: payment-source constraint update, EFT submission/audit tables, indexes, RLS, private proof bucket and narrowly scoped Storage policies.
+2. Edge Function: authenticated customer submission/list actions and active-admin queue/review actions, with amount derived from the booking server-side and atomic idempotent confirmation.
+3. Customer UI: EFT instructions, unique reference, transfer metadata, private proof upload and status display.
+4. Company Admin UI: review queue, private evidence access, bank statement reference requirement, rejection reason and audit trail.
+5. Automated tests: ownership, role separation, RLS/Storage isolation, duplicate/concurrent confirmation, amount integrity, booking eligibility and regression of cash/wallet/card-disabled paths.
+
+No production schema or function change has been made as part of this investigation.
