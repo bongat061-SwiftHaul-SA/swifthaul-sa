@@ -1,7 +1,7 @@
 const app = document.body.dataset.app;
 if (app === 'driver' || app === 'company') {
   const panel = document.getElementById('dispatches');
-  const historyList = document.getElementById('driver-delivery-history-list');
+  const historyList = () => document.getElementById('driver-delivery-history-list');
   const heading = panel.querySelector('h2');
   const message = document.createElement('p');
   message.setAttribute('role', 'status');
@@ -44,7 +44,7 @@ if (app === 'driver' || app === 'company') {
       for (const cleanup of activeTrackingCleanups) cleanup();
       activeTrackingCleanups.clear();
       list.replaceChildren();
-      historyList?.replaceChildren();
+      historyList()?.replaceChildren();
       if (app === 'driver' && data.driverProfile?.verification_status !== 'approved') {
         const notice = document.createElement('p');
         notice.textContent = 'Your driver application is awaiting verification. Dispatch access will be enabled after approval.';
@@ -617,7 +617,7 @@ if (app === 'driver' || app === 'company') {
       });
       card.append(form);
     }
-    if (app === 'driver' && ['delivered','failed','cancelled'].includes(order.status) && historyList) historyList.append(card);
+    if (app === 'driver' && ['delivered','failed','cancelled'].includes(order.status) && historyList()) { const history=historyList(); if(history.children.length===1 && history.firstElementChild?.textContent?.includes('No completed deliveries yet')) history.replaceChildren(); history.append(card); }
     else list.append(card);
   }
 
