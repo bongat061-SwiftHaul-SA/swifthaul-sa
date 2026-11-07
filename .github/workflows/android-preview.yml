@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - feature/android-capacitor-foundation
+      - main
     paths:
       - 'android-customer/**'
       - 'apps/driver/android-wrapper/**'
