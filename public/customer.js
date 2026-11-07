@@ -231,7 +231,7 @@ form.addEventListener('submit', async event => {
     if (epoch !== accountEpoch) return;
     if (!result.order) throw new Error('Unable to save your booking. Please try again.');
     container.querySelector('.empty')?.remove(); addOrder(result.order, true);
-    report('Booking created. Choose Paystack online checkout, PayFast backup or EFT instructions below. WhatsApp sharing is a separate action.');
+    report('Booking created. Card payments are coming soon while provider approval is pending. You can use EFT instructions below or the available cash option. WhatsApp sharing is a separate action.');
     resetQuote();
   } catch (error) {
     if (epoch!==accountEpoch) return;
