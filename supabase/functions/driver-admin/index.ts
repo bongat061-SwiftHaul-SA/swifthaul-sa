@@ -37,7 +37,19 @@ Deno.serve(async (req: Request) => {
       console.error("Driver review list failed", error.message);
       return reply(500, { error: "driver_list_failed" });
     }
-    return reply(200, { drivers: data ?? [] });
+    const ids = (data ?? []).map((driver: any) => driver.user_id);
+    const { data: docs, error: docsError } = ids.length
+      ? await admin.from("driver_documents").select("id,driver_user_id,document_type,original_name,review_status,created_at,storage_path").in("driver_user_id", ids).order("created_at", { ascending: false })
+      : { data: [], error: null };
+    if (docsError) return reply(500, { error: "driver_documents_lookup_failed" });
+    const grouped: Record<string, unknown[]> = {};
+    for (const doc of docs ?? []) {
+      const { data: signed } = await admin.storage.from("driver-application-documents").createSignedUrl(doc.storage_path, 300);
+      const safeDoc = { id: doc.id, document_type: doc.document_type, original_name: doc.original_name,
+        review_status: doc.review_status, created_at: doc.created_at, signed_url: signed?.signedUrl ?? null };
+      (grouped[doc.driver_user_id] ??= []).push(safeDoc);
+    }
+    return reply(200, { drivers: (data ?? []).map((driver: any) => ({ ...driver, documents: grouped[driver.user_id] ?? [] })) });
   }
 
   const raw = await req.text();
