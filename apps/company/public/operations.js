@@ -171,8 +171,7 @@ if (app === 'driver' || app === 'company') {
           radius: 10, color: '#fff', weight: 4, fillColor: '#e39b35', fillOpacity: 1
         }).addTo(map).bindPopup('Drop-off');
         if (points.length === 2) {
-          routeLine = L.polyline(points, { color: '#fff', weight: 12, opacity: .95, lineCap: 'round', lineJoin: 'round' }).addTo(map);
-          L.polyline(points, { color: '#176b52', weight: 6, opacity: .98, lineCap: 'round', lineJoin: 'round' }).addTo(map);
+          routeLine = L.polyline(points, { color: '#176b52', weight: 6, opacity: .98, lineCap: 'round', lineJoin: 'round' }).addTo(map);
           fitRoute();
           fetch('https://router.project-osrm.org/route/v1/driving/' +
             pickup.lng + ',' + pickup.lat + ';' + dropoff.lng + ',' + dropoff.lat +
@@ -183,8 +182,10 @@ if (app === 'driver' || app === 'company') {
               if (!road || !map) return;
               if (routeLine) routeLine.remove();
               const coords = road.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
-              routeLine = L.polyline(coords, { color: '#fff', weight: 13, opacity: .95, lineCap: 'round', lineJoin: 'round' }).addTo(map);
-              L.polyline(coords, { color: '#176b52', weight: 6, opacity: .98, lineCap: 'round', lineJoin: 'round' }).addTo(map);
+              routeLine = L.layerGroup([
+                L.polyline(coords, { color: '#fff', weight: 13, opacity: .95, lineCap: 'round', lineJoin: 'round' }),
+                L.polyline(coords, { color: '#176b52', weight: 6, opacity: .98, lineCap: 'round', lineJoin: 'round' })
+              ]).addTo(map);
               fitRoute();
             }).catch(() => { note.textContent = 'Road routing is temporarily unavailable; showing the direct pickup-to-drop-off connection. Live driver GPS and traffic are not included.'; });
         } else fitRoute();
