@@ -37,6 +37,6 @@ jobs:
           node --check apps/company/public/driver-admin.js
       - name: Type-check new Supabase Edge Functions
         run: |
-          deno check supabase/functions/customer-settings/index.ts
-          deno check supabase/functions/driver-documents/index.ts
-          deno check supabase/functions/driver-application-notify/index.ts
+          deno check --node-modules-dir=auto supabase/functions/customer-settings/index.ts
+          deno check --node-modules-dir=auto supabase/functions/driver-documents/index.ts
+          deno check --node-modules-dir=auto supabase/functions/driver-application-notify/index.ts
