@@ -28,7 +28,10 @@ begin
 
   if not found then return false; end if;
   if v_payment.status = 'complete' then
-    return v_payment.provider_reference = p_reference;
+    return v_payment.provider_reference = p_reference
+       and v_payment.currency = p_currency
+       and round(v_payment.amount * 100)::bigint = p_amount_cents
+       and v_payment.raw_itn ->> 'transaction_id' = p_paystack_transaction_id;
   end if;
   if v_payment.status <> 'pending'
      or v_payment.currency <> 'ZAR'
