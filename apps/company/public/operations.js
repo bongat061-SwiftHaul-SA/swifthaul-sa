@@ -97,6 +97,11 @@ if (app === 'driver' || app === 'company') {
       order.paid_at ? 'Paid' : 'Payment pending'
     ].filter(Boolean).join(' · ');
     card.append(title, route, summary);
+    if(order.assistance_requested){
+      const assistance=document.createElement('p');
+      assistance.textContent='Customer requested handling assistance · '+Number(order.assistance_minutes||0)+' min · '+money((Number(order.assistance_fee_cents)||0)/100)+' · '+String(order.assistance_status||'pending confirmation').replaceAll('_',' ');
+      card.append(assistance);
+    }
     const fullMap=document.createElement('a');fullMap.className='open-booking-map';fullMap.textContent='Open full-screen tracking map ↗';
     fullMap.href='map.html';
   fullMap.addEventListener('click',()=>{try{sessionStorage.setItem('swiftHaulMapContext',JSON.stringify({waybill:order.waybill,pickup:order.pickup,dropoff:order.dropoff,status:order.status||'Booking route',pickupLat:order.pickup_latitude,pickupLng:order.pickup_longitude,dropoffLat:order.dropoff_latitude,dropoffLng:order.dropoff_longitude}));}catch{} });card.append(fullMap);
