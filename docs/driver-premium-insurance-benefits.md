@@ -45,9 +45,10 @@ Do not activate any policy record or advertise guaranteed cover until the insure
 ## Deployment and testing
 
 1. Apply `20261107220000_driver_premium_insurance_benefits.sql` in the intended Supabase environment.
-2. Deploy `driver-insurance-status`.
-3. Configure the insurer/policy integration and populate `driver_insurance_policies` only with confirmed policy details.
-4. Test inactive accounts, first monthly payment, second consecutive monthly payment, monthly lapse over seven days, yearly upfront payment, expired membership, suspended policy and active insurer policy.
-5. Confirm that no UI or API response describes a driver as insured when no active insurer policy is recorded.
+2. Deploy `driver-premium`, `driver-membership-checkout`, `driver-insurance-status` and the updated `payfast-itn` function. Configure PayFast sandbox merchant credentials and `DRIVER_APP_URL`.
+3. Confirm the PayFast notification URL reaches the updated `payfast-itn` endpoint; membership payments use `SH-MEMBER-PF-<membership UUID>` references and the existing verified membership activation RPC.
+4. Configure the insurer/policy integration and populate `driver_insurance_policies` only with confirmed policy details.
+5. Test inactive accounts, first monthly payment, second consecutive monthly payment, monthly lapse over seven days, yearly upfront payment, expired membership, suspended policy and active insurer policy.
+6. Confirm that no UI or API response describes a driver as insured when no active insurer policy is recorded.
 
 No production migration, Edge Function deployment, insurer integration or policy activation is performed by this code change.
