@@ -27,7 +27,8 @@ Deno.serve(async(req:Request)=>{
  if(!["id_document","proof_of_address","bank_confirmation","drivers_licence","vehicle_document"].includes(type)||!(file instanceof File))return reply(400,{error:"valid_document_and_file_required"});
  if(!allowed.has(file.type)||file.size<1||file.size>10485760)return reply(413,{error:"file_must_be_pdf_or_image_up_to_10mb"});
  if(isDriver&&owner!==a.user.id)return reply(403,{error:"document_owner_mismatch"});
- const {data:driver}=await admin.from("driver_profiles").select("user_id").eq("user_id",owner).maybeSingle();
+ const {data:driver,error:driverError}=await admin.from("driver_profiles").select("user_id").eq("user_id",owner).maybeSingle();
+ if(driverError)return reply(500,{error:"driver_application_lookup_failed"});
  if(!driver)return reply(404,{error:"driver_application_not_found"});
  const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,"_").slice(-100)||"document",path=owner+"/"+type+"/"+crypto.randomUUID()+"-"+safeName;
  const {error:up}=await admin.storage.from("driver-application-documents").upload(path,new Uint8Array(await file.arrayBuffer()),{contentType:file.type,upsert:false});
