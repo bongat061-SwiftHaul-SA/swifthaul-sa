@@ -94,7 +94,7 @@ Deno.serve(async (req: Request) => {
     headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       email: user.email,
-      amount: String(amount),
+      amount,
       currency: "ZAR",
       reference,
       callback_url: callbackUrl,
