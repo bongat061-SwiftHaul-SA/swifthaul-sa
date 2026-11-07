@@ -9,10 +9,10 @@ window.renderDeliveryMap = (element, route, onTileError = () => {}) => {
     style:{
       version:8,
       sources:{carto:{type:'raster',tiles:[
-        'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-        'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-        'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'
-      ],tileSize:256,attribution:'&copy; OpenStreetMap contributors &copy; CARTO'}},
+        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+      ],tileSize:256,attribution:'&copy; OpenStreetMap contributors'}},
       layers:[{id:'carto-voyager',type:'raster',source:'carto'}]
     },
     center:coords[0],zoom:12,scrollZoom:false,attributionControl:true
