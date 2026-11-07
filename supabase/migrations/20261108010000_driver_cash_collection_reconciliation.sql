@@ -428,7 +428,7 @@ end;
 $$;
 drop trigger if exists guard_driver_payout_cash_liability on public.driver_payout_requests;
 create trigger guard_driver_payout_cash_liability
-before insert or update of status on public.driver_payout_requests
+before insert or update on public.driver_payout_requests
 for each row execute function public.guard_driver_payout_cash_liability();
 
 revoke all on function public.record_driver_cash_receipt(text,bigint,text,text) from public, anon;
