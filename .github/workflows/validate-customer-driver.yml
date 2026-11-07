@@ -36,6 +36,8 @@ jobs:
           node --input-type=module --check < apps/driver/public/auth.js
           node --input-type=module --check < apps/driver/public/driver-application.js
           node --input-type=module --check < apps/driver/public/premium.js
+          node --input-type=module --check < apps/driver/public/insurance-claims.js
+          node --input-type=module --check < apps/company/public/insurance-claims-admin.js
           node --input-type=module --check < apps/company/public/driver-admin.js
           node --input-type=module --check < apps/company/public/insurance-admin.js
       - name: Type-check customer and driver Supabase Edge Functions
@@ -46,6 +48,7 @@ jobs:
           deno check --node-modules-dir=auto supabase/functions/driver-application-notify/index.ts
           deno check --node-modules-dir=auto supabase/functions/driver-admin/index.ts
           deno check --node-modules-dir=auto supabase/functions/driver-insurance-status/index.ts
+          deno check --node-modules-dir=auto supabase/functions/driver-insurance-claims/index.ts
           deno check --node-modules-dir=auto supabase/functions/driver-insurance-admin/index.ts
           deno check --node-modules-dir=auto supabase/functions/driver-premium/index.ts
           deno check --node-modules-dir=auto supabase/functions/driver-membership-checkout/index.ts
