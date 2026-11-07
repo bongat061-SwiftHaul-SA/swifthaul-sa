@@ -51,3 +51,17 @@ Also configure `RESEND_API_KEY`, `DRIVER_EMAIL_FROM`, `WHATSAPP_ACCESS_TOKEN`, a
 9. Test driver signup, pending-approval login, document uploads, admin document review, email/WhatsApp delivery and approval unlock.
 
 No Supabase migration, Edge Function deployment, merge, Pages publication or production deployment is performed by this branch update.
+
+
+## Goods-in-transit protection and optional handling (draft terms)
+
+The customer booking form now requires an explicit acknowledgement checkbox linked to the goods-in-transit and optional-handling terms. The checkbox is enforced in the browser before the booking request is sent. The terms explain the proposed R50,000 per-waybill maximum, the intended active-dispatch custody period, exclusions outside dispatch custody, prompt damage reporting, and separately quoted loading/unloading assistance. The acknowledgement expressly preserves non-excludable consumer rights.
+
+Suggested pilot assistance prices shown in the draft terms:
+- Van: one helper, first 30 minutes R180; each additional 30 minutes R100.
+- Truck: two helpers, first 30 minutes R350; each additional 30 minutes R180.
+- Bike: no lifting assistance included.
+
+These are provisional commercial assumptions, not verified market tariffs. Final prices should be tested against driver/helper pay, travel time, waiting time, labour compliance, VAT treatment and operating costs. The customer must receive and accept the exact assistance scope and fee before dispatch. Stairs, long carries, heavy/oversized goods, equipment, dismantling and assembly require a separate quote.
+
+**Production gate:** the R50,000 protection is draft customer-facing wording only. Do not represent cover as active until an insurer has issued the policy, SwiftHaul has confirmed the insured party/interest, per-waybill limit, declared-value process, excess, exclusions, custody start/end, claims deadlines, subcontractor/driver cover and claims procedure. South African legal review is required, especially to ensure the terms do not purport to exclude statutory consumer rights or liability for the company's negligence. No migration, deployment or production publication is included in this change.
