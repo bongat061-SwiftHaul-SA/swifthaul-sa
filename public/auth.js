@@ -50,6 +50,15 @@ async function validateAccount(session) {
   if (!user || user.role !== 'customer') throw new Error('This account is not registered as a customer.');
   if (user.accountStatus !== 'active') throw new Error('Your customer account is not active. Contact SwiftHaul support.');
   currentUser = user;
+  // Send customer welcome email only after authenticated session and customer role validation.
+  // This also covers first sign-in after email confirmation and social signup completion.
+  if (session?.access_token) {
+    const { data: welcomeResult, error: welcomeError } = await supabase.functions.invoke('customer-welcome-notify', {
+      body: {}, headers: { Authorization: 'Bearer ' + session.access_token }
+    });
+    if (welcomeError) console.warn('Customer welcome email pending:', welcomeError.message);
+    else if (welcomeResult?.success !== true) console.warn('Customer welcome email was not delivered yet.');
+  }
   document.querySelectorAll('[data-user-name]').forEach(el => { el.textContent = user.name || user.email || 'Your account'; });
   document.body.dataset.guestPreview = 'false';
   document.getElementById('guest-banner').hidden = true;

@@ -25,19 +25,39 @@ jobs:
           deno-version: v2.x
       - name: Check customer JavaScript
         run: |
-          node --check public/customer.js
-          node --check public/cargo-estimator.js
-          node --check public/location-picker.js
-          node --check public/map-utils.js
-          node --check public/settings.js
+          node --input-type=module --check < public/auth.js
+          node --input-type=module --check < public/customer.js
+          node --input-type=module --check < public/cargo-estimator.js
+          node --input-type=module --check < public/location-picker.js
+          node --input-type=module --check < public/map-utils.js
+          node --input-type=module --check < public/settings.js
       - name: Check driver application JavaScript
         run: |
-          node --check apps/driver/public/auth.js
-          node --check apps/driver/public/driver-application.js
-          node --check apps/company/public/driver-admin.js
-      - name: Type-check new Supabase Edge Functions
+          node --input-type=module --check < apps/driver/public/auth.js
+          node --input-type=module --check < apps/driver/public/driver-application.js
+          node --input-type=module --check < apps/driver/public/premium.js
+          node --input-type=module --check < apps/driver/public/insurance-claims.js
+          node --input-type=module --check < apps/driver/public/cash-management.js
+          node --input-type=module --check < apps/company/public/cash-reconciliation.js
+          node --input-type=module --check < apps/driver/public/live-location.js
+          node --input-type=module --check < apps/driver/public/section-pages.js
+          node --input-type=module --check < apps/company/public/section-pages.js
+          node --input-type=module --check < apps/company/public/insurance-admin.js
+          node --input-type=module --check < apps/company/public/insurance-claims-admin.js
+          node --input-type=module --check < apps/company/public/driver-admin.js
+          node --input-type=module --check < apps/company/public/insurance-admin.js
+      - name: Type-check customer and driver Supabase Edge Functions
         run: |
           deno check --node-modules-dir=auto supabase/functions/customer-settings/index.ts
           deno check --node-modules-dir=auto supabase/functions/customer-welcome-notify/index.ts
           deno check --node-modules-dir=auto supabase/functions/driver-documents/index.ts
           deno check --node-modules-dir=auto supabase/functions/driver-application-notify/index.ts
+          deno check --node-modules-dir=auto supabase/functions/driver-admin/index.ts
+          deno check --node-modules-dir=auto supabase/functions/driver-insurance-status/index.ts
+          deno check --node-modules-dir=auto supabase/functions/driver-insurance-claims/index.ts
+          deno check --node-modules-dir=auto supabase/functions/driver-location/index.ts
+          deno check --node-modules-dir=auto supabase/functions/driver-insurance-admin/index.ts
+          deno check --node-modules-dir=auto supabase/functions/driver-cash-operations/index.ts
+          deno check --node-modules-dir=auto supabase/functions/driver-premium/index.ts
+          deno check --node-modules-dir=auto supabase/functions/driver-membership-checkout/index.ts
+          deno check --node-modules-dir=auto supabase/functions/payfast-itn/index.ts

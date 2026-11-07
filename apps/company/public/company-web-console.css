@@ -1,0 +1,50 @@
+/* SwiftHaul Company — professional operations website layout */
+body[data-app="company"]{background:#f5f7f8;color:#182a25}
+body[data-app="company"] #workspace>.topbar{position:sticky;top:0;z-index:950;background:#fff;border-bottom:1px solid #e5eaeb;padding:16px clamp(20px,3vw,44px);box-shadow:0 4px 18px #132a2008}
+body[data-app="company"] .page{max-width:none;width:100%;margin:0;padding:34px clamp(22px,3vw,48px) 70px;display:grid;grid-template-columns:224px minmax(0,1fr);column-gap:34px;align-items:start}
+body[data-app="company"] .page-heading{grid-column:2;grid-row:1;display:flex;align-items:end;margin:0 0 22px;padding:2px 0 20px;border-bottom:1px solid #e2e8e7}
+body[data-app="company"] .page-heading h1{font-size:clamp(30px,3vw,40px);letter-spacing:-1.5px;margin:8px 0 0;line-height:1.13}
+body[data-app="company"] .page-heading>.subtle{max-width:390px;margin:0 0 3px}
+body[data-app="company"] .section-links{grid-column:1;grid-row:1 / span 12;position:sticky;top:94px;align-self:start;display:flex;flex-direction:column;gap:5px;padding:15px 11px;margin:0;border:1px solid #e5ebea;border-radius:17px;background:#fff;box-shadow:0 8px 24px #152b2108}
+body[data-app="company"] .section-links:before{content:"WORKSPACE";display:block;padding:4px 10px 12px;color:#82918b;font-size:9px;font-weight:850;letter-spacing:1.6px}
+body[data-app="company"] .section-links a{display:flex;align-items:center;min-height:40px;padding:10px 12px;border-radius:10px;color:#53665e;font-size:11px;font-weight:700;text-decoration:none}
+body[data-app="company"] .section-links a:first-child,body[data-app="company"] .section-links a:hover,body[data-app="company"] .section-links a:focus{background:#eaf2ec;color:#15583f}
+body[data-app="company"] .stats{grid-column:2;grid-row:2;gap:14px;margin:0 0 18px}
+body[data-app="company"] .stat{padding:20px 22px;border:1px solid #e5ebea;border-radius:15px;box-shadow:0 5px 18px #183b2806}
+body[data-app="company"] .stat strong{font-size:29px;color:#173d31}
+body[data-app="company"] .workspace-grid{grid-column:2;grid-row:3;gap:18px}
+body[data-app="company"] .page>section.panel{grid-column:2;margin-top:18px!important;padding:24px;border:1px solid #e3e9e8;border-radius:16px;background:#fff;box-shadow:0 6px 20px #183b2807}
+body[data-app="company"] .page>section.panel h2,body[data-app="company"] .workspace-grid .panel h2{font-size:16px;font-weight:800}
+body[data-app="company"] .workspace-grid>.panel,body[data-app="company"] .workspace-grid aside>.panel{padding:23px;border:1px solid #e3e9e8;border-radius:16px;background:#fff;box-shadow:0 6px 20px #183b2807}
+body[data-app="company"] #dispatches{overflow:hidden}
+body[data-app="company"] #dispatches .table-wrap{border:1px solid #e8edeb;border-radius:11px}
+body[data-app="company"] table th{background:#f7f9f8;white-space:nowrap}
+body[data-app="company"] table td{padding:22px 10px}
+body[data-app="company"] #account-details{padding:20px 8px}
+body[data-app="company"] #financial-content{gap:14px}
+body[data-app="company"] #financial-content>.panel{border-radius:13px;background:#f8faf8}
+body[data-app="company"] button,body[data-app="company"] .primary{border-radius:10px}
+body[data-app="company"] .footer{padding:22px clamp(22px,3vw,48px);background:#fff;border-top:1px solid #e5eaeb}
+@media(max-width:1050px){
+ body[data-app="company"] .page{grid-template-columns:190px minmax(0,1fr);column-gap:20px;padding:26px 20px 60px}
+ body[data-app="company"] .page-heading{display:block}
+ body[data-app="company"] .page-heading>.subtle{margin-top:10px}
+ body[data-app="company"] .stats{gap:9px}
+ body[data-app="company"] .stat{padding:16px}
+}
+@media(max-width:760px){
+ body[data-app="company"] #workspace>.topbar{padding:14px 16px}
+ body[data-app="company"] .page{display:block;padding:20px 14px 48px}
+ body[data-app="company"] .page-heading{display:block;padding:0 3px 16px;margin-bottom:14px}
+ body[data-app="company"] .page-heading h1{font-size:30px}
+ body[data-app="company"] .section-links{position:sticky;top:61px;z-index:80;display:flex;flex-direction:row;overflow-x:auto;gap:6px;padding:9px;margin:0 0 15px;white-space:nowrap;scrollbar-width:none}
+ body[data-app="company"] .section-links:before{display:none}
+ body[data-app="company"] .section-links a{flex:0 0 auto;min-height:36px;padding:9px 11px}
+ body[data-app="company"] .stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:0 0 14px}
+ body[data-app="company"] .stat{padding:12px 9px}
+ body[data-app="company"] .stat span{font-size:9px;line-height:1.4}
+ body[data-app="company"] .stat strong{font-size:21px;margin-top:9px}
+ body[data-app="company"] .workspace-grid{grid-template-columns:1fr;gap:12px}
+ body[data-app="company"] .workspace-grid>.panel,body[data-app="company"] .workspace-grid aside>.panel,body[data-app="company"] .page>section.panel{padding:18px;border-radius:14px;margin-top:13px!important}
+ body[data-app="company"] .footer{padding:18px 14px}
+}

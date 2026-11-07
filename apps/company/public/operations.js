@@ -84,6 +84,7 @@ if (app === 'driver' || app === 'company') {
   function render(order) {
     const card = document.createElement('article');
     card.className = 'order';
+  card.dataset.deliveryStatus = order.status || '';
     const title = document.createElement('h3');
     title.textContent = order.waybill;
     const route = document.createElement('p');
@@ -96,6 +97,146 @@ if (app === 'driver' || app === 'company') {
       order.paid_at ? 'Paid' : 'Payment pending'
     ].filter(Boolean).join(' · ');
     card.append(title, route, summary);
+    if(order.assistance_requested){
+      const assistance=document.createElement('p');
+      assistance.textContent='Customer requested handling assistance · '+Number(order.assistance_minutes||0)+' min · '+money((Number(order.assistance_fee_cents)||0)/100)+' · '+String(order.assistance_status||'pending confirmation').replaceAll('_',' ');
+      card.append(assistance);
+      if(order.assistance_status==='requested_pending_dispatch_confirmation'){
+        const actions=document.createElement('div');actions.className='order-actions';
+        for(const [decision,label] of [['accepted','Confirm assistance'],['declined','Decline assistance']]){
+          const control=document.createElement('button');control.type='button';control.textContent=label;
+          control.addEventListener('click',async()=>{
+            control.disabled=true;
+            try{
+              const result=await invoke('POST',{action:'assistance_decision',waybill:order.waybill,decision});
+              order.assistance_status=result.assistance_status;
+              assistance.textContent='Customer requested handling assistance · '+Number(order.assistance_minutes||0)+' min · '+money((Number(order.assistance_fee_cents)||0)/100)+' · '+order.assistance_status;
+              actions.remove();
+            }catch(error){message.textContent=error.message||'Unable to update assistance request.';control.disabled=false;}
+          });
+          actions.append(control);
+        }
+        card.append(actions);
+      }
+    }
+    const fullMap=document.createElement('a');fullMap.className='open-booking-map';fullMap.textContent='Open full-screen tracking map ↗';
+    fullMap.href='map.html';
+  fullMap.addEventListener('click',()=>{try{sessionStorage.setItem('swiftHaulMapContext',JSON.stringify({waybill:order.waybill,pickup:order.pickup,dropoff:order.dropoff,status:order.status||'Booking route',pickupLat:order.pickup_latitude,pickupLng:order.pickup_longitude,dropoffLat:order.dropoff_latitude,dropoffLng:order.dropoff_longitude}));}catch{} });card.append(fullMap);
+
+    // Company dispatch tracking preview: trip details first, full-width planned route map second.
+    if (app === 'company' && ['assigned', 'accepted', 'picked_up', 'in_transit'].includes(order.status)) {
+      const pickup = { lat: Number(order.pickup_latitude), lng: Number(order.pickup_longitude) };
+      const dropoff = { lat: Number(order.dropoff_latitude), lng: Number(order.dropoff_longitude) };
+      const validPoint = point => Number.isFinite(point.lat) && Number.isFinite(point.lng) &&
+        Math.abs(point.lat) <= 90 && Math.abs(point.lng) <= 180 && !(point.lat === 0 && point.lng === 0);
+      const tracking = document.createElement('section');
+      tracking.className = 'company-tracking';
+      const head = document.createElement('div');
+      head.className = 'company-tracking-head';
+      const label = document.createElement('strong');
+      label.textContent = 'Delivery route';
+      const state = document.createElement('span');
+      state.className = 'company-tracking-state';
+      state.textContent = statusLabel(order.status);
+      head.append(label, state);
+
+      const details = document.createElement('div');
+      details.className = 'company-trip-details';
+      const stop = (kind, caption, value) => {
+        const item = document.createElement('div');
+        item.className = 'company-trip-stop';
+        const name = document.createElement('span');
+        name.textContent = caption;
+        const address = document.createElement('strong');
+        address.textContent = value || 'Location not supplied';
+        item.append(name, address);
+        return item;
+      };
+      details.append(stop('pickup', 'PICKUP', order.pickup), stop('dropoff', 'DROP-OFF', order.dropoff));
+      const note = document.createElement('p');
+      note.className = 'company-tracking-note';
+      note.textContent = 'Planned road route preview · this view does not represent live driver GPS or live traffic.';
+      const stage = document.createElement('div');
+      stage.className = 'company-tracking-map-stage';
+      const mapElement = document.createElement('div');
+      mapElement.className = 'company-tracking-map';
+      mapElement.setAttribute('role', 'region');
+      mapElement.setAttribute('aria-label', 'Planned delivery route map');
+      const tools = document.createElement('div');
+      tools.className = 'company-tracking-map-tools';
+      const recenter = document.createElement('button');
+      recenter.type = 'button';
+      recenter.textContent = '◎  Fit route';
+      tools.append(recenter);
+      const legend = document.createElement('div');
+      legend.className = 'company-tracking-legend';
+      legend.innerHTML = '<span><i class="company-pickup-dot"></i> Pickup</span><span><i class="company-dropoff-dot"></i> Drop-off</span>';
+      stage.append(mapElement, tools, legend);
+      tracking.append(head, details, note, stage);
+      card.append(tracking);
+
+      let map = null;
+      let routeLine = null;
+      const points = [];
+      if (validPoint(pickup)) points.push([pickup.lat, pickup.lng]);
+      if (validPoint(dropoff)) points.push([dropoff.lat, dropoff.lng]);
+      if (window.maplibregl && points.length) {
+        map = new maplibregl.Map({
+          container: mapElement,
+          style: {
+            version: 8,
+            sources: { carto: { type: 'raster', tiles: [
+              'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+              'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+              'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'
+            ], tileSize: 256, attribution: '&copy; OpenStreetMap contributors &copy; CARTO' } },
+            layers: [{ id: 'carto-voyager', type: 'raster', source: 'carto' }]
+          },
+          center: points[0].slice().reverse(), zoom: 12,
+          attributionControl: true
+        });
+        map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+        const marker = (point, color, title) => {
+          const node = document.createElement('div');
+          node.style.cssText = 'width:18px;height:18px;border:4px solid #fff;border-radius:50%;background:' + color + ';box-shadow:0 1px 8px #0005';
+          new maplibregl.Marker({ element: node }).setLngLat([point[1], point[0]]).setPopup(new maplibregl.Popup({ offset: 12 }).setText(title)).addTo(map);
+        };
+        if (validPoint(pickup)) marker([pickup.lat, pickup.lng], '#176b52', 'Pickup');
+        if (validPoint(dropoff)) marker([dropoff.lat, dropoff.lng], '#e39b35', 'Drop-off');
+        const directFeature = { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: points.map(([lat,lng]) => [lng,lat]) } };
+        map.on('load', () => {
+          map.addSource('dispatch-route', { type: 'geojson', data: directFeature });
+          map.addLayer({ id: 'dispatch-route-line', type: 'line', source: 'dispatch-route', paint: { 'line-color': '#176b52', 'line-width': 5, 'line-opacity': .85, 'line-dasharray': [2,2] } });
+          if (points.length === 2) {
+            fetch('https://router.project-osrm.org/route/v1/driving/' +
+              pickup.lng + ',' + pickup.lat + ';' + dropoff.lng + ',' + dropoff.lat +
+              '?overview=full&geometries=geojson&steps=false', { headers: { Accept: 'application/json' } })
+              .then(response => { if (!response.ok) throw new Error('Route unavailable'); return response.json(); })
+              .then(data => {
+                const road = data.routes?.[0];
+                if (!road || !map) return;
+                map.getSource('dispatch-route').setData({ type: 'Feature', properties: {}, geometry: road.geometry });
+                map.setPaintProperty('dispatch-route-line', 'line-dasharray', [1,0]);
+                map.setPaintProperty('dispatch-route-line', 'line-width', 6);
+                map.fitBounds([[pickup.lng,pickup.lat],[dropoff.lng,dropoff.lat]], { padding: 52, maxZoom: 15 });
+              }).catch(() => { note.textContent = 'Road routing is temporarily unavailable; showing the direct pickup-to-drop-off connection. Live driver GPS and traffic are not included.'; });
+          }
+          fitRoute();
+        });
+        const fitRoute = () => {
+          if (!map || !points.length) return;
+          if (points.length > 1) map.fitBounds(points.map(([lat,lng]) => [lng,lat]), { padding: 52, maxZoom: 15 });
+          else map.setCenter([points[0][1], points[0][0]]).setZoom(14);
+        };
+        recenter.addEventListener('click', fitRoute);
+        map.on('error', () => { note.textContent = 'Map tiles could not be loaded. Check your connection; pickup and drop-off details remain available.'; });
+      } else {
+        mapElement.hidden = true;
+        stage.classList.add('company-tracking-map-unavailable');
+        note.textContent = 'Map coordinates are not available for this delivery yet. The pickup and drop-off details remain visible above.';
+        recenter.disabled = true;
+      }
+    }
     for (const [kind,label] of [['pickup','Pickup'],['dropoff','Drop-off']]) {
       const plus = order[kind + '_plus_code'];
       const lat = order[kind + '_latitude'], lng = order[kind + '_longitude'];

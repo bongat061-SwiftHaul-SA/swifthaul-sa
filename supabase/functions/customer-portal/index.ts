@@ -107,7 +107,7 @@ Deno.serve(async (req: Request) => {
 
   if (req.method === "GET") {
     const { data, error } = await admin.from("customer_bookings")
-      .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,wallet_refund_used,wallet_promo_used,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,status")
+      .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,wallet_refund_used,wallet_promo_used,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,status")
       .eq("owner_hash", owner).order("created_at", { ascending: false }).limit(100);
     if (error) return reply(500, { error: "booking_list_failed" });
     const { data: wallet, error: walletError } = await admin.from("wallet_accounts")
@@ -166,6 +166,7 @@ Deno.serve(async (req: Request) => {
         id, owner_hash: owner, pickup: body.pickup.trim(), dropoff: body.dropoff.trim(),
         vehicle: load.vehicle, distance_meters: route.distance, price_band: band, price: cents / 100,
         route, load, distance_fee: distanceFee,
+        expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
       }).select("id,expires_at").single();
       if (error || !quote) return reply(503, { error: "quote_save_failed" });
       return reply(200, { quote: { id: quote.id, expires_at: quote.expires_at, price: cents / 100, band, vehicle: load.vehicle, route, load, distanceFee } });
@@ -175,18 +176,42 @@ Deno.serve(async (req: Request) => {
   }
 
   if (body.action !== "book" || typeof body.quote_id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.quote_id) ||
+      body.terms_accepted !== true || body.terms_version !== "2026-11-07-dispatch-cover-draft" ||
       typeof body.recipient !== "string" || !body.recipient.trim() || body.recipient.length > 500)
     return reply(400, { error: "calculate_a_quote_and_enter_recipient" });
   const { data: existing } = await admin.from("customer_bookings")
-    .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at")
+    .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status")
     .eq("quote_id", body.quote_id).eq("owner_hash", owner).maybeSingle();
   if (existing) return reply(200, { order: existing });
   const { data: quote, error: quoteError } = await admin.from("delivery_quotes")
-    .select("id,pickup,dropoff,vehicle,distance_meters,price_band,price,load,distance_fee")
-    .eq("id", body.quote_id).eq("owner_hash", owner).gt("expires_at", new Date().toISOString()).not("load", "is", null).maybeSingle();
-  if (quoteError || !quote) return reply(409, { error: "quote_expired_recalculate_route" });
+    .select("id,pickup,dropoff,vehicle,distance_meters,price_band,price,load,distance_fee,expires_at")
+    .eq("id", body.quote_id).eq("owner_hash", owner).maybeSingle();
+  if (quoteError) return reply(503, { error: "quote_lookup_failed" });
+  if (!quote) return reply(409, { error: "quote_not_found_recalculate_route" });
+  if (Date.parse(quote.expires_at) <= Date.now()) return reply(409, { error: "quote_expired_recalculate_route" });
+  if (!quote.load) return reply(409, { error: "quote_incomplete_recalculate_route" });
+
+  const { error: termsAcceptanceError } = await admin.from("customer_booking_terms_acceptances").upsert({
+    owner_id: owner,
+    quote_id: quote.id,
+    terms_version: body.terms_version,
+  }, { onConflict: "owner_id,quote_id,terms_version", ignoreDuplicates: true });
+  if (termsAcceptanceError) {
+    console.error("Customer terms acceptance could not be recorded", termsAcceptanceError.message);
+    return reply(503, { error: "terms_acceptance_record_failed" });
+  }
 
   const distance = Number(quote.distance_meters);
+  const assistanceRequested = body.assistance_requested === true;
+  const assistanceMinutes = assistanceRequested ? Number(body.assistance_minutes) : 0;
+  const assistanceFeeCents = assistanceRequested ? Number(body.assistance_fee_cents) : 0;
+  if (assistanceRequested) {
+    if (!Number.isInteger(assistanceMinutes) || assistanceMinutes < 30 || assistanceMinutes > 120 || assistanceMinutes % 30 !== 0)
+      return reply(400, { error: "choose_assistance_duration_between_30_and_120_minutes" });
+    if (quote.vehicle !== "van" && quote.vehicle !== "truck") return reply(400, { error: "assistance_requires_van_or_truck" });
+    const expectedFee = (quote.vehicle === "van" ? 18000 : 35000) + ((assistanceMinutes / 30) - 1) * (quote.vehicle === "van" ? 10000 : 18000);
+    if (assistanceFeeCents !== expectedFee) return reply(400, { error: "assistance_quote_changed_recalculate_and_review" });
+  } else if ((body.assistance_minutes ?? 0) !== 0 || (body.assistance_fee_cents ?? 0) !== 0) return reply(400, { error: "unexpected_assistance_amount" });
   const method = body.payment_method ?? "dispatch";
   if (method !== "cash" && method !== "dispatch" && method !== "wallet") return reply(400, { error: "choose_cash_dispatch_or_wallet_payment" });
   if (method === "cash" && distance >= 12000) return reply(400, { error: "cash_available_only_below_12km" });
@@ -199,6 +224,7 @@ Deno.serve(async (req: Request) => {
     offer = Number(body.counter_offer);
     offerStatus = "pending";
   }
+  if (method === "wallet" && assistanceRequested) return reply(400, { error: "wallet_payment_not_available_with_optional_assistance_yet_choose_dispatch_or_cash" });
   if (method === "wallet" && offer !== null) return reply(400, { error: "wallet_payment_not_available_with_counteroffers" });
   let pickup, dropoff;
   try { pickup = parseLocation(body, "pickup"); dropoff = parseLocation(body, "dropoff"); }
@@ -218,6 +244,8 @@ Deno.serve(async (req: Request) => {
     distance_meters: distance, price_band: quote.price_band, quote_id: quote.id,
     load: quote.load, distance_fee: quote.distance_fee, scheduled_at: scheduled,
     return_address: returnAddress || null, return_at: returnAt, payment_method: method,
+    assistance_requested: assistanceRequested, assistance_minutes: assistanceMinutes,
+    assistance_fee_cents: assistanceFeeCents, assistance_status: assistanceRequested ? "requested_pending_dispatch_confirmation" : "not_requested",
     counter_offer: offer, counter_offer_status: offerStatus,
     pickup_latitude: pickup.latitude, pickup_longitude: pickup.longitude, pickup_plus_code: pickup.plus_code, pickup_geohash: pickup.geohash,
     dropoff_latitude: dropoff.latitude, dropoff_longitude: dropoff.longitude, dropoff_plus_code: dropoff.plus_code, dropoff_geohash: dropoff.geohash,
@@ -259,7 +287,7 @@ Deno.serve(async (req: Request) => {
   const { data: order, error: insertError } = await admin.from("customer_bookings").insert(insert).select("*").single();
   if (insertError) {
     const { data: retry } = await admin.from("customer_bookings")
-      .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at")
+      .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status")
       .eq("quote_id", body.quote_id).eq("owner_hash", owner).maybeSingle();
     if (retry) return reply(200, { order: retry });
     console.error("Customer booking insert failed", insertError.message);

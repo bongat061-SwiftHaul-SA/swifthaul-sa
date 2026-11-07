@@ -67,6 +67,23 @@ function showWorkspace(user) {
     if (!verification) { verification = document.createElement('p'); verification.id = 'driver-verification-status'; accountPanel.append(verification); }
     verification.textContent = 'Verification status: ' + (user.driverProfile?.verification_status || 'pending');
   }
+  if (app === 'driver') {
+    let approval = document.getElementById('driver-approval-banner');
+    if (!approval) {
+      approval = document.createElement('section');
+      approval.id = 'driver-approval-banner';
+      approval.className = 'driver-approval-banner';
+      approval.setAttribute('role','status');
+      const page = workspace.querySelector('main.page');
+      page?.insertBefore(approval, page.querySelector('.section-links'));
+    }
+    const verification = user.driverProfile?.verification_status || 'pending';
+    approval.hidden = verification === 'approved';
+    approval.textContent = verification === 'approved'
+      ? '' : 'APPLICATION PENDING APPROVAL — You can sign in and upload your documents, but delivery offers and going online remain locked until SwiftHaul verifies your application.';
+    const online = document.getElementById('driver-online-toggle');
+    if (online && verification !== 'approved') { online.checked = false; online.disabled = true; }
+  }
   authScreen.hidden = true;
   workspace.hidden = false;
   document.dispatchEvent(new CustomEvent('account-ready', { detail: user }));
@@ -74,6 +91,7 @@ function showWorkspace(user) {
 
 async function validateAccount(session) {
   const { data, error } = await supabase.functions.invoke('account-me', {
+    method: 'GET',
     headers: { Authorization: 'Bearer ' + session.access_token }
   });
   if (error) throw new Error(error.message || 'Unable to validate your account.');
@@ -87,6 +105,17 @@ async function validateAccount(session) {
     throw new Error('Company access is invitation-only. Please contact your administrator.');
   }
   if (user.accountStatus !== 'active') throw new Error('Your account is not active. Please contact SwiftHaul support.');
+  if (app === 'driver' && session?.access_token) {
+    // Only run after an authenticated session exists and account-me validates the driver.
+    // With email confirmation enabled, this first runs on sign-in after confirmation.
+    const { data: notificationResult, error: notificationError } =
+      await supabase.functions.invoke('driver-application-notify', {
+        body: {},
+        headers: { Authorization: 'Bearer ' + session.access_token }
+      });
+    if (notificationError) console.warn('Driver onboarding notifications pending:', notificationError.message);
+    else if (notificationResult?.success !== true) console.warn('Driver onboarding notifications were not completed.');
+  }
   showWorkspace(user);
 }
 

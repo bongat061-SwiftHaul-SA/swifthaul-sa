@@ -1,0 +1,7 @@
+/* Separate, addressable Driver workspace pages */
+body[data-app="driver"] .section-links a.is-active{background:#176b50;color:#fff}
+body[data-app="driver"] .page [hidden]{display:none!important}
+body[data-app="driver"] .driver-earnings-note{margin-top:0;border-left:4px solid #176b50}
+body[data-app="driver"] .driver-earnings-note p{max-width:760px;line-height:1.75;color:#53665e}
+body[data-app="driver"] .page-heading h1{min-height:1.15em}
+@media(max-width:700px){body[data-app="driver"] .driver-earnings-note{margin-top:0}}

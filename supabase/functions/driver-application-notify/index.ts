@@ -17,13 +17,17 @@ Deno.serve(async(req:Request)=>{
  const auth=createClient(url,anon,{auth:{persistSession:false,autoRefreshToken:false}});
  const {data:a,error:ae}=await auth.auth.getUser(token);if(ae||!a.user)return reply(401,{error:"invalid_or_expired_session"});
  const admin=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});
- const {data:p}=await admin.from("user_profiles").select("role,account_status,full_name,phone").eq("id",a.user.id).maybeSingle();
+ const {data:p,error:profileError}=await admin.from("user_profiles").select("role,account_status,full_name,phone").eq("id",a.user.id).maybeSingle();
+ if(profileError){console.error("Driver profile lookup failed",profileError.message);return reply(500,{error:"driver_profile_lookup_failed"});}
  if(!p||p.role!=="driver"||p.account_status!=="active")return reply(403,{error:"active_driver_account_required"});
- const {data:d}=await admin.from("driver_profiles").select("phone,license_number,license_expiry,vehicle_type,vehicle_registration,verification_status").eq("user_id",a.user.id).maybeSingle();
+ const {data:d,error:driverError}=await admin.from("driver_profiles").select("phone,license_number,license_expiry,vehicle_type,vehicle_registration,verification_status").eq("user_id",a.user.id).maybeSingle();
+ if(driverError){console.error("Driver application lookup failed",driverError.message);return reply(500,{error:"driver_application_lookup_failed"});}
  if(!d)return reply(404,{error:"driver_application_not_found"});
- const {data:docs}=await admin.from("driver_documents").select("document_type,review_status").eq("driver_user_id",a.user.id);
+ const {data:docs,error:documentsError}=await admin.from("driver_documents").select("document_type,review_status").eq("driver_user_id",a.user.id);
+ if(documentsError){console.error("Driver documents lookup failed",documentsError.message);return reply(500,{error:"driver_documents_lookup_failed"});}
  const docSummary=(docs||[]).map(x=>x.document_type+":"+x.review_status).join(", ")||"No documents uploaded yet";
- const {data:row}=await admin.from("driver_application_notifications").select("*").eq("driver_user_id",a.user.id).maybeSingle();
+ const {data:row,error:notificationError}=await admin.from("driver_application_notifications").select("*").eq("driver_user_id",a.user.id).maybeSingle();
+ if(notificationError){console.error("Driver notification status lookup failed",notificationError.message);return reply(500,{error:"notification_status_unavailable"});}
  const now=new Date().toISOString();let welcome=!!row?.welcome_email_sent_at,adminEmail=!!row?.admin_email_sent_at,wa=!!row?.admin_whatsapp_sent_at;
  const key=Deno.env.get("RESEND_API_KEY"),from=Deno.env.get("DRIVER_EMAIL_FROM")||"SwiftHaul SA <onboarding@resend.dev>",email=a.user.email||"";
  const appUrl=Deno.env.get("DRIVER_APP_URL")||"https://bongat061-swifthaul-sa.github.io/swifthaul-sa-preview/apps/driver/public/";
@@ -37,6 +41,7 @@ Deno.serve(async(req:Request)=>{
  const waToken=Deno.env.get("WHATSAPP_ACCESS_TOKEN"),phoneId=Deno.env.get("WHATSAPP_PHONE_NUMBER_ID"),recipient=Deno.env.get("WHATSAPP_ADMIN_RECIPIENT")||"27615083880";
  if(waToken&&phoneId&&recipient&&!wa){const message="New SwiftHaul driver application\n"+name+"\n"+email+"\n"+clean(d.phone,30)+"\nVehicle: "+clean(d.vehicle_type,30)+" "+clean(d.vehicle_registration,30)+"\nDocuments: "+docSummary+"\nReview in Company Admin.";
   try{const r=await fetch("https://graph.facebook.com/v22.0/"+phoneId+"/messages",{method:"POST",headers:{"Authorization":"Bearer "+waToken,"Content-Type":"application/json"},body:JSON.stringify({messaging_product:"whatsapp",to:recipient,type:"text",text:{body:message}})});if(!r.ok)throw new Error("whatsapp_provider_"+r.status);wa=true;}catch(e){console.error("Driver WhatsApp alert failed",String(e));}}
- await admin.from("driver_application_notifications").upsert({driver_user_id:a.user.id,welcome_email_sent_at:welcome?(row?.welcome_email_sent_at||now):null,admin_email_sent_at:adminEmail?(row?.admin_email_sent_at||now):null,admin_whatsapp_sent_at:wa?(row?.admin_whatsapp_sent_at||now):null,last_attempt_at:now,updated_at:now});
+ const {error:trackingError}=await admin.from("driver_application_notifications").upsert({driver_user_id:a.user.id,welcome_email_sent_at:welcome?(row?.welcome_email_sent_at||now):null,admin_email_sent_at:adminEmail?(row?.admin_email_sent_at||now):null,admin_whatsapp_sent_at:wa?(row?.admin_whatsapp_sent_at||now):null,last_attempt_at:now,updated_at:now});
+ if(trackingError){console.error("Driver notification tracking failed",trackingError.message);return reply(500,{error:"notification_tracking_failed",welcome_email_sent:welcome,admin_email_sent:adminEmail,admin_whatsapp_sent:wa});}
  return reply(200,{success:true,welcome_email_sent:welcome,admin_email_sent:adminEmail,admin_whatsapp_sent:wa});
 });

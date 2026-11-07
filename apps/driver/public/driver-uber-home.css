@@ -1,0 +1,44 @@
+/* SwiftHaul Driver — mobile-first delivery app refresh */
+:root{--driver-ink:#14251f;--driver-green:#176b50;--driver-lime:#c9df9a;--driver-paper:#f4f6f2}
+body[data-app="driver"]{background:var(--driver-paper);color:var(--driver-ink)}
+body[data-app="driver"] #workspace>.topbar{position:sticky;top:0;z-index:900;background:#fff;border-bottom:1px solid #e4eae4;padding:15px clamp(16px,4vw,52px);box-shadow:0 3px 16px #14251f08}
+body[data-app="driver"] .page{max-width:1180px;padding:30px clamp(16px,4vw,52px) 104px}
+body[data-app="driver"] .page-heading{position:relative;display:block;overflow:hidden;margin:0 0 20px;padding:27px 30px;border-radius:22px;background:linear-gradient(125deg,#123d2e 0%,#176b50 65%,#245d47 100%);color:#fff;box-shadow:0 14px 34px #123d2e20}
+body[data-app="driver"] .page-heading:after{content:"";position:absolute;width:230px;height:230px;right:-65px;top:-105px;border:1px solid #ffffff26;border-radius:50%;box-shadow:0 0 0 28px #ffffff0b,0 0 0 58px #ffffff08}
+body[data-app="driver"] .page-heading .eyebrow{color:var(--driver-lime)}
+body[data-app="driver"] .page-heading h1{position:relative;z-index:1;font-size:clamp(30px,4vw,44px);letter-spacing:-1.8px;margin:9px 0 5px}
+body[data-app="driver"] .page-heading>.subtle{position:relative;z-index:1;max-width:540px;color:#d3e2d8;font-size:13px;margin:0}
+body[data-app="driver"] .section-links{position:sticky;top:70px;z-index:50;display:flex;gap:7px;flex-wrap:nowrap;overflow-x:auto;padding:9px;margin:0 -2px 18px;border:1px solid #e3e9e2;border-radius:15px;background:#ffffffed;backdrop-filter:blur(12px);box-shadow:0 6px 18px #1b33250a;scrollbar-width:none}
+body[data-app="driver"] .section-links::-webkit-scrollbar{display:none}
+body[data-app="driver"] .section-links a{flex:0 0 auto;padding:10px 13px;border-radius:10px;color:#50655a;font-size:11px;font-weight:750;white-space:nowrap}
+body[data-app="driver"] .section-links a:first-child,body[data-app="driver"] .section-links a:focus{background:#e8f1e9;color:#14583f}
+body[data-app="driver"] .stats{gap:12px;margin:0 0 18px}
+body[data-app="driver"] .stat{position:relative;overflow:hidden;padding:18px 20px;border:1px solid #e3e9e2;border-radius:17px;box-shadow:0 5px 18px #183b2807}
+body[data-app="driver"] .stat:after{content:"";position:absolute;right:-20px;bottom:-30px;width:85px;height:85px;border-radius:50%;background:#eaf2e9}
+body[data-app="driver"] .stat span,body[data-app="driver"] .stat strong{position:relative;z-index:1}
+body[data-app="driver"] .stat strong{font-size:clamp(24px,3vw,32px);letter-spacing:-1px;color:#173d31}
+body[data-app="driver"] .workspace-grid{gap:16px}
+body[data-app="driver"] .panel{padding:23px;border:1px solid #e4eae3;border-radius:18px;box-shadow:0 7px 22px #173d3108}
+body[data-app="driver"] .panel h2{font-size:16px;font-weight:800;letter-spacing:-.35px}
+body[data-app="driver"] #dispatches{border-top:3px solid #176b50}
+body[data-app="driver"] #dispatches .empty{background:#f7faf6;border:1px dashed #cbd9cd;border-radius:14px}
+body[data-app="driver"] .accent-panel{background:linear-gradient(145deg,#153f30,#1d654b);border:0;box-shadow:0 12px 26px #153f3022}
+body[data-app="driver"] #availability,body[data-app="driver"] #payouts,body[data-app="driver"] #premium{margin-top:16px!important}
+body[data-app="driver"] #availability label,body[data-app="driver"] #premium label{display:flex;align-items:center;gap:10px}
+body[data-app="driver"] #availability input[type=checkbox],body[data-app="driver"] #premium input[type=checkbox]{width:19px;height:19px;margin:0;accent-color:#176b50}
+body[data-app="driver"] .primary{border-radius:12px;box-shadow:0 5px 12px #176b5020}
+@media(max-width:700px){
+ body[data-app="driver"] #workspace>.topbar{padding:13px 16px}
+ body[data-app="driver"] .page{padding:18px 14px calc(100px + env(safe-area-inset-bottom))}
+ body[data-app="driver"] .page-heading{padding:23px 21px;border-radius:19px}
+ body[data-app="driver"] .page-heading h1{font-size:31px}
+ body[data-app="driver"] .section-links{top:60px;margin-bottom:14px}
+ body[data-app="driver"] .section-links a{padding:10px 12px}
+ body[data-app="driver"] .stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+ body[data-app="driver"] .stat{padding:13px 10px;border-radius:13px}
+ body[data-app="driver"] .stat span{font-size:9px;line-height:1.4}
+ body[data-app="driver"] .stat strong{font-size:21px;margin-top:10px}
+ body[data-app="driver"] .workspace-grid{grid-template-columns:1fr;gap:12px}
+ body[data-app="driver"] .panel{padding:18px;border-radius:16px}
+ body[data-app="driver"] .footer{padding:20px 16px}
+}

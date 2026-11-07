@@ -55,7 +55,7 @@ Deno.serve(async (req: Request) => {
   const merchantId = Deno.env.get("PAYFAST_MERCHANT_ID") || "10000100";
   const passphrase = Deno.env.get("PAYFAST_PASSPHRASE") || "jt7NOE43FZPn";
   if (payload.merchant_id !== merchantId || !payload.signature ||
-      !(payload.m_payment_id?.startsWith("SH-PF-") || payload.m_payment_id?.startsWith("SH-WALLET-PF-")))
+      !(payload.m_payment_id?.startsWith("SH-PF-") || payload.m_payment_id?.startsWith("SH-WALLET-PF-") || payload.m_payment_id?.startsWith("SH-MEMBER-PF-")))
     return response(400, "Invalid merchant or payment reference");
   const expected = signature(entries, passphrase);
   if (!constantTimeEqual(expected, payload.signature.toLowerCase())) return response(400, "Invalid notification signature");
@@ -71,7 +71,8 @@ Deno.serve(async (req: Request) => {
 
   const walletMatch = /^SH-WALLET-PF-([0-9a-f-]{36})$/i.exec(payload.m_payment_id);
   const bookingMatch = /^SH-PF-([0-9a-f-]{36})$/i.exec(payload.m_payment_id);
-  if ((!walletMatch && !bookingMatch) || !payload.pf_payment_id || payload.pf_payment_id.length > 100)
+  const membershipMatch = /^SH-MEMBER-PF-([0-9a-f-]{36})$/i.exec(payload.m_payment_id);
+  if ((!walletMatch && !bookingMatch && !membershipMatch) || !payload.pf_payment_id || payload.pf_payment_id.length > 100)
     return response(400, "Invalid payment identifiers");
   const amount = Number(payload.amount_gross);
   if (payload.payment_status !== "COMPLETE" || !Number.isFinite(amount) || amount < 5)
@@ -81,6 +82,30 @@ Deno.serve(async (req: Request) => {
   if (!url || !service) return response(500, "Payment confirmation service unavailable");
   const admin = createClient(url, service, { auth: { persistSession: false, autoRefreshToken: false } });
 
+  if (membershipMatch) {
+    const membershipId = membershipMatch[1];
+    const { data: membership, error: membershipLookupError } = await admin.from("driver_memberships")
+      .select("id,amount_cents,status,provider_payment_id").eq("id", membershipId).maybeSingle();
+    if (membershipLookupError) return response(503, "Membership payment lookup unavailable");
+    if (!membership) return response(404, "Membership payment reference not found");
+    if (Math.round(Number(membership.amount_cents)) !== Math.round(amount * 100))
+      return response(400, "Membership payment amount does not match");
+    if (membership.status === "active" && membership.provider_payment_id === payload.pf_payment_id)
+      return response(200, "OK");
+    if (membership.status !== "pending" || membership.provider_payment_id)
+      return response(409, "Membership payment is no longer eligible for activation");
+    const { data: applied, error } = await admin.rpc("apply_payfast_driver_membership", {
+      p_membership_id: membershipId,
+      p_pf_payment_id: payload.pf_payment_id,
+      p_amount: amount,
+    });
+    if (error) {
+      console.error("PayFast driver membership confirmation failed", error.message);
+      return response(503, "Membership payment confirmation could not be saved");
+    }
+    if (applied !== true) return response(409, "Membership is no longer eligible for activation");
+    return response(200, "OK");
+  }
   if (walletMatch) {
     const { data: payment, error: lookupError } = await admin.from("wallet_payfast_payments")
       .select("id,amount_cents,status").eq("id", walletMatch[1])
