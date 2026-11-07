@@ -83,9 +83,8 @@ function addOrder(order, prepend = false) {
   });
   if(!order.paid_at&&!order.refunded_at&&!['cancelled','completed'].includes(order.status)){
     if(['pending','assigned'].includes(order.status)){
-      const paystack=document.createElement('button');paystack.type='button';paystack.className='primary';paystack.textContent='Pay online · Paystack';paystack.addEventListener('click',()=>startPaystackCheckout(order,paystack));
-      const pay=document.createElement('button');pay.type='button';pay.textContent='PayFast backup';pay.addEventListener('click',()=>startPayFastCheckout(order,pay));
-      actions.append(paystack,pay);
+       const cardPayment=document.createElement('button');cardPayment.type='button';cardPayment.className='primary';cardPayment.textContent='Pay by Card · Coming soon';cardPayment.disabled=true;cardPayment.title='Secure card payments will be available after payment-provider approval and activation.';
+       actions.append(cardPayment);
     }
     const eft=document.createElement('button');eft.type='button';eft.textContent='EFT payment instructions';eft.addEventListener('click',()=>{
       const box=document.createElement('div');box.className='eft-instructions';
