@@ -28,6 +28,23 @@ create policy driver_cash_deposit_proof_read on storage.objects
 for select to authenticated
 using (bucket_id='driver-cash-deposit-proofs' and (storage.foldername(name))[1]=auth.uid()::text);
 
+drop policy if exists driver_cash_receipt_signature_admin_read on storage.objects;
+create policy driver_cash_receipt_signature_admin_read on storage.objects
+for select to authenticated
+using (
+  bucket_id='driver-cash-receipts'
+  and exists (select 1 from public.user_profiles up
+    where up.id=auth.uid() and up.role='admin' and up.account_status='active')
+);
+drop policy if exists driver_cash_deposit_proof_admin_read on storage.objects;
+create policy driver_cash_deposit_proof_admin_read on storage.objects
+for select to authenticated
+using (
+  bucket_id='driver-cash-deposit-proofs'
+  and exists (select 1 from public.user_profiles up
+    where up.id=auth.uid() and up.role='admin' and up.account_status='active')
+);
+
 -- The current PayFast ITN RPC writes payment_source='payfast'. The linked
 -- database check constraint omitted that value, which would reject the ITN update.
 alter table public.customer_bookings
@@ -146,6 +163,7 @@ begin
     raise exception 'Valid cash receipt details and customer signature are required' using errcode='22023';
   end if;
 
+  perform pg_advisory_xact_lock(hashtextextended(v_driver::text, 0));
   perform pg_advisory_xact_lock(hashtextextended(p_waybill, 0));
   select * into v_booking from public.customer_bookings where waybill = p_waybill for update;
   if not found then raise exception 'Booking not found' using errcode='P0002'; end if;
@@ -361,6 +379,7 @@ set search_path = public
 as $$
 declare v_outstanding bigint;
 begin
+  perform pg_advisory_xact_lock(hashtextextended(new.driver_user_id::text, 0));
   select coalesce(sum(amount_cents),0) into v_outstanding
     from public.driver_cash_clearing_ledger where driver_user_id=new.driver_user_id;
   if v_outstanding > 0 and (
