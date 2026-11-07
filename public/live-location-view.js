@@ -7,7 +7,8 @@
   let active = false;
   const viewers = new Map();
   const getClient = () => window.swiftHaulSupabase;
-  const isActiveCard = card => /ACCEPTED|PICKED UP|IN TRANSIT/i.test(card.querySelector(".status")?.textContent || card.textContent);
+  const isActiveCard = card => ["accepted", "picked_up", "in_transit"].includes(card.dataset.deliveryStatus) ||
+    /ACCEPTED|PICKED UP|IN TRANSIT/i.test(card.querySelector(".status")?.textContent || card.textContent);
   const waybillOf = card => card.dataset.waybill || card.querySelector(".waybill")?.textContent?.trim() || card.querySelector("h3")?.textContent?.trim();
   async function readLocation(waybill) {
     const client = getClient();
