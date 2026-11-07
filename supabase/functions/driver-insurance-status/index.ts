@@ -101,7 +101,7 @@ Deno.serve(async (req: Request) => {
       accidental_disability_cover_limit_cents: policy?.accidental_disability_cover_limit_cents ?? 10000000,
       daily_accident_benefit_cents: policy?.daily_accident_benefit_cents ?? 100000,
     },
-    policy: policyActive ? {
+    policy: policyActive && policy ? {
       insurer_name: policy.insurer_name,
       coverage_starts_at: policy.coverage_starts_at,
       coverage_ends_at: policy.coverage_ends_at,
