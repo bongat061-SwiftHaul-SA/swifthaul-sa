@@ -66,6 +66,8 @@
       };
       const fail = error => {
         status.textContent = error.code === 1 ? "Location permission was denied." : "GPS signal unavailable. Check device location settings.";
+        start.disabled = false;
+        stop.disabled = true;
         stopLocal(order.waybill, true);
       };
       navigator.geolocation.getCurrentPosition(position => {
