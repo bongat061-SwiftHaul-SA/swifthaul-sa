@@ -67,6 +67,23 @@ function showWorkspace(user) {
     if (!verification) { verification = document.createElement('p'); verification.id = 'driver-verification-status'; accountPanel.append(verification); }
     verification.textContent = 'Verification status: ' + (user.driverProfile?.verification_status || 'pending');
   }
+  if (app === 'driver') {
+    let approval = document.getElementById('driver-approval-banner');
+    if (!approval) {
+      approval = document.createElement('section');
+      approval.id = 'driver-approval-banner';
+      approval.className = 'driver-approval-banner';
+      approval.setAttribute('role','status');
+      const page = workspace.querySelector('main.page');
+      page?.insertBefore(approval, page.querySelector('.section-links'));
+    }
+    const verification = user.driverProfile?.verification_status || 'pending';
+    approval.hidden = verification === 'approved';
+    approval.textContent = verification === 'approved'
+      ? '' : 'APPLICATION PENDING APPROVAL — You can sign in and upload your documents, but delivery offers and going online remain locked until SwiftHaul verifies your application.';
+    const online = document.getElementById('driver-online-toggle');
+    if (online && verification !== 'approved') { online.checked = false; online.disabled = true; }
+  }
   authScreen.hidden = true;
   workspace.hidden = false;
   document.dispatchEvent(new CustomEvent('account-ready', { detail: user }));
@@ -88,6 +105,10 @@ async function validateAccount(session) {
     throw new Error('Company access is invitation-only. Please contact your administrator.');
   }
   if (user.accountStatus !== 'active') throw new Error('Your account is not active. Please contact SwiftHaul support.');
+  if (app === 'driver') {
+    // Notifications are idempotent server-side. Passwords are never sent by email.
+    await supabase.functions.invoke('driver-application-notify', { body: {} }).catch(() => {});
+  }
   showWorkspace(user);
 }
 
