@@ -188,7 +188,11 @@ form.addEventListener('submit', async event => {
   } catch (error) {
     if (popup) popup.close();
     if (epoch!==accountEpoch) return;
-    report(error instanceof Error ? error.message : 'Unable to save your booking.', true);
+    const reason = error instanceof Error ? error.message : 'Unable to save your booking.';
+    if (reason === 'quote_expired_recalculate_route' || reason === 'quote_not_found_recalculate_route') {
+      report('Your quote is no longer available. I’m refreshing the route and fare now. Review the new total, then tap Book again.', true);
+      calculateButton.click();
+    } else report(reason, true);
   } finally { bookingBusy=false;updateBookButton(); }
 });
 function downloadPDF(order) {
