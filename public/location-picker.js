@@ -180,80 +180,101 @@
   const $ = id => document.getElementById(id);
   const state = { pickup: null, dropoff: null };
   let map = null;
-  let mapController = null;
   let activeField = pickup;
-  let routeLine = null;
-
-  const hiddenField = name => {
-    let input = form.querySelector('[name="' + name + '"]');
-    if (!input) { input = document.createElement('input'); input.type = 'hidden'; input.name = name; form.append(input); }
-    return input;
+  let routeLine = false;
+  let mapLoaded = false;
+  const routeData = {type:'Feature',properties:{},geometry:{type:'LineString',coordinates:[]}};
+  const mapStyle = {
+    version:8,
+    sources:{carto:{type:'raster',tiles:[
+      'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+      'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+      'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'
+    ],tileSize:256,attribution:'&copy; OpenStreetMap contributors &copy; CARTO'}},
+    layers:[{id:'carto-voyager',type:'raster',source:'carto'}]
   };
-  const markerIcon = kind => L.divIcon({
-    className: '',
-    html: '<div class="swift-map-marker ' + kind + '"><span>' + (kind === 'pickup' ? 'P' : 'D') + '</span></div>',
-    iconSize: [34, 42], iconAnchor: [17, 38]
-  });
+  const cameraMove = (center, zoom=14) => { if(map) map.flyTo({center,zoom,duration:350}); };
+  const clearRoute = () => {
+    if(map && mapLoaded && map.getSource('customer-route')) map.getSource('customer-route').setData({type:'Feature',properties:{},geometry:{type:'LineString',coordinates:[]}});
+    routeLine = false;
+  };
+  const routeStyle = () => {
+    if(!map || !mapLoaded || map.getSource('customer-route')) return;
+    map.addSource('customer-route',{type:'geojson',data:routeData});
+    map.addLayer({id:'customer-route-shadow',type:'line',source:'customer-route',paint:{'line-color':'#102b20','line-width':12,'line-opacity':.18,'line-cap':'round','line-join':'round'}});
+    map.addLayer({id:'customer-route-casing',type:'line',source:'customer-route',paint:{'line-color':'#fff','line-width':9,'line-opacity':.96,'line-cap':'round','line-join':'round'}});
+    map.addLayer({id:'customer-route-line',type:'line',source:'customer-route',paint:{'line-color':'#176b52','line-width':5,'line-opacity':1,'line-cap':'round','line-join':'round'}});
+    if(routeData.geometry.coordinates.length) map.getSource('customer-route').setData(routeData);
+  };
+  const markerNode = key => {
+    const node=document.createElement('div');
+    node.className='swift-map-marker '+key;
+    node.style.cssText='width:38px;height:38px;border:3px solid #fff;border-radius:50% 50% 50% 8px;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 3px 12px #17352e55;background:'+(key==='pickup'?'#21664e':'#2475c7')+';color:#fff;font-size:15px;font-weight:900';
+    const label=document.createElement('span');label.textContent=key==='pickup'?'P':'D';label.style.transform='rotate(45deg)';node.append(label);
+    return node;
+  };
   function ensureMap() {
-    if (map || !window.L) return;
-    mapController = window.SwiftHaulMaps?.createMap('global-location-map', {scope:'customer-booking'});
-    if (!mapController) { $('loc-status').textContent = 'Shared map services are unavailable. Reload the page.'; return; }
-    map = mapController.map;
-    mapController.camera.move({lat:-26.32516865200042,lng:28.195352552065742,zoom:14},0,'customer-booking');
-    mapController.padding.add(new window.SwiftHaulMaps.MapPaddingSource(stage.querySelector('.swift-location-sheet')), 'customer-booking');
-    L.control.zoom({ position: 'topright' }).addTo(map);
-    map.on('click', event => {
-      if (activeField) saveLocation(activeField, event.latlng.lat, event.latlng.lng, 'Map pin adjusted. Check the selected address.');
+    if(map || !window.maplibregl) return;
+    map=new maplibregl.Map({container:'global-location-map',style:mapStyle,center:[28.195352552065742,-26.32516865200042],zoom:14,attributionControl:true});
+    map.addControl(new maplibregl.NavigationControl({showCompass:false}),'top-right');
+    map.on('load',()=>{
+      mapLoaded=true;routeStyle();
+      for(const key of ['pickup','dropoff']) if(state[key]) placeMarker(key,state[key].lat,state[key].lng);
+      fitLocations();
     });
-    setTimeout(() => map.invalidateSize(), 120);
+    map.on('click',event=>{
+      if(activeField) saveLocation(activeField,event.lngLat.lat,event.lngLat.lng,'Map pin adjusted. Check the selected address.');
+    });
+    map.on('error',()=>{$('loc-status').textContent='Map tiles could not be loaded. Check your connection; address fields and manual pin coordinates remain available.';});
+    requestAnimationFrame(()=>map&&map.resize());
+  }
+  function placeMarker(key,lat,lng) {
+    if(!map || !mapLoaded) return;
+    const input=key==='pickup'?pickup:dropoff;
+    if(state[key].marker){state[key].marker.setLngLat([lng,lat]);return;}
+    const marker=new maplibregl.Marker({element:markerNode(key),draggable:true,anchor:'bottom'})
+      .setLngLat([lng,lat]).addTo(map);
+    marker.on('dragend',()=>{
+      const p=marker.getLngLat();
+      saveLocation(input,p.lat,p.lng,'Pin moved. The updated location is saved.');
+    });
+    state[key].marker=marker;
   }
   function fitLocations() {
-    if (!map) return;
-    const points = ['pickup', 'dropoff'].filter(key => state[key]).map(key => [state[key].lat, state[key].lng]);
-    if (points.length === 2) {
-      mapController.camera.move({bounds:points,zoom:15},0,'customer-booking');
-      if (routeLine) routeLine.setLatLngs(points);
-      else routeLine = L.polyline(points, { color: '#173d31', weight: 5, opacity: .92, lineCap: 'round', dashArray: '9 8' }).addTo(mapController.layers.get('routes').group);
-    } else if (points.length === 1) {
-      mapController.camera.move({lat:points[0][0],lng:points[0][1],zoom:16},0,'customer-booking');
-      if (routeLine) { routeLine.remove(); routeLine = null; }
+    if(!map) return;
+    const points=['pickup','dropoff'].filter(key=>state[key]).map(key=>[state[key].lng,state[key].lat]);
+    if(points.length===2) {
+      map.fitBounds([[Math.min(points[0][0],points[1][0]),Math.min(points[0][1],points[1][1])],[Math.max(points[0][0],points[1][0]),Math.max(points[0][1],points[1][1])]],{padding:{top:60,bottom:300,left:45,right:45},maxZoom:15,duration:350});
+      routeData.geometry.coordinates=points;routeLine=true;routeStyle();
+      if(mapLoaded&&map.getSource('customer-route'))map.getSource('customer-route').setData(routeData);
+    } else if(points.length===1) {
+      cameraMove(points[0],16);clearRoute();
     }
   }
   window.swiftHaulSetRoadRoute = route => {
     ensureMap();
-    if (!map || !route?.coordinates?.length) return false;
-    const points = route.coordinates.map(([longitude, latitude]) => [latitude, longitude]);
-    if (routeLine) routeLine.setLatLngs(points);
-    else routeLine = L.polyline(points, { color:'#176b52', weight:6, opacity:.96, lineCap:'round', lineJoin:'round' }).addTo(mapController.layers.get('routes').group);
-    const bounds = routeLine.getBounds();
-    mapController.camera.move({bounds, maxZoom:15}, 250, 'customer-booking');
-    setTimeout(() => map.invalidateSize(), 80);
-    $('loc-status').textContent = 'Road route loaded. Adjust either pin if the pickup or drop-off entrance is incorrect.';
+    if(!map || !route?.coordinates?.length) return false;
+    routeData.geometry.coordinates=route.coordinates.map(([longitude,latitude])=>[longitude,latitude]);
+    routeLine=true;
+    if(mapLoaded){routeStyle();map.getSource('customer-route').setData(routeData);}
+    const coords=routeData.geometry.coordinates;
+    const lngs=coords.map(p=>p[0]),lats=coords.map(p=>p[1]);
+    map.fitBounds([[Math.min(...lngs),Math.min(...lats)],[Math.max(...lngs),Math.max(...lats)]],{padding:{top:55,bottom:300,left:45,right:45},maxZoom:15,duration:450});
+    $('loc-status').textContent='Road route loaded. Adjust either pin if the pickup or drop-off entrance is incorrect.';
     return true;
   };
 
   function saveLocation(input, lat, lng, message) {
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
-    const key = input.name === 'pickup' ? 'pickup' : 'dropoff';
-    state[key] = { lat, lng };
-    Object.entries({ latitude: lat, longitude: lng }).forEach(([suffix, value]) => {
-      hiddenField(key + '_' + suffix).value = String(value);
-    });
-    const pinButton = input.parentElement.querySelector('.swift-pin-button');
-    if (pinButton) { pinButton.setAttribute('aria-pressed', 'true'); pinButton.textContent = '✓ Pin confirmed'; }
-    activeField = input;
-    $('loc-coordinates').textContent = lat.toFixed(6) + ', ' + lng.toFixed(6);
-    $('loc-status').textContent = message || (key === 'pickup' ? 'Pickup pin saved.' : 'Drop-off pin saved.');
-    if (map) {
-      if (state[key].marker) state[key].marker.setLatLng([lat, lng]);
-      else state[key].marker = L.marker([lat, lng], { draggable: true, icon: markerIcon(key), title: key === 'pickup' ? 'Pickup point' : 'Drop-off point' }).addTo(mapController.layers.get('markers').group);
-      state[key].marker.off('dragend');
-      state[key].marker.on('dragend', event => {
-        const p = event.target.getLatLng();
-        saveLocation(input, p.lat, p.lng, 'Pin moved. The updated location is saved.');
-      });
-      fitLocations();
-    }
+    if(!Number.isFinite(lat)||!Number.isFinite(lng)) return;
+    const key=input.name==='pickup'?'pickup':'dropoff';
+    state[key]={...state[key],lat,lng};
+    Object.entries({latitude:lat,longitude:lng}).forEach(([suffix,value])=>{hiddenField(key+'_'+suffix).value=String(value);});
+    const pinButton=input.parentElement.querySelector('.swift-pin-button');
+    if(pinButton){pinButton.setAttribute('aria-pressed','true');pinButton.textContent='✓ Pin confirmed';}
+    activeField=input;
+    $('loc-coordinates').textContent=lat.toFixed(6)+', '+lng.toFixed(6);
+    $('loc-status').textContent=message||(key==='pickup'?'Pickup pin saved.':'Drop-off pin saved.');
+    if(map){placeMarker(key,lat,lng);fitLocations();}
   }
 
   window.swiftHaulShowAddressOnMap = (input, lat, lng) => {
@@ -261,7 +282,7 @@
     ensureMap();
     if (!map) return;
     saveLocation(input, Number(lat), Number(lng), 'Address matched. Check the pin and adjust it if the entrance is different.');
-    setTimeout(() => map.invalidateSize(), 100);
+    if(map) map.resize();
   };
 
   for (const [input, label] of [[pickup, 'pickup'], [dropoff, 'drop-off']]) {
@@ -270,11 +291,11 @@
     input.addEventListener('input', () => {
       if (input.dataset.justSelected === 'true') return;
       const previous = state[key];
-      if (previous?.marker && map) map.removeLayer(previous.marker);
+      if (previous?.marker) previous.marker.remove();
       delete state[key];
-      if (routeLine) { routeLine.remove(); routeLine = null; }
+      clearRoute();
       const remaining = state.pickup || state.dropoff;
-      if (remaining && map) mapController.camera.move({lat:remaining.lat,lng:remaining.lng,zoom:15},0,'customer-booking');
+      if (remaining && map) cameraMove([remaining.lng,remaining.lat],15);
       const pin = input.parentElement.querySelector('.swift-pin-button');
       if (pin) { pin.setAttribute('aria-pressed', 'false'); pin.textContent = '◎ Adjust ' + label + ' pin on map'; }
     });
@@ -288,7 +309,7 @@
       ensureMap();
       stage.scrollIntoView({ behavior: 'smooth', block: 'start' });
       $('loc-status').textContent = 'Tap the map or drag the ' + label + ' marker to the exact point.';
-      setTimeout(() => map && map.invalidateSize(), 140);
+      setTimeout(() => map && map.resize(), 140);
     });
     input.insertAdjacentElement('afterend', button);
   }
@@ -297,8 +318,8 @@
     ensureMap();
     if (!map) { $('loc-status').textContent = 'Map is still loading. Please try again.'; return; }
     fitLocations();
-    if (!state.pickup && !state.dropoff) mapController.camera.move({lat:-26.32516865200042,lng:28.195352552065742,zoom:14},0,'customer-booking');
-    setTimeout(() => map.invalidateSize(), 100);
+    if (!state.pickup && !state.dropoff) cameraMove([28.195352552065742,-26.32516865200042],14);
+    map.resize();
   });
   $('loc-current').addEventListener('click', () => {
     if (!navigator.geolocation) { $('loc-status').textContent = 'This device does not support location sharing. You can still place a pin manually.'; return; }
@@ -314,7 +335,7 @@
   const revealObserver = new MutationObserver(() => {
     if (!document.getElementById('workspace')?.hidden) {
       ensureMap();
-      setTimeout(() => map && map.invalidateSize(), 180);
+      setTimeout(() => map && map.resize(), 180);
       revealObserver.disconnect();
     }
   });
