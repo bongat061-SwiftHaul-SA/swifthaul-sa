@@ -18,9 +18,10 @@ declare
 begin
   if p_reference is null or length(p_reference) > 100
      or p_paystack_transaction_id is null or length(p_paystack_transaction_id) > 100
-     or p_amount_cents < 500 or p_currency <> 'ZAR'
-     or p_payment_mode is null
-     or p_payment_mode not in ('sandbox','live') then
+     or p_amount_cents is null or p_amount_cents < 500
+     or p_currency is null or p_currency <> 'ZAR'
+     or p_payment_mode is null or p_payment_mode not in ('sandbox','live')
+     or p_payload is null or jsonb_typeof(p_payload) <> 'object' then
     return false;
   end if;
 
