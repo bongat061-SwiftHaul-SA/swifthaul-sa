@@ -251,6 +251,7 @@ if (app === 'driver' || app === 'company') {
   function render(order) {
     const card = document.createElement('article');
     card.className = 'order';
+  card.dataset.deliveryStatus = order.status || '';
     const title = document.createElement('h3');
     title.textContent = order.waybill;
     const route = document.createElement('p');

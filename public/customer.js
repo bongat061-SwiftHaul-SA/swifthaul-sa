@@ -49,7 +49,8 @@ function whatsapp(order) {
 }
 function addOrder(order, prepend = false) {
   for (const existing of container.querySelectorAll('.order')) {if (existing.dataset.waybill===order.waybill) existing.remove();}
-  const card = document.createElement('article'); card.className = 'order'; card.dataset.waybill=order.waybill;
+  const card = document.createElement('article'); card.className = 'order';
+  card.dataset.deliveryStatus = order.status || ''; card.dataset.waybill=order.waybill;
   const head = document.createElement('div'); head.className = 'order-head';
   const waybill = document.createElement('span'); waybill.className = 'waybill'; waybill.textContent = order.waybill;
   const status = document.createElement('span'); status.className = 'status'; status.textContent = order.refunded_at?'REFUNDED':order.completed_at?'COMPLETED':order.assigned_driver?'ASSIGNED':'UNASSIGNED';
