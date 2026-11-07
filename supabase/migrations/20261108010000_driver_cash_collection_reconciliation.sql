@@ -377,6 +377,10 @@ create trigger guard_driver_payout_cash_liability
 before insert or update of status on public.driver_payout_requests
 for each row execute function public.guard_driver_payout_cash_liability();
 
+revoke all on function public.record_driver_cash_receipt(text,bigint,text,text) from public, anon;
+revoke all on function public.create_driver_cash_deposit(bigint,text) from public, anon;
+revoke all on function public.submit_driver_cash_deposit_proof(uuid,text,text) from public, anon;
+revoke all on function public.reconcile_driver_cash_deposit(uuid,text,text,text) from public, anon;
 grant execute on function public.record_driver_cash_receipt(text,bigint,text,text) to authenticated;
 grant execute on function public.create_driver_cash_deposit(bigint,text) to authenticated;
 grant execute on function public.submit_driver_cash_deposit_proof(uuid,text,text) to authenticated;
