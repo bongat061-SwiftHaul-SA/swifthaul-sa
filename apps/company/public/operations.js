@@ -97,10 +97,8 @@ if (app === 'driver' || app === 'company') {
     ].filter(Boolean).join(' · ');
     card.append(title, route, summary);
     const fullMap=document.createElement('a');fullMap.className='open-booking-map';fullMap.textContent='Open full-screen tracking map ↗';
-    const mapUrl=new URL('map.html',location.href);
-    for(const [key,value] of Object.entries({waybill:order.waybill,pickup:order.pickup,dropoff:order.dropoff,status:statusLabel(order.status)}))if(value!=null)mapUrl.searchParams.set(key,String(value));
-    for(const kind of ['pickup','dropoff']){const lat=order[kind+'_latitude'],lng=order[kind+'_longitude'];if(lat!=null&&lng!=null){mapUrl.searchParams.set(kind+'Lat',String(lat));mapUrl.searchParams.set(kind+'Lng',String(lng));}}
-    fullMap.href=mapUrl.href;fullMap.target='_blank';fullMap.rel='noopener noreferrer';card.append(fullMap);
+    fullMap.href='map.html';
+  fullMap.addEventListener('click',()=>{try{sessionStorage.setItem('swiftHaulMapContext',JSON.stringify({waybill:order.waybill,pickup:order.pickup,dropoff:order.dropoff,status:order.status||'Booking route',pickupLat:order.pickup_latitude,pickupLng:order.pickup_longitude,dropoffLat:order.dropoff_latitude,dropoffLng:order.dropoff_longitude}));}catch{} });card.append(fullMap);
 
     // Company dispatch tracking preview: trip details first, full-width planned route map second.
     if (app === 'company' && ['assigned', 'accepted', 'picked_up', 'in_transit'].includes(order.status)) {
