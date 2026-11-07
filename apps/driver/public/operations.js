@@ -100,70 +100,174 @@ if (app === 'driver' || app === 'company') {
     ].filter(Boolean).join(' · ');
     card.append(title, route, summary);
 
-    // Driver-only GPS tracking preview. Location remains on this device; no customer
-    // or dispatcher sharing is claimed until a secure server-side tracking endpoint exists.
+    // Driver-only, Uber Parcel-inspired tracking experience. GPS remains local to this device.
     if (app === 'driver' && ['accepted', 'picked_up', 'in_transit'].includes(order.status)) {
       const pickup = { lat: Number(order.pickup_latitude), lng: Number(order.pickup_longitude) };
       const dropoff = { lat: Number(order.dropoff_latitude), lng: Number(order.dropoff_longitude) };
       const validPoint = point => Number.isFinite(point.lat) && Number.isFinite(point.lng) &&
-        Math.abs(point.lat) <= 90 && Math.abs(point.lng) <= 180 &&
-        !(point.lat === 0 && point.lng === 0);
+        Math.abs(point.lat) <= 90 && Math.abs(point.lng) <= 180 && !(point.lat === 0 && point.lng === 0);
       const tracking = document.createElement('section');
       tracking.className = 'driver-tracking';
       const trackingHead = document.createElement('div');
       trackingHead.className = 'tracking-head';
       const trackingTitle = document.createElement('h4');
-      trackingTitle.textContent = 'Delivery tracking';
+      trackingTitle.textContent = 'Your delivery';
       const trackingState = document.createElement('span');
       trackingState.className = 'tracking-state';
       trackingState.textContent = 'GPS not started';
       trackingHead.append(trackingTitle, trackingState);
+
+      const mapStage = document.createElement('div');
+      mapStage.className = 'tracking-map-stage';
       const trackingMap = document.createElement('div');
       trackingMap.className = 'driver-tracking-map';
       trackingMap.setAttribute('role', 'region');
-      trackingMap.setAttribute('aria-label', 'Delivery route and driver GPS map');
-      const trackingNote = document.createElement('p');
-      trackingNote.className = 'tracking-note';
-      trackingNote.textContent = 'Your GPS position is displayed on this device only. It is not being shared with the customer or dispatch. The line between pins is a route overview, not turn-by-turn road guidance.';
+      trackingMap.setAttribute('aria-label', 'Live delivery route map');
+      const mapTools = document.createElement('div');
+      mapTools.className = 'tracking-map-tools';
+      const recenter = document.createElement('button');
+      recenter.type = 'button'; recenter.className = 'tracking-map-tool';
+      recenter.textContent = '◎  Recenter';
+      mapTools.append(recenter);
+      const mapLegend = document.createElement('div');
+      mapLegend.className = 'tracking-map-legend';
+      mapLegend.innerHTML = '<span><i class="pickup-dot"></i> Pickup</span><span><i class="dropoff-dot"></i> Drop-off</span><span><i class="driver-dot"></i> You</span>';
+      mapStage.append(trackingMap, mapTools, mapLegend);
+
+      const tripSheet = document.createElement('div');
+      tripSheet.className = 'tracking-trip-sheet';
+      const etaRow = document.createElement('div');
+      etaRow.className = 'tracking-eta-row';
+      const etaBlock = document.createElement('div');
+      etaBlock.className = 'tracking-eta';
+      const etaValue = document.createElement('strong');
+      etaValue.textContent = '—';
+      const etaCaption = document.createElement('span');
+      etaCaption.textContent = 'Estimated arrival';
+      etaBlock.append(etaValue, etaCaption);
+      const distanceBlock = document.createElement('div');
+      distanceBlock.className = 'tracking-distance';
+      const distanceValue = document.createElement('strong');
+      distanceValue.textContent = 'Route pending';
+      const distanceCaption = document.createElement('span');
+      distanceCaption.textContent = 'Road distance';
+      distanceBlock.append(distanceValue, distanceCaption);
+      etaRow.append(etaBlock, distanceBlock);
+
+      const routeProgress = document.createElement('div');
+      routeProgress.className = 'tracking-route-progress';
+      const progressTrack = document.createElement('div');
+      progressTrack.className = 'tracking-progress-track';
+      const progressFill = document.createElement('span');
+      progressFill.className = 'tracking-progress-fill';
+      progressTrack.append(progressFill);
+      const routeLabels = document.createElement('div');
+      routeLabels.className = 'tracking-route-labels';
+      const pickupLabel = document.createElement('span');
+      pickupLabel.textContent = order.pickup || 'Pickup location';
+      const dropoffLabel = document.createElement('span');
+      dropoffLabel.textContent = order.dropoff || 'Destination';
+      routeLabels.append(pickupLabel, dropoffLabel);
+      routeProgress.append(progressTrack, routeLabels);
+
       const trackingActions = document.createElement('div');
       trackingActions.className = 'tracking-actions';
       const startTracking = document.createElement('button');
-      startTracking.type = 'button';
-      startTracking.className = 'primary';
+      startTracking.type = 'button'; startTracking.className = 'primary';
       startTracking.textContent = 'Start GPS tracking';
       const stopTracking = document.createElement('button');
-      stopTracking.type = 'button';
-      stopTracking.textContent = 'Stop tracking';
+      stopTracking.type = 'button'; stopTracking.textContent = 'Stop';
       stopTracking.disabled = true;
+      trackingActions.append(startTracking, stopTracking);
+      const trackingNote = document.createElement('p');
+      trackingNote.className = 'tracking-note';
+      trackingNote.textContent = 'Your GPS position is shown on this device only. Customer and dispatch sharing is not enabled yet.';
       const trackingUpdated = document.createElement('small');
       trackingUpdated.className = 'tracking-updated';
-      trackingUpdated.textContent = 'Allow location access to show your current position.';
-      trackingActions.append(startTracking, stopTracking);
-      tracking.append(trackingHead, trackingMap, trackingNote, trackingActions, trackingUpdated);
+      trackingUpdated.textContent = 'Allow location access to show your live position.';
+      tripSheet.append(etaRow, routeProgress, trackingActions, trackingNote, trackingUpdated);
+      tracking.append(trackingHead, mapStage, tripSheet);
       card.append(tracking);
 
-      let map = null, driverMarker = null, accuracyRing = null, watchId = null;
+      let map = null, driverMarker = null, accuracyRing = null, routeLine = null, watchId = null;
+      let currentDriverPoint = null;
       const points = [];
       if (validPoint(pickup)) points.push([pickup.lat, pickup.lng]);
       if (validPoint(dropoff)) points.push([dropoff.lat, dropoff.lng]);
+      const fitRoute = () => {
+        if (!map) return;
+        const bounds = [...points, ...(currentDriverPoint ? [currentDriverPoint] : [])];
+        if (bounds.length > 1) map.fitBounds(bounds, { padding: [48, 48], maxZoom: 15 });
+        else if (bounds.length) map.setView(bounds[0], 14);
+      };
+      const updateRoute = async origin => {
+        if (!validPoint(dropoff) || !origin) return;
+        try {
+          const url = 'https://router.project-osrm.org/route/v1/driving/' +
+            origin[1] + ',' + origin[0] + ';' + dropoff.lng + ',' + dropoff.lat +
+            '?overview=full&geometries=geojson&steps=false';
+          const response = await fetch(url, { headers: { Accept: 'application/json' } });
+          if (!response.ok) throw new Error('Routing unavailable');
+          const data = await response.json();
+          const route = data.routes?.[0];
+          if (!route) throw new Error('No road route found');
+          const coords = route.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+          if (map) {
+            if (routeLine) routeLine.remove();
+            routeLine = L.polyline(coords, { color: '#176b52', weight: 6, opacity: .95, lineCap: 'round', lineJoin: 'round' }).addTo(map);
+          }
+          const km = route.distance / 1000;
+          distanceValue.textContent = km < 10 ? km.toFixed(1) + ' km' : Math.round(km) + ' km';
+          const mins = Math.max(1, Math.round(route.duration / 60));
+          etaValue.textContent = mins >= 60 ? Math.floor(mins / 60) + ' hr ' + (mins % 60) + ' min' : mins + ' min';
+          etaCaption.textContent = 'Estimated driving time';
+          distanceCaption.textContent = 'Road distance · live estimate';
+        } catch {
+          distanceValue.textContent = 'Unavailable';
+          etaValue.textContent = '—';
+          etaCaption.textContent = 'ETA unavailable';
+          distanceCaption.textContent = 'Road routing service unavailable';
+        }
+      };
+
       if (window.L && points.length) {
-        map = L.map(trackingMap, { zoomControl: true, scrollWheelZoom: false });
+        map = L.map(trackingMap, { zoomControl: false, scrollWheelZoom: true, attributionControl: true });
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-          maxZoom: 20,
-          attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+          maxZoom: 20, attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
         }).addTo(map);
         if (validPoint(pickup)) L.marker([pickup.lat, pickup.lng]).addTo(map).bindPopup('Pickup');
         if (validPoint(dropoff)) L.marker([dropoff.lat, dropoff.lng]).addTo(map).bindPopup('Drop-off');
         if (points.length === 2) {
-          L.polyline(points, { color: '#176b52', weight: 4, opacity: .8, dashArray: '8 8' }).addTo(map);
-          map.fitBounds(points, { padding: [28, 28] });
+          routeLine = L.polyline(points, { color: '#176b52', weight: 5, opacity: .85, dashArray: '3 9', lineCap: 'round' }).addTo(map);
+          fitRoute();
+          updateRoute([pickup.lat, pickup.lng]);
         } else map.setView(points[0], 14);
         requestAnimationFrame(() => map && map.invalidateSize());
       } else {
         trackingMap.hidden = true;
-        trackingNote.textContent = 'Pickup and drop-off map pins are not both available for this delivery. GPS can still be checked on this device, but a route map cannot be drawn.';
+        trackingNote.textContent = 'A route map needs valid pickup and destination coordinates. GPS can still be checked on this device.';
       }
 
+      const showPosition = position => {
+        const coords = position.coords;
+        currentDriverPoint = [coords.latitude, coords.longitude];
+        if (map) {
+          if (!driverMarker) driverMarker = L.circleMarker(currentDriverPoint, {
+            radius: 10, color: '#fff', weight: 4, fillColor: '#176b52', fillOpacity: 1
+          }).addTo(map).bindPopup('Your current position');
+          else driverMarker.setLatLng(currentDriverPoint);
+          if (accuracyRing) accuracyRing.remove();
+          accuracyRing = L.circle(currentDriverPoint, {
+            radius: Math.max(10, coords.accuracy || 10), color: '#176b52',
+            weight: 1, fillColor: '#176b52', fillOpacity: .09
+          }).addTo(map);
+        }
+        trackingState.textContent = '● GPS active';
+        trackingUpdated.textContent = 'Updated ' + new Date(position.timestamp).toLocaleTimeString('en-ZA') +
+          ' · accuracy ±' + Math.round(coords.accuracy || 0) + ' m';
+        progressFill.style.width = order.status === 'in_transit' ? '68%' : order.status === 'picked_up' ? '45%' : '18%';
+        if (order.status === 'in_transit') updateRoute([coords.latitude, coords.longitude]);
+      };
       startTracking.addEventListener('click', () => {
         if (!navigator.geolocation) {
           trackingState.textContent = 'GPS unavailable';
@@ -171,62 +275,39 @@ if (app === 'driver' || app === 'company') {
           return;
         }
         if (watchId !== null) return;
-        trackingState.textContent = 'Requesting permission…';
+        trackingState.textContent = 'Getting GPS fix…';
         startTracking.disabled = true;
         navigator.geolocation.getCurrentPosition(position => {
-          const p = position.coords;
-          const latlng = [p.latitude, p.longitude];
-          if (map) {
-            if (!driverMarker) driverMarker = L.circleMarker(latlng, {
-              radius: 9, color: '#fff', weight: 3, fillColor: '#176b52', fillOpacity: 1
-            }).addTo(map).bindPopup('Your current position');
-            else driverMarker.setLatLng(latlng);
-            if (accuracyRing) accuracyRing.remove();
-            accuracyRing = L.circle(latlng, {
-              radius: Math.max(10, p.accuracy || 10), color: '#176b52',
-              weight: 1, fillColor: '#176b52', fillOpacity: .08
-            }).addTo(map);
-            const bounds = [...points, latlng];
-            map.fitBounds(bounds, { padding: [28, 28], maxZoom: 15 });
-          }
-          trackingState.textContent = 'GPS active · this device';
-          trackingUpdated.textContent = 'Last position: ' + new Date(position.timestamp).toLocaleTimeString('en-ZA') +
-            ' · accuracy ±' + Math.round(p.accuracy || 0) + ' m';
+          showPosition(position);
           startTracking.disabled = true;
           stopTracking.disabled = false;
-          watchId = navigator.geolocation.watchPosition(next => {
-            const coords = next.coords, nextPoint = [coords.latitude, coords.longitude];
-            if (map) {
-              if (!driverMarker) driverMarker = L.circleMarker(nextPoint, {
-                radius: 9, color: '#fff', weight: 3, fillColor: '#176b52', fillOpacity: 1
-              }).addTo(map);
-              else driverMarker.setLatLng(nextPoint);
-              if (accuracyRing) accuracyRing.remove();
-              accuracyRing = L.circle(nextPoint, {
-                radius: Math.max(10, coords.accuracy || 10), color: '#176b52',
-                weight: 1, fillColor: '#176b52', fillOpacity: .08
-              }).addTo(map);
-            }
-            trackingState.textContent = 'GPS active · this device';
-            trackingUpdated.textContent = 'Updated: ' + new Date(next.timestamp).toLocaleTimeString('en-ZA') +
-              ' · accuracy ±' + Math.round(coords.accuracy || 0) + ' m';
-          }, error => {
+          watchId = navigator.geolocation.watchPosition(showPosition, error => {
             trackingState.textContent = 'GPS signal interrupted';
             trackingUpdated.textContent = error.code === 1
-              ? 'Location permission was denied. Enable location access in your browser settings.'
-              : 'Unable to refresh GPS position. Check device location services and try again.';
-            startTracking.disabled = false;
-            stopTracking.disabled = true;
+              ? 'Location permission denied. Enable location access in browser settings.'
+              : 'GPS refresh failed. Check device location services.';
+            startTracking.disabled = false; stopTracking.disabled = true;
             if (watchId !== null) navigator.geolocation.clearWatch(watchId);
             watchId = null;
           }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 });
         }, error => {
           trackingState.textContent = 'GPS permission needed';
           trackingUpdated.textContent = error.code === 1
-            ? 'Location permission was denied. Allow location access to start tracking.'
-            : 'Could not get a GPS fix. Check location services and try again.';
+            ? 'Allow location access to start tracking.'
+            : 'Could not get a GPS fix. Check device location services.';
           startTracking.disabled = false;
         }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 });
+      });
+      stopTracking.addEventListener('click', () => {
+        if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+        trackingState.textContent = 'Tracking paused';
+        trackingUpdated.textContent = 'GPS updates have stopped on this device.';
+        startTracking.disabled = false; stopTracking.disabled = true;
+      });
+      recenter.addEventListener('click', () => {
+        if (map && currentDriverPoint) map.setView(currentDriverPoint, 16, { animate: true });
+        else fitRoute();
       });
       const cleanupTracking = () => {
         if (watchId !== null && navigator.geolocation) navigator.geolocation.clearWatch(watchId);
@@ -235,16 +316,6 @@ if (app === 'driver' || app === 'company') {
         activeTrackingCleanups.delete(cleanupTracking);
       };
       activeTrackingCleanups.add(cleanupTracking);
-      stopTracking.addEventListener('click', () => {
-        if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-        watchId = null;
-        trackingState.textContent = 'Tracking stopped';
-        trackingUpdated.textContent = 'GPS updates have stopped on this device.';
-        startTracking.disabled = false;
-        stopTracking.disabled = true;
-        if (driverMarker) { driverMarker.remove(); driverMarker = null; }
-        if (accuracyRing) { accuracyRing.remove(); accuracyRing = null; }
-      });
     }
     for (const [kind,label] of [['pickup','Pickup'],['dropoff','Drop-off']]) {
       const plus = order[kind + '_plus_code'];

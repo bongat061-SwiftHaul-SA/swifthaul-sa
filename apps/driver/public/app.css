@@ -242,3 +242,45 @@ body[data-app="driver"] #workspace .tracking-updated { display:block; margin-top
   body[data-app="driver"] #workspace .driver-tracking-map { height:240px; }
   body[data-app="driver"] #workspace .tracking-head { align-items:flex-start; flex-direction:column; }
 }
+
+
+/* Uber Parcel-inspired Driver tracking: immersive map with a compact trip sheet */
+body[data-app="driver"] #workspace .driver-tracking{margin:18px 0 10px;padding:0;overflow:hidden;border:1px solid #dfe8e2;border-radius:22px;background:#fff;box-shadow:0 12px 34px #183b2b12}
+body[data-app="driver"] #workspace .tracking-head{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0;padding:17px 19px;background:#fff}
+body[data-app="driver"] #workspace .tracking-head h4{margin:0;color:#14231e;font-size:15px;font-weight:900;letter-spacing:-.3px}
+body[data-app="driver"] #workspace .tracking-state{padding:7px 11px;border-radius:999px;background:#e9f5ed;color:#176b52;font-size:10px;font-weight:900;white-space:nowrap}
+body[data-app="driver"] #workspace .tracking-map-stage{position:relative;height:clamp(300px,44vw,490px);background:#e8efea}
+body[data-app="driver"] #workspace .driver-tracking-map{position:absolute;inset:0;width:100%;height:100%;border:0;border-radius:0;background:#e8efea}
+body[data-app="driver"] #workspace .tracking-map-tools{position:absolute;z-index:500;top:14px;right:14px}
+body[data-app="driver"] #workspace .tracking-map-tool{min-height:40px;padding:10px 13px;border:0;border-radius:999px;background:#fff;color:#173d31;box-shadow:0 3px 14px #17282024;font-size:11px;font-weight:900}
+body[data-app="driver"] #workspace .tracking-map-legend{position:absolute;z-index:500;left:13px;bottom:13px;display:flex;gap:11px;flex-wrap:wrap;padding:9px 12px;border:1px solid #e3eae5;border-radius:999px;background:#ffffffed;box-shadow:0 3px 14px #17282014}
+body[data-app="driver"] #workspace .tracking-map-legend span{display:flex;align-items:center;gap:5px;color:#47584f;font-size:9px;font-weight:800}
+body[data-app="driver"] #workspace .tracking-map-legend i{display:inline-block;width:8px;height:8px;border-radius:50%}
+body[data-app="driver"] #workspace .pickup-dot{background:#176b52}body[data-app="driver"] #workspace .dropoff-dot{background:#e39b35}body[data-app="driver"] #workspace .driver-dot{background:#1f6feb;border:2px solid #fff;box-shadow:0 0 0 1px #1f6feb}
+body[data-app="driver"] #workspace .tracking-trip-sheet{position:relative;z-index:2;padding:19px 20px 18px;background:#fff;border-top:1px solid #e9eeeb}
+body[data-app="driver"] #workspace .tracking-eta-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding-bottom:16px}
+body[data-app="driver"] #workspace .tracking-eta,.tracking-distance{display:flex;flex-direction:column;gap:4px}
+body[data-app="driver"] #workspace .tracking-eta strong{font-size:30px;line-height:1;color:#14231e;font-weight:900;letter-spacing:-1.4px}
+body[data-app="driver"] #workspace .tracking-distance strong{font-size:17px;color:#176b52;font-weight:900}
+body[data-app="driver"] #workspace .tracking-eta span,body[data-app="driver"] #workspace .tracking-distance span{font-size:10px;color:#748078;font-weight:700}
+body[data-app="driver"] #workspace .tracking-route-progress{padding:13px 0 15px;border-top:1px solid #edf1ee}
+body[data-app="driver"] #workspace .tracking-progress-track{height:5px;overflow:hidden;border-radius:99px;background:#e8eee9}
+body[data-app="driver"] #workspace .tracking-progress-fill{display:block;width:18%;height:100%;border-radius:99px;background:#176b52;transition:width .3s ease}
+body[data-app="driver"] #workspace .tracking-route-labels{display:flex;justify-content:space-between;gap:14px;margin-top:8px;color:#5c6c63;font-size:10px;font-weight:800}
+body[data-app="driver"] #workspace .tracking-route-labels span{max-width:48%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body[data-app="driver"] #workspace .tracking-actions{display:flex;gap:9px;margin-top:2px}
+body[data-app="driver"] #workspace .tracking-actions button{min-height:46px;flex:1;border-radius:12px}
+body[data-app="driver"] #workspace .tracking-actions button.primary{background:#14231e;border-color:#14231e}
+body[data-app="driver"] #workspace .tracking-actions button:disabled{opacity:.45}
+body[data-app="driver"] #workspace .tracking-note{margin:12px 0 4px;color:#78847e;font-size:10px;line-height:1.6}
+body[data-app="driver"] #workspace .tracking-updated{display:block;margin-top:6px;color:#176b52;font-size:10px;font-weight:700;line-height:1.5}
+body[data-app="driver"] #workspace .driver-tracking .leaflet-control-attribution{font-size:8px}
+@media(max-width:600px){
+ body[data-app="driver"] #workspace .driver-tracking{margin:14px -5px 8px;border-radius:18px}
+ body[data-app="driver"] #workspace .tracking-head{padding:14px 15px}
+ body[data-app="driver"] #workspace .tracking-map-stage{height:360px}
+ body[data-app="driver"] #workspace .tracking-trip-sheet{padding:16px 15px calc(16px + env(safe-area-inset-bottom))}
+ body[data-app="driver"] #workspace .tracking-eta strong{font-size:27px}
+ body[data-app="driver"] #workspace .tracking-map-legend{left:9px;bottom:9px;gap:8px;padding:8px 10px}
+ body[data-app="driver"] #workspace .tracking-map-legend span{font-size:8px}
+}
