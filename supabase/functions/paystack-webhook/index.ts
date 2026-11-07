@@ -65,6 +65,7 @@ Deno.serve(async (req: Request) => {
     p_paystack_transaction_id: String(payment.id),
     p_amount_cents: payment.amount,
     p_currency: payment.currency,
+    p_payment_mode: mode === "test" ? "sandbox" : "live",
     p_payload: { event: "charge.success", reference, transaction_id: String(payment.id), mode: payment.domain },
   });
   if (error) {
