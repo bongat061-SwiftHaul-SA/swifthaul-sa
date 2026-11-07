@@ -263,7 +263,7 @@ document.addEventListener('guest-preview', () => {
 calculateButton.addEventListener('click', async () => {
   if (document.body.dataset.guestPreview === 'true') return;
   if (!form.elements.pickup.reportValidity() || !form.elements.dropoff.reportValidity()) return;
-  if(['weight','length','width','height'].some(key=>!form.elements.namedItem(key).reportValidity()))return;
+  if(!Number(form.elements.namedItem('weight')?.value)||['length','width','height'].some(key=>!form.elements.namedItem(key).reportValidity())){quoteStatus.textContent='Add a photo or description, estimate your load, then review the suggested dimensions.';return;}
   const data=Object.fromEntries(new FormData(form));
   if (!data.pickup.trim() || !data.dropoff.trim()) {quoteStatus.textContent='Enter both pickup and drop-off addresses.';return;}
   resetQuote();const active=new AbortController();quoteRequest=active;calculateButton.disabled=true;
@@ -280,7 +280,7 @@ calculateButton.addEventListener('click', async () => {
     document.getElementById('quote-band').textContent=`Fare band: ${currentQuote.band*12} km to below ${(currentQuote.band+1)*12} km. Every new 12 km band doubles the fare.`;
     document.getElementById('quote-locations').textContent=`Pickup: ${route.pickup.label}. Drop-off: ${route.dropoff.label}.`;
     document.getElementById('truck-route-note').hidden=currentQuote.vehicle!=='truck';
-    document.getElementById('quote-load').textContent=`${currentQuote.load.truckClass || currentQuote.vehicle.toUpperCase()} selected · Actual ${mass(currentQuote.load.weight)} kg · Volumetric ${mass(currentQuote.load.volumetric)} kg · Chargeable ${mass(currentQuote.load.chargeable)} kg. Includes ${currentQuote.load.included} kg.`;
+    document.getElementById('quote-load').textContent=`${currentQuote.load.truckClass || currentQuote.vehicle.toUpperCase()} selected · Estimated weight ${mass(currentQuote.load.weight)} kg (upper estimate) · Volumetric ${mass(currentQuote.load.volumetric)} kg · Chargeable ${mass(currentQuote.load.chargeable)} kg. Includes ${currentQuote.load.included} kg.`;
     document.getElementById('quote-breakdown').textContent=`Distance ${money(currentQuote.distanceFee)} + extra weight ${mass(currentQuote.load.extra)} kg × ${money(currentQuote.load.rate)}/kg = ${money(currentQuote.load.weightFee)}. Outbound total ${money(currentQuote.price)}.`;
     const directions=new URL('https://www.google.com/maps/dir/');directions.search=new URLSearchParams({api:'1',origin:data.pickup,destination:data.dropoff,travelmode:'driving'}).toString();
     document.getElementById('quote-directions').href=directions.href;
