@@ -184,9 +184,6 @@
   let activeField = pickup;
   let routeLine = null;
 
-  const geohash = (lat, lng, precision = 9) => {
-    return '';
-  };
   const hiddenField = name => {
     let input = form.querySelector('[name="' + name + '"]');
     if (!input) { input = document.createElement('input'); input.type = 'hidden'; input.name = name; form.append(input); }
