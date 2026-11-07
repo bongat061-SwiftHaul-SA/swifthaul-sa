@@ -39,7 +39,7 @@
     '.swift-map-marker span{transform:rotate(45deg);font-size:16px;font-weight:900;color:#fff;line-height:1}',
     '.swift-map-marker.pickup{background:#21664e}',
     '.swift-map-marker.dropoff{background:#2475c7}',
-    '@media(max-width:650px){#delivery-map-stage{height:min(82svh,790px);min-height:650px;margin:-22px -22px 22px}.swift-location-sheet{left:10px;right:10px;bottom:10px;max-height:72%;padding:15px;border-radius:16px}.swift-location-fields{grid-template-columns:1fr;gap:9px}.swift-location-fields .field input{padding:11px}.swift-sheet-head h3{font-size:15px}.swift-sheet-tools{margin-top:9px}.swift-sheet-quote #quote-result{font-size:11px}}'
+    '@media(max-width:650px){#delivery-map-stage{height:min(82svh,790px);min-height:650px;margin:-22px -22px 22px}.swift-location-sheet{left:10px;right:10px;bottom:10px;max-height:72%;padding:15px;border-radius:16px}.swift-location-fields{grid-template-columns:1fr;gap:9px}.swift-location-fields .field input{padding:11px}.swift-sheet-head h3{font-size:15px}.swift-sheet-tools{margin-top:9px}.swift-sheet-quote #quote-result{font-size:11px}}',
     '#delivery-map-stage{height:clamp(650px,82vh,900px);min-height:650px;margin:-30px -30px 28px;border-radius:0 0 22px 22px;background:#e8eeea;box-shadow:0 12px 30px #12251d18}',
     '#global-location-map{background:#e9efec}',
     '#global-location-map .leaflet-tile-pane{filter:saturate(.78) brightness(1.035)}',
@@ -68,7 +68,7 @@
     '.swift-sheet-quote #quote-map{height:190px;border-radius:14px}',
     '.swift-map-marker{width:38px;height:38px;border-radius:50% 50% 50% 8px}',
     '.swift-map-marker span{font-size:15px}',
-    '@media(max-width:650px){#delivery-map-stage{height:78svh;min-height:650px;margin:-22px -18px 22px;border-radius:0 0 20px 20px}.swift-location-sheet{left:10px;right:10px;bottom:10px;max-height:58%;padding:15px 16px;border-radius:21px}.swift-sheet-head{gap:8px}.swift-sheet-head h3{font-size:15px}.swift-route-steps{gap:5px;padding:7px 8px;font-size:8px}.swift-location-fields{gap:6px}.swift-location-fields input{height:40px;min-height:40px}.swift-sheet-tools{gap:6px}.swift-sheet-tools button{padding:7px 9px;font-size:9px}.swift-pin-meta{margin-top:7px}.swift-sheet-quote #quote-result{font-size:10px}}'
+    '@media(max-width:650px){#delivery-map-stage{height:78svh;min-height:650px;margin:-22px -18px 22px;border-radius:0 0 20px 20px}.swift-location-sheet{left:10px;right:10px;bottom:10px;max-height:58%;padding:15px 16px;border-radius:21px}.swift-sheet-head{gap:8px}.swift-sheet-head h3{font-size:15px}.swift-route-steps{gap:5px;padding:7px 8px;font-size:8px}.swift-location-fields{gap:6px}.swift-location-fields input{height:40px;min-height:40px}.swift-sheet-tools{gap:6px}.swift-sheet-tools button{padding:7px 9px;font-size:9px}.swift-pin-meta{margin-top:7px}.swift-sheet-quote #quote-result{font-size:10px}}',
   ].join('\n');
   style.textContent += [
     '#delivery-map-stage{height:clamp(650px,84vh,900px)!important;min-height:650px!important;margin:0!important;border-radius:20px!important}',
@@ -84,8 +84,14 @@
     '.swift-location-sheet .parcel-fields{margin:10px 0!important;padding:12px!important;border:1px solid #e8edea!important;border-radius:14px!important;background:#fbfcfb!important}',
     '.swift-location-sheet .parcel-fields legend{margin-bottom:7px!important}',
     '.swift-location-sheet .parcel-fields>p.subtle{display:none!important}',
-    '.swift-location-sheet .load-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:7px!important}',
+    '.swift-location-sheet .load-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:7px!important}',
     '.swift-location-sheet .load-grid label{font-size:9px!important;min-width:0!important}',
+    '.swift-location-sheet #cargo-estimator{margin:9px 0 12px!important;padding:13px!important;border:1px solid #e4ebe6!important;border-radius:15px!important;background:#f3f7f4!important}',
+    '.swift-location-sheet #cargo-estimator h3{font-size:13px!important;margin:0 0 5px!important}',
+    '.swift-location-sheet #cargo-estimator p{font-size:10px!important;line-height:1.45!important;margin:6px 0!important}',
+    '.swift-location-sheet #cargo-estimator textarea,.swift-location-sheet #cargo-estimator input[type=file]{font-size:11px!important;border-radius:10px!important}',
+    '.swift-location-sheet #cargo-estimator .cargo-actions button{min-height:38px!important;padding:9px 12px!important;font-size:10px!important;border-radius:10px!important}',
+    '.swift-location-sheet #cargo-estimator .cargo-range{font-size:14px!important}',
     '.swift-location-sheet .load-grid input{min-height:39px!important;height:39px!important;padding:8px!important;font-size:11px!important}',
     '.swift-location-sheet #load-summary{margin:7px 0 0!important;font-size:10px!important;min-height:0!important}',
     '.swift-more-options{margin:9px 0!important;border:1px solid #e7ece8!important;border-radius:13px!important;background:#fff!important}',

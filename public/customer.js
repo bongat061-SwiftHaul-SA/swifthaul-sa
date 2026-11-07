@@ -263,7 +263,7 @@ document.addEventListener('guest-preview', () => {
 calculateButton.addEventListener('click', async () => {
   if (document.body.dataset.guestPreview === 'true') return;
   if (!form.elements.pickup.reportValidity() || !form.elements.dropoff.reportValidity()) return;
-  if(['weight','length','width','height'].some(key=>!form.elements.namedItem(key).reportValidity()))return;
+  if(!Number(form.elements.namedItem('weight')?.value)||['length','width','height'].some(key=>!form.elements.namedItem(key).reportValidity())){quoteStatus.textContent='Add a photo or description, estimate your load, then review the suggested dimensions.';return;}
   const data=Object.fromEntries(new FormData(form));
   if (!data.pickup.trim() || !data.dropoff.trim()) {quoteStatus.textContent='Enter both pickup and drop-off addresses.';return;}
   resetQuote();const active=new AbortController();quoteRequest=active;calculateButton.disabled=true;
@@ -272,7 +272,7 @@ calculateButton.addEventListener('click', async () => {
     const result=await customerApi('POST',{action:'quote',pickup:data.pickup,dropoff:data.dropoff,pickup_location:data.pickup_latitude?{latitude:Number(data.pickup_latitude),longitude:Number(data.pickup_longitude)}:null,dropoff_location:data.dropoff_latitude?{latitude:Number(data.dropoff_latitude),longitude:Number(data.dropoff_longitude)}:null,parcel:Object.fromEntries(['weight','length','width','height'].map(key=>[key,Number(data[key])]))});
     if (quoteRequest!==active || active.signal.aborted) return;
     if (!result.quote) throw new Error('Unable to calculate the route.');
-    currentQuote=result.quote;updatePaymentOptions();const route=currentQuote.route;window.swiftHaulSetRoadRoute?.(route);
+    currentQuote=result.quote;updatePaymentOptions();window.swiftHaulUpdateVehiclePreview?.(currentQuote.vehicle,currentQuote.load?.chargeable,currentQuote.load?.truckClass || (currentQuote.vehicle||'').toUpperCase());const route=currentQuote.route;window.swiftHaulSetRoadRoute?.(route);
     document.getElementById('quote-result').hidden=false;
     document.getElementById('quote-distance').textContent=`${km(route.distance)} km`;
     document.getElementById('quote-price').textContent=money(currentQuote.price);
@@ -280,7 +280,7 @@ calculateButton.addEventListener('click', async () => {
     document.getElementById('quote-band').textContent=`Fare band: ${currentQuote.band*12} km to below ${(currentQuote.band+1)*12} km. Every new 12 km band doubles the fare.`;
     document.getElementById('quote-locations').textContent=`Pickup: ${route.pickup.label}. Drop-off: ${route.dropoff.label}.`;
     document.getElementById('truck-route-note').hidden=currentQuote.vehicle!=='truck';
-    document.getElementById('quote-load').textContent=`${currentQuote.load.truckClass || currentQuote.vehicle.toUpperCase()} selected · Actual ${mass(currentQuote.load.weight)} kg · Volumetric ${mass(currentQuote.load.volumetric)} kg · Chargeable ${mass(currentQuote.load.chargeable)} kg. Includes ${currentQuote.load.included} kg.`;
+    document.getElementById('quote-load').textContent=`${currentQuote.load.truckClass || currentQuote.vehicle.toUpperCase()} selected · Estimated weight ${mass(currentQuote.load.weight)} kg · Volumetric ${mass(currentQuote.load.volumetric)} kg · Chargeable ${mass(currentQuote.load.chargeable)} kg. Includes ${currentQuote.load.included} kg.`;
     document.getElementById('quote-breakdown').textContent=`Distance ${money(currentQuote.distanceFee)} + extra weight ${mass(currentQuote.load.extra)} kg × ${money(currentQuote.load.rate)}/kg = ${money(currentQuote.load.weightFee)}. Outbound total ${money(currentQuote.price)}.`;
     const directions=new URL('https://www.google.com/maps/dir/');directions.search=new URLSearchParams({api:'1',origin:data.pickup,destination:data.dropoff,travelmode:'driving'}).toString();
     document.getElementById('quote-directions').href=directions.href;
@@ -308,14 +308,22 @@ toggleBookingOptions();
 
 function previewLoad(){
   const values=['weight','length','width','height'].map(key=>Number(form.elements.namedItem(key).value));
-  let vehicle='',text='Add weight and dimensions to find your vehicle.';
+  let vehicle='',text='Choose a parcel category to estimate your load and vehicle.';
+  let chargeable=0,label='';
   if(values.every(value=>Number.isFinite(value)&&value>0)){
-    const [weight,length,width,height]=values,volumetric=length*width*height/5000,chargeable=Math.max(weight,volumetric);
+    const [estimatedWeight,length,width,height]=values,volumetric=length*width*height/5000;
+    chargeable=Math.max(estimatedWeight,volumetric);
     if(chargeable>8000)text='Above 8,000 chargeable kg: contact dispatch for a manual quote.';
-    else{vehicle=chargeable<=20?'bike':chargeable<=1000?'van':'truck';const label=vehicle==='truck'?(chargeable<=4000?'4-ton Truck':'8-ton Truck'):vehicle.toUpperCase();text=`${label} recommended · ${mass(chargeable)} chargeable kg (actual ${mass(weight)} kg; volumetric ${mass(volumetric)} kg). Physical cargo fit and access require dispatch confirmation.`;}
+    else{
+      vehicle=chargeable<=20?'bike':chargeable<=1000?'van':'truck';
+      label=vehicle==='truck'?(chargeable<=4000?'4-ton Truck':'8-ton Truck'):vehicle.toUpperCase();
+      text=label+' recommended · '+mass(chargeable)+' chargeable kg (estimated weight '+mass(estimatedWeight)+' kg; volumetric '+mass(volumetric)+' kg). Physical cargo fit and access require dispatch confirmation.';
+    }
   }
   form.querySelectorAll('[name=vehicle]').forEach(input=>{input.checked=input.value===vehicle;});
-  document.getElementById('load-summary').textContent=text;
+  const summary=document.getElementById('load-summary');
+  if(summary)summary.textContent=text;
+  window.swiftHaulUpdateVehiclePreview?.(vehicle,chargeable,label);
 }
 form.addEventListener('input',event=>{if(['weight','length','width','height'].includes(event.target.name))previewLoad();});
 previewLoad();
