@@ -79,7 +79,7 @@ Deno.serve(async (req: Request) => {
   if (!booking || booking.refunded_at || !activeStatuses.includes(booking.status))
     return reply(404, { error: "active_delivery_not_found" });
 
-  const isCustomerOwner = profile.role === "customer" && booking.owner_hash === actorId;
+  const isCustomerOwner = profile.role === "customer" && booking.owner_hash === actorId.toString();
   const isAssignedDriver = profile.role === "driver" && booking.driver_user_id === actorId;
   const isDispatcher = ["admin", "dispatcher"].includes(profile.role);
   if (!isCustomerOwner && !isAssignedDriver && !isDispatcher)
