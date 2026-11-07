@@ -1,6 +1,9 @@
 (() => {
   if (document.body.dataset.app !== "driver") return;
   const activeStatuses = new Set(["assigned", "accepted", "picked_up", "in_transit"]);
+  const style = document.createElement("style");
+  style.textContent = ".live-location-control{margin-top:14px;padding:14px;border:1px solid #dbe7df;border-radius:16px;background:#f7faf7}.live-location-control strong{display:block;color:#173d31}.live-location-control p{font-size:13px;color:#60746a;line-height:1.5}.live-location-control button{margin:4px 8px 0 0;padding:10px 14px;border:0;border-radius:10px;background:#173d31;color:#fff;font-weight:700}.live-location-control button:disabled{opacity:.5}.live-location-control button+button{background:#e8eeea;color:#173d31}";
+  document.head.append(style);
   const watches = new Map();
   let enabled = false;
   let syncTimer = null;
@@ -66,18 +69,16 @@
         status.textContent = error.code === 1 ? "Location permission was denied." : "GPS signal unavailable. Check device location settings.";
         stopLocal(order.waybill, true);
       };
-      navigator.geolocation.getCurrentPosition(async position => {
-        await publish(position);
-        if (!watches.has(order.waybill)) {
-          const watch = navigator.geolocation.watchPosition(p => {
-            const current = watches.get(order.waybill);
-            if (!current || Date.now() - current.lastSent < 8000) return;
-            current.lastSent = Date.now();
-            publish(p);
-          }, fail, { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 });
-          watches.set(order.waybill, { watch, status, start, stop, lastSent: Date.now() });
-          stop.disabled = false;
-        }
+      navigator.geolocation.getCurrentPosition(position => {
+        const watch = navigator.geolocation.watchPosition(p => {
+          const current = watches.get(order.waybill);
+          if (!current || Date.now() - current.lastSent < 8000) return;
+          current.lastSent = Date.now();
+          publish(p);
+        }, fail, { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 });
+        watches.set(order.waybill, { watch, status, start, stop, lastSent: Date.now() });
+        stop.disabled = false;
+        publish(position);
       }, fail, { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 });
     });
     stop.addEventListener("click", () => stopLocal(order.waybill));
