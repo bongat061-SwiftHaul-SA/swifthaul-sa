@@ -124,7 +124,7 @@ if (app === 'driver' || app === 'company') {
           preview.append(head, sheet, stage);
           list.append(preview);
 
-          let previewMap = null, marker = null, ring = null, watch = null, lastPoint = null;
+          let previewMap = null, marker = null, ring = null, watch = null, lastPoint = null, lastPosition = null;
           if (window.maplibregl) {
             previewMap = new maplibregl.Map({
               container: mapElement,
@@ -140,11 +140,13 @@ if (app === 'driver' || app === 'company') {
               center: [24.0,-29.0], zoom: 5, attributionControl: true
             });
             previewMap.addControl(new maplibregl.NavigationControl({showCompass:false}),'top-right');
+            previewMap.on('load', () => { if (lastPosition) showPosition(lastPosition); });
             requestAnimationFrame(() => previewMap && previewMap.resize());
           } else {
             mapElement.textContent = 'Map library unavailable. Check your connection.';
           }
           const showPosition = position => {
+            lastPosition = position;
             const { latitude, longitude, accuracy } = position.coords;
             lastPoint = [latitude, longitude];
             if (previewMap && previewMap.loaded()) {
@@ -352,7 +354,7 @@ if (app === 'driver' || app === 'company') {
       card.append(tracking);
 
       let map = null, driverMarker = null, accuracyRing = null, routeLine = null, watchId = null;
-      let currentDriverPoint = null;
+      let currentDriverPoint = null, currentDriverPosition = null;
       const points = [];
       if (validPoint(pickup)) points.push([pickup.lat, pickup.lng]);
       if (validPoint(dropoff)) points.push([dropoff.lat, dropoff.lng]);
@@ -418,7 +420,8 @@ if (app === 'driver' || app === 'company') {
           map.addLayer({ id: 'driver-route-casing', type: 'line', source: 'driver-route', paint: { 'line-color': '#fff', 'line-width': 12, 'line-opacity': .95, 'line-cap': 'round', 'line-join': 'round' } });
           map.addLayer({ id: 'driver-route-line', type: 'line', source: 'driver-route', paint: { 'line-color': '#176b52', 'line-width': 6, 'line-opacity': .98, 'line-cap': 'round', 'line-join': 'round' } });
           fitRoute();
-          if (points.length === 2) updateRoute([pickup.lat,pickup.lng]);
+          if (points.length === 2) updateRoute(order.status === 'in_transit' && currentDriverPoint ? currentDriverPoint : [pickup.lat,pickup.lng]);
+          if (currentDriverPosition) showPosition(currentDriverPosition);
         });
         map.on('error', () => { trackingNote.textContent = 'Map tiles could not be loaded. Your trip details and GPS controls remain available.'; });
         requestAnimationFrame(() => map && map.resize());
@@ -427,6 +430,7 @@ if (app === 'driver' || app === 'company') {
         trackingNote.textContent = 'A route map needs valid pickup and destination coordinates. GPS can still be checked on this device.';
       }
       const showPosition = position => {
+        currentDriverPosition = position;
         const coords = position.coords;
         currentDriverPoint = [coords.latitude, coords.longitude];
         if (map && mapLoaded) {
