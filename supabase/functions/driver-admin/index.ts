@@ -85,6 +85,14 @@ Deno.serve(async (req: Request) => {
     return reply(400, { error: "invalid_driver_id" });
   if (!["approve", "reject", "suspend"].includes(String(body.action)))
     return reply(400, { error: "invalid_review_action" });
+  if (body.action === "approve") {
+    const required = ["id_document", "proof_of_address", "bank_confirmation", "drivers_licence", "vehicle_document"];
+    const { data: documents, error: documentsError } = await admin.from("driver_documents")
+      .select("document_type,review_status").eq("driver_user_id", body.user_id);
+    if (documentsError) return reply(500, { error: "driver_documents_lookup_failed" });
+    const missing = required.filter((type) => !documents?.some((doc) => doc.document_type === type && doc.review_status === "accepted"));
+    if (missing.length) return reply(409, { error: "required_documents_not_approved", missing_documents: missing });
+  }
   const next = body.action === "approve" ? "approved" : body.action === "reject" ? "rejected" : "suspended";
   const { data, error } = await admin.from("driver_profiles")
     .update({ verification_status: next, updated_at: new Date().toISOString() })
