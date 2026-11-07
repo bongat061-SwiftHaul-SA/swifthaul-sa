@@ -1,0 +1,77 @@
+name: Build SwiftHaul Android preview APKs
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/android-capacitor-foundation
+    paths:
+      - 'android-customer/**'
+      - 'apps/driver/android-wrapper/**'
+      - 'apps/company/android-wrapper/**'
+      - 'scripts/copy-android-web.cjs'
+      - 'scripts/prepare-sites.cjs'
+      - 'shared/**'
+      - 'public/**'
+      - 'apps/driver/public/**'
+      - 'apps/company/public/**'
+      - '.github/workflows/android-preview.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.label }} debug APK
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Customer
+            app: android-customer
+          - label: Driver
+            app: apps/driver/android-wrapper
+          - label: Company Admin
+            app: apps/company/android-wrapper
+
+    steps:
+      - name: Check out development branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ${{ matrix.app }}/package.json
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install Capacitor dependencies
+        working-directory: ${{ matrix.app }}
+        run: npm install
+
+      - name: Generate Android project
+        working-directory: ${{ matrix.app }}
+        run: npx cap add android
+
+      - name: Copy platform web app and sync native project
+        working-directory: ${{ matrix.app }}
+        run: npm run cap:sync
+
+      - name: Assemble debug APK
+        working-directory: ${{ matrix.app }}/android
+        run: ./gradlew assembleDebug
+
+      - name: Upload preview APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: swifthaul-${{ matrix.label }}-debug-apk
+          path: ${{ matrix.app }}/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
