@@ -6,7 +6,7 @@ The Premium subscription includes these proposed benefits at no additional subsc
 
 - Vehicle cover: up to R30,000.
 - Accidental disability cover: up to R100,000.
-- Accident-related daily support: up to R1,000 per eligible day.
+- Accident-related daily support: R1,000 per eligible day, for a maximum of five days per accident claim (R5,000 maximum).
 
 These are benefit limits requested for the product design. They are not a promise of insurance cover and must not be described as active cover until an insurer or authorised underwriting partner has accepted the risk, issued a policy and confirmed the cover period.
 
@@ -52,3 +52,24 @@ Do not activate any policy record or advertise guaranteed cover until the insure
 6. Confirm that no UI or API response describes a driver as insured when no active insurer policy is recorded.
 
 No production migration, Edge Function deployment, insurer integration or policy activation is performed by this code change.
+
+## Dispatch-only accident cover and route compliance
+
+Insurance applies only while the driver is actively carrying out an assigned dispatch:
+- after accepting the assignment, while travelling to the customer's pickup address; or
+- after collection, while travelling to the delivery address.
+
+Being online, waiting for an offer, or travelling without an assigned dispatch is not covered. The driver must keep the app's live GPS route sharing active for the assigned trip. The server records private GPS evidence against the assigned waybill while the dispatch is in an accepted, picked-up or in-transit state. Claims are rejected at intake if the driver is not the assigned driver, the incident is outside the accepted dispatch interval, the policy or Premium eligibility was not active at the incident time, or there is no GPS point within two minutes of the reported incident.
+
+Unnecessary stops or diversions from the authorised route are grounds for the insurer to decline a claim, subject to the final policy wording and exceptions for emergencies, road closures, traffic control, safety and other insurer-approved reasons. Company Admin must inspect the available GPS trail against the planned route and record a reasoned route-compliance decision before an insurer approval can be recorded.
+
+**Route evidence limitation:** the current app stores timestamped GPS points and the booking's planned route data where available. It does not yet perform reliable map-matching or automatically distinguish a necessary stop (traffic, safety, road closure) from an unnecessary stop. Admin route review is therefore a manual evidence check, not an automated finding. Insurer-approved tolerance rules and an actual route geometry source are required before automatic route-compliance decisions are enabled.
+
+## Claim handling
+
+- Driver claims are linked to a waybill and must be reported against an accepted assigned trip.
+- Up to five PDF/image evidence files are accepted, each up to 10 MB, in a private storage bucket; admin links expire after five minutes.
+- Requested and approved daily benefit days are capped at five per accident claim. The server calculates the maximum at R1,000 per day (R5,000 per claim).
+- Admin must record route compliance before insurer approval. A route breach blocks approval in the workflow.
+- An insurer claim reference and insurer decision note are required. Payment is only recorded after insurer approval and a settlement/payment reference is supplied.
+- Medical and claim evidence is sensitive. Access is restricted to the driver who owns the claim and active administrators. A retention/deletion schedule and POPIA-compliant insurer processing agreement must be agreed before launch.
