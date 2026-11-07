@@ -128,8 +128,8 @@
     '<div class="swift-sheet-head"><div><h3>Where should we collect and deliver?</h3><p>Choose an address, then confirm the exact point on the map.</p></div>' +
     '<div class="swift-route-steps" aria-label="Pickup to drop-off"><span class="step-dot"></span><span>Pickup</span><span class="step-line"></span><span class="step-dot drop"></span><span>Drop-off</span></div></div>' +
     '<div class="swift-location-fields"></div>' +
-    '<div class="swift-sheet-tools"><button type="button" id="loc-current" class="swift-current">◎ Use my location</button><button type="button" id="loc-open">Re-centre map</button><button type="button" id="loc-copy-plus" disabled>Copy Plus Code</button><a href="https://www.openstreetmap.org/?mlat=-26.32517&amp;mlon=28.19535#map=14/-26.32517/28.19535&amp;layers=T" target="_blank" rel="noopener noreferrer" style="font-size:10px;color:#21664e;font-weight:700">Open transport map ↗</a></div>' +
-    '<div class="swift-pin-meta"><span>Selected pin</span><strong id="loc-plus">Choose pickup or drop-off</strong></div>' +
+    '<div class="swift-sheet-tools"><button type="button" id="loc-current" class="swift-current">◎ Use my location</button><button type="button" id="loc-open">Re-centre map</button><a href="https://www.openstreetmap.org/?mlat=-26.32517&amp;mlon=28.19535#map=14/-26.32517/28.19535&amp;layers=T" target="_blank" rel="noopener noreferrer" style="font-size:10px;color:#21664e;font-weight:700">Open transport map ↗</a></div>' +
+    '<div class="swift-pin-meta"><span>Selected pin</span><strong id="loc-coordinates">Choose pickup or drop-off</strong></div>' +
     '<p id="loc-status" role="status" aria-live="polite">Select a pickup or drop-off field, then tap the map to fine-tune its pin.</p>' +
     '<div class="swift-sheet-quote"></div></section>';
   form.insertBefore(stage, pickupWrap);
@@ -183,20 +183,7 @@
   let mapController = null;
   let activeField = pickup;
   let routeLine = null;
-  let selectedCode = '';
 
-  const geohash = (lat, lng, precision = 9) => {
-    const alphabet = '0123456789bcdefghjkmnpqrstuvwxyz';
-    let latRange = [-90, 90], lngRange = [-180, 180], even = true, bits = 0, ch = 0, out = '';
-    while (out.length < precision) {
-      const range = even ? lngRange : latRange, mid = (range[0] + range[1]) / 2;
-      ch <<= 1;
-      if ((even ? lng : lat) >= mid) { ch |= 1; range[0] = mid; } else range[1] = mid;
-      even = !even;
-      if (++bits === 5) { out += alphabet[ch]; bits = 0; ch = 0; }
-    }
-    return out;
-  };
   const hiddenField = name => {
     let input = form.querySelector('[name="' + name + '"]');
     if (!input) { input = document.createElement('input'); input.type = 'hidden'; input.name = name; form.append(input); }
@@ -216,7 +203,7 @@
     mapController.padding.add(new window.SwiftHaulMaps.MapPaddingSource(stage.querySelector('.swift-location-sheet')), 'customer-booking');
     L.control.zoom({ position: 'topright' }).addTo(map);
     map.on('click', event => {
-      if (activeField) saveLocation(activeField, event.latlng.lat, event.latlng.lng, 'Map pin adjusted. Check the address and Plus Code.');
+      if (activeField) saveLocation(activeField, event.latlng.lat, event.latlng.lng, 'Map pin adjusted. Check the selected address.');
     });
     setTimeout(() => map.invalidateSize(), 120);
   }
@@ -246,23 +233,16 @@
   };
 
   function saveLocation(input, lat, lng, message) {
-    if (!window.OpenLocationCode || !Number.isFinite(lat) || !Number.isFinite(lng)) {
-      $('loc-status').textContent = 'The Plus Code library is still loading. Please try again shortly.';
-      return;
-    }
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
     const key = input.name === 'pickup' ? 'pickup' : 'dropoff';
-    const code = window.OpenLocationCode.encode(lat, lng, 10);
-    const hash = geohash(lat, lng);
-    state[key] = { lat, lng, code, hash };
-    Object.entries({ latitude: lat, longitude: lng, plus_code: code, geohash: hash }).forEach(([suffix, value]) => {
+    state[key] = { lat, lng };
+    Object.entries({ latitude: lat, longitude: lng }).forEach(([suffix, value]) => {
       hiddenField(key + '_' + suffix).value = String(value);
     });
     const pinButton = input.parentElement.querySelector('.swift-pin-button');
     if (pinButton) { pinButton.setAttribute('aria-pressed', 'true'); pinButton.textContent = '✓ Pin confirmed'; }
     activeField = input;
-    selectedCode = code;
-    $('loc-plus').textContent = code;
-    $('loc-copy-plus').disabled = false;
+    $('loc-coordinates').textContent = lat.toFixed(6) + ', ' + lng.toFixed(6);
     $('loc-status').textContent = message || (key === 'pickup' ? 'Pickup pin saved.' : 'Drop-off pin saved.');
     if (map) {
       if (state[key].marker) state[key].marker.setLatLng([lat, lng]);
@@ -329,11 +309,6 @@
     }, error => {
       $('loc-status').textContent = error.code === 1 ? 'Location permission was denied. You can still place a pin manually.' : 'Could not get your location. Place a pin manually instead.';
     }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 });
-  });
-  $('loc-copy-plus').addEventListener('click', async () => {
-    if (!selectedCode) return;
-    try { await navigator.clipboard.writeText(selectedCode); $('loc-status').textContent = 'Plus Code copied: ' + selectedCode; }
-    catch { $('loc-status').textContent = 'Copy was blocked by the browser. Select the code and copy it manually.'; }
   });
 
   const revealObserver = new MutationObserver(() => {
