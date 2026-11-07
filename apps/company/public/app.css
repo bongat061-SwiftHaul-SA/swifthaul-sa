@@ -162,3 +162,25 @@ body[data-app] { background:#f3f6f3; color:#14231e; }
  #auth-screen .auth-story:after { width:110px; height:110px; right:8%; }
  #auth-screen .auth-story h2 { font-size:36px; }
 }
+
+
+/* Company dispatch tracking: trip information above a full-width road map. */
+body[data-app="company"] .company-tracking{margin:18px 0 10px;overflow:hidden;border:1px solid #dfe8e2;border-radius:20px;background:#fff;box-shadow:0 10px 30px #183b2b10}
+body[data-app="company"] .company-tracking-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px}
+body[data-app="company"] .company-tracking-head strong{color:#14231e;font-size:14px;font-weight:900}
+body[data-app="company"] .company-tracking-state{padding:7px 11px;border-radius:999px;background:#e9f5ed;color:#176b52;font-size:10px;font-weight:900}
+body[data-app="company"] .company-trip-details{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 18px 12px}
+body[data-app="company"] .company-trip-stop{min-width:0;padding:12px 14px;border:1px solid #e3ebe6;border-radius:13px;background:#fbfcfb}
+body[data-app="company"] .company-trip-stop span{display:block;margin-bottom:6px;color:#748078;font-size:9px;font-weight:900;letter-spacing:1px}
+body[data-app="company"] .company-trip-stop strong{display:block;color:#243b30;font-size:11px;line-height:1.6;overflow-wrap:anywhere}
+body[data-app="company"] .company-tracking-note{margin:0;padding:0 18px 13px;color:#748078;font-size:10px;line-height:1.6}
+body[data-app="company"] .company-tracking-map-stage{position:relative;height:clamp(300px,40vw,470px);border-top:1px solid #e3ebe6;background:#e8efea}
+body[data-app="company"] .company-tracking-map{position:absolute;inset:0;width:100%;height:100%;background:#e8efea}
+body[data-app="company"] .company-tracking-map-tools{position:absolute;z-index:500;top:13px;right:13px}
+body[data-app="company"] .company-tracking-map-tools button{min-height:40px;border:0;border-radius:999px;background:#fff;color:#173d31;box-shadow:0 3px 14px #17282024;font-size:10px;font-weight:900}
+body[data-app="company"] .company-tracking-legend{position:absolute;z-index:500;left:13px;bottom:13px;display:flex;gap:12px;padding:9px 12px;border:1px solid #e3eae5;border-radius:999px;background:#ffffffed;box-shadow:0 3px 14px #17282014}
+body[data-app="company"] .company-tracking-legend span{display:flex;align-items:center;gap:6px;color:#47584f;font-size:9px;font-weight:800}
+body[data-app="company"] .company-tracking-legend i{display:inline-block;width:8px;height:8px;border-radius:50%}
+body[data-app="company"] .company-pickup-dot{background:#176b52}body[data-app="company"] .company-dropoff-dot{background:#e39b35}
+body[data-app="company"] .company-tracking-map .leaflet-control-attribution{font-size:8px}
+@media(max-width:600px){body[data-app="company"] .company-tracking{margin:14px -5px 8px;border-radius:17px}body[data-app="company"] .company-trip-details{grid-template-columns:1fr;gap:7px;padding:0 13px 10px}body[data-app="company"] .company-tracking-head{padding:14px}body[data-app="company"] .company-tracking-note{padding:0 14px 11px}body[data-app="company"] .company-tracking-map-stage{height:52dvh;min-height:320px}}
