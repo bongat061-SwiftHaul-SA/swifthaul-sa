@@ -100,3 +100,23 @@ The implementation PR should therefore be a coordinated feature branch containin
 5. Automated tests: ownership, role separation, RLS/Storage isolation, duplicate/concurrent confirmation, amount integrity, booking eligibility and regression of cash/wallet/card-disabled paths.
 
 No production schema or function change has been made as part of this investigation.
+
+
+## Staging security review (2026-11-08)
+
+The staging project now records migrations through `20261107235704` (driver cash reconciliation) and `20261107235704` is followed by `20261107235704`? The verified migration history includes `20261107235657_driver_cash_collection_reconciliation` and `20261107235704_paystack_provider_support`. Both were applied to this staging project only.
+
+The Supabase security advisor reports 25 public tables with RLS enabled but no policies. A direct privilege audit found no `SELECT` or `INSERT` grants to either `anon` or `authenticated` on the inspected public tables. The current design uses authenticated Edge Functions with server-side service-role access and explicit role/ownership checks. Therefore, do not add broad RLS policies merely to silence the linter. Before exposing any table to the Data API, add narrowly scoped policies and grants together, and test customer/driver/admin isolation.
+
+The advisor also reports five callable `SECURITY DEFINER` functions in the driver-cash workflow. These are intentional RPC entry points used by the authenticated driver/admin operations function; their bodies perform active-profile and role checks, and the admin balance/reconciliation functions verify the active admin role. The warning is about the callable privilege surface, not proof that these functions are exploitable. Keep the RPCs unavailable to `anon`, retain their internal authorization checks, and test each role boundary. In particular, review `submit_driver_cash_deposit_proof` for active-driver and approved-driver validation before treating the cash flow as release-ready.
+
+The advisor also reports that leaked-password protection is disabled in Auth. This is a project-level Auth setting and should be enabled and verified separately; it is not safe to change it as a side effect of the EFT schema migration.
+
+Staging baseline verification:
+- 29 public tables were inspected; all inspected tables had RLS enabled.
+- The inspected public tables had no direct `anon` or `authenticated` SELECT/INSERT grants.
+- Staging had 3 Auth users and 3 profiles; no customer bookings, cash receipts, or cash deposits.
+- Existing staging customer booking constraints accept `cash` and `dispatch`; the payment-source check accepts null, cash, wallet, PayFast, Paystack, and pay-later, but not EFT.
+- No customer EFT schema, proof bucket, submission endpoint, or admin EFT review endpoint has been deployed.
+
+Do not represent the security advisor warnings as fixed. Record them as reviewed with the above privilege context, and retain the remaining remediation items as release gates.
