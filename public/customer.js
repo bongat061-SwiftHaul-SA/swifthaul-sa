@@ -82,8 +82,10 @@ function addOrder(order, prepend = false) {
     if (document.body.dataset.guestPreview !== 'true') document.dispatchEvent(new CustomEvent('delivery-route', {detail:{waybill:order.waybill,pickup:order.pickup,dropoff:order.dropoff}}));
   });
   if(!order.paid_at&&!order.refunded_at&&!['cancelled','completed'].includes(order.status)){
-    const pay=document.createElement('button');pay.type='button';pay.textContent='Pay with PayFast';pay.addEventListener('click',()=>startPayFastCheckout(order,pay));
-    const cardPay=document.createElement('button');cardPay.type='button';cardPay.textContent='Pay by card · PayFast';cardPay.addEventListener('click',()=>startPayFastCheckout(order,cardPay));
+    if(['pending','assigned'].includes(order.status)){
+       const cardPayment=document.createElement('button');cardPayment.type='button';cardPayment.className='primary';cardPayment.textContent='Pay by Card · Coming soon';cardPayment.disabled=true;cardPayment.title='Secure card payments will be available after payment-provider approval and activation.';
+       actions.append(cardPayment);
+    }
     const eft=document.createElement('button');eft.type='button';eft.textContent='EFT payment instructions';eft.addEventListener('click',()=>{
       const box=document.createElement('div');box.className='eft-instructions';
       const heading=document.createElement('strong');heading.textContent='Pay by EFT';
@@ -91,7 +93,7 @@ function addOrder(order, prepend = false) {
       const contact=document.createElement('a');contact.href='https://wa.me/27615083880?text='+encodeURIComponent('Please send verified EFT payment details for booking '+order.waybill+'.');contact.target='_blank';contact.rel='noopener noreferrer';contact.textContent='Request bank details on WhatsApp';
       box.append(heading,info,contact);eft.replaceWith(box);
     });
-    actions.append(pay,cardPay,eft);
+    actions.append(eft);
   }
   const existingRefund = refundRequestsByWaybill.get(order.waybill);
   if (existingRefund) {
@@ -121,6 +123,26 @@ function addOrder(order, prepend = false) {
   }
   actions.append(track, pdf, wa); card.append(head, route, meta, actions);
   if (prepend) container.prepend(card); else container.append(card);
+}
+
+async function startPaystackCheckout(order, button) {
+  button.disabled = true; report('Preparing secure Paystack checkout…');
+  try {
+    const client = window.swiftHaulSupabase;
+    if (!client) throw new Error('Customer sign-in connection is unavailable.');
+    const { data, error } = await client.functions.invoke('paystack-checkout', { body: { waybill: order.waybill } });
+    if (error || !data || data.error) throw new Error(data?.error || error?.message || 'Unable to prepare Paystack checkout.');
+    if (typeof data.authorization_url !== 'string' || typeof data.reference !== 'string' ||
+        !/^SHPS-[A-Fa-f0-9]{32}$/.test(data.reference)) throw new Error('Paystack returned an invalid checkout response.');
+    const checkoutUrl = new URL(data.authorization_url);
+    if (checkoutUrl.protocol !== 'https:' || checkoutUrl.hostname !== 'checkout.paystack.com')
+      throw new Error('Paystack returned an untrusted checkout destination.');
+    report('Redirecting to Paystack secure checkout…');
+    window.location.assign(checkoutUrl.href);
+  } catch (error) {
+    report(error instanceof Error ? error.message : 'Unable to start Paystack checkout.', true);
+    button.disabled = false;
+  }
 }
 
 async function startPayFastCheckout(order, button) {
@@ -208,7 +230,7 @@ form.addEventListener('submit', async event => {
     if (epoch !== accountEpoch) return;
     if (!result.order) throw new Error('Unable to save your booking. Please try again.');
     container.querySelector('.empty')?.remove(); addOrder(result.order, true);
-    report('Booking created. Choose PayFast, card checkout or EFT instructions below. WhatsApp sharing is a separate action.');
+    report('Booking created. Card payments are coming soon while provider approval is pending. You can use EFT instructions below or the available cash option. WhatsApp sharing is a separate action.');
     resetQuote();
   } catch (error) {
     if (epoch!==accountEpoch) return;
@@ -254,6 +276,7 @@ document.addEventListener('account-ready', () => {
   const params=new URLSearchParams(location.search), payment=params.get('payment');
   if(payment==='return') report('You returned from PayFast. Payment is awaiting server-side notification and verification; refresh your bookings shortly. Returning here does not itself confirm payment.');
   else if(payment==='cancel') report('PayFast checkout was cancelled. Your booking remains unpaid.');
+  else if(payment==='paystack-return') report('You returned from Paystack. We are refreshing your bookings; payment is only confirmed after SwiftHaul verifies it with Paystack.');
   if(payment){history.replaceState({},'',location.pathname+location.hash);}
 });
 document.addEventListener('account-cleared', () => {accountEpoch++;loadVersion++; ready = false;form.reset();toggleBookingOptions();previewLoad();resetQuote(); container.replaceChildren(); document.getElementById('legacy-import').hidden=true; document.getElementById('submit').disabled = true;});

@@ -61,3 +61,6 @@ jobs:
           deno check --node-modules-dir=auto supabase/functions/driver-premium/index.ts
           deno check --node-modules-dir=auto supabase/functions/driver-membership-checkout/index.ts
           deno check --node-modules-dir=auto supabase/functions/payfast-itn/index.ts
+          deno check --node-modules-dir=auto supabase/functions/paystack-checkout/index.ts
+          deno check --node-modules-dir=auto supabase/functions/paystack-webhook/index.ts
+          deno test --no-check --allow-env supabase/functions/paystack-webhook/signature_test.ts

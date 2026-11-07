@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.49.1";
 import CryptoJS from "npm:crypto-js@4.2.0";
 
-const SANDBOX_VALIDATE_URL = "https://sandbox.payfast.co.za/eng/query/validate";
+const PAYFAST_VALIDATE_URLS = { sandbox: "https://sandbox.payfast.co.za/eng/query/validate", live: "https://www.payfast.co.za/eng/query/validate" } as const;
 const cors = { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" };
 const response = (status: number, body: string) => new Response(body, { status, headers: cors });
 function urlencode(value: string) {
@@ -52,15 +52,20 @@ Deno.serve(async (req: Request) => {
     if (Object.prototype.hasOwnProperty.call(payload,key)) return response(400, "Duplicate notification field");
     payload[key] = value;
   }
-  const merchantId = Deno.env.get("PAYFAST_MERCHANT_ID") || "10000100";
-  const passphrase = Deno.env.get("PAYFAST_PASSPHRASE") || "jt7NOE43FZPn";
+  const mode = Deno.env.get("PAYFAST_MODE");
+  const merchantId = Deno.env.get("PAYFAST_MERCHANT_ID");
+  const passphrase = Deno.env.get("PAYFAST_PASSPHRASE");
+  if ((mode !== "sandbox" && mode !== "live") || !merchantId || !passphrase) {
+    console.error("PayFast ITN is not configured: set PAYFAST_MODE, PAYFAST_MERCHANT_ID and PAYFAST_PASSPHRASE");
+    return response(503, "Payment notification service is not configured");
+  }
   if (payload.merchant_id !== merchantId || !payload.signature ||
       !(payload.m_payment_id?.startsWith("SH-PF-") || payload.m_payment_id?.startsWith("SH-WALLET-PF-") || payload.m_payment_id?.startsWith("SH-MEMBER-PF-")))
     return response(400, "Invalid merchant or payment reference");
   const expected = signature(entries, passphrase);
   if (!constantTimeEqual(expected, payload.signature.toLowerCase())) return response(400, "Invalid notification signature");
 
-  const validation = await fetch(SANDBOX_VALIDATE_URL, {
+  const validation = await fetch(PAYFAST_VALIDATE_URLS[mode], {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: raw,
