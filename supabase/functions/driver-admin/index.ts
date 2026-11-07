@@ -44,9 +44,13 @@ Deno.serve(async (req: Request) => {
     if (docsError) return reply(500, { error: "driver_documents_lookup_failed" });
     const grouped: Record<string, unknown[]> = {};
     for (const doc of docs ?? []) {
-      const { data: signed } = await admin.storage.from("driver-application-documents").createSignedUrl(doc.storage_path, 300);
+      const { data: signed, error: signedError } = await admin.storage.from("driver-application-documents").createSignedUrl(doc.storage_path, 300);
+      if (signedError || !signed?.signedUrl) {
+        console.error("Driver document signed URL failed", signedError?.message);
+        return reply(500, { error: "driver_document_link_failed" });
+      }
       const safeDoc = { id: doc.id, document_type: doc.document_type, original_name: doc.original_name,
-        review_status: doc.review_status, created_at: doc.created_at, signed_url: signed?.signedUrl ?? null };
+        review_status: doc.review_status, created_at: doc.created_at, signed_url: signed.signedUrl };
       (grouped[doc.driver_user_id] ??= []).push(safeDoc);
     }
     return reply(200, { drivers: (data ?? []).map((driver: any) => ({ ...driver, documents: grouped[driver.user_id] ?? [] })) });
@@ -66,6 +70,8 @@ Deno.serve(async (req: Request) => {
       .select("id,driver_user_id,review_status").eq("id", body.document_id).maybeSingle();
     if (documentError) return reply(500, { error: "document_lookup_failed" });
     if (!document) return reply(404, { error: "driver_document_not_found" });
+    if (typeof body.user_id !== "string" || document.driver_user_id !== body.user_id)
+      return reply(409, { error: "document_driver_mismatch" });
     const { data: reviewed, error: reviewError } = await admin.from("driver_documents")
       .update({ review_status: body.review_status, review_note: note || null,
         reviewed_by: authResult.user.id, reviewed_at: new Date().toISOString() })
