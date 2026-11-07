@@ -24,10 +24,10 @@ window.renderDeliveryMap = (element, route, onTileError = () => {}) => {
     if (typeof layer.on === 'function') layer.on('tileerror', onTileError);
   });
 
-  const line = L.polyline(
-    route.coordinates.map(([longitude, latitude]) => [latitude, longitude]),
-    { color: '#21664e', weight: 5, opacity: 0.9 }
-  ).addTo(routes);
+  const routePoints = route.coordinates.map(([longitude, latitude]) => [latitude, longitude]);
+  L.polyline(routePoints, { color: '#102b20', weight: 12, opacity: 0.18, lineCap: 'round', lineJoin: 'round' }).addTo(routes);
+  L.polyline(routePoints, { color: '#ffffff', weight: 9, opacity: 0.96, lineCap: 'round', lineJoin: 'round' }).addTo(routes);
+  const line = L.polyline(routePoints, { color: '#176b52', weight: 5, opacity: 1, lineCap: 'round', lineJoin: 'round', dashArray: '1 0' }).addTo(routes);
 
   for (const [title, point, color] of [
     ['Pickup', route.pickup, '#21664e'],
@@ -35,17 +35,14 @@ window.renderDeliveryMap = (element, route, onTileError = () => {}) => {
   ]) {
     const label = document.createElement('span');
     label.textContent = title;
-    L.circleMarker([point.latitude, point.longitude], {
-      radius: 8,
-      color: '#fff',
-      weight: 3,
-      fillColor: color,
-      fillOpacity: 1
-    }).bindTooltip(label, {
-      permanent: true,
-      direction: 'top',
-      offset: [0, -8]
-    }).addTo(markers);
+    const pin = document.createElement('span');
+    pin.className = 'swift-map-pin ' + (title === 'Pickup' ? 'pickup' : 'dropoff');
+    pin.setAttribute('aria-label', title);
+    pin.style.setProperty('--pin-color', color);
+    L.marker([point.latitude, point.longitude], {
+      icon: L.divIcon({ className: 'swift-map-pin-wrap', html: pin.outerHTML, iconSize: [28, 38], iconAnchor: [14, 35] }),
+      zIndexOffset: title === 'Pickup' ? 900 : 1000
+    }).bindTooltip(label, { permanent: true, direction: 'top', offset: [0, -26], className: 'swift-map-tooltip' }).addTo(markers);
   }
 
   const bounds = line.getBounds()
