@@ -10,7 +10,7 @@ async function sendEmail(key:string,from:string,to:string[],subject:string,html:
 Deno.serve(async(req:Request)=>{
  if(req.method==="OPTIONS")return new Response("ok",{headers:cors});
  if(req.method!=="POST")return reply(405,{error:"method_not_allowed"});
- const token=(req.headers.get("Authorization")||"").match(/^Bearer\\s+(.+)$/i)?.[1];if(!token)return reply(401,{error:"missing_bearer_token"});
+ const token=(req.headers.get("Authorization")||"").match(/^Bearer\s+(.+)$/i)?.[1];if(!token)return reply(401,{error:"missing_bearer_token"});
  const url=Deno.env.get("SUPABASE_URL"),anon=Deno.env.get("SUPABASE_ANON_KEY"),service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
  if(!url||!anon||!service)return reply(500,{error:"server_configuration_error"});
  const auth=createClient(url,anon,{auth:{persistSession:false,autoRefreshToken:false}});
