@@ -1,81 +1,77 @@
 # Yoco Checkout Integration and Merchant Onboarding
 
-Status: preparation only. This document does not enable card payments, create a Yoco merchant account, or change production payment routing.
+Status: server-side integration draft committed for review. It is not deployed, configured with merchant secrets, sandbox-tested end to end, or enabled in the customer interface. No production payment routing is changed.
 
 ## Decision
 
-Prepare Yoco Checkout API as the next South African hosted-card provider for SwiftHaul SA. Keep existing Paystack work intact as a future/alternate provider. Keep EFT and cash available throughout onboarding.
+Prepare Yoco Checkout API as the South African hosted-card provider while Paystack approval remains pending. Keep EFT and eligible cash available throughout onboarding. PayFast remains a backup only after its credentials and operation are independently verified.
 
-Yoco's official Checkout API uses a server-created hosted checkout session, redirects the customer to Yoco's hosted payment page, and confirms the result through status verification and/or webhooks. Card details must never pass through SwiftHaul browser code or Supabase tables.
+Yoco hosts the secure payment page; SwiftHaul must never receive or store card details. Yoco's official flow is server-created checkout, customer redirect to the hosted page, and signed webhook confirmation. A success redirect is not proof of payment.
 
 ## Merchant onboarding checklist
 
-1. Create or sign in to the SwiftHaul SA business profile in the Yoco App / Business Portal.
-2. Complete Yoco's business and payout verification (including requested company, owner, FICA and bank-account information).
-3. Open Sales / e-Commerce integrations / Checkout API / How to connect.
-4. Copy the Test secret key (starts with `sk_test_`) privately. Never put it in GitHub, source code, issue comments, screenshots, or this document.
-5. Add the exact production customer website domain to Verified Domains and submit it for review. Yoco states live keys remain locked until at least one domain is approved.
-6. While domain review is pending, configure test credentials in Supabase Edge Function Secrets and complete sandbox tests.
-7. After domain approval, retrieve the Live secret key privately, configure it in Supabase secrets, and only activate after explicit SwiftHaul production approval.
-8. Register the Checkout API webhook from the server-side integration and store the one-time webhook signing secret in Supabase secrets.
+1. Complete the SwiftHaul SA business profile and payout verification in the Yoco App / Business Portal.
+2. Open Sales → e-Commerce integrations → Checkout API → How to connect.
+3. Copy the Test secret key privately (starts with `sk_test_`). Never put it in GitHub, source code, issue comments, screenshots, or chat.
+4. Add the customer website domain to Verified Domains and submit it for review. Yoco says live keys unlock after domain approval.
+5. Configure test secrets privately in Supabase Edge Function Secrets.
+6. Register the Yoco Checkout API webhook using the Yoco API and save the one-time `whsec_` signing secret privately.
+7. Run sandbox tests and verify the resulting transactions in Yoco and SwiftHaul.
+8. Only after domain approval and explicit SwiftHaul production approval may live credentials be configured and production payment activation considered.
 
 Official references:
-- Checkout API overview: https://developer.yoco.com/docs/checkout-api
-- Authentication and domain verification: https://developer.yoco.com/docs/checkout-api/authentication
-- Testing and going live: https://developer.yoco.com/docs/checkout-api/testing
-- Yoco onboarding guide: https://support.yoco.help/en/articles/739322-yoco-checkout-api
+- Yoco Checkout API onboarding: https://support.yoco.help/en/articles/739322-yoco-checkout-api
+- Accepting a payment: https://developer.yoco.com/guides/online-payments/accepting-a-payment
+- Create checkout API: https://developer.yoco.com/api-reference/checkout-api/checkout/create-checkout
+- Listen for webhook events: https://developer.yoco.com/guides/online-payments/webhooks/listen-for-events
+- Verify webhook events: https://developer.yoco.com/guides/online-payments/webhooks/verifying-the-events
+- Payment notification payload: https://developer.yoco.com/api-reference/checkout-api/webhook-events/payment-notification
 
-## Planned Supabase secrets
+## Supabase secrets
 
-Use Supabase Dashboard → Edge Functions → Secrets. Do not send secrets in chat.
+Set these only in Supabase Dashboard → Edge Functions → Secrets. Do not send secrets in chat.
 
-- `YOCO_SECRET_KEY`: test key during development; live key only after Yoco domain approval and explicit production approval.
-- `YOCO_MODE`: `test` or `live`.
-- `YOCO_WEBHOOK_SECRET`: one-time webhook signing secret returned by Yoco when the webhook is registered.
-- `YOCO_CALLBACK_URL`: HTTPS customer return URL on the production customer website.
+- `YOCO_SECRET_KEY`: test key during development; live key only after domain approval and explicit production approval.
+- `YOCO_MODE`: `test` or `live`; must match the key prefix.
+- `YOCO_WEBHOOK_SECRET`: one-time webhook signing secret returned by Yoco.
+- `YOCO_CALLBACK_URL`: HTTPS customer return URL. The return URL is informational only and never settles a booking.
 
-Never store a Yoco secret key in public/customer.js, HTML, Android assets, GitHub Actions logs, or a public repository. Never ask a customer to enter card details into SwiftHaul forms.
+Never put a Yoco secret in public/customer.js, HTML, Android assets, GitHub Actions logs, or a public repository.
 
-## Planned implementation
+## Implementation currently committed in this draft
 
-1. Add an authenticated `yoco-checkout` Supabase Edge Function.
-   - Validate the Supabase customer session and active customer profile.
-   - Resolve booking by waybill and authenticated owner.
-   - Calculate the payable amount from the server-side booking and accepted assistance fee only.
-   - Require an unpaid, unrefunded, eligible booking.
-   - Create a pending `payment_transactions` row with provider `yoco`, currency `ZAR`, explicit sandbox/live mode, and unique provider reference.
-   - Create the hosted checkout session from the Supabase server using the Yoco secret key.
-   - Return only the hosted redirect URL and internal reference to the customer app.
-   - Fail closed if credentials are missing or key prefix does not match mode.
+- `supabase/functions/yoco-checkout/index.ts`
+  - Requires a valid Supabase bearer session and active customer profile.
+  - Resolves the booking by waybill and authenticated owner.
+  - Calculates the amount from the server-side booking and accepted assistance fee.
+  - Rejects paid, refunded, ineligible bookings and amounts below Yoco's documented R2 minimum.
+  - Creates a pending Yoco transaction, then creates a hosted checkout using integer cents, ZAR, and an idempotency key.
+  - Validates the returned amount, currency, processing mode and HTTPS Yoco redirect host before returning the redirect URL.
+  - Fails closed when secrets are missing or key/mode do not match.
 
-2. Add a public `yoco-webhook` Edge Function with JWT verification disabled only for the webhook route.
-   - Verify the exact raw request body using Yoco's documented webhook signature scheme and the stored webhook secret.
-   - Enforce timestamp/replay protection.
-   - Independently retrieve/verify checkout status with Yoco before settlement.
-   - Check processing mode, currency, exact amount, reference, and transaction ownership.
-   - Settle atomically through a service-role-only database RPC; reject duplicate or mismatched events.
-   - Never trust the browser return URL as proof of payment.
+- `supabase/functions/yoco-webhook/index.ts`
+  - Public webhook endpoint; JWT verification is disabled only for this route in Supabase config.
+  - Verifies the raw body using Yoco's documented `webhook-id.webhook-timestamp.body` HMAC-SHA256 signature format.
+  - Enforces Yoco's recommended three-minute timestamp window and constant-time signature comparison.
+  - Processes only `payment.succeeded`; checks the signed event's checkout ID, ZAR amount and configured test/live mode.
 
-3. Extend the payment provider enum/check constraints and settlement RPC for Yoco without changing existing Paystack, PayFast, EFT, or cash records.
-4. Add a provider-neutral customer checkout UI. Show a card option only when a provider is configured and explicitly enabled; otherwise keep the existing disabled/coming-soon state. EFT and cash choices remain available under existing eligibility rules.
-5. Add admin reconciliation visibility for provider, provider reference, amount, mode, status, and webhook settlement time. Do not let admin mark an online transaction paid solely from a customer screenshot.
-6. Add tests for successful payment, failed/cancelled checkout, duplicate webhook, invalid signature, stale timestamp, wrong amount/currency/mode, wrong booking owner, refunded/completed booking, and provider API outage.
+- `supabase/migrations/20261108060000_yoco_checkout_support.sql`
+  - Adds Yoco to the provider and booking payment-source allow-lists.
+  - Adds a unique provider checkout ID and a service-role-only atomic booking settlement function.
+  - Does not alter existing payment rows or switch the default payment method.
 
-## Manual payment-link fallback during onboarding
+The customer card button remains disabled/Coming soon. The migration is committed only to this development branch and has NOT been applied to production. The functions have NOT been deployed. No merchant secrets have been configured. This draft does not yet include customer UI activation or Company Admin reconciliation screens.
 
-If Yoco enables Payment Links before API credentials/domain verification are complete, an authorised admin may create a Yoco payment link from the Yoco App and send it to the customer. The link should include the exact SwiftHaul waybill as its reference and the correct server-calculated ZAR amount where supported.
-
-A customer screenshot or redirect is not proof of payment. Admin must reconcile the payment against Yoco's Sales History / transaction record before changing the booking's payment state. Keep EFT and cash as separate payment methods.
-
-## Release gates
+## Required validation before any activation
 
 - [ ] Yoco merchant profile and payout details approved.
-- [ ] Test key configured privately in Supabase.
-- [ ] Checkout and webhook functions implemented and reviewed.
-- [ ] Sandbox tests pass, including negative and duplicate cases.
+- [ ] Test key and webhook secret configured privately in a non-production test environment.
+- [ ] Function compilation and static checks pass.
+- [ ] Successful, failed, cancelled, duplicate, invalid-signature, stale-timestamp, wrong-amount, wrong-currency, wrong-mode and wrong-owner cases pass.
+- [ ] Yoco dashboard and SwiftHaul transaction records reconcile.
+- [ ] Customer UI and Company Admin reconciliation are implemented and tested.
 - [ ] Production customer domain approved by Yoco.
 - [ ] Live key and webhook secret configured privately.
-- [ ] Admin reconciliation tested.
-- [ ] Explicit SwiftHaul owner approval to merge/deploy and activate live payments.
+- [ ] Explicit SwiftHaul owner approval to merge, deploy and activate live payments.
 
-Until all gates are satisfied, no live card payment is accepted and no production payment routing is changed.
+Until all gates are satisfied, the card option stays disabled and EFT/cash remain the available customer payment arrangements. No live card payment is accepted and no production payment routing is changed.
