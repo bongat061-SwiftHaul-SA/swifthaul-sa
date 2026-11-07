@@ -50,7 +50,7 @@ create table if not exists public.driver_insurance_claims (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique(driver_user_id, waybill, incident_at),
-  check (approved_days is null or approved_benefit_cents = approved_days::bigint * daily_benefit_cents),
+  check (approved_days is null or (approved_benefit_cents is not null and approved_benefit_cents = approved_days::bigint * daily_benefit_cents)),
   check (status <> 'insurer_approved' or (route_compliance = 'compliant' and approved_days is not null and approved_benefit_cents is not null and insurer_claim_reference is not null)),
   check (status <> 'paid' or (status = 'paid' and payment_reference is not null and approved_benefit_cents is not null))
 );
