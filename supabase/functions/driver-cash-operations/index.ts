@@ -38,11 +38,26 @@ Deno.serve(async (req: Request) => {
   const admin = createClient(url, service, { auth: { persistSession: false, autoRefreshToken: false } });
   if (req.method === "GET") {
     if (profile.role === "admin") {
-      const { data, error } = await admin.from("driver_cash_deposits")
-        .select("id,driver_user_id,reference,amount_cents,channel,status,proof_object,driver_note,created_at,updated_at")
-        .in("status", ["proof_submitted", "awaiting_deposit"]).order("created_at", { ascending: true }).limit(200);
-      if (error) return reply(503, { error: "cash_deposit_queue_unavailable" });
-      return reply(200, { deposits: data ?? [] });
+      const [depositResult, receiptResult, ledgerResult] = await Promise.all([
+        admin.from("driver_cash_deposits")
+          .select("id,driver_user_id,reference,amount_cents,channel,status,proof_object,driver_note,created_at,updated_at")
+          .in("status", ["proof_submitted", "awaiting_deposit"]).order("created_at", { ascending: true }).limit(200),
+        admin.from("driver_cash_receipts")
+          .select("id,waybill,driver_user_id,amount_cents,customer_signed_name,customer_signature_object,receipt_reference,driver_confirmed_at,created_at")
+          .order("created_at", { ascending: false }).limit(500),
+        admin.from("driver_cash_clearing_ledger")
+          .select("driver_user_id,amount_cents,created_at").order("created_at", { ascending: false }).limit(5000),
+      ]);
+      if (depositResult.error || receiptResult.error || ledgerResult.error)
+        return reply(503, { error: "cash_reconciliation_queue_unavailable" });
+      const balances = new Map<string, number>();
+      for (const row of ledgerResult.data ?? [])
+        balances.set(row.driver_user_id, (balances.get(row.driver_user_id) ?? 0) + Number(row.amount_cents));
+      return reply(200, {
+        deposits: depositResult.data ?? [],
+        receipts: receiptResult.data ?? [],
+        driver_cash_held: [...balances.entries()].map(([driver_user_id, amount_cents]) => ({ driver_user_id, amount_cents })),
+      });
     }
     const [ledger, deposits, receipts] = await Promise.all([
       userClient.from("driver_cash_clearing_ledger")
