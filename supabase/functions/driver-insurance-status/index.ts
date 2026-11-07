@@ -100,6 +100,8 @@ Deno.serve(async (req: Request) => {
       vehicle_cover_limit_cents: policy?.vehicle_cover_limit_cents ?? 3000000,
       accidental_disability_cover_limit_cents: policy?.accidental_disability_cover_limit_cents ?? 10000000,
       daily_accident_benefit_cents: policy?.daily_accident_benefit_cents ?? 100000,
+      daily_accident_benefit_max_days: 5,
+      dispatch_trip_only: true,
     },
     policy: policyActive && policy ? {
       insurer_name: policy.insurer_name,
