@@ -42,9 +42,10 @@
     finance: { title:'Financial dashboard.', description:'Review reconciled platform, driver, payment and payout figures.', show:['finance'] },
     reports: { title:'Monthly reports.', description:'Export a dated CSV snapshot of the current administrator financial summary.', show:['reports'] },
     insurance: { title:'Driver insurance management.', description:'Verify Premium eligibility and manage insurer-issued driver policies.', show:['insurance'] },
+    'insurance-claims': { title:'Insurance claims review.', description:'Review dispatch-bound GPS evidence, route compliance and insurer decisions.', show:['insurance-claims'] },
     account: { title:'Company account.', description:'Company administrator profile and support information.', show:['account'] }
   };
-  const nodes = { stats, dispatches, drivers, account, refunds, payouts, offers, finance, reports, insurance };
+  const nodes = { stats, dispatches, drivers, account, refunds, payouts, offers, finance, reports, insurance, "insurance-claims": root.querySelector("#insurance-claims-admin") };
   function render(key, updateUrl) {
     const page = pages[key] || pages.overview;
     Object.entries(nodes).forEach(([name,node]) => { if(node) node.hidden = !page.show.includes(name); });
