@@ -176,6 +176,7 @@ Deno.serve(async (req: Request) => {
   }
 
   if (body.action !== "book" || typeof body.quote_id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.quote_id) ||
+      body.terms_accepted !== true || body.terms_version !== "2026-11-07-dispatch-cover-draft" ||
       typeof body.recipient !== "string" || !body.recipient.trim() || body.recipient.length > 500)
     return reply(400, { error: "calculate_a_quote_and_enter_recipient" });
   const { data: existing } = await admin.from("customer_bookings")
@@ -189,6 +190,16 @@ Deno.serve(async (req: Request) => {
   if (!quote) return reply(409, { error: "quote_not_found_recalculate_route" });
   if (Date.parse(quote.expires_at) <= Date.now()) return reply(409, { error: "quote_expired_recalculate_route" });
   if (!quote.load) return reply(409, { error: "quote_incomplete_recalculate_route" });
+
+  const { error: termsAcceptanceError } = await admin.from("customer_booking_terms_acceptances").upsert({
+    owner_id: owner,
+    quote_id: quote.id,
+    terms_version: body.terms_version,
+  }, { onConflict: "owner_id,quote_id,terms_version", ignoreDuplicates: true });
+  if (termsAcceptanceError) {
+    console.error("Customer terms acceptance could not be recorded", termsAcceptanceError.message);
+    return reply(503, { error: "terms_acceptance_record_failed" });
+  }
 
   const distance = Number(quote.distance_meters);
   const method = body.payment_method ?? "dispatch";
