@@ -5,7 +5,7 @@
   try{
     const d=await invoke("driver-insurance-status");
     const b=d.benefits||{};
-    const amounts="Vehicle: R"+(Number(b.vehicle_cover_limit_cents||3000000)/100).toLocaleString("en-ZA")+" · Disability: R"+(Number(b.accidental_disability_cover_limit_cents||10000000)/100).toLocaleString("en-ZA")+" · Daily accident benefit: R"+(Number(b.daily_accident_benefit_cents||100000)/100).toLocaleString("en-ZA")+"/eligible day.";
+    const amounts="Vehicle: R"+(Number(b.vehicle_cover_limit_cents||3000000)/100).toLocaleString("en-ZA")+" · Disability: R"+(Number(b.accidental_disability_cover_limit_cents||10000000)/100).toLocaleString("en-ZA")+" · Daily accident benefit: R"+(Number(b.daily_accident_benefit_cents||100000)/100).toLocaleString("en-ZA")+"/eligible day, maximum 5 days / R5,000 per accident claim.";
     if(d.insurance_active&&d.policy){
       note.textContent="Insurance policy active with "+d.policy.insurer_name+". Cover period: "+new Date(d.policy.coverage_starts_at).toLocaleDateString("en-ZA")+" to "+new Date(d.policy.coverage_ends_at).toLocaleDateString("en-ZA")+". "+amounts;
       detail.textContent="Your subscription qualifies and an insurer-issued policy is active. The R1,000 daily accident benefit is limited to 5 days / R5,000 per accident claim. Cover applies only during an accepted assigned dispatch while travelling to pickup or from pickup to delivery, with live route tracking and no unexplained stops or diversions. Check the policy wording and exclusions before relying on any benefit.";
