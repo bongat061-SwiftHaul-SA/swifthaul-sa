@@ -25,17 +25,17 @@ jobs:
           deno-version: v2.x
       - name: Check customer JavaScript
         run: |
-          node --check public/auth.js
-          node --check public/customer.js
-          node --check public/cargo-estimator.js
-          node --check public/location-picker.js
-          node --check public/map-utils.js
-          node --check public/settings.js
+          node --input-type=module --check < public/auth.js
+          node --input-type=module --check < public/customer.js
+          node --input-type=module --check < public/cargo-estimator.js
+          node --input-type=module --check < public/location-picker.js
+          node --input-type=module --check < public/map-utils.js
+          node --input-type=module --check < public/settings.js
       - name: Check driver application JavaScript
         run: |
-          node --check apps/driver/public/auth.js
-          node --check apps/driver/public/driver-application.js
-          node --check apps/company/public/driver-admin.js
+          node --input-type=module --check < apps/driver/public/auth.js
+          node --input-type=module --check < apps/driver/public/driver-application.js
+          node --input-type=module --check < apps/company/public/driver-admin.js
       - name: Type-check customer and driver Supabase Edge Functions
         run: |
           deno check --node-modules-dir=auto supabase/functions/customer-settings/index.ts
