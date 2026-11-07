@@ -35,6 +35,7 @@ jobs:
         run: |
           node --input-type=module --check < apps/driver/public/auth.js
           node --input-type=module --check < apps/driver/public/driver-application.js
+          node --input-type=module --check < apps/driver/public/premium.js
           node --input-type=module --check < apps/company/public/driver-admin.js
       - name: Type-check customer and driver Supabase Edge Functions
         run: |
@@ -43,3 +44,4 @@ jobs:
           deno check --node-modules-dir=auto supabase/functions/driver-documents/index.ts
           deno check --node-modules-dir=auto supabase/functions/driver-application-notify/index.ts
           deno check --node-modules-dir=auto supabase/functions/driver-admin/index.ts
+          deno check --node-modules-dir=auto supabase/functions/driver-insurance-status/index.ts
