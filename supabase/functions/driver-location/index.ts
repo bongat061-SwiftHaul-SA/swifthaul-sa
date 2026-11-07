@@ -10,7 +10,7 @@ const cors = {
 };
 const reply = (status: number, body: Record<string, unknown>) =>
   new Response(JSON.stringify(body), { status, headers: cors });
-const activeStatuses = ["assigned", "accepted", "picked_up", "in_transit"];
+const activeStatuses = ["accepted", "picked_up", "in_transit"];
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -33,6 +33,11 @@ Deno.serve(async (req: Request) => {
 
   if (req.method === "POST") {
     if (profile.role !== "driver") return reply(403, { error: "driver_account_required" });
+    const { data: driverProfile, error: driverProfileError } = await admin.from("driver_profiles")
+      .select("verification_status").eq("user_id", actorId).maybeSingle();
+    if (driverProfileError) return reply(500, { error: "driver_profile_lookup_failed" });
+    if (!driverProfile || driverProfile.verification_status !== "approved")
+      return reply(403, { error: "approved_driver_required" });
     const raw = await req.text();
     if (raw.length > 2048) return reply(413, { error: "request_too_large" });
     let body: Record<string, unknown>;
