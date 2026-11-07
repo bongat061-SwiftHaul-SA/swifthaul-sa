@@ -202,6 +202,16 @@ Deno.serve(async (req: Request) => {
   }
 
   const distance = Number(quote.distance_meters);
+  const assistanceRequested = body.assistance_requested === true;
+  const assistanceMinutes = assistanceRequested ? Number(body.assistance_minutes) : 0;
+  const assistanceFeeCents = assistanceRequested ? Number(body.assistance_fee_cents) : 0;
+  if (assistanceRequested) {
+    if (!Number.isInteger(assistanceMinutes) || assistanceMinutes < 30 || assistanceMinutes > 120 || assistanceMinutes % 30 !== 0)
+      return reply(400, { error: "choose_assistance_duration_between_30_and_120_minutes" });
+    if (quote.vehicle !== "van" && quote.vehicle !== "truck") return reply(400, { error: "assistance_requires_van_or_truck" });
+    const expectedFee = (quote.vehicle === "van" ? 18000 : 35000) + ((assistanceMinutes / 30) - 1) * (quote.vehicle === "van" ? 10000 : 18000);
+    if (assistanceFeeCents !== expectedFee) return reply(400, { error: "assistance_quote_changed_recalculate_and_review" });
+  } else if ((body.assistance_minutes ?? 0) !== 0 || (body.assistance_fee_cents ?? 0) !== 0) return reply(400, { error: "unexpected_assistance_amount" });
   const method = body.payment_method ?? "dispatch";
   if (method !== "cash" && method !== "dispatch" && method !== "wallet") return reply(400, { error: "choose_cash_dispatch_or_wallet_payment" });
   if (method === "cash" && distance >= 12000) return reply(400, { error: "cash_available_only_below_12km" });
@@ -214,6 +224,7 @@ Deno.serve(async (req: Request) => {
     offer = Number(body.counter_offer);
     offerStatus = "pending";
   }
+  if (method === "wallet" && assistanceRequested) return reply(400, { error: "wallet_payment_not_available_with_optional_assistance_yet_choose_dispatch_or_cash" });
   if (method === "wallet" && offer !== null) return reply(400, { error: "wallet_payment_not_available_with_counteroffers" });
   let pickup, dropoff;
   try { pickup = parseLocation(body, "pickup"); dropoff = parseLocation(body, "dropoff"); }
@@ -233,6 +244,8 @@ Deno.serve(async (req: Request) => {
     distance_meters: distance, price_band: quote.price_band, quote_id: quote.id,
     load: quote.load, distance_fee: quote.distance_fee, scheduled_at: scheduled,
     return_address: returnAddress || null, return_at: returnAt, payment_method: method,
+    assistance_requested: assistanceRequested, assistance_minutes: assistanceMinutes,
+    assistance_fee_cents: assistanceFeeCents, assistance_status: assistanceRequested ? "requested_pending_dispatch_confirmation" : "not_requested",
     counter_offer: offer, counter_offer_status: offerStatus,
     pickup_latitude: pickup.latitude, pickup_longitude: pickup.longitude, pickup_plus_code: pickup.plus_code, pickup_geohash: pickup.geohash,
     dropoff_latitude: dropoff.latitude, dropoff_longitude: dropoff.longitude, dropoff_plus_code: dropoff.plus_code, dropoff_geohash: dropoff.geohash,
