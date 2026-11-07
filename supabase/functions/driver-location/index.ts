@@ -73,7 +73,15 @@ Deno.serve(async (req: Request) => {
       accuracy_m: accuracy ?? null, updated_at: updatedAt,
     }, { onConflict: "waybill" });
     if (error) return reply(500, { error: "location_update_failed" });
-    return reply(200, { sharing: true, updated_at: new Date().toISOString() });
+    const { error: evidenceError } = await admin.from("driver_insurance_trip_location_events").insert({
+      waybill: booking.waybill, driver_user_id: actorId, latitude: lat, longitude: lng,
+      accuracy_m: accuracy ?? null,
+    });
+    if (evidenceError) {
+      console.error("Insurance trip evidence insert failed", evidenceError.message);
+      return reply(500, { error: "trip_evidence_record_failed" });
+    }
+    return reply(200, { sharing: true, trip_evidence_recorded: true, updated_at: new Date().toISOString() });
   }
 
   const waybill = new URL(req.url).searchParams.get("waybill");
