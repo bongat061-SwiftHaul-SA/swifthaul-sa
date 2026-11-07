@@ -104,7 +104,7 @@ No production schema or function change has been made as part of this investigat
 
 ## Staging security review (2026-11-08)
 
-The staging project now records migrations through `20261107235704` (driver cash reconciliation) and `20261107235704` is followed by `20261107235704`? The verified migration history includes `20261107235657_driver_cash_collection_reconciliation` and `20261107235704_paystack_provider_support`. Both were applied to this staging project only.
+The verified staging migration history includes `20261107235657_driver_cash_collection_reconciliation` and `20261107235704_paystack_provider_support`. Both were applied to this staging project only.
 
 The Supabase security advisor reports 25 public tables with RLS enabled but no policies. A direct privilege audit found no `SELECT` or `INSERT` grants to either `anon` or `authenticated` on the inspected public tables. The current design uses authenticated Edge Functions with server-side service-role access and explicit role/ownership checks. Therefore, do not add broad RLS policies merely to silence the linter. Before exposing any table to the Data API, add narrowly scoped policies and grants together, and test customer/driver/admin isolation.
 
