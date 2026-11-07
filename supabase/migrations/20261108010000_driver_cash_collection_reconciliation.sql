@@ -169,6 +169,15 @@ begin
   perform pg_advisory_xact_lock(hashtextextended(p_waybill, 0));
   select * into v_booking from public.customer_bookings where waybill = p_waybill for update;
   if not found then raise exception 'Booking not found' using errcode='P0002'; end if;
+  if not exists (
+      select 1 from public.user_profiles
+      where id=v_driver and role='driver' and account_status='active'
+    ) or not exists (
+      select 1 from public.driver_profiles
+      where user_id=v_driver and verification_status='approved'
+    ) then
+    raise exception 'Approved active driver required' using errcode='42501';
+  end if;
   if v_booking.driver_user_id is distinct from v_driver
     or v_booking.payment_method <> 'cash'
     or v_booking.status <> 'delivered' then
