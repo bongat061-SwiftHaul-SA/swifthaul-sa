@@ -33,6 +33,7 @@ create policy driver_cash_receipt_signature_admin_read on storage.objects
 for select to authenticated
 using (
   bucket_id='driver-cash-receipts'
+  and storage.allow_any_operation(array['object.get_authenticated_info','object.get_authenticated'])
   and exists (select 1 from public.user_profiles up
     where up.id=auth.uid() and up.role='admin' and up.account_status='active')
 );
@@ -41,6 +42,7 @@ create policy driver_cash_deposit_proof_admin_read on storage.objects
 for select to authenticated
 using (
   bucket_id='driver-cash-deposit-proofs'
+  and storage.allow_any_operation(array['object.get_authenticated_info','object.get_authenticated'])
   and exists (select 1 from public.user_profiles up
     where up.id=auth.uid() and up.role='admin' and up.account_status='active')
 );
@@ -169,7 +171,7 @@ begin
   if not found then raise exception 'Booking not found' using errcode='P0002'; end if;
   if v_booking.driver_user_id is distinct from v_driver
     or v_booking.payment_method <> 'cash'
-    or v_booking.status not in ('accepted','picked_up','in_transit','delivered') then
+    or v_booking.status <> 'delivered' then
     raise exception 'Only the assigned driver on an active cash booking may record receipt' using errcode='42501';
   end if;
   if v_booking.paid_at is not null then
@@ -224,7 +226,7 @@ declare
   v_ref text;
 begin
   if v_driver is null or p_amount_cents is null or p_amount_cents <= 0
-    or p_channel not in ('eft','participating_store') then
+    or p_channel is null or p_channel not in ('eft','participating_store') then
     raise exception 'Valid deposit amount and channel are required' using errcode='22023';
   end if;
   if not exists(select 1 from public.user_profiles where id=v_driver and role='driver' and account_status='active')
@@ -296,7 +298,7 @@ begin
   if v_admin is null or not exists(select 1 from public.user_profiles where id=v_admin and role='admin' and account_status='active') then
     raise exception 'Active administrator required' using errcode='42501';
   end if;
-  if p_deposit_id is null or p_action not in ('reconcile','reject') then
+  if p_deposit_id is null or p_action is null or p_action not in ('reconcile','reject') then
     raise exception 'Invalid reconciliation action' using errcode='22023';
   end if;
   perform pg_advisory_xact_lock(hashtextextended(p_deposit_id::text,0));
