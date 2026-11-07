@@ -37,6 +37,8 @@ jobs:
           node --input-type=module --check < apps/driver/public/driver-application.js
           node --input-type=module --check < apps/driver/public/premium.js
           node --input-type=module --check < apps/driver/public/insurance-claims.js
+          node --input-type=module --check < apps/driver/public/cash-management.js
+          node --input-type=module --check < apps/company/public/cash-reconciliation.js
           node --input-type=module --check < apps/driver/public/live-location.js
           node --input-type=module --check < apps/driver/public/section-pages.js
           node --input-type=module --check < apps/company/public/section-pages.js
