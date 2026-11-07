@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#173d31">
+<title>SwiftHaul SA · MapLibre South Africa preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.css" rel="stylesheet">
+<script src="https://unpkg.com/maplibre-gl@5.6.2/dist/maplibre-gl.js"></script>
+<style>
+:root{font-family:"Plus Jakarta Sans",sans-serif;color:#142d23;background:#f2f5f2}*{box-sizing:border-box}body{margin:0}.top{padding:18px 22px;background:#173d31;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:16px}.brand{font-weight:800;letter-spacing:.8px}.brand span{color:#a7d2b8}.top small{opacity:.75}.layout{max-width:1440px;margin:auto;padding:22px}.intro{display:flex;justify-content:space-between;align-items:end;gap:20px;margin-bottom:16px}.intro h1{font-size:clamp(24px,4vw,36px);letter-spacing:-1px;margin:0 0 6px}.intro p{margin:0;color:#65766d;max-width:650px;font-size:13px;line-height:1.6}.status{font-size:11px;font-weight:800;color:#176b52;background:#e4f1e8;border-radius:999px;padding:8px 12px;white-space:nowrap}.map-wrap{height:min(72vh,760px);min-height:480px;border-radius:20px;overflow:hidden;box-shadow:0 14px 38px #102c251c;background:#dfe8e1;position:relative}#map{width:100%;height:100%}.controls{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.controls button{border:1px solid #d5dfd8;background:#fff;color:#173d31;border-radius:999px;padding:9px 13px;font:700 11px inherit;cursor:pointer}.controls button[aria-pressed=true]{background:#173d31;color:#fff;border-color:#173d31}.note{margin-top:12px;padding:14px 16px;border:1px solid #dfe7e1;border-radius:14px;background:#fff;color:#64736b;font-size:11px;line-height:1.65}.note strong{color:#173d31}.pin{width:16px;height:16px;border:3px solid #fff;border-radius:50%;background:#176b52;box-shadow:0 2px 8px #102c2566}.pin.city{background:#2875c7}.maplibregl-popup-content{font:12px "Plus Jakarta Sans",sans-serif;border-radius:10px}.maplibregl-ctrl-group{border-radius:10px!important;overflow:hidden}@media(max-width:650px){.top{padding:14px}.layout{padding:14px}.intro{display:block}.status{display:inline-block;margin-top:10px}.map-wrap{height:66svh;min-height:420px;border-radius:15px}}
+</style>
+</head>
+<body>
+<header class="top"><div class="brand">SWIFTHAUL <span>SA</span></div><small>MapLibre · South Africa coverage pilot</small></header>
+<main class="layout">
+<section class="intro"><div><h1>South Africa map coverage</h1><p>MapLibre rendering pilot for SwiftHaul. Explore city, township and regional locations before connecting the new map engine to live Customer, Driver and Company workflows.</p></div><span class="status" id="map-status">Loading map style…</span></section>
+<nav class="controls" aria-label="Map test locations">
+<button type="button" data-place="gauteng" aria-pressed="true">Gauteng cluster</button>
+<button type="button" data-place="cape">Cape Town</button>
+<button type="button" data-place="durban">Durban</button>
+<button type="button" data-place="rural">Regional towns</button>
+<button type="button" data-place="country">South Africa overview</button>
+</nav>
+<div class="map-wrap"><div id="map" role="application" aria-label="Interactive South Africa map coverage preview"></div></div>
+<section class="note"><strong>Important test boundary:</strong> this page uses MapLibre GL JS with the public MapLibre demo vector style, solely to verify rendering, navigation and location presentation. It does not yet test address search, road routing, live driver GPS or delivery ETAs. Demo tiles are not a production tile service. The existing Leaflet maps remain active in all three platforms until the compatibility and routing checks pass.</section>
+</main>
+<script>
+(() => {
+ const status=document.getElementById('map-status');
+ if(!window.maplibregl){status.textContent='Map library failed to load';status.style.color='#a33';return;}
+ const places={
+  gauteng:{center:[28.0473,-26.2041],zoom:8.5,label:'Gauteng cluster'},
+  cape:{center:[18.4241,-33.9249],zoom:10,label:'Cape Town'},
+  durban:{center:[31.0218,-29.8587],zoom:10,label:'Durban'},
+  rural:{center:[29.8833,-25.7833],zoom:5.5,label:'Regional towns'},
+  country:{center:[24.5,-29.0],zoom:4.4,label:'South Africa overview'}
+ };
+ const points=[
+  {name:'Johannesburg',coordinates:[28.0473,-26.2041],kind:'city'},
+  {name:'Sandton',coordinates:[28.0567,-26.1076],kind:'city'},
+  {name:'Soweto',coordinates:[27.8585,-26.2485],kind:'city'},
+  {name:'Pretoria',coordinates:[28.2293,-25.7479],kind:'city'},
+  {name:'Centurion',coordinates:[28.1881,-25.8603],kind:'city'},
+  {name:'Cape Town',coordinates:[18.4241,-33.9249],kind:'city'},
+  {name:'Durban',coordinates:[31.0218,-29.8587],kind:'city'},
+  {name:'Gqeberha',coordinates:[25.6022,-33.9608],kind:'city'},
+  {name:'Bloemfontein',coordinates:[26.2309,-29.0852],kind:'city'},
+  {name:'Polokwane',coordinates:[29.4486,-23.9045],kind:'city'},
+  {name:'Mbombela',coordinates:[30.9778,-25.4753],kind:'city'},
+  {name:'Upington',coordinates:[21.2561,-28.4478],kind:'regional'},
+  {name:'Springbok',coordinates:[17.8865,-29.6643],kind:'regional'},
+  {name:'Mthatha',coordinates:[28.7844,-31.5889],kind:'regional'},
+  {name:'Ermelo',coordinates:[29.9833,-26.5333],kind:'regional'}
+ ];
+ const map=new maplibregl.Map({container:'map',style:'https://demotiles.maplibre.org/style.json',center:places.gauteng.center,zoom:places.gauteng.zoom,attributionControl:true});
+ map.addControl(new maplibregl.NavigationControl({visualizePitch:true}),'top-right');
+ map.addControl(new maplibregl.ScaleControl({unit:'metric'}),'bottom-left');
+ map.on('load',()=>{
+  points.forEach(point=>{
+   const el=document.createElement('div');el.className='pin '+(point.kind==='city'?'city':'');
+   new maplibregl.Marker({element:el}).setLngLat(point.coordinates).setPopup(new maplibregl.Popup({offset:14}).setText(point.name)).addTo(map);
+  });
+  status.textContent='Map loaded · '+points.length+' test locations';
+ });
+ map.on('error',event=>{if(event.error)status.textContent='Map resource issue · check connection';});
+ document.querySelectorAll('[data-place]').forEach(button=>button.addEventListener('click',()=>{
+  const place=places[button.dataset.place];if(!place)return;
+  document.querySelectorAll('[data-place]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
+  map.flyTo({center:place.center,zoom:place.zoom,duration:1000});
+ }));
+ window.addEventListener('resize',()=>map.resize());
+})();
+</script>
+</body>
+</html>
