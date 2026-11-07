@@ -26,7 +26,7 @@ The welcome email never contains a password. It confirms account registration an
 
 ## Documents
 
-The migration creates a private Storage bucket and metadata table. The Edge Function accepts PDF/JPEG/PNG/WebP files up to 10 MB: ID document, proof of address, bank confirmation, driver's licence and vehicle document. Uploads are private; administrators receive short-lived signed viewing links through the protected driver-admin function. Do not send identity documents, ID numbers, bank statements or account numbers in WhatsApp notifications.
+The migration creates a private Storage bucket and metadata table. The Edge Function accepts PDF/JPEG/PNG/WebP files up to 10 MB: ID document, proof of address, bank confirmation, driver's licence and vehicle document. Uploads are private; administrators receive short-lived signed viewing links through the protected driver-admin function. Do not send identity documents, ID numbers, bank statements or account numbers in WhatsApp notifications. Company Admin can accept or reject each document individually. A driver cannot be approved until all five document types have an accepted review status; the server enforces this rule even if a client bypasses the interface.
 
 Do not request card numbers, PINs, passwords or one-time passcodes.
 
