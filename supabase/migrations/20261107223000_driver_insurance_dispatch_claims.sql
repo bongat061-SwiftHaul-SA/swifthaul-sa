@@ -13,6 +13,7 @@ create table if not exists public.driver_insurance_trip_location_events (
   latitude double precision not null check (latitude between -90 and 90),
   longitude double precision not null check (longitude between -180 and 180),
   accuracy_m double precision check (accuracy_m is null or (accuracy_m >= 0 and accuracy_m <= 100000)),
+  driver_was_online boolean not null default true check (driver_was_online = true),
   recorded_at timestamptz not null default now()
 );
 create index if not exists driver_insurance_trip_events_waybill_time_idx
