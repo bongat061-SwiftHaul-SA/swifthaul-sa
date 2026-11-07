@@ -68,7 +68,7 @@ Unnecessary stops or diversions from the authorised route are grounds for the in
 ## Claim handling
 
 - Driver claims are linked to a waybill and must be reported against an accepted assigned trip.
-- Up to five PDF/image evidence files are accepted, each up to 10 MB, in a private storage bucket; admin links expire after five minutes.
+- Up to five PDF/image evidence files are accepted, each up to 10 MB, in a private storage bucket; the driver must explicitly consent to claim-evidence processing and relevant insurer sharing. Admin links expire after five minutes.
 - Requested and approved daily benefit days are capped at five per accident claim. The server calculates the maximum at R1,000 per day (R5,000 per claim).
 - Admin must record route compliance before insurer approval. A route breach blocks approval in the workflow.
 - An insurer claim reference and insurer decision note are required. Payment is only recorded after insurer approval and a settlement/payment reference is supplied.
