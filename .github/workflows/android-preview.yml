@@ -76,7 +76,7 @@ jobs:
           test -f www/index.html
           grep -R -q '20261107' www
           if [ "${{ matrix.label }}" = "Customer" ]; then
-            grep -q 'customer-multi-pages-20261107' www/index.html
+            grep -q 'customer-multi-pages-3d-20261107' www/index.html
           elif [ "${{ matrix.label }}" = "Driver" ]; then
             grep -q 'driver-home-uber-refresh-20261107' www/index.html
           else
