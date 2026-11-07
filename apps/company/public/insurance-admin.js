@@ -21,7 +21,7 @@
     return node;
   }
   function actionButton(label,fn){
-    const b=element('button',label);b.type='button';b.addEventListener('click',fn);return b;
+    const b=element('button',label);b.type='button';b.addEventListener('click',()=>fn(b));return b;
   }
   async function update(driver,action,fields,button){
     button.disabled=true;
