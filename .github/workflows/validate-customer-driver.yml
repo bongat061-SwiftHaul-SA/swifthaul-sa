@@ -45,3 +45,6 @@ jobs:
           deno check --node-modules-dir=auto supabase/functions/driver-application-notify/index.ts
           deno check --node-modules-dir=auto supabase/functions/driver-admin/index.ts
           deno check --node-modules-dir=auto supabase/functions/driver-insurance-status/index.ts
+          deno check --node-modules-dir=auto supabase/functions/driver-premium/index.ts
+          deno check --node-modules-dir=auto supabase/functions/driver-membership-checkout/index.ts
+          deno check --node-modules-dir=auto supabase/functions/payfast-itn/index.ts
