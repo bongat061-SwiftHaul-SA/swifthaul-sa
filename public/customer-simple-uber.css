@@ -1,0 +1,33 @@
+/* Customer signed-in booking workspace: compact, map-first layout */
+body[data-app="customer"]{background:#f6f8f7;color:#14231e}
+body[data-app="customer"] .topbar{min-height:60px;padding:11px clamp(14px,3vw,36px)}
+body[data-app="customer"] .page{max-width:1180px;padding:12px clamp(12px,3vw,36px) 42px}
+body[data-app="customer"] .page-heading{align-items:center;gap:12px;margin:5px 0 10px}
+body[data-app="customer"] .page-heading .eyebrow{margin:0 0 3px;font-size:9px}
+body[data-app="customer"] .page-heading h1{margin:0;font-size:clamp(20px,2.4vw,27px);font-weight:850;letter-spacing:-1.1px;line-height:1.15}
+body[data-app="customer"] .page-heading>p{max-width:360px;margin:0;font-size:11px;line-height:1.5}
+body[data-app="customer"] .section-links{position:sticky;top:60px;z-index:25;display:flex;gap:5px;flex-wrap:nowrap;overflow-x:auto;white-space:nowrap;padding:8px 0 10px;margin:0 0 12px;background:#f6f8f7;border-bottom:1px solid #e7ece9;scrollbar-width:none}
+body[data-app="customer"] .section-links a{flex:0 0 auto;padding:8px 13px;border-radius:999px;font-size:10px;font-weight:800;color:#62716a}
+body[data-app="customer"] .section-links a:first-child{background:#142d23;color:#fff}
+body[data-app="customer"] .workspace-grid{display:grid;grid-template-columns:minmax(0,1fr)!important;gap:14px;max-width:1000px;margin:0 auto}
+body[data-app="customer"] #booking-form{padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+body[data-app="customer"] #booking-form>h2{display:none}
+body[data-app="customer"] #new-delivery>.help{display:none}
+body[data-app="customer"] #bookings{position:static;padding:18px;border-radius:16px;box-shadow:0 4px 16px #14231e08}
+body[data-app="customer"] #bookings h2{margin-bottom:10px;font-size:15px}
+body[data-app="customer"] .customer-wallet,body[data-app="customer"] .customer-settings{max-width:1000px;margin:14px auto 0;padding:20px;border-radius:16px}
+body[data-app="customer"] .footer{padding:18px clamp(14px,3vw,36px);font-size:9px}
+body[data-app="customer"] .order-actions{justify-content:flex-start}
+body[data-app="customer"] .order-actions a,body[data-app="customer"] .order-actions button{min-height:38px;padding:9px 12px;border-radius:10px}
+@media(max-width:650px){
+ body[data-app="customer"] .topbar{min-height:56px;padding:9px 13px}
+ body[data-app="customer"] .page{padding:8px 10px 30px}
+ body[data-app="customer"] .page-heading{padding:4px 3px 8px}
+ body[data-app="customer"] .page-heading h1{font-size:21px}
+ body[data-app="customer"] .page-heading>p{max-width:145px;font-size:9px}
+ body[data-app="customer"] .section-links{top:56px;margin:0 0 8px;padding:6px 0 8px}
+ body[data-app="customer"] .section-links a{padding:7px 11px;font-size:9px}
+ body[data-app="customer"] #bookings{padding:15px}
+ body[data-app="customer"] .customer-wallet,body[data-app="customer"] .customer-settings{padding:15px;margin-top:10px}
+ body[data-app="customer"] .account [data-user-name]{display:none}
+}
