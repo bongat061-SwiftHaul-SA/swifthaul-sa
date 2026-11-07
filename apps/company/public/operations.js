@@ -96,6 +96,9 @@ if (app === 'driver' || app === 'company') {
       order.paid_at ? 'Paid' : 'Payment pending'
     ].filter(Boolean).join(' · ');
     card.append(title, route, summary);
+    const fullMap=document.createElement('a');fullMap.className='open-booking-map';fullMap.textContent='Open full-screen tracking map ↗';
+    fullMap.href='map.html';
+  fullMap.addEventListener('click',()=>{try{sessionStorage.setItem('swiftHaulMapContext',JSON.stringify({waybill:order.waybill,pickup:order.pickup,dropoff:order.dropoff,status:order.status||'Booking route',pickupLat:order.pickup_latitude,pickupLng:order.pickup_longitude,dropoffLat:order.dropoff_latitude,dropoffLng:order.dropoff_longitude}));}catch{} });card.append(fullMap);
 
     // Company dispatch tracking preview: trip details first, full-width planned route map second.
     if (app === 'company' && ['assigned', 'accepted', 'picked_up', 'in_transit'].includes(order.status)) {
@@ -154,43 +157,56 @@ if (app === 'driver' || app === 'company') {
       const points = [];
       if (validPoint(pickup)) points.push([pickup.lat, pickup.lng]);
       if (validPoint(dropoff)) points.push([dropoff.lat, dropoff.lng]);
-      const fitRoute = () => {
-        if (!map || !points.length) return;
-        if (points.length > 1) map.fitBounds(points, { padding: [42, 42], maxZoom: 15 });
-        else map.setView(points[0], 14);
-      };
-      if (window.L && points.length) {
-        map = L.map(mapElement, { zoomControl: true, attributionControl: true, scrollWheelZoom: false });
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-          maxZoom: 20, attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
-        }).addTo(map);
-        if (validPoint(pickup)) L.circleMarker([pickup.lat, pickup.lng], {
-          radius: 10, color: '#fff', weight: 4, fillColor: '#176b52', fillOpacity: 1
-        }).addTo(map).bindPopup('Pickup');
-        if (validPoint(dropoff)) L.circleMarker([dropoff.lat, dropoff.lng], {
-          radius: 10, color: '#fff', weight: 4, fillColor: '#e39b35', fillOpacity: 1
-        }).addTo(map).bindPopup('Drop-off');
-        if (points.length === 2) {
-          routeLine = L.polyline(points, { color: '#176b52', weight: 6, opacity: .98, lineCap: 'round', lineJoin: 'round' }).addTo(map);
+      if (window.maplibregl && points.length) {
+        map = new maplibregl.Map({
+          container: mapElement,
+          style: {
+            version: 8,
+            sources: { carto: { type: 'raster', tiles: [
+              'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+              'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+              'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'
+            ], tileSize: 256, attribution: '&copy; OpenStreetMap contributors &copy; CARTO' } },
+            layers: [{ id: 'carto-voyager', type: 'raster', source: 'carto' }]
+          },
+          center: points[0].slice().reverse(), zoom: 12,
+          attributionControl: true
+        });
+        map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+        const marker = (point, color, title) => {
+          const node = document.createElement('div');
+          node.style.cssText = 'width:18px;height:18px;border:4px solid #fff;border-radius:50%;background:' + color + ';box-shadow:0 1px 8px #0005';
+          new maplibregl.Marker({ element: node }).setLngLat([point[1], point[0]]).setPopup(new maplibregl.Popup({ offset: 12 }).setText(title)).addTo(map);
+        };
+        if (validPoint(pickup)) marker([pickup.lat, pickup.lng], '#176b52', 'Pickup');
+        if (validPoint(dropoff)) marker([dropoff.lat, dropoff.lng], '#e39b35', 'Drop-off');
+        const directFeature = { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: points.map(([lat,lng]) => [lng,lat]) } };
+        map.on('load', () => {
+          map.addSource('dispatch-route', { type: 'geojson', data: directFeature });
+          map.addLayer({ id: 'dispatch-route-line', type: 'line', source: 'dispatch-route', paint: { 'line-color': '#176b52', 'line-width': 5, 'line-opacity': .85, 'line-dasharray': [2,2] } });
+          if (points.length === 2) {
+            fetch('https://router.project-osrm.org/route/v1/driving/' +
+              pickup.lng + ',' + pickup.lat + ';' + dropoff.lng + ',' + dropoff.lat +
+              '?overview=full&geometries=geojson&steps=false', { headers: { Accept: 'application/json' } })
+              .then(response => { if (!response.ok) throw new Error('Route unavailable'); return response.json(); })
+              .then(data => {
+                const road = data.routes?.[0];
+                if (!road || !map) return;
+                map.getSource('dispatch-route').setData({ type: 'Feature', properties: {}, geometry: road.geometry });
+                map.setPaintProperty('dispatch-route-line', 'line-dasharray', [1,0]);
+                map.setPaintProperty('dispatch-route-line', 'line-width', 6);
+                map.fitBounds([[pickup.lng,pickup.lat],[dropoff.lng,dropoff.lat]], { padding: 52, maxZoom: 15 });
+              }).catch(() => { note.textContent = 'Road routing is temporarily unavailable; showing the direct pickup-to-drop-off connection. Live driver GPS and traffic are not included.'; });
+          }
           fitRoute();
-          fetch('https://router.project-osrm.org/route/v1/driving/' +
-            pickup.lng + ',' + pickup.lat + ';' + dropoff.lng + ',' + dropoff.lat +
-            '?overview=full&geometries=geojson&steps=false', { headers: { Accept: 'application/json' } })
-            .then(response => { if (!response.ok) throw new Error('Route unavailable'); return response.json(); })
-            .then(data => {
-              const road = data.routes?.[0];
-              if (!road || !map) return;
-              if (routeLine) routeLine.remove();
-              const coords = road.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
-              routeLine = L.layerGroup([
-                L.polyline(coords, { color: '#fff', weight: 13, opacity: .95, lineCap: 'round', lineJoin: 'round' }),
-                L.polyline(coords, { color: '#176b52', weight: 6, opacity: .98, lineCap: 'round', lineJoin: 'round' })
-              ]).addTo(map);
-              fitRoute();
-            }).catch(() => { note.textContent = 'Road routing is temporarily unavailable; showing the direct pickup-to-drop-off connection. Live driver GPS and traffic are not included.'; });
-        } else fitRoute();
+        });
+        const fitRoute = () => {
+          if (!map || !points.length) return;
+          if (points.length > 1) map.fitBounds(points.map(([lat,lng]) => [lng,lat]), { padding: 52, maxZoom: 15 });
+          else map.setCenter([points[0][1], points[0][0]]).setZoom(14);
+        };
         recenter.addEventListener('click', fitRoute);
-        requestAnimationFrame(() => map && map.invalidateSize());
+        map.on('error', () => { note.textContent = 'Map tiles could not be loaded. Check your connection; pickup and drop-off details remain available.'; });
       } else {
         mapElement.hidden = true;
         stage.classList.add('company-tracking-map-unavailable');
