@@ -67,3 +67,19 @@ The driver interface should show earnings, cash held for SwiftHaul, deposits awa
 ## Scope boundary
 
 This audit is informational and does not authorise production changes. The PR remains a code proposal until reviewed, tested and approved. Do not apply the migration or deploy functions merely because the documentation was committed.
+
+
+## Read-only baseline audit and cash UI safeguards
+
+A fresh read-only check of the linked Supabase project found:
+- 0 delivered bookings with `paid_at IS NULL`.
+- 0 driver earning ledger events attached to delivered bookings with `paid_at IS NULL`.
+- 0 delivered-and-paid bookings with an assigned driver but no earning event.
+
+This means the specific premature-credit condition identified in the trigger review was not present in the current booking/ledger data at the time of this read-only check. The trigger is still unsafe for future records until the proposed migration is applied and tested.
+
+The Company Admin cash page now includes signed customer receipt evidence and exact outstanding driver cash totals. Those totals are calculated by a protected database function over the complete cash ledger rather than a capped client-side sum. Admin signature/proof access is restricted to authenticated administrator reads and short-lived signed links; ordinary object listing is not opened.
+
+The driver receipt RPC now requires an active, approved driver and a delivered cash booking. Receipt creation and payout decisions serialize on a per-driver transaction lock to avoid a concurrent cash receipt being missed by payout approval.
+
+These are proposed branch changes, not live changes. The counts above are a snapshot from read-only queries and should be rechecked in staging before release.
