@@ -70,6 +70,44 @@
     '.swift-map-marker span{font-size:15px}',
     '@media(max-width:650px){#delivery-map-stage{height:78svh;min-height:650px;margin:-22px -18px 22px;border-radius:0 0 20px 20px}.swift-location-sheet{left:10px;right:10px;bottom:10px;max-height:58%;padding:15px 16px;border-radius:21px}.swift-sheet-head{gap:8px}.swift-sheet-head h3{font-size:15px}.swift-route-steps{gap:5px;padding:7px 8px;font-size:8px}.swift-location-fields{gap:6px}.swift-location-fields input{height:40px;min-height:40px}.swift-sheet-tools{gap:6px}.swift-sheet-tools button{padding:7px 9px;font-size:9px}.swift-pin-meta{margin-top:7px}.swift-sheet-quote #quote-result{font-size:10px}}'
   ].join('\n');
+  style.textContent += [
+    '#delivery-map-stage{height:clamp(650px,84vh,900px)!important;min-height:650px!important;margin:-30px -30px 24px!important;border-radius:0 0 22px 22px!important}',
+    '.swift-location-sheet{left:clamp(12px,2vw,24px)!important;right:clamp(12px,2vw,24px)!important;bottom:clamp(12px,2vw,24px)!important;max-height:76%!important;overflow-y:auto!important;padding:18px!important;border-radius:22px!important}',
+    '.swift-sheet-head{margin-bottom:12px!important}',
+    '.swift-sheet-head h3{font-size:17px!important;font-weight:850!important;letter-spacing:-.5px!important}',
+    '.swift-location-fields{grid-template-columns:1fr!important;gap:7px!important}',
+    '.swift-location-fields .field{padding-left:20px!important}',
+    '.swift-location-fields input{min-height:42px!important;height:42px!important;margin-top:4px!important;padding:10px 12px!important}',
+    '.swift-location-fields .field label{font-size:9px!important;letter-spacing:.65px!important;text-transform:uppercase!important}',
+    '.swift-location-fields .field:before{top:15px!important}',
+    '.swift-pin-button{margin-top:3px!important;padding:5px 8px!important;font-size:9px!important}',
+    '.swift-location-sheet .parcel-fields{margin:10px 0!important;padding:12px!important;border:1px solid #e8edea!important;border-radius:14px!important;background:#fbfcfb!important}',
+    '.swift-location-sheet .parcel-fields legend{margin-bottom:7px!important}',
+    '.swift-location-sheet .parcel-fields>p.subtle{display:none!important}',
+    '.swift-location-sheet .load-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:7px!important}',
+    '.swift-location-sheet .load-grid label{font-size:9px!important;min-width:0!important}',
+    '.swift-location-sheet .load-grid input{min-height:39px!important;height:39px!important;padding:8px!important;font-size:11px!important}',
+    '.swift-location-sheet #load-summary{margin:7px 0 0!important;font-size:10px!important;min-height:0!important}',
+    '.swift-more-options{margin:9px 0!important;border:1px solid #e7ece8!important;border-radius:13px!important;background:#fff!important}',
+    '.swift-more-options>summary{padding:12px 13px!important;color:#34443d!important;font-size:11px!important;font-weight:800!important;cursor:pointer!important;list-style:none!important}',
+    '.swift-more-options>summary::-webkit-details-marker{display:none!important}',
+    '.swift-more-options>summary:after{content:"＋";float:right;color:#176b52!important}',
+    '.swift-more-options[open]>summary:after{content:"−"}',
+    '.swift-more-content{padding:0 12px 10px!important}',
+    '.swift-more-content fieldset{margin:10px 0!important;padding:11px!important}',
+    '.swift-more-content .subtle{font-size:10px!important}',
+    '.swift-sheet-quote{margin-top:10px!important}',
+    '.swift-sheet-quote #quote-status{margin:7px 0!important;min-height:0!important;font-size:10px!important}',
+    '.swift-sheet-quote #calculate-route{width:100%!important;min-height:46px!important;border-radius:12px!important;background:#142d23!important;border-color:#142d23!important;font-weight:800!important}',
+    '.swift-sheet-quote #quote-result{margin:10px 0!important;padding:12px!important;border:1px solid #e5eee8!important;border-radius:14px!important;background:#f7faf8!important}',
+    '.swift-sheet-quote #quote-result>p.subtle:nth-of-type(n+2){display:none!important}',
+    '.swift-sheet-quote #quote-map{height:150px!important;border-radius:12px!important}',
+    '.swift-sheet-quote .quote-totals strong{font-size:21px!important}',
+    '.swift-booking-actions{position:sticky!important;bottom:-18px!important;z-index:5!important;margin:12px -18px -18px!important;padding:12px 18px 14px!important;background:#fff!important;border-top:1px solid #e8edea!important;box-shadow:0 -8px 20px #fff!important}',
+    '.swift-booking-actions #submit{width:100%!important;min-height:52px!important;border-radius:13px!important;background:#142d23!important;border-color:#142d23!important}',
+    '.swift-booking-actions #message{margin:6px 0 0!important;font-size:10px!important}',
+    '@media(max-width:650px){#delivery-map-stage{height:88svh!important;min-height:660px!important;margin:-22px -18px 18px!important;border-radius:0 0 18px 18px!important}.swift-location-sheet{left:9px!important;right:9px!important;bottom:9px!important;max-height:77%!important;padding:13px!important;border-radius:19px!important}.swift-sheet-head h3{font-size:15px!important}.swift-location-fields{gap:5px!important}.swift-location-fields input{min-height:39px!important;height:39px!important}.swift-location-sheet .load-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.swift-location-sheet .load-grid input{min-height:37px!important;height:37px!important}.swift-booking-actions{bottom:-13px!important;margin:10px -13px -13px!important;padding:10px 13px 12px!important}.swift-sheet-quote #quote-map{height:125px!important}}'
+  ].join('\\n');
   document.head.append(style);
 
   const pickupWrap = pickup.closest('.field');
@@ -94,8 +132,42 @@
 
   const calculate = document.getElementById('calculate-route');
   const quote = document.getElementById('quote-result');
-  if (calculate) stage.querySelector('.swift-sheet-quote').append(calculate);
-  if (quote) stage.querySelector('.swift-sheet-quote').append(quote);
+  const sheet = stage.querySelector('.swift-location-sheet');
+  const quoteArea = stage.querySelector('.swift-sheet-quote');
+  const recipientWrap = document.getElementById('custRecip')?.closest('.field');
+  if (recipientWrap) fields.append(recipientWrap);
+
+  const parcelFields = form.querySelector('.parcel-fields');
+  if (parcelFields) sheet.insertBefore(parcelFields, quoteArea);
+
+  const vehicleFieldset = form.querySelector('input[name="vehicle"]')?.closest('fieldset');
+  if (vehicleFieldset) vehicleFieldset.hidden = true;
+
+  const moreOptions = document.createElement('details');
+  moreOptions.className = 'swift-more-options';
+  const moreSummary = document.createElement('summary');
+  moreSummary.textContent = 'More options · pickup time, return and payment';
+  const moreContent = document.createElement('div');
+  moreContent.className = 'swift-more-content';
+  moreOptions.append(moreSummary, moreContent);
+  for (const selector of ['#schedule-later', '#request-return', '#payment-method']) {
+    const fieldset = form.querySelector(selector)?.closest('fieldset');
+    if (fieldset) moreContent.append(fieldset);
+  }
+  sheet.insertBefore(moreOptions, quoteArea);
+
+  const quoteStatus = document.getElementById('quote-status');
+  if (quoteStatus) quoteArea.append(quoteStatus);
+  if (calculate) quoteArea.append(calculate);
+  if (quote) quoteArea.append(quote);
+
+  const bookingActions = document.createElement('div');
+  bookingActions.className = 'swift-booking-actions';
+  const submitButton = document.getElementById('submit');
+  const bookingMessage = document.getElementById('message');
+  if (submitButton) bookingActions.append(submitButton);
+  if (bookingMessage) bookingActions.append(bookingMessage);
+  quoteArea.append(bookingActions);
 
   const $ = id => document.getElementById(id);
   const state = { pickup: null, dropoff: null };
