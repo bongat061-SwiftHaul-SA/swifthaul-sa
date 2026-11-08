@@ -160,3 +160,15 @@ A read-only comparison of the other staging cash RPC definitions confirms the in
 - Preserve the existing error contract for authorization failure (`42501`), and keep `anon` execution revoked. Verify the function's effective grants after remediation rather than relying only on the Edge Function wrapper.
 
 The other inspected RPCs also demonstrate that the admin-only balance and reconciliation functions check `user_profiles.role='admin'` and `account_status='active'` inside the SECURITY DEFINER function itself. This comparison is evidence for the remediation pattern only; no SQL function was changed in this review.
+
+
+## Follow-up RPC grant and Storage policy verification (2026-11-08)
+
+A further read-only staging audit verified the effective function privileges and the relevant Storage policies:
+
+- `submit_driver_cash_deposit_proof(uuid,text,text)` is owned by `postgres`, is `SECURITY DEFINER`, and has `search_path=public`.
+- `anon` cannot execute it; `authenticated` and `service_role` can. The authenticated execution grant is intentional for the RPC workflow but makes the missing in-function active/approved-driver check a real authorization gap, not merely a linter concern.
+- The driver cash deposit proof bucket is private by policy: authenticated users can read objects in their own UUID folder; active admins have a separate read policy; uploads are restricted to the caller's UUID folder. The receipt-signature bucket has the corresponding owner/admin read and owner-folder upload policies.
+- The current proof upload Storage policy does not itself require active/approved driver status. The RPC must still enforce that status before attaching an object to a deposit. Consider adding an active/approved-driver predicate to the upload policy as defense in depth, then test that it does not block legitimate approved drivers.
+
+The security advisor continues to report five authenticated-callable SECURITY DEFINER cash RPCs and disabled leaked-password protection. The former are intentionally callable workflow entry points but must retain strict internal authorization; the latter remains a separate Auth configuration action. No grants, policies, functions, or Auth settings were changed by this audit.
