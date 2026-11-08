@@ -78,7 +78,7 @@ Deno.serve(async (req: Request) => {
       const active = (memberships ?? []).filter((m: Membership) => m.driver_user_id === driver.user_id)
         .sort((a: Membership, b: Membership) => Date.parse(b.starts_at) - Date.parse(a.starts_at))[0] ?? null;
       let eligibility = { eligible: false, basis: null as string | null };
-      if (profile?.account_status === "active" && active) {
+      if (profile?.account_status === "active" && driver.verification_status === "approved" && active) {
         if (active.plan === "yearly") eligibility = { eligible: true, basis: "yearly_prepaid" };
         else if (active.plan === "monthly") {
           const previousWindow = new Date(Date.parse(active.starts_at) - 7 * 86400000).toISOString();
@@ -123,6 +123,11 @@ Deno.serve(async (req: Request) => {
     .select("role,account_status").eq("id", userId).maybeSingle();
   if (targetError) return reply(500, { error: "driver_profile_lookup_failed" });
   if (!target || target.role !== "driver") return reply(404, { error: "driver_not_found" });
+  if (action === "activate") {
+    const { data: approvedDriver, error: approvedDriverError } = await db.from("driver_profiles").select("verification_status").eq("user_id", userId).maybeSingle();
+    if (approvedDriverError) return reply(500, { error: "driver_verification_lookup_failed" });
+    if (!approvedDriver || approvedDriver.verification_status !== "approved") return reply(409, { error: "approved_driver_required" });
+  }
 
   let values: Record<string, unknown> = { driver_user_id: userId, updated_at: new Date().toISOString() };
   if (action === "activate") {
