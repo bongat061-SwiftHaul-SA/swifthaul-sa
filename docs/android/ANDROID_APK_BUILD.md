@@ -10,7 +10,7 @@ SwiftHaul has three separate web application entry points and this workflow pack
 
 ## Build
 
-The GitHub Actions workflow `.github/workflows/android-apks.yml` creates the native Android project during CI, syncs the relevant web assets, and runs Gradle `assembleDebug` for each app. It uploads three separate APK artifacts:
+The GitHub Actions workflow `.github/workflows/android-apks.yml` installs the pinned Capacitor 7.6.10 dependencies and creates the native Android project during CI, syncs the relevant web assets, and runs Gradle `assembleDebug` for each app. It uploads three separate APK artifacts:
 
 - `swifthaul-customer-apk`
 - `swifthaul-driver-apk`
