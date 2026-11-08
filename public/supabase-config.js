@@ -1,6 +1,6 @@
 // Public browser configuration only. Never place a service-role or secret key here.
 // Production hosts use production Supabase. The isolated Netlify and GitHub Pages previews use staging.
-const isNetlifyStagingPreview = typeof window !== 'undefined' && window.location.hostname === 'deploy-preview-41--swifthaul-sa.netlify.app';
+const isNetlifyStagingPreview = typeof window !== 'undefined' && window.location.hostname.endsWith('--swifthaul-sa.netlify.app') && window.location.hostname !== 'swifthaul-sa.netlify.app';
 const isGitHubPagesStagingPreview = typeof window !== 'undefined' &&
   window.location.hostname === 'bongat061-swifthaul-sa.github.io' &&
   window.location.pathname.startsWith('/swifthaul-sa-preview/');
