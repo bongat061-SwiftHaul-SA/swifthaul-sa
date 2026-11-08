@@ -71,15 +71,27 @@ async function routeFor(pickupAddress: string, dropoffAddress: string, pickupPin
   return { pickup, dropoff, coordinates, distance: r.distance, duration: r.duration };
 }
 function parseLocation(body: Record<string, unknown>, prefix: "pickup" | "dropoff") {
-  const lat = body[prefix + "_latitude"], lng = body[prefix + "_longitude"], code = body[prefix + "_plus_code"], hash = body[prefix + "_geohash"];
-  const supplied = [lat, lng, code, hash].some(v => v !== undefined && v !== null && v !== "");
-  if (!supplied) return { latitude: null, longitude: null, plus_code: null, geohash: null };
-  if (typeof lat !== "number" || !Number.isFinite(lat) || Math.abs(lat) > 90 ||
-      typeof lng !== "number" || !Number.isFinite(lng) || Math.abs(lng) > 180 ||
-      typeof code !== "string" || code.length < 4 || code.length > 16 || !code.includes("+") ||
-      typeof hash !== "string" || !/^[0123456789bcdefghjkmnpqrstuvwxyz]{1,12}$/.test(hash))
-    throw new InputError("Choose a valid map pin with its Plus Code and Geohash.");
-  return { latitude: lat, longitude: lng, plus_code: code, geohash: hash };
+  const lat = body[prefix + "_latitude"], lng = body[prefix + "_longitude"];
+  const code = body[prefix + "_plus_code"], hash = body[prefix + "_geohash"];
+  const hasLat = lat !== undefined && lat !== null && lat !== "";
+  const hasLng = lng !== undefined && lng !== null && lng !== "";
+  const hasCode = code !== undefined && code !== null && code !== "";
+  const hasHash = hash !== undefined && hash !== null && hash !== "";
+  if (!hasLat && !hasLng && !hasCode && !hasHash)
+    return { latitude: null, longitude: null, plus_code: null, geohash: null };
+  if (!hasLat || !hasLng || typeof lat !== "number" || !Number.isFinite(lat) || Math.abs(lat) > 90 ||
+      typeof lng !== "number" || !Number.isFinite(lng) || Math.abs(lng) > 180)
+    throw new InputError("Choose a valid map pin with both latitude and longitude.");
+  // Plus Codes and Geohashes are optional legacy metadata; coordinates are the canonical pin.
+  if ((hasCode && (typeof code !== "string" || code.length < 4 || code.length > 16 || !code.includes("+"))) ||
+      (hasHash && (typeof hash !== "string" || !/^[0123456789bcdefghjkmnpqrstuvwxyz]{1,12}$/.test(hash))))
+    throw new InputError("Map pin metadata is invalid.");
+  return {
+    latitude: lat,
+    longitude: lng,
+    plus_code: hasCode ? code : null,
+    geohash: hasHash ? hash : null,
+  };
 }
 function futureTime(value: unknown) {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}T/.test(value) || !Number.isFinite(Date.parse(value)) || Date.parse(value) <= Date.now()) return null;
