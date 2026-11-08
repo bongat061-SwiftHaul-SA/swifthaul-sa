@@ -29,11 +29,24 @@ function resetQuote() {
 }
 const mass=value=>Number(value).toLocaleString('en-ZA',{maximumFractionDigits:3});
 const money = value => `R${Number(value).toFixed(2)}`;
+async function customerFunctionError(error, fallback) {
+  const response = error?.context;
+  if (response && typeof response.clone === 'function') {
+    try {
+      const payload = await response.clone().json();
+      const detail = payload?.error || payload?.message || payload?.msg;
+      if (typeof detail === 'string' && detail.trim()) return detail.trim().slice(0, 240);
+    } catch {}
+    if (Number.isInteger(response.status) && response.status > 0)
+      return `${fallback} (HTTP ${response.status}).`;
+  }
+  return error?.message || fallback;
+}
 async function customerApi(method, body) {
   const client = window.swiftHaulSupabase;
   if (!client) throw new Error('Customer sign-in connection is unavailable. Reload the page.');
   const { data, error } = await client.functions.invoke('customer-portal', { method, ...(body ? { body } : {}) });
-  if (error) throw new Error(data?.error || error.message || 'Customer service is unavailable.');
+  if (error) throw new Error(await customerFunctionError(error, 'Customer service is unavailable.'));
   if (data?.error) throw new Error(data.error);
   return data;
 }
@@ -142,11 +155,12 @@ async function loadOrders() {
       const empty = document.createElement('p'); empty.className = 'empty'; empty.textContent = 'Your next delivery starts here. Submit a quote to create your first booking.'; container.append(empty);
     }
     ready = true; calculateButton.disabled=false; report('');
-  } catch {
+  } catch (error) {
     if (version !== loadVersion) return;
     ready = false;
     container.replaceChildren();
-    report('Unable to load bookings. Retry to reconnect.', true);
+    const detail = error instanceof Error ? error.message : 'Customer service is unavailable.';
+    report(`Unable to load bookings: ${detail} Retry to reconnect.`, true);
     document.getElementById('retry').hidden = false;
   } finally { if (version === loadVersion) updateBookButton(); }
 }
@@ -333,12 +347,7 @@ function updatePaymentOptions(){
   const cash=Number.isFinite(distance)&&distance<12000;
   const counter=Number.isFinite(distance)&&distance<24000;
   document.getElementById('cash-payment-option').disabled=!cash;
-  const walletOption=document.getElementById('wallet-payment-option');
-  const walletRequired=currentQuote?Math.round(Number(currentQuote.price)*100):Infinity;
-  const walletEligible=Number.isSafeInteger(walletRequired)&&walletRequired>0&&walletAvailableCents>=walletRequired;
-  walletOption.disabled=!walletEligible;
   if(form.elements.payment_method.value==='cash'&&!cash)form.elements.payment_method.value='dispatch';
-  if(form.elements.payment_method.value==='wallet'&&!walletEligible)form.elements.payment_method.value='dispatch';
   const checkbox=document.getElementById('make-counter-offer');checkbox.disabled=!counter;
   if(!counter)checkbox.checked=false;
   const show=counter&&checkbox.checked&&form.elements.payment_method.value!=='wallet';
@@ -346,7 +355,7 @@ function updatePaymentOptions(){
   document.getElementById('counter-offer-note').hidden=!show;
   form.elements.counter_offer.disabled=!show;form.elements.counter_offer.required=show;
   if(!show)form.elements.counter_offer.value='';
-  document.getElementById('payment-eligibility').textContent=!currentQuote?'Calculate a route to check cash, wallet and counteroffer eligibility.':walletEligible?'Wallet balance '+money(walletAvailableCents/100)+' is sufficient for this booking. Refund credits are used before promotional credits.': 'Wallet available '+money(walletAvailableCents/100)+'; '+money(walletRequired/100)+' required. '+(cash?'Cash or payment through dispatch is also available.':'Arrange payment through dispatch. Cash is unavailable for this distance.')+(counter?' Counteroffers are available only when paying by dispatch.':'');
+  document.getElementById('payment-eligibility').textContent=!currentQuote?'Calculate a route to check cash and counteroffer eligibility.':(cash?'Cash or EFT arranged through dispatch is available.':'EFT arranged through dispatch is available; cash is unavailable for this distance.')+(counter?' Counteroffers are available only when paying through dispatch.':'');
 }
 document.getElementById('make-counter-offer').addEventListener('change',updatePaymentOptions);
 form.elements.payment_method.addEventListener('change',updatePaymentOptions);

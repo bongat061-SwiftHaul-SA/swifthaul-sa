@@ -4,12 +4,9 @@ on:
   push:
     branches:
       - main
-      - migration/supabase-github-pages
-      - feature/customer-smart-address-estimator
-      - feature/secure-driver-live-location
   workflow_dispatch:
 
-# Publishing the three platform entry points from the validated main branch and legacy staging branches.
+# Publish the three platform entry points from main only.
 
 permissions:
   contents: read
@@ -22,6 +19,8 @@ concurrency:
 
 jobs:
   build-and-deploy:
+    # Never publish a feature or migration branch to the live GitHub Pages site.
+    if: github.ref == 'refs/heads/main'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
