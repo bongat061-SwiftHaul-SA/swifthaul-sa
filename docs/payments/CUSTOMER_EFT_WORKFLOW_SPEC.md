@@ -124,13 +124,14 @@ Do not represent the security advisor warnings as fixed. Record them as reviewed
 
 ## Follow-up staging constraint verification (2026-11-08)
 
-A direct query of the existing staging database found a mismatch that must be resolved before implementing EFT:
+A direct query of the existing staging database and the `create_wallet_funded_booking` function clarified how payment methods are normalized:
 
-- The checked-out Customer Portal Edge Function accepts `cash`, `dispatch`, and `wallet` at request validation. Wallet-funded bookings are routed through the `create_wallet_funded_booking` database RPC.
-- The actual staging `customer_bookings_payment_method_check` constraint currently permits only `cash` and `dispatch`.
-- The actual staging `customer_bookings_payment_source_check` permits null, `cash`, `wallet`, `payfast`, `paystack`, and `pay_later`, but not `eft`.
+- The Customer Portal request validator accepts `cash`, `dispatch`, and `wallet`.
+- Ordinary cash/dispatch bookings persist the selected value in `customer_bookings.payment_method`. The database constraint permits only `cash` and `dispatch`.
+- Wallet-funded bookings are created through `create_wallet_funded_booking`. That RPC deliberately persists `payment_method='dispatch'`, sets `payment_source='wallet'`, records `paid_at`, and deducts wallet balances in one transaction. This is why the database payment-method constraint does not include `wallet`.
+- The staging `customer_bookings.payment_source` constraint permits null, `cash`, `wallet`, `payfast`, `paystack`, and `pay_later`, but not `eft`.
 - The separate cash-distance constraint requires cash bookings to have a mapped distance below 12,000 metres.
 
-This means wallet behavior must be traced through the RPC and its exact persisted row values before changing either constraint. Do not simply add `wallet` or `eft` to the payment-method constraint without a transaction-level regression test. EFT should be introduced as a new, coordinated path only after this existing discrepancy is understood.
+This is an intentional distinction between the requested payment option and the persisted booking method/source pair, not evidence that the wallet flow is broken. EFT must be designed consistently with this model: use a distinct, explicit EFT payment source and a clearly defined unpaid booking state; do not copy the wallet RPC's immediate paid settlement behavior. Add transaction-level tests proving that EFT evidence submission does not set `paid_at`, and that only an authorized admin bank-statement verification settles it.
 
 No staging schema was changed during this follow-up inspection. No production changes were made.
