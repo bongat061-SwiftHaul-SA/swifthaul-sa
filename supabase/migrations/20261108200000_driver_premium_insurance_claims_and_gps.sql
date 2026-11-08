@@ -26,7 +26,7 @@ create table if not exists public.driver_insurance_claims (
   incident_type text not null check (incident_type in ('vehicle_accident','driver_injury','third_party_injury','vehicle_damage','other')),
   description text not null check (length(trim(description)) between 30 and 4000),
   requested_days integer not null check (requested_days between 1 and 5),
-  requested_benefit_cents bigint not null check (requested_benefit_cents between 100000 and 500000),
+  requested_benefit_cents bigint generated always as (requested_days * 100000) stored,
   status text not null default 'submitted' check (status in ('submitted','under_review','insurer_approved','declined','paid')),
   route_compliance text not null default 'pending' check (route_compliance in ('pending','compliant','breach')),
   route_review_note text,
@@ -35,40 +35,43 @@ create table if not exists public.driver_insurance_claims (
   insurer_decision_note text,
   approved_days integer check (approved_days between 1 and 5),
   approved_benefit_cents bigint,
-  settlement_reference text,
+  payment_reference text,
   submitted_at timestamptz not null default now(),
   reviewed_by uuid references public.user_profiles(id),
   reviewed_at timestamptz,
   paid_at timestamptz,
   created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
   unique(driver_user_id,waybill,incident_at)
 );
 create table if not exists public.driver_insurance_claim_documents (
   id uuid primary key default gen_random_uuid(),
   claim_id uuid not null references public.driver_insurance_claims(id) on delete cascade,
+  driver_user_id uuid not null references public.driver_profiles(user_id) on delete restrict,
   storage_path text not null unique,
   original_name text not null,
   content_type text not null,
-  size_bytes bigint not null check (size_bytes between 1 and 10485760),
+  file_size_bytes bigint not null check (file_size_bytes between 1 and 10485760),
   created_at timestamptz not null default now()
 );
-create table if not exists public.driver_insurance_gps_points (
+create table if not exists public.driver_insurance_trip_location_events (
   id bigint generated always as identity primary key,
   driver_user_id uuid not null references public.driver_profiles(user_id) on delete cascade,
   waybill text not null references public.customer_bookings(waybill) on delete cascade,
   latitude double precision not null check (latitude between -90 and 90),
   longitude double precision not null check (longitude between -180 and 180),
   accuracy_m double precision check (accuracy_m is null or accuracy_m between 0 and 10000),
+  driver_was_online boolean not null default false,
   recorded_at timestamptz not null default now()
 );
 create index if not exists driver_insurance_claims_driver_created_idx on public.driver_insurance_claims(driver_user_id,created_at desc);
 create index if not exists driver_insurance_claims_status_created_idx on public.driver_insurance_claims(status,created_at desc);
-create index if not exists driver_insurance_gps_waybill_time_idx on public.driver_insurance_gps_points(waybill,recorded_at);
-create index if not exists driver_insurance_gps_driver_time_idx on public.driver_insurance_gps_points(driver_user_id,recorded_at desc);
+create index if not exists driver_insurance_trip_waybill_time_idx on public.driver_insurance_trip_location_events(waybill,recorded_at);
+create index if not exists driver_insurance_trip_driver_time_idx on public.driver_insurance_trip_location_events(driver_user_id,recorded_at desc);
 alter table public.driver_insurance_policies enable row level security;
 alter table public.driver_insurance_claims enable row level security;
 alter table public.driver_insurance_claim_documents enable row level security;
-alter table public.driver_insurance_gps_points enable row level security;
+alter table public.driver_insurance_trip_location_events enable row level security;
 insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
 values('driver-insurance-claims','driver-insurance-claims',false,10485760,array['application/pdf','image/jpeg','image/png','image/webp'])
 on conflict(id) do update set public=false,file_size_limit=10485760,allowed_mime_types=excluded.allowed_mime_types;
