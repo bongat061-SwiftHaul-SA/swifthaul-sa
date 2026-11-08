@@ -127,10 +127,14 @@ Deno.serve(async (req: Request) => {
     const { data: refundRequests, error: refundError } = await admin.from("booking_refund_requests")
       .select("id,waybill,request_type,reason,refund_amount_cents,refund_source,status,created_at,reviewed_at")
       .eq("owner_id", owner).order("created_at", { ascending: false }).limit(50);
+    const { data: eftPayments, error: eftError } = await admin.from("customer_eft_payments")
+      .select("id,waybill,payment_reference,customer_reference,amount_cents,status,rejection_reason,created_at,reviewed_at")
+      .eq("owner_id", owner).order("created_at", { ascending: false }).limit(100);
     if (refundError) return reply(500, { error: "refund_request_list_failed" });
+    if (eftError) return reply(500, { error: "eft_payment_list_failed" });
     if (walletError) return reply(500, { error: "wallet_balance_lookup_failed" });
     const walletAvailable = wallet ? Number(wallet.refund_cents) + Math.max(0, Number(wallet.promo_cents) - Number(wallet.promo_debt_cents)) : 0;
-    return reply(200, { orders: data ?? [], refundRequests: refundRequests ?? [], canImport: false, wallet: {
+    return reply(200, { orders: data ?? [], refundRequests: refundRequests ?? [], eftPayments: eftPayments ?? [], canImport: false, wallet: {
       refund_cents: wallet ? Number(wallet.refund_cents) : 0,
       promo_cents: wallet ? Number(wallet.promo_cents) : 0,
       promo_debt_cents: wallet ? Number(wallet.promo_debt_cents) : 0,
@@ -225,7 +229,7 @@ Deno.serve(async (req: Request) => {
     if (assistanceFeeCents !== expectedFee) return reply(400, { error: "assistance_quote_changed_recalculate_and_review" });
   } else if ((body.assistance_minutes ?? 0) !== 0 || (body.assistance_fee_cents ?? 0) !== 0) return reply(400, { error: "unexpected_assistance_amount" });
   const method = body.payment_method ?? "dispatch";
-  if (method !== "cash" && method !== "dispatch") return reply(400, { error: "choose_eft_or_eligible_cash_payment" });
+  if (method !== "cash" && method !== "dispatch" && method !== "eft") return reply(400, { error: "choose_eft_or_eligible_cash_payment" });
   if (method === "cash" && distance >= 12000) return reply(400, { error: "cash_available_only_below_12km" });
   let offer: number | null = null;
   let offerStatus = "none";
