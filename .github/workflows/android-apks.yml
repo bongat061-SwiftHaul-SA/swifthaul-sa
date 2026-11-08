@@ -3,6 +3,7 @@ name: Build SwiftHaul Android APKs
 on:
   push:
     branches:
+      - main
       - feature/android-apk-packaging
   pull_request:
     paths:
