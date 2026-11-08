@@ -135,3 +135,16 @@ A direct query of the existing staging database and the `create_wallet_funded_bo
 This is an intentional distinction between the requested payment option and the persisted booking method/source pair, not evidence that the wallet flow is broken. EFT must be designed consistently with this model: use a distinct, explicit EFT payment source and a clearly defined unpaid booking state; do not copy the wallet RPC's immediate paid settlement behavior. Add transaction-level tests proving that EFT evidence submission does not set `paid_at`, and that only an authorized admin bank-statement verification settles it.
 
 No staging schema was changed during this follow-up inspection. No production changes were made.
+
+
+## Additional staging RPC authorization finding (2026-11-08)
+
+A direct read-only inspection of the staging function definitions and grants identified one cash-workflow hardening item:
+
+- `submit_driver_cash_deposit_proof(uuid,text,text)` is a `SECURITY DEFINER` function executable by the `authenticated` role. It verifies that the proof object belongs to the caller's UUID path, exists in the private driver-cash proof bucket, and that the deposit belongs to the caller and is awaiting proof.
+- Unlike the other inspected driver cash RPCs, this function does not independently verify that the caller still has an active `user_profiles.role='driver'` profile and an approved `driver_profiles.verification_status='approved'` record.
+- The current `driver-cash-operations` Edge Function checks active driver/admin role before calling it, but the RPC is also directly callable by authenticated users through the exposed `/rest/v1/rpc` surface. The Edge Function check therefore does not replace authorization inside this SECURITY DEFINER function.
+
+Required remediation before treating driver cash proof submission as release-ready: add the same active-driver and approved-driver checks inside the RPC, retain the caller/deposit/object ownership checks, and add tests for inactive, suspended, unapproved, wrong-owner, missing-object, and already-processed cases. Keep `anon` execution revoked. This is a staging review finding only; no function or database changes were made.
+
+The staging advisor currently reports five authenticated-callable SECURITY DEFINER driver-cash RPCs, no anon execution on the inspected functions, five unindexed foreign keys, three RLS auth-initplan performance findings, and Auth leaked-password protection disabled. These are tracked separately; unused-index notices are not treated as automatic removal instructions.
