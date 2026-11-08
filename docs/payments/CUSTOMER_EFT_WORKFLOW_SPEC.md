@@ -120,3 +120,17 @@ Staging baseline verification:
 - No customer EFT schema, proof bucket, submission endpoint, or admin EFT review endpoint has been deployed.
 
 Do not represent the security advisor warnings as fixed. Record them as reviewed with the above privilege context, and retain the remaining remediation items as release gates.
+
+
+## Follow-up staging constraint verification (2026-11-08)
+
+A direct query of the existing staging database found a mismatch that must be resolved before implementing EFT:
+
+- The checked-out Customer Portal Edge Function accepts `cash`, `dispatch`, and `wallet` at request validation. Wallet-funded bookings are routed through the `create_wallet_funded_booking` database RPC.
+- The actual staging `customer_bookings_payment_method_check` constraint currently permits only `cash` and `dispatch`.
+- The actual staging `customer_bookings_payment_source_check` permits null, `cash`, `wallet`, `payfast`, `paystack`, and `pay_later`, but not `eft`.
+- The separate cash-distance constraint requires cash bookings to have a mapped distance below 12,000 metres.
+
+This means wallet behavior must be traced through the RPC and its exact persisted row values before changing either constraint. Do not simply add `wallet` or `eft` to the payment-method constraint without a transaction-level regression test. EFT should be introduced as a new, coordinated path only after this existing discrepancy is understood.
+
+No staging schema was changed during this follow-up inspection. No production changes were made.
