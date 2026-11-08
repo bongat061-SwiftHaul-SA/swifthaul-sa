@@ -213,7 +213,7 @@ Deno.serve(async (req: Request) => {
     if (assistanceFeeCents !== expectedFee) return reply(400, { error: "assistance_quote_changed_recalculate_and_review" });
   } else if ((body.assistance_minutes ?? 0) !== 0 || (body.assistance_fee_cents ?? 0) !== 0) return reply(400, { error: "unexpected_assistance_amount" });
   const method = body.payment_method ?? "dispatch";
-  if (method !== "cash" && method !== "dispatch" && method !== "wallet") return reply(400, { error: "choose_cash_dispatch_or_wallet_payment" });
+  if (method !== "cash" && method !== "dispatch") return reply(400, { error: "choose_eft_or_eligible_cash_payment" });
   if (method === "cash" && distance >= 12000) return reply(400, { error: "cash_available_only_below_12km" });
   let offer: number | null = null;
   let offerStatus = "none";
@@ -224,8 +224,6 @@ Deno.serve(async (req: Request) => {
     offer = Number(body.counter_offer);
     offerStatus = "pending";
   }
-  if (method === "wallet" && assistanceRequested) return reply(400, { error: "wallet_payment_not_available_with_optional_assistance_yet_choose_dispatch_or_cash" });
-  if (method === "wallet" && offer !== null) return reply(400, { error: "wallet_payment_not_available_with_counteroffers" });
   let pickup, dropoff;
   try { pickup = parseLocation(body, "pickup"); dropoff = parseLocation(body, "dropoff"); }
   catch (e) { return reply(400, { error: e instanceof Error ? e.message : "invalid_location_pin" }); }
