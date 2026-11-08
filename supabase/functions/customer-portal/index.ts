@@ -192,11 +192,12 @@ Deno.serve(async (req: Request) => {
   }
 
   if (body.action !== "book" || typeof body.quote_id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.quote_id) ||
-      body.terms_accepted !== true || body.terms_version !== "2026-11-07-dispatch-cover-draft" ||
+      body.terms_accepted !== true || body.terms_version !== "2026-11-08-cargo-insurance-enquiry" ||
       typeof body.recipient !== "string" || !body.recipient.trim() || body.recipient.length > 500)
     return reply(400, { error: "calculate_a_quote_and_enter_recipient" });
+  if (body.nedbank_cargo_insurance_interest !== undefined && typeof body.nedbank_cargo_insurance_interest !== "boolean") return reply(400, { error: "invalid_insurance_enquiry_selection" });
   const { data: existing } = await admin.from("customer_bookings")
-    .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status")
+    .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,nedbank_cargo_insurance_interest")
     .eq("quote_id", body.quote_id).eq("owner_hash", owner).maybeSingle();
   if (existing) return reply(200, { order: existing });
   const { data: quote, error: quoteError } = await admin.from("delivery_quotes")
@@ -260,6 +261,7 @@ Deno.serve(async (req: Request) => {
     return_address: returnAddress || null, return_at: returnAt, payment_method: method,
     assistance_requested: assistanceRequested, assistance_minutes: assistanceMinutes,
     assistance_fee_cents: assistanceFeeCents, assistance_status: assistanceRequested ? "requested_pending_dispatch_confirmation" : "not_requested",
+    nedbank_cargo_insurance_interest: body.nedbank_cargo_insurance_interest === true,
     counter_offer: offer, counter_offer_status: offerStatus,
     pickup_latitude: pickup.latitude, pickup_longitude: pickup.longitude, pickup_plus_code: pickup.plus_code, pickup_geohash: pickup.geohash,
     dropoff_latitude: dropoff.latitude, dropoff_longitude: dropoff.longitude, dropoff_plus_code: dropoff.plus_code, dropoff_geohash: dropoff.geohash,
