@@ -58,7 +58,7 @@ const report = (text, error = false) => { message.textContent = text; message.cl
 form.addEventListener('input', event => {if(['pickup','dropoff'].includes(event.target.name)){for(const suffix of ['latitude','longitude']){const hidden=form.elements.namedItem(event.target.name+'_'+suffix);if(hidden)hidden.value='';}const picker=event.target.nextElementSibling;if(picker?.matches('button'))picker.textContent='Pick / copy pin';}if (['pickup','dropoff','weight','length','width','height'].includes(event.target.name)) resetQuote();});
 form.addEventListener('change', event => {if (['weight','length','width','height'].includes(event.target.name)) resetQuote();});
 function whatsapp(order) {
-  const text = `*SWIFTHAUL SA DISPATCH*\n*Order:* ${order.waybill}\n*Pickup:* ${order.pickup}\n*Drop:* ${order.dropoff}\n*Recipient & notes:* ${order.recipient}\n*Vehicle:* ${order.vehicle.toUpperCase()}${order.load?.truckClass?' ('+order.load.truckClass+')':''}${order.load?'\n*Chargeable weight:* '+mass(order.load.chargeable)+' kg\n*Distance fee:* '+money(order.distance_fee)+'\n*Weight fee:* '+money(order.load.weightFee):''}\n*Outbound fee:* ${money(order.price)}\n*Payment:* ${order.paid_at?'Confirmed via '+order.payment_source:order.payment_source==='pay_later'?'Pay later':order.payment_method==='cash'?'Cash requested (unconfirmed)':'Arrange with dispatch'}${order.counter_offer?'\n*Counteroffer:* '+money(order.counter_offer)+' · '+order.counter_offer_status:''}${order.scheduled_at?'\n*Scheduled pickup:* '+localTime(order.scheduled_at):''}${order.return_address?'\n*Return request (separate quote):* '+order.return_address:''}${order.return_at?'\n*Requested return:* '+localTime(order.return_at):''}`;
+  const text = `*SWIFTHAUL SA DISPATCH*\n*Order:* ${order.waybill}\n*Pickup:* ${order.pickup}\n*Drop:* ${order.dropoff}\n*Recipient & notes:* ${order.recipient}\n*Vehicle:* ${order.vehicle.toUpperCase()}${order.load?.truckClass?' ('+order.load.truckClass+')':''}${order.load?'\n*Chargeable weight:* '+mass(order.load.chargeable)+' kg\n*Distance fee:* '+money(order.distance_fee)+'\n*Weight fee:* '+money(order.load.weightFee):''}\n*Outbound fee:* ${money(order.price)}\n*Payment:* ${order.paid_at?'Confirmed via '+order.payment_source:order.payment_source==='pay_later'?'Pay later':order.payment_method==='cash'?'Cash requested (unconfirmed)':order.payment_method==='eft'?'EFT bank transfer · reference '+order.waybill:'Arrange with dispatch'}${order.counter_offer?'\n*Counteroffer:* '+money(order.counter_offer)+' · '+order.counter_offer_status:''}${order.scheduled_at?'\n*Scheduled pickup:* '+localTime(order.scheduled_at):''}${order.return_address?'\n*Return request (separate quote):* '+order.return_address:''}${order.return_at?'\n*Requested return:* '+localTime(order.return_at):''}`;
   return `https://wa.me/27615083880?text=${encodeURIComponent(text)}`;
 }
 function addOrder(order, prepend = false) {
@@ -267,7 +267,7 @@ function downloadPDF(order) {
     if(order.scheduled_at) line('Requested pickup: '+localTime(order.scheduled_at));
     if(order.return_address) line('Return request (separate quote, excluded from total): '+order.return_address+(order.return_at?' at '+localTime(order.return_at):''));
     line(`Acceptance PIN: ${order.pin}`); line(`Fare: ${money(order.price)} ZAR`, 13);
-    line('Payment option: '+(order.payment_method==='cash'?'Cash requested':'Arrange with dispatch'));
+    line('Payment option: '+(order.payment_method==='cash'?'Cash requested':order.payment_method==='eft'?'EFT bank transfer · reference '+order.waybill:'Arrange with dispatch'));
     if(order.counter_offer)line('Counteroffer: '+money(order.counter_offer)+'; status: '+order.counter_offer_status+(order.counter_offer_status==='pending'?'. Original fare remains pending company approval.':'.'));
     line('Payment status: '+(order.paid_at?'Confirmed via '+order.payment_source:order.payment_source==='pay_later'?'Pay later; repayment due':'Not confirmed'));
     if(order.original_price)line('Original quoted fare before accepted counteroffer: '+money(order.original_price));
@@ -391,7 +391,7 @@ function updatePaymentOptions(){
   document.getElementById('counter-offer-note').hidden=!show;
   form.elements.counter_offer.disabled=!show;form.elements.counter_offer.required=show;
   if(!show)form.elements.counter_offer.value='';
-  document.getElementById('payment-eligibility').textContent=!currentQuote?'Calculate a route to check cash and counteroffer eligibility.':(cash?'Cash or EFT arranged through dispatch is available.':'EFT arranged through dispatch is available; cash is unavailable for this distance.')+(counter?' Counteroffers are available only when paying through dispatch.':'');
+  document.getElementById('payment-eligibility').textContent=!currentQuote?'Calculate a route to check cash and counteroffer eligibility.':(cash?'EFT bank transfer or eligible cash is available.':'EFT bank transfer is available; cash is unavailable for this distance.')+(counter?' Counteroffers are available only when paying through dispatch.':'');
 }
 document.getElementById('make-counter-offer').addEventListener('change',updatePaymentOptions);
 form.elements.payment_method.addEventListener('change',updatePaymentOptions);
