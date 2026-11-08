@@ -1,6 +1,6 @@
 // Public browser configuration only. Never place a service-role or secret key here.
 // Keep Driver preview traffic isolated from production customer, driver, and finance records.
-const isNetlifyStagingPreview = typeof window !== 'undefined' && window.location.hostname === 'deploy-preview-41--swifthaul-sa.netlify.app';
+const isNetlifyStagingPreview = typeof window !== 'undefined' && window.location.hostname.endsWith('--swifthaul-sa.netlify.app') && window.location.hostname !== 'swifthaul-sa.netlify.app';
 const isGitHubPagesStagingPreview = typeof window !== 'undefined' &&
   window.location.hostname === 'bongat061-swifthaul-sa.github.io' &&
   window.location.pathname.startsWith('/swifthaul-sa-preview/');
