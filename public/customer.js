@@ -53,6 +53,7 @@ async function customerApi(method, body) {
 let ready = false;
 let loadVersion = 0;
 let refundRequestsByWaybill = new Map();
+let eftPaymentsByWaybill = new Map();
 const report = (text, error = false) => { message.textContent = text; message.classList.toggle('error', error); };
 form.addEventListener('input', event => {if(['pickup','dropoff'].includes(event.target.name)){for(const suffix of ['latitude','longitude']){const hidden=form.elements.namedItem(event.target.name+'_'+suffix);if(hidden)hidden.value='';}const picker=event.target.nextElementSibling;if(picker?.matches('button'))picker.textContent='Pick / copy pin';}if (['pickup','dropoff','weight','length','width','height'].includes(event.target.name)) resetQuote();});
 form.addEventListener('change', event => {if (['weight','length','width','height'].includes(event.target.name)) resetQuote();});
@@ -83,7 +84,17 @@ function addOrder(order, prepend = false) {
   meta.append(pin, fee);
   if (order.distance_meters != null) {const distance=document.createElement('span');distance.textContent=`${km(order.distance_meters)} km`;meta.append(distance);}
   if(order.assistance_requested){const handling=document.createElement('p');handling.textContent='Optional handling assistance requested · '+(Number(order.assistance_minutes)||0)+' minutes · '+money((Number(order.assistance_fee_cents)||0)/100)+' · '+String(order.assistance_status||'pending dispatch confirmation').replaceAll('_',' ');card.append(handling);}
-  const paymentInfo=document.createElement('p');paymentInfo.textContent=order.paid_at?'Payment confirmed · '+order.payment_source:order.payment_source==='pay_later'?'Pay later · repayment due in 7 days':order.payment_source==='wallet'?'Paid from SwiftHaul wallet · Refund '+money((order.wallet_refund_used||0)/100)+' + promotional '+money((order.wallet_promo_used||0)/100):order.payment_method==='cash'?'Payment: Cash requested · payment unconfirmed':'Payment: Arrange with dispatch · payment unconfirmed';card.append(paymentInfo);
+  const eftPayment=eftPaymentsByWaybill.get(order.waybill);
+  const paymentInfo=document.createElement('p');
+  paymentInfo.textContent=order.paid_at?'Payment confirmed · '+order.payment_source:
+    eftPayment?.status==='submitted'?'EFT proof submitted · awaiting bank verification · Reference '+eftPayment.payment_reference:
+    eftPayment?.status==='verified'?'EFT payment verified · Reference '+eftPayment.payment_reference:
+    eftPayment?.status==='rejected'?'EFT proof rejected · '+(eftPayment.rejection_reason||'Please submit a new proof'):
+    order.payment_source==='pay_later'?'Pay later · repayment due in 7 days':
+    order.payment_source==='wallet'?'Paid from SwiftHaul wallet · Refund '+money((order.wallet_refund_used||0)/100)+' + promotional '+money((order.wallet_promo_used||0)/100):
+    order.payment_method==='cash'?'Payment: Cash requested · payment unconfirmed':
+    order.payment_method==='eft'?'Payment: EFT · awaiting proof':'Payment: Arrange with dispatch · payment unconfirmed';
+  card.append(paymentInfo);
   if(order.counter_offer){const offer=document.createElement('p');offer.textContent=`Counteroffer: ${money(order.counter_offer)} · ${order.counter_offer_status}. ${order.counter_offer_status==='pending'?'Original fare '+money(order.price)+' remains until company approval.':order.counter_offer_status==='accepted'?'Accepted fare '+money(order.price)+'. Original fare '+money(order.original_price)+'.':'Original fare '+money(order.price)+'.'}`;card.append(offer);}
   if(order.load) {const weight=document.createElement('p');weight.textContent=`${order.load.truckClass || order.vehicle.toUpperCase()} · ${mass(order.load.chargeable)} chargeable kg · Distance ${money(order.distance_fee)} + weight ${money(order.load.weightFee)}`;card.append(weight);}
   if(order.scheduled_at) {const time=document.createElement('p');time.textContent='Requested pickup: '+localTime(order.scheduled_at)+' · Awaiting dispatch confirmation';card.append(time);}
@@ -94,13 +105,37 @@ function addOrder(order, prepend = false) {
   const track = document.createElement('button'); track.type = 'button'; track.className = 'track-delivery'; track.textContent = 'Track Delivery'; track.addEventListener('click', () => {
     if (document.body.dataset.guestPreview !== 'true') document.dispatchEvent(new CustomEvent('delivery-route', {detail:{waybill:order.waybill,pickup:order.pickup,dropoff:order.dropoff}}));
   });
-  if(!order.paid_at&&!order.refunded_at&&!['cancelled','completed'].includes(order.status)){
-    const eft=document.createElement('button');eft.type='button';eft.textContent='EFT payment instructions';eft.addEventListener('click',()=>{
+  if(!order.paid_at&&!order.refunded_at&&!['cancelled'].includes(order.status)&&eftPayment?.status!=='submitted'&&eftPayment?.status!=='verified'){
+    const eft=document.createElement('button');eft.type='button';eft.textContent=eftPayment?.status==='rejected'?'Resubmit EFT proof':'Pay by EFT / submit proof';
+    eft.addEventListener('click',()=>{
       const box=document.createElement('div');box.className='eft-instructions';
-      const heading=document.createElement('strong');heading.textContent='Pay by EFT';
-      const info=document.createElement('p');info.textContent='Use your booking reference '+order.waybill+' as the EFT reference. For verified SwiftHaul bank account details, contact dispatch on WhatsApp before transferring. Your booking remains unpaid until the transfer is checked and confirmed.';
-      const contact=document.createElement('a');contact.href='https://wa.me/27615083880?text='+encodeURIComponent('Please send verified EFT payment details for booking '+order.waybill+'.');contact.target='_blank';contact.rel='noopener noreferrer';contact.textContent='Request bank details on WhatsApp';
-      box.append(heading,info,contact);eft.replaceWith(box);
+      const heading=document.createElement('strong');heading.textContent='EFT payment';
+      const info=document.createElement('p');info.textContent='Use booking reference '+order.waybill+' as your bank transfer reference. Request the verified SwiftHaul bank details from dispatch before paying. The booking remains unpaid until an administrator checks the bank statement.';
+      const contact=document.createElement('a');contact.href='https://wa.me/27615083880?text='+encodeURIComponent('Please send verified EFT payment details for booking '+order.waybill+'.');contact.target='_blank';contact.rel='noopener noreferrer';contact.textContent='Request verified bank details on WhatsApp';
+      const reference=document.createElement('input');reference.type='text';reference.maxLength=100;reference.placeholder='Your bank transfer reference (optional)';reference.setAttribute('aria-label','Your bank transfer reference');
+      const file=document.createElement('input');file.type='file';file.accept='application/pdf,image/jpeg,image/png';file.setAttribute('aria-label','Proof of payment PDF or image');
+      const send=document.createElement('button');send.type='button';send.textContent='Submit proof of payment';
+      const note=document.createElement('p');note.className='subtle';note.textContent='PDF, JPG or PNG · maximum 8 MB. Never upload card details or banking passwords.';
+      send.addEventListener('click',async()=>{
+        const selected=file.files?.[0];
+        if(!selected){report('Choose your EFT proof document first.',true);return;}
+        if(!['application/pdf','image/jpeg','image/png'].includes(selected.type)||selected.size>8*1024*1024){report('Use a PDF, JPG or PNG file no larger than 8 MB.',true);return;}
+        const client=window.swiftHaulSupabase;if(!client){report('Secure account connection unavailable. Reload and try again.',true);return;}
+        send.disabled=true;report('Uploading proof securely…');
+        let objectPath=null;
+        try{
+          const {data:{user},error:userError}=await client.auth.getUser();if(userError||!user)throw new Error('Please sign in again before submitting proof.');
+          const ext=selected.type==='application/pdf'?'pdf':selected.type==='image/png'?'png':'jpg';
+          objectPath=user.id+'/'+order.waybill+'/'+crypto.randomUUID()+'.'+ext;
+          const {error:uploadError}=await client.storage.from('customer-eft-proofs').upload(objectPath,selected,{upsert:false,contentType:selected.type});
+          if(uploadError)throw uploadError;
+          const {data,error}=await client.rpc('submit_customer_eft_proof',{p_waybill:order.waybill,p_proof_object_path:objectPath,p_customer_reference:reference.value.trim()||null});
+          if(error)throw error;
+          await loadOrders();
+          report(data?.already_submitted?'An EFT proof is already awaiting verification.':'EFT proof submitted. Your booking remains unpaid until the bank receipt is verified.');
+        }catch(error){report(error?.message||'Unable to submit EFT proof. Please try again.',true);send.disabled=false;}
+      });
+      box.append(heading,info,contact,reference,file,note,send);eft.replaceWith(box);
     });
     actions.append(eft);
   }
@@ -148,6 +183,7 @@ async function loadOrders() {
     document.getElementById('legacy-import').hidden = !data.canImport;
     container.replaceChildren();
     refundRequestsByWaybill = new Map((data.refundRequests || []).map(request => [request.waybill, request]));
+    eftPaymentsByWaybill = new Map((data.eftPayments || []).map(payment => [payment.waybill, payment]));
     data.orders.forEach(order => addOrder(order));
     walletAvailableCents = Number(data.wallet?.available_cents) || 0;
     updatePaymentOptions();
