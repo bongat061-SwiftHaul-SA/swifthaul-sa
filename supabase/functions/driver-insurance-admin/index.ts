@@ -78,7 +78,7 @@ Deno.serve(async (req: Request) => {
       const active = (memberships ?? []).filter((m: Membership) => m.driver_user_id === driver.user_id)
         .sort((a: Membership, b: Membership) => Date.parse(b.starts_at) - Date.parse(a.starts_at))[0] ?? null;
       let eligibility = { eligible: false, basis: null as string | null };
-      if (profile?.account_status === "active" && active) {
+      if (profile?.account_status === "active" && driver.verification_status === "approved" && active) {
         if (active.plan === "yearly") eligibility = { eligible: true, basis: "yearly_prepaid" };
         else if (active.plan === "monthly") {
           const previousWindow = new Date(Date.parse(active.starts_at) - 7 * 86400000).toISOString();
@@ -123,6 +123,11 @@ Deno.serve(async (req: Request) => {
     .select("role,account_status").eq("id", userId).maybeSingle();
   if (targetError) return reply(500, { error: "driver_profile_lookup_failed" });
   if (!target || target.role !== "driver") return reply(404, { error: "driver_not_found" });
+  if (action === "activate") {
+    const { data: approvedDriver, error: approvedDriverError } = await db.from("driver_profiles").select("verification_status").eq("user_id", userId).maybeSingle();
+    if (approvedDriverError) return reply(500, { error: "driver_verification_lookup_failed" });
+    if (!approvedDriver || approvedDriver.verification_status !== "approved") return reply(409, { error: "approved_driver_required" });
+  }
 
   let values: Record<string, unknown> = { driver_user_id: userId, updated_at: new Date().toISOString() };
   if (action === "activate") {
@@ -142,13 +147,13 @@ Deno.serve(async (req: Request) => {
       vehicle_cover_limit_cents: BENEFITS.vehicle_cover_limit_cents,
       accidental_disability_cover_limit_cents: BENEFITS.accidental_disability_cover_limit_cents,
       daily_accident_benefit_cents: BENEFITS.daily_accident_benefit_cents,
-      coverage_starts_at: new Date(starts).toISOString(), coverage_ends_at: new Date(ends).toISOString() };
+      coverage_starts_at: new Date(starts).toISOString(), coverage_ends_at: new Date(ends).toISOString(), activated_by: authData.user.id, activated_at: new Date().toISOString() };
   } else {
     const status = action === "suspend" ? "suspended" : action === "expire" ? "expired" : "pending";
     values.status = status;
     if (action === "pending") {
       values.insurer_name = null; values.policy_reference = null;
-      values.coverage_starts_at = null; values.coverage_ends_at = null;
+      values.coverage_starts_at = null; values.coverage_ends_at = null; values.activated_by = null; values.activated_at = null;
     }
   }
   const { error: saveError } = await db.from("driver_insurance_policies").upsert(values, { onConflict: "driver_user_id" });
