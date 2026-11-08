@@ -172,3 +172,19 @@ A further read-only staging audit verified the effective function privileges and
 - The current proof upload Storage policy does not itself require active/approved driver status. The RPC must still enforce that status before attaching an object to a deposit. Consider adding an active/approved-driver predicate to the upload policy as defense in depth, then test that it does not block legitimate approved drivers.
 
 The security advisor continues to report five authenticated-callable SECURITY DEFINER cash RPCs and disabled leaked-password protection. The former are intentionally callable workflow entry points but must retain strict internal authorization; the latter remains a separate Auth configuration action. No grants, policies, functions, or Auth settings were changed by this audit.
+
+
+## Latest staging advisor and tooling check (2026-11-08)
+
+A fresh advisor run against the isolated staging project returned the same outstanding security baseline and no health-advisor findings:
+
+- Security: 25 public tables with RLS enabled and no policies (INFO); five authenticated-callable SECURITY DEFINER cash RPCs (WARN); leaked-password protection disabled (WARN).
+- Performance: five unindexed foreign keys (INFO), three RLS auth-initplan findings (WARN), and 40 unused-index notices (INFO). Do not drop indexes based on the unused-index notices alone; evaluate query plans and workload first.
+- Health: no findings returned in this run.
+- The five unindexed foreign keys are on `driver_cash_clearing_ledger` (deposit, cash receipt, created_by), `driver_cash_deposits` (reconciled_by), and `driver_cash_receipts` (driver_user_id). The three auth-initplan findings are on the own-read policies for driver cash receipts, clearing ledger, and deposits.
+
+No advisor finding was changed or marked fixed. In particular, the missing active/approved-driver check in `submit_driver_cash_deposit_proof` remains a code-level remediation item. The Auth leaked-password setting remains a separate security-hardening task requiring its own controlled change and verification.
+
+Tooling guardrail for the eventual implementation workspace: Supabase CLI v3 now targets the local stack by default. Any hosted staging command must explicitly target the remote project, and unattended hosted mutations require explicit confirmation flags. Pin the intended CLI version in CI and verify the target project before any hosted operation. This audit used read-only Supabase MCP checks; it did not run a CLI migration or mutate staging or production.
+
+This update is documentation only. No SQL, Edge Function, Storage policy, Auth setting, website, or deployment was changed.
