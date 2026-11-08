@@ -183,7 +183,10 @@ async function loadOrders() {
     document.getElementById('legacy-import').hidden = !data.canImport;
     container.replaceChildren();
     refundRequestsByWaybill = new Map((data.refundRequests || []).map(request => [request.waybill, request]));
-    eftPaymentsByWaybill = new Map((data.eftPayments || []).map(payment => [payment.waybill, payment]));
+    eftPaymentsByWaybill = new Map();
+    for (const payment of (data.eftPayments || [])) {
+      if (!eftPaymentsByWaybill.has(payment.waybill)) eftPaymentsByWaybill.set(payment.waybill, payment);
+    }
     data.orders.forEach(order => addOrder(order));
     walletAvailableCents = Number(data.wallet?.available_cents) || 0;
     updatePaymentOptions();
