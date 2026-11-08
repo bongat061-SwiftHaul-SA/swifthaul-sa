@@ -6,7 +6,7 @@ on:
       - main
   workflow_dispatch:
 
-# Publishing the three platform entry points from the validated main branch and legacy staging branches.
+# Publish the three platform entry points from main only.
 
 permissions:
   contents: read
