@@ -333,12 +333,7 @@ function updatePaymentOptions(){
   const cash=Number.isFinite(distance)&&distance<12000;
   const counter=Number.isFinite(distance)&&distance<24000;
   document.getElementById('cash-payment-option').disabled=!cash;
-  const walletOption=document.getElementById('wallet-payment-option');
-  const walletRequired=currentQuote?Math.round(Number(currentQuote.price)*100):Infinity;
-  const walletEligible=Number.isSafeInteger(walletRequired)&&walletRequired>0&&walletAvailableCents>=walletRequired;
-  walletOption.disabled=!walletEligible;
   if(form.elements.payment_method.value==='cash'&&!cash)form.elements.payment_method.value='dispatch';
-  if(form.elements.payment_method.value==='wallet'&&!walletEligible)form.elements.payment_method.value='dispatch';
   const checkbox=document.getElementById('make-counter-offer');checkbox.disabled=!counter;
   if(!counter)checkbox.checked=false;
   const show=counter&&checkbox.checked&&form.elements.payment_method.value!=='wallet';
@@ -346,7 +341,7 @@ function updatePaymentOptions(){
   document.getElementById('counter-offer-note').hidden=!show;
   form.elements.counter_offer.disabled=!show;form.elements.counter_offer.required=show;
   if(!show)form.elements.counter_offer.value='';
-  document.getElementById('payment-eligibility').textContent=!currentQuote?'Calculate a route to check cash, wallet and counteroffer eligibility.':walletEligible?'Wallet balance '+money(walletAvailableCents/100)+' is sufficient for this booking. Refund credits are used before promotional credits.': 'Wallet available '+money(walletAvailableCents/100)+'; '+money(walletRequired/100)+' required. '+(cash?'Cash or payment through dispatch is also available.':'Arrange payment through dispatch. Cash is unavailable for this distance.')+(counter?' Counteroffers are available only when paying by dispatch.':'');
+  document.getElementById('payment-eligibility').textContent=!currentQuote?'Calculate a route to check cash and counteroffer eligibility.':(cash?'Cash or EFT arranged through dispatch is available.':'EFT arranged through dispatch is available; cash is unavailable for this distance.')+(counter?' Counteroffers are available only when paying through dispatch.':'');
 }
 document.getElementById('make-counter-offer').addEventListener('change',updatePaymentOptions);
 form.elements.payment_method.addEventListener('change',updatePaymentOptions);
