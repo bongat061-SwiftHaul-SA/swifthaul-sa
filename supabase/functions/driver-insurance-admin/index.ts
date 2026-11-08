@@ -142,13 +142,13 @@ Deno.serve(async (req: Request) => {
       vehicle_cover_limit_cents: BENEFITS.vehicle_cover_limit_cents,
       accidental_disability_cover_limit_cents: BENEFITS.accidental_disability_cover_limit_cents,
       daily_accident_benefit_cents: BENEFITS.daily_accident_benefit_cents,
-      coverage_starts_at: new Date(starts).toISOString(), coverage_ends_at: new Date(ends).toISOString() };
+      coverage_starts_at: new Date(starts).toISOString(), coverage_ends_at: new Date(ends).toISOString(), activated_by: authData.user.id, activated_at: new Date().toISOString() };
   } else {
     const status = action === "suspend" ? "suspended" : action === "expire" ? "expired" : "pending";
     values.status = status;
     if (action === "pending") {
       values.insurer_name = null; values.policy_reference = null;
-      values.coverage_starts_at = null; values.coverage_ends_at = null;
+      values.coverage_starts_at = null; values.coverage_ends_at = null; values.activated_by = null; values.activated_at = null;
     }
   }
   const { error: saveError } = await db.from("driver_insurance_policies").upsert(values, { onConflict: "driver_user_id" });
