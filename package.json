@@ -12,16 +12,20 @@
     "@netlify/blobs": "^11.1.7",
     "@netlify/database": "^2.0.1",
     "@netlify/functions": "^6.0.3",
-    "@netlify/identity": "^2.0.0"
+    "@netlify/identity": "^2.0.0",
+    "@capacitor/core": "7.6.10",
+    "@capacitor/android": "7.6.10"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.2.17",
     "@types/node": "^26.6.5",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "@capacitor/cli": "7.6.10"
   },
   "private": true,
   "scripts": {
     "prepare:sites": "node scripts/prepare-sites.cjs",
-    "build:pages": "node scripts/prepare-sites.cjs && node scripts/build-pages.cjs"
+    "build:pages": "node scripts/prepare-sites.cjs && node scripts/build-pages.cjs",
+    "android": "cap sync android"
   }
 }
