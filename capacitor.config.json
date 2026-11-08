@@ -1,0 +1,11 @@
+{
+  "appId": "za.co.swifthaul.customer",
+  "appName": "SwiftHaul Customer",
+  "webDir": "public",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}

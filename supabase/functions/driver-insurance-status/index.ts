@@ -31,6 +31,9 @@ Deno.serve(async (req: Request) => {
     .select("role,account_status").eq("id", authData.user.id).maybeSingle();
   if (profileError) return reply(500, { error: "profile_lookup_failed" });
   if (!profile || profile.role !== "driver") return reply(403, { error: "driver_account_required" });
+  const { data: driverProfile, error: driverProfileError } = await db.from("driver_profiles").select("verification_status").eq("user_id", authData.user.id).maybeSingle();
+  if (driverProfileError) return reply(500, { error: "driver_profile_lookup_failed" });
+  if (!driverProfile || driverProfile.verification_status !== "approved") return reply(403, { error: "approved_driver_required" });
   if (profile.account_status !== "active") {
     return reply(200, {
       eligible: false, insurance_active: false, eligibility_basis: null,

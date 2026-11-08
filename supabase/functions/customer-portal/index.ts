@@ -119,7 +119,7 @@ Deno.serve(async (req: Request) => {
 
   if (req.method === "GET") {
     const { data, error } = await admin.from("customer_bookings")
-      .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,wallet_refund_used,wallet_promo_used,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,status")
+      .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,wallet_refund_used,wallet_promo_used,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,nedbank_cargo_insurance_interest,status")
       .eq("owner_hash", owner).order("created_at", { ascending: false }).limit(100);
     if (error) return reply(500, { error: "booking_list_failed" });
     const { data: wallet, error: walletError } = await admin.from("wallet_accounts")
@@ -127,10 +127,14 @@ Deno.serve(async (req: Request) => {
     const { data: refundRequests, error: refundError } = await admin.from("booking_refund_requests")
       .select("id,waybill,request_type,reason,refund_amount_cents,refund_source,status,created_at,reviewed_at")
       .eq("owner_id", owner).order("created_at", { ascending: false }).limit(50);
+    const { data: eftPayments, error: eftError } = await admin.from("customer_eft_payments")
+      .select("id,waybill,payment_reference,customer_reference,amount_cents,status,rejection_reason,created_at,reviewed_at")
+      .eq("owner_id", owner).order("created_at", { ascending: false }).limit(100);
     if (refundError) return reply(500, { error: "refund_request_list_failed" });
+    if (eftError) return reply(500, { error: "eft_payment_list_failed" });
     if (walletError) return reply(500, { error: "wallet_balance_lookup_failed" });
     const walletAvailable = wallet ? Number(wallet.refund_cents) + Math.max(0, Number(wallet.promo_cents) - Number(wallet.promo_debt_cents)) : 0;
-    return reply(200, { orders: data ?? [], refundRequests: refundRequests ?? [], canImport: false, wallet: {
+    return reply(200, { orders: data ?? [], refundRequests: refundRequests ?? [], eftPayments: eftPayments ?? [], canImport: false, wallet: {
       refund_cents: wallet ? Number(wallet.refund_cents) : 0,
       promo_cents: wallet ? Number(wallet.promo_cents) : 0,
       promo_debt_cents: wallet ? Number(wallet.promo_debt_cents) : 0,
@@ -188,11 +192,12 @@ Deno.serve(async (req: Request) => {
   }
 
   if (body.action !== "book" || typeof body.quote_id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.quote_id) ||
-      body.terms_accepted !== true || body.terms_version !== "2026-11-07-dispatch-cover-draft" ||
+      body.terms_accepted !== true || body.terms_version !== "2026-11-08-cargo-insurance-enquiry" ||
       typeof body.recipient !== "string" || !body.recipient.trim() || body.recipient.length > 500)
     return reply(400, { error: "calculate_a_quote_and_enter_recipient" });
+  if (body.nedbank_cargo_insurance_interest !== undefined && typeof body.nedbank_cargo_insurance_interest !== "boolean") return reply(400, { error: "invalid_insurance_enquiry_selection" });
   const { data: existing } = await admin.from("customer_bookings")
-    .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status")
+    .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,nedbank_cargo_insurance_interest")
     .eq("quote_id", body.quote_id).eq("owner_hash", owner).maybeSingle();
   if (existing) return reply(200, { order: existing });
   const { data: quote, error: quoteError } = await admin.from("delivery_quotes")
@@ -225,7 +230,7 @@ Deno.serve(async (req: Request) => {
     if (assistanceFeeCents !== expectedFee) return reply(400, { error: "assistance_quote_changed_recalculate_and_review" });
   } else if ((body.assistance_minutes ?? 0) !== 0 || (body.assistance_fee_cents ?? 0) !== 0) return reply(400, { error: "unexpected_assistance_amount" });
   const method = body.payment_method ?? "dispatch";
-  if (method !== "cash" && method !== "dispatch") return reply(400, { error: "choose_eft_or_eligible_cash_payment" });
+  if (method !== "cash" && method !== "dispatch" && method !== "eft") return reply(400, { error: "choose_eft_or_eligible_cash_payment" });
   if (method === "cash" && distance >= 12000) return reply(400, { error: "cash_available_only_below_12km" });
   let offer: number | null = null;
   let offerStatus = "none";
@@ -256,6 +261,7 @@ Deno.serve(async (req: Request) => {
     return_address: returnAddress || null, return_at: returnAt, payment_method: method,
     assistance_requested: assistanceRequested, assistance_minutes: assistanceMinutes,
     assistance_fee_cents: assistanceFeeCents, assistance_status: assistanceRequested ? "requested_pending_dispatch_confirmation" : "not_requested",
+    nedbank_cargo_insurance_interest: body.nedbank_cargo_insurance_interest === true,
     counter_offer: offer, counter_offer_status: offerStatus,
     pickup_latitude: pickup.latitude, pickup_longitude: pickup.longitude, pickup_plus_code: pickup.plus_code, pickup_geohash: pickup.geohash,
     dropoff_latitude: dropoff.latitude, dropoff_longitude: dropoff.longitude, dropoff_plus_code: dropoff.plus_code, dropoff_geohash: dropoff.geohash,
@@ -297,7 +303,7 @@ Deno.serve(async (req: Request) => {
   const { data: order, error: insertError } = await admin.from("customer_bookings").insert(insert).select("*").single();
   if (insertError) {
     const { data: retry } = await admin.from("customer_bookings")
-      .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status")
+      .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,nedbank_cargo_insurance_interest")
       .eq("quote_id", body.quote_id).eq("owner_hash", owner).maybeSingle();
     if (retry) return reply(200, { order: retry });
     console.error("Customer booking insert failed", insertError.message);

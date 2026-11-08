@@ -1,0 +1,2 @@
+revoke all privileges on table public.driver_insurance_policies, public.driver_insurance_claims, public.driver_insurance_claim_documents, public.driver_insurance_trip_location_events from anon, authenticated;
+grant all privileges on table public.driver_insurance_policies, public.driver_insurance_claims, public.driver_insurance_claim_documents, public.driver_insurance_trip_location_events to service_role;
