@@ -53,11 +53,16 @@ async function validateAccount(session) {
   // Send customer welcome email only after authenticated session and customer role validation.
   // This also covers first sign-in after email confirmation and social signup completion.
   if (session?.access_token) {
-    const { data: welcomeResult, error: welcomeError } = await supabase.functions.invoke('customer-welcome-notify', {
-      body: {}, headers: { Authorization: 'Bearer ' + session.access_token }
-    });
-    if (welcomeError) console.warn('Customer welcome email pending:', welcomeError.message);
-    else if (welcomeResult?.success !== true) console.warn('Customer welcome email was not delivered yet.');
+    // Welcome email is best-effort and must never block an otherwise valid customer sign-in.
+    try {
+      const { data: welcomeResult, error: welcomeError } = await supabase.functions.invoke('customer-welcome-notify', {
+        body: {}, headers: { Authorization: 'Bearer ' + session.access_token }
+      });
+      if (welcomeError) console.warn('Customer welcome email pending:', welcomeError.message);
+      else if (welcomeResult?.success !== true) console.warn('Customer welcome email was not delivered yet.');
+    } catch (welcomeError) {
+      console.warn('Customer welcome email service unavailable; account sign-in will continue.', welcomeError);
+    }
   }
   document.querySelectorAll('[data-user-name]').forEach(el => { el.textContent = user.name || user.email || 'Your account'; });
   document.body.dataset.guestPreview = 'false';
