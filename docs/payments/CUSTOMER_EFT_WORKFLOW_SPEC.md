@@ -148,3 +148,15 @@ A direct read-only inspection of the staging function definitions and grants ide
 Required remediation before treating driver cash proof submission as release-ready: add the same active-driver and approved-driver checks inside the RPC, retain the caller/deposit/object ownership checks, and add tests for inactive, suspended, unapproved, wrong-owner, missing-object, and already-processed cases. Keep `anon` execution revoked. This is a staging review finding only; no function or database changes were made.
 
 The staging advisor currently reports five authenticated-callable SECURITY DEFINER driver-cash RPCs, no anon execution on the inspected functions, five unindexed foreign keys, three RLS auth-initplan performance findings, and Auth leaked-password protection disabled. These are tracked separately; unused-index notices are not treated as automatic removal instructions.
+
+
+## Cash-proof RPC remediation detail (2026-11-08)
+
+A read-only comparison of the other staging cash RPC definitions confirms the intended authorization pattern:
+
+- `create_driver_cash_deposit` checks `user_profiles.id = auth.uid()`, `role='driver'`, `account_status='active'`, and `driver_profiles.user_id = auth.uid()` with `verification_status='approved'`.
+- `record_driver_cash_receipt` applies the same two-profile checks before recording the receipt or changing the booking.
+- `submit_driver_cash_deposit_proof` should apply those same checks immediately after validating that `auth.uid()` is non-null, before checking the Storage object or updating a deposit. Keep the existing UUID-prefixed object-path check, private-bucket object existence check, deposit-owner predicate, and `status='awaiting_deposit'` transition.
+- Preserve the existing error contract for authorization failure (`42501`), and keep `anon` execution revoked. Verify the function's effective grants after remediation rather than relying only on the Edge Function wrapper.
+
+The other inspected RPCs also demonstrate that the admin-only balance and reconciliation functions check `user_profiles.role='admin'` and `account_status='active'` inside the SECURITY DEFINER function itself. This comparison is evidence for the remediation pattern only; no SQL function was changed in this review.
