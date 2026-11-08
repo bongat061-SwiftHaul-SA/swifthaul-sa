@@ -46,9 +46,10 @@ Deno.serve(async (req: Request) => {
     return reply(403, { error: "administrator_access_required" });
 
   try {
-    const [bookings, payments, memberships, refunds, earnings, rewards, payouts, loans] = await Promise.all([
+    const [bookings, payments, eftPayments, memberships, refunds, earnings, rewards, payouts, loans] = await Promise.all([
       allRows(db, "customer_bookings", "waybill,status,price,completed_at,paid_at,refunded_at"),
       allRows(db, "payment_transactions", "amount,status,refunded_at,completed_at,provider"),
+      allRows(db, "customer_eft_payments", "amount_cents,status,admin_reference,reviewed_at"),
       allRows(db, "driver_memberships", "amount_cents,status,provider,provider_payment_id,starts_at,ends_at"),
       allRows(db, "booking_refund_requests", "refund_amount_cents,status,refund_source"),
       allRows(db, "driver_earnings_ledger", "amount_cents,event_type,event_key"),
@@ -59,7 +60,9 @@ Deno.serve(async (req: Request) => {
 
     const completed = bookings.filter(r => r.status === "delivered");
     const grossDeliveryCents = cents(sum(completed, "price", () => true) * 100);
-    const paidCustomerCents = cents(sum(payments, "amount", r => r.status === "complete") * 100);
+    const providerPaidCents = cents(sum(payments, "amount", r => r.status === "complete") * 100);
+    const eftVerifiedCents = cents(sum(eftPayments, "amount_cents", r => r.status === "verified"));
+    const paidCustomerCents = providerPaidCents + eftVerifiedCents;
     const completedPaymentRefundCents = cents(sum(payments, "amount", r => r.status === "complete" && !!r.refunded_at) * 100);
     const approvedRefunds = refunds.filter(r => ["refunded", "completed", "paid"].includes(String(r.status)));
     const refundCents = Math.max(completedPaymentRefundCents,
@@ -83,13 +86,14 @@ Deno.serve(async (req: Request) => {
       generated_at: new Date().toISOString(),
       currency: "ZAR",
       bookings: { total: bookings.length, completed: completed.length },
-      customer_payments: { gross_received_cents: paidCustomerCents, refunds_cents: refundCents, net_received_cents: Math.max(0, paidCustomerCents - refundCents) },
+      customer_payments: { gross_received_cents: paidCustomerCents, provider_received_cents: providerPaidCents, eft_verified_cents: eftVerifiedCents, refunds_cents: refundCents, net_received_cents: Math.max(0, paidCustomerCents - refundCents) },
       delivery: { completed_gross_charge_cents: grossDeliveryCents, driver_share_75_cents: driverShareCents, swift_haul_share_25_cents: platformShareCents, ledger_driver_earnings_cents: deliveryEarningsCents },
       premium: { verified_membership_revenue_cents: membershipRevenueCents, paid_memberships: membershipPaid.length, fuel_rebates_cents: fuelRebateCents, milestone_bonuses_cents: milestoneCents, total_rewards_cents: fuelRebateCents + milestoneCents },
       payouts: { pending_cents: payoutPendingCents, approved_reserved_cents: payoutApprovedCents, paid_cents: payoutPaidCents, outstanding_requests_cents: outstandingPayoutCents, driver_liability_estimate_cents: driverLiabilityCents },
       loans: { disbursed_principal_cents: loanPrincipalCents, outstanding_balance_cents: loanBalanceCents, active_count: loans.filter(r => !["repaid", "cancelled"].includes(String(r.status))).length, compliance_enabled: false },
       notes: [
-        "Customer payments are sourced from completed payment_transactions; booking prices are reported separately and are not added to cash receipts.",
+        "Customer cash receipts combine completed payment_transactions and verified customer EFT submissions. Booking prices are reported separately and are not added to cash receipts.",
+        "EFT amounts are counted only after Company Admin verification and are reconciled by the recorded bank statement reference.",
         "Membership revenue includes records with a provider payment ID and a paid lifecycle status; refunds or chargebacks on memberships are not yet reconciled.",
         "Refund totals include recorded external refund requests and fully refunded completed transactions; wallet-only refunds are excluded from cash refunds.",
         "Driver liability is an estimate from positive delivery and reward credits less paid payout requests. Pending and approved payout requests are shown separately and are not double-subtracted.",
