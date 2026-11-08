@@ -56,6 +56,14 @@ jobs:
         working-directory: ${{ matrix.path }}
         run: npm install --no-audit --no-fund
 
+      # The live customer website is public/customer.html. The root
+      # public/index.html is a legacy entry point retained for compatibility.
+      # Capacitor requires index.html at webDir root, so package the live page
+      # as the APK entry point before syncing Android assets.
+      - name: Use current customer website as APK entry point
+        if: matrix.label == 'Customer'
+        run: cp public/customer.html public/index.html
+
       - name: Generate Android project and sync app assets
         working-directory: ${{ matrix.path }}
         run: |
