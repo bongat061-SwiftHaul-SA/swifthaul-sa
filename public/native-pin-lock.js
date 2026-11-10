@@ -26,6 +26,7 @@ export async function createNativePinLock(appId) {
   let unlocked = false;
   let lastActivity = Date.now();
   let promptPromise = null;
+  let idleTimer = null;
   let overlay;
 
   const getPinRecord = async () => {
@@ -171,6 +172,7 @@ export async function createNativePinLock(appId) {
       else await showPinPrompt(false);
       unlocked = true;
       lastActivity = Date.now();
+      scheduleIdleLock();
     })();
     try {
       await promptPromise;
@@ -185,12 +187,25 @@ export async function createNativePinLock(appId) {
     }
   }
 
-  const lock = () => { unlocked = false; };
+  const scheduleIdleLock = () => {
+    clearTimeout(idleTimer);
+    if (unlocked) idleTimer = setTimeout(() => {
+      unlocked = false;
+      requireUnlock().catch(() => {});
+    }, 5 * 60 * 1000);
+  };
+  const lock = () => { unlocked = false; clearTimeout(idleTimer); };
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') lock();
   });
-  document.addEventListener('pointerdown', () => { if (unlocked) lastActivity = Date.now(); }, { passive: true });
-  document.addEventListener('keydown', () => { if (unlocked) lastActivity = Date.now(); }, { passive: true });
+  const recordActivity = () => {
+    if (unlocked) {
+      lastActivity = Date.now();
+      scheduleIdleLock();
+    }
+  };
+  document.addEventListener('pointerdown', recordActivity, { passive: true });
+  document.addEventListener('keydown', recordActivity, { passive: true });
 
   return {
     isNative: true,
