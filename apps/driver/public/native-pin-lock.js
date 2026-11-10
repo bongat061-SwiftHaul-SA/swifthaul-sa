@@ -2,7 +2,17 @@
 // Android values are encrypted by Android Keystore through @aparajita/capacitor-secure-storage.
 // This module deliberately does not use its web/localStorage implementation.
 export async function createNativePinLock(appId) {
-  const capacitor = window.Capacitor;
+  // Capacitor 7 does not guarantee a window.Capacitor global in every WebView.
+  // Import the supported runtime API so native detection works in packaged APKs.
+  let capacitor = window.Capacitor;
+  if (!capacitor?.isNativePlatform) {
+    try {
+      const core = await import('https://esm.sh/@capacitor/core@7.6.10');
+      capacitor = core.Capacitor;
+    } catch (error) {
+      console.warn('SwiftHaul: Capacitor runtime could not be loaded; PIN unlock is unavailable.', error);
+    }
+  }
   if (!capacitor?.isNativePlatform?.()) {
     return {
       isNative: false,
