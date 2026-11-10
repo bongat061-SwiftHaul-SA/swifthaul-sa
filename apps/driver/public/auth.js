@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './supabase-config.js';
-import { createNativePinLock } from '../../../public/native-pin-lock.js';
+import { createNativePinLock } from './native-pin-lock.js';
 
 const nativePin = await createNativePinLock('driver');
 const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
