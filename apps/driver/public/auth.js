@@ -1,8 +1,13 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './supabase-config.js';
+import { createNativePinLock } from '../../../public/native-pin-lock.js';
 
+const nativePin = await createNativePinLock('driver');
 const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+  auth: {
+    persistSession: true, autoRefreshToken: true, detectSessionInUrl: true,
+    ...(nativePin.storage ? { storage: nativePin.storage } : {})
+  }
 });
 window.swiftHaulSupabase = supabase;
 
@@ -90,6 +95,7 @@ function showWorkspace(user) {
 }
 
 async function validateAccount(session) {
+  await nativePin.requireUnlock();
   const { data, error } = await supabase.functions.invoke('account-me', {
     method: 'GET',
     headers: { Authorization: 'Bearer ' + session.access_token }
@@ -272,6 +278,7 @@ document.getElementById('sign-out').addEventListener('click', async () => {
     status.textContent = 'Unable to finish signing out. Please retry.';
     return;
   }
+  await nativePin.clearPin();
   currentUser = null;
   window.location.replace(window.location.pathname);
 });
