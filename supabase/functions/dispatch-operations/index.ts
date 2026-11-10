@@ -79,11 +79,11 @@ Deno.serve(async (req: Request) => {
   if (isDispatcher && body.action === "counteroffer_decision") {
     if (order.counter_offer_status !== "pending" || !Number.isFinite(Number(order.counter_offer)) || Number(order.counter_offer) <= 0)
       return reply(409, { error: "no_pending_counteroffer" });
-    if (body.decision !== "accepted" && body.decision !== "rejected")
-      return reply(400, { error: "choose_accept_or_reject" });
+    if (body.decision !== "accepted" && body.decision !== "declined")
+      return reply(400, { error: "choose_accept_or_decline" });
     const update = body.decision === "accepted"
       ? { counter_offer_status: "accepted", original_price: order.original_price ?? order.price, price: Number(order.counter_offer) }
-      : { counter_offer_status: "rejected" };
+      : { counter_offer_status: "declined" };
     const { data: changed, error } = await admin.from("customer_bookings")
       .update(update).eq("waybill", order.waybill).eq("counter_offer_status", "pending")
       .select("waybill,counter_offer,counter_offer_status,price,original_price").maybeSingle();
@@ -123,6 +123,8 @@ Deno.serve(async (req: Request) => {
   };
 
   if (isDispatcher && body.action === "assign") {
+    if (order.counter_offer_status === "pending")
+      return reply(409, { error: "counteroffer_requires_dispatch_review_before_assignment" });
     if (["delivered", "failed", "cancelled"].includes(order.status) || order.refunded_at)
       return reply(409, { error: "delivery_is_closed" });
     if (typeof body.driver_id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.driver_id))
