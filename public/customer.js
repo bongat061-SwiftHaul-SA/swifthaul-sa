@@ -142,7 +142,9 @@ function addOrder(order, prepend = false) {
     const paymentBox=document.createElement('div');paymentBox.className='payment-choice';
     const paymentLabel=document.createElement('label');paymentLabel.textContent='Choose payment method';
     const paymentSelect=document.createElement('select');paymentSelect.setAttribute('aria-label','Payment method for booking '+order.waybill);
-    const choices=[['eft','EFT bank transfer'],['card','PayFast hosted checkout'],['card','Card · Visa / Mastercard via PayFast'],['dispatch','Arrange payment with dispatch']];
+    const choices=[['eft','EFT bank transfer']];
+    if(Number(order.price)>=5)choices.push(['card','PayFast hosted checkout'],['card','Card · Visa / Mastercard via PayFast']);
+    choices.push(['dispatch','Arrange payment with dispatch']);
     if(Number(order.distance_meters)<12000)choices.push(['cash','Cash payment']);
     for(const [value,label] of choices){const option=document.createElement('option');option.value=value;option.textContent=label;paymentSelect.append(option);}
     paymentSelect.value=order.payment_method||'dispatch';
