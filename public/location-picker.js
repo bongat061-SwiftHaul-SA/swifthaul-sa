@@ -71,84 +71,38 @@
     '@media(max-width:650px){#delivery-map-stage{height:78svh;min-height:650px;margin:-22px -18px 22px;border-radius:0 0 20px 20px}.swift-location-sheet{left:10px;right:10px;bottom:10px;max-height:58%;padding:15px 16px;border-radius:21px}.swift-sheet-head{gap:8px}.swift-sheet-head h3{font-size:15px}.swift-route-steps{gap:5px;padding:7px 8px;font-size:8px}.swift-location-fields{gap:6px}.swift-location-fields input{height:40px;min-height:40px}.swift-sheet-tools{gap:6px}.swift-sheet-tools button{padding:7px 9px;font-size:9px}.swift-pin-meta{margin-top:7px}.swift-sheet-quote #quote-result{font-size:10px}}',
   ].join('\n');
   style.textContent += [
-    '#delivery-map-stage{height:clamp(650px,84vh,900px)!important;min-height:650px!important;margin:0!important;border-radius:20px!important}',
-    '.swift-location-sheet{left:clamp(12px,2vw,24px)!important;right:clamp(12px,2vw,24px)!important;bottom:clamp(12px,2vw,24px)!important;max-height:76%!important;overflow-y:auto!important;padding:18px!important;border-radius:22px!important}',
-    '.swift-sheet-head{margin-bottom:12px!important}',
-    '.swift-sheet-head h3{font-size:17px!important;font-weight:850!important;letter-spacing:-.5px!important}',
-    '.swift-location-fields{grid-template-columns:1fr!important;gap:7px!important}',
-    '.swift-location-fields .field{padding-left:20px!important}',
-    '.swift-location-fields input{min-height:42px!important;height:42px!important;margin-top:4px!important;padding:10px 12px!important}',
-    '.swift-location-fields .field label{font-size:9px!important;letter-spacing:.65px!important;text-transform:uppercase!important}',
-    '.swift-location-fields .field:before{top:15px!important}',
-    '.swift-pin-button{margin-top:3px!important;padding:5px 8px!important;font-size:9px!important}',
-    '.swift-location-sheet .parcel-fields{margin:10px 0!important;padding:12px!important;border:1px solid #e8edea!important;border-radius:14px!important;background:#fbfcfb!important}',
-    '.swift-location-sheet .parcel-fields legend{margin-bottom:7px!important}',
-    '.swift-location-sheet .parcel-fields>p.subtle{display:none!important}',
-    '.swift-location-sheet .load-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:7px!important}',
-    '.swift-location-sheet .load-grid label{font-size:9px!important;min-width:0!important}',
-    '.swift-location-sheet #cargo-estimator{margin:9px 0 12px!important;padding:13px!important;border:1px solid #e4ebe6!important;border-radius:15px!important;background:#f3f7f4!important}',
-    '.swift-location-sheet #cargo-estimator h3{font-size:13px!important;margin:0 0 5px!important}',
-    '.swift-location-sheet #cargo-estimator p{font-size:10px!important;line-height:1.45!important;margin:6px 0!important}',
-    '.swift-location-sheet #cargo-estimator textarea,.swift-location-sheet #cargo-estimator input[type=file]{font-size:11px!important;border-radius:10px!important}',
-    '.swift-location-sheet #cargo-estimator .cargo-actions button{min-height:38px!important;padding:9px 12px!important;font-size:10px!important;border-radius:10px!important}',
-    '.swift-location-sheet #cargo-estimator .cargo-range{font-size:14px!important}',
-    '.swift-location-sheet .load-grid input{min-height:39px!important;height:39px!important;padding:8px!important;font-size:11px!important}',
-    '.swift-location-sheet #load-summary{margin:7px 0 0!important;font-size:10px!important;min-height:0!important}',
-    '.swift-more-options{margin:9px 0!important;border:1px solid #e7ece8!important;border-radius:13px!important;background:#fff!important}',
-    '.swift-more-options>summary{padding:12px 13px!important;color:#34443d!important;font-size:11px!important;font-weight:800!important;cursor:pointer!important;list-style:none!important}',
-    '.swift-more-options>summary::-webkit-details-marker{display:none!important}',
-    '.swift-more-options>summary:after{content:"＋";float:right;color:#176b52!important}',
-    '.swift-more-options[open]>summary:after{content:"−"}',
-    '.swift-more-content{padding:0 12px 10px!important}',
-    '.swift-more-content fieldset{margin:10px 0!important;padding:11px!important}',
-    '.swift-more-content .subtle{font-size:10px!important}',
-    '.swift-sheet-quote{margin-top:10px!important}',
-    '.swift-sheet-quote #quote-status{margin:7px 0!important;min-height:0!important;font-size:10px!important}',
-    '.swift-sheet-quote #calculate-route{width:100%!important;min-height:46px!important;border-radius:12px!important;background:#142d23!important;border-color:#142d23!important;font-weight:800!important}',
-    '.swift-sheet-quote #quote-result{margin:10px 0!important;padding:12px!important;border:1px solid #e5eee8!important;border-radius:14px!important;background:#f7faf8!important}',
-    '.swift-sheet-quote #quote-result>p.subtle:nth-of-type(n+2){display:none!important}',
-    '.swift-sheet-quote #quote-map{height:150px!important;border-radius:12px!important}',
-    '.swift-sheet-quote .quote-totals strong{font-size:21px!important}',
-    '.swift-booking-actions{position:sticky!important;bottom:-18px!important;z-index:5!important;margin:12px -18px -18px!important;padding:12px 18px 14px!important;background:#fff!important;border-top:1px solid #e8edea!important;box-shadow:0 -8px 20px #fff!important}',
-    '.swift-booking-actions #submit{width:100%!important;min-height:52px!important;border-radius:13px!important;background:#142d23!important;border-color:#142d23!important}',
-    '.swift-booking-actions #message{margin:6px 0 0!important;font-size:10px!important}',
-    '@media(max-width:650px){#delivery-map-stage{height:88svh!important;min-height:660px!important;margin:0!important;border-radius:18px!important}.swift-location-sheet{left:9px!important;right:9px!important;bottom:9px!important;max-height:77%!important;padding:13px!important;border-radius:19px!important}.swift-sheet-head h3{font-size:15px!important}.swift-location-fields{gap:5px!important}.swift-location-fields input{min-height:39px!important;height:39px!important}.swift-location-sheet .load-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.swift-location-sheet .load-grid input{min-height:37px!important;height:37px!important}.swift-booking-actions{bottom:-13px!important;margin:10px -13px -13px!important;padding:10px 13px 12px!important}.swift-sheet-quote #quote-map{height:125px!important}}'
-  ].join('\n');
-
-  style.textContent += [
-    '#delivery-map-stage{height:calc(100svh - 118px)!important;min-height:640px!important;max-height:980px!important;margin:0 -30px 26px!important;border:0!important;border-radius:0 0 26px 26px!important;background:#e9eef0!important;box-shadow:0 12px 34px #14231e14!important}',
+    '#delivery-map-stage{height:520px!important;min-height:440px!important;max-height:62vh!important;margin:0 0 22px!important;border:1px solid #dfe7e1!important;border-radius:18px!important;background:#e9eef0!important;box-shadow:0 8px 26px #14231e12!important}',
     '#global-location-map{background:#e9eef0!important}',
     '#global-location-map .maplibregl-canvas{outline:0!important}',
-    '#global-location-map .maplibregl-ctrl-top-right{top:14px!important;right:14px!important}',
-    '#global-location-map .maplibregl-ctrl-group{border:0!important;border-radius:14px!important;overflow:hidden!important;box-shadow:0 3px 14px #15231e22!important}',
-    '#global-location-map .maplibregl-ctrl-group button{width:40px!important;height:40px!important}',
-    '.swift-location-sheet{left:clamp(12px,3vw,34px)!important;right:clamp(12px,3vw,34px)!important;bottom:clamp(12px,2.2vh,24px)!important;max-height:48%!important;overflow-y:auto!important;padding:18px 20px 16px!important;border:1px solid #e8ece9!important;border-radius:22px!important;box-shadow:0 12px 42px #12251d30!important;background:#fff!important}',
-    '.swift-sheet-head{margin-bottom:12px!important;align-items:center!important}',
-    '.swift-sheet-head h3{font-size:17px!important;letter-spacing:-.45px!important;color:#17241f!important}',
+    '#global-location-map .maplibregl-ctrl-top-right{top:12px!important;right:12px!important}',
+    '#global-location-map .maplibregl-ctrl-group{border:0!important;border-radius:12px!important;overflow:hidden!important;box-shadow:0 3px 12px #15231e25!important}',
+    '#global-location-map .maplibregl-ctrl-group button{width:38px!important;height:38px!important}',
+    '.swift-location-sheet{left:12px!important;right:12px!important;bottom:12px!important;max-height:72%!important;overflow-y:auto!important;padding:15px 16px 14px!important;border:1px solid #e5ebe7!important;border-radius:18px!important;box-shadow:0 10px 32px #12251d28!important;background:#fff!important}',
+    '.swift-sheet-head{margin-bottom:10px!important;align-items:center!important}',
+    '.swift-sheet-head h3{font-size:16px!important;letter-spacing:-.35px!important;color:#17241f!important}',
     '.swift-sheet-head p{font-size:10px!important;color:#78847e!important}',
-    '.swift-route-steps{background:#f2f5f3!important;border-radius:999px!important;padding:7px 10px!important;font-size:8px!important}',
-    '.swift-location-fields{display:grid!important;grid-template-columns:1fr!important;gap:8px!important}',
-    '.swift-location-fields .field{padding-left:20px!important}',
-    '.swift-location-fields .field:before{left:2px!important;top:16px!important;width:9px!important;height:9px!important}',
-    '.swift-location-fields input{height:44px!important;min-height:44px!important;border:1px solid #e5eae7!important;border-radius:11px!important;background:#f8faf9!important;font-size:13px!important}',
-    '.swift-pin-button{margin-top:3px!important;padding:5px 8px!important;font-size:9px!important}',
-    '.swift-sheet-tools{margin-top:8px!important;gap:7px!important}',
-    '.swift-sheet-tools button{min-height:34px!important;border-radius:10px!important;font-size:10px!important}',
-    '.swift-pin-meta{display:flex!important;flex-wrap:wrap!important;gap:6px 9px!important;margin-top:8px!important;padding:8px 10px!important;border-radius:10px!important;background:#f5f7f6!important}',
-    '.swift-pin-meta strong{font-size:10px!important}',
-    '#loc-status{font-size:9px!important;line-height:1.35!important;margin-top:6px!important}',
-    '.swift-location-sheet .parcel-fields{margin:8px 0!important;padding:10px!important;border-radius:12px!important}',
-    '.swift-more-options{margin:7px 0!important;border-radius:11px!important}',
-    '.swift-more-options>summary{padding:10px 12px!important;font-size:10px!important}',
+    '.swift-route-steps{background:#f2f5f3!important;border-radius:999px!important;padding:6px 9px!important;font-size:8px!important}',
+    '.swift-location-fields{display:grid!important;grid-template-columns:1fr!important;gap:6px!important}',
+    '.swift-location-fields .field{padding-left:19px!important}',
+    '.swift-location-fields .field:before{left:2px!important;top:15px!important;width:8px!important;height:8px!important}',
+    '.swift-location-fields input{height:40px!important;min-height:40px!important;border:1px solid #e5eae7!important;border-radius:10px!important;background:#f8faf9!important;font-size:12px!important}',
+    '.swift-pin-button{margin-top:2px!important;padding:4px 7px!important;font-size:9px!important}',
+    '.swift-sheet-tools{margin-top:7px!important;gap:6px!important}',
+    '.swift-sheet-tools button{min-height:32px!important;border-radius:9px!important;font-size:9px!important}',
+    '.swift-pin-meta{display:flex!important;flex-wrap:wrap!important;gap:5px 8px!important;margin-top:7px!important;padding:7px 9px!important;border-radius:9px!important;background:#f5f7f6!important}',
+    '.swift-pin-meta strong{font-size:9px!important}',
+    '#loc-status{font-size:9px!important;line-height:1.4!important;margin-top:5px!important}',
+    '.swift-location-sheet .parcel-fields{margin:8px 0!important;padding:10px!important;border-radius:11px!important}',
+    '.swift-more-options{margin:7px 0!important;border-radius:10px!important}',
+    '.swift-more-options>summary{padding:9px 11px!important;font-size:10px!important}',
     '.swift-sheet-quote{margin-top:8px!important}',
-    '.swift-sheet-quote #calculate-route{min-height:46px!important;border-radius:12px!important;font-size:12px!important;font-weight:850!important;background:#142d23!important}',
-    '.swift-sheet-quote #quote-result{padding:11px!important;border-radius:13px!important;background:#f6f8f7!important}',
-    '.swift-sheet-quote #quote-map{height:130px!important;border-radius:10px!important}',
-    '.swift-booking-actions{position:sticky!important;bottom:-16px!important;z-index:5!important;margin:10px -20px -16px!important;padding:10px 20px 13px!important;background:#fff!important;border-top:1px solid #e9eeeb!important;box-shadow:0 -8px 18px #fff!important}',
-    '.swift-booking-actions #submit{min-height:50px!important;border-radius:12px!important;background:#142d23!important;font-size:13px!important}',
-    '@media(max-width:650px){#delivery-map-stage{height:calc(100svh - 92px)!important;min-height:620px!important;margin:0 -18px 20px!important;border-radius:0 0 20px 20px!important}.swift-location-sheet{left:9px!important;right:9px!important;bottom:9px!important;max-height:52%!important;padding:13px 14px 12px!important;border-radius:19px!important}.swift-sheet-head{gap:6px!important}.swift-sheet-head h3{font-size:15px!important}.swift-sheet-head p{font-size:9px!important}.swift-route-steps{gap:5px!important;padding:6px 7px!important;font-size:7px!important}.swift-location-fields{gap:5px!important}.swift-location-fields input{height:40px!important;min-height:40px!important;padding:9px 10px!important;font-size:12px!important}.swift-sheet-tools{gap:5px!important}.swift-sheet-tools button{min-height:32px!important;padding:6px 8px!important;font-size:9px!important}.swift-pin-meta{font-size:9px!important}.swift-sheet-quote #quote-map{height:112px!important}.swift-booking-actions{margin:8px -14px -12px!important;padding:9px 14px 12px!important}}',
-  ].join('\n');
-
+    '.swift-sheet-quote #calculate-route{min-height:42px!important;border-radius:10px!important;font-size:11px!important;font-weight:850!important;background:#142d23!important}',
+    '.swift-sheet-quote #quote-result{padding:10px!important;border-radius:11px!important;background:#f6f8f7!important}',
+    '.swift-sheet-quote #quote-map{height:140px!important;border-radius:10px!important}',
+    '.swift-booking-actions{position:sticky!important;bottom:-14px!important;z-index:5!important;margin:9px -16px -14px!important;padding:9px 16px 11px!important;background:#fff!important;border-top:1px solid #e9eeeb!important;box-shadow:0 -7px 16px #fff!important}',
+    '.swift-booking-actions #submit{min-height:46px!important;border-radius:11px!important;background:#142d23!important;font-size:12px!important}',
+    '@media(max-width:650px){#delivery-map-stage{height:430px!important;min-height:390px!important;max-height:58svh!important;margin:0 -4px 16px!important;border-radius:15px!important}.swift-location-sheet{left:8px!important;right:8px!important;bottom:8px!important;max-height:76%!important;padding:11px 12px 10px!important;border-radius:15px!important}.swift-sheet-head h3{font-size:14px!important}.swift-sheet-head p{font-size:9px!important}.swift-route-steps{gap:5px!important;padding:5px 7px!important;font-size:7px!important}.swift-location-fields{gap:4px!important}.swift-location-fields input{height:37px!important;min-height:37px!important;font-size:11px!important}.swift-sheet-tools{gap:5px!important}.swift-sheet-tools button{min-height:29px!important;padding:5px 7px!important;font-size:8px!important}.swift-pin-meta{font-size:8px!important}.swift-sheet-quote #quote-map{height:110px!important}.swift-booking-actions{margin:8px -12px -10px!important;padding:8px 12px 10px!important}}'
+  ].join('\\n');
   document.head.append(style);
 
   const pickupWrap = pickup.closest('.field');
@@ -274,7 +228,7 @@
     if(!map) return;
     const points=['pickup','dropoff'].filter(key=>state[key]).map(key=>[state[key].lng,state[key].lat]);
     if(points.length===2) {
-      map.fitBounds([[Math.min(points[0][0],points[1][0]),Math.min(points[0][1],points[1][1])],[Math.max(points[0][0],points[1][0]),Math.max(points[0][1],points[1][1])]],{padding:{top:60,bottom:300,left:45,right:45},maxZoom:15,duration:350});
+      map.fitBounds([[Math.min(points[0][0],points[1][0]),Math.min(points[0][1],points[1][1])],[Math.max(points[0][0],points[1][0]),Math.max(points[0][1],points[1][1])]],{padding:{top:38,bottom:230,left:38,right:38},maxZoom:17,duration:350});
       routeData.geometry.coordinates=points;routeLine=true;routeStyle();
       if(mapLoaded&&map.getSource('customer-route'))map.getSource('customer-route').setData(routeData);
     } else if(points.length===1) {
@@ -289,7 +243,7 @@
     if(mapLoaded){routeStyle();map.getSource('customer-route').setData(routeData);}
     const coords=routeData.geometry.coordinates;
     const lngs=coords.map(p=>p[0]),lats=coords.map(p=>p[1]);
-    map.fitBounds([[Math.min(...lngs),Math.min(...lats)],[Math.max(...lngs),Math.max(...lats)]],{padding:{top:55,bottom:300,left:45,right:45},maxZoom:15,duration:450});
+    map.fitBounds([[Math.min(...lngs),Math.min(...lats)],[Math.max(...lngs),Math.max(...lats)]],{padding:{top:38,bottom:230,left:38,right:38},maxZoom:17,duration:450});
     $('loc-status').textContent='Road route loaded. Adjust either pin if the pickup or drop-off entrance is incorrect.';
     return true;
   };
@@ -333,28 +287,30 @@
       }
       const distance=Math.round(distanceMetres(lat,lng,Number(coords[1]),Number(coords[0])));
       const street=[p.housenumber,p.street].filter(Boolean).join(' ');
-      const label=[street||p.name,p.suburb||p.district,p.city||p.town||p.village,p.state,p.postcode].filter(Boolean).join(', ');
+      const locality=[p.suburb,p.district,p.city||p.town||p.village,p.state,p.postcode].filter(Boolean);
+      const label=[street||p.name,...locality].filter(Boolean).join(', ');
       if(!label||distance>250){
         $('loc-status').textContent=distance>250
-          ? 'The nearest mapped address is '+distance+' m from your pin, so it was not filled in. Your pin and Plus Code remain the location reference.'
-          : 'No reliable street address was found. Your exact pin and Plus Code remain saved; please enter a street address or landmark if known.';
+          ? 'Nearest mapped feature is '+distance+' m from this pin. It is not safe to treat it as this property address. Your exact pin and Plus Code are saved.'
+          : 'No reliable street address was found. Your exact pin and Plus Code are saved; enter a street address or nearby landmark if known.';
+        return;
+      }
+      if(distance>35){
+        $('loc-status').textContent='Nearest mapped address: '+label+' ('+distance+' m away). This is only a nearby match, not a verified property address. Keep or edit the typed address and confirm the exact entrance using the pin.';
         return;
       }
       input.dataset.justSelected='true';
       input.value=label;
       input.dispatchEvent(new Event('input',{bubbles:true}));
       queueMicrotask(()=>{input.dataset.justSelected='false';});
-      const message=distance>75
-        ? 'Nearby mapped address only ('+distance+' m from your pin). It is not confirmed as the exact property; use the pin and verify the entrance.'
-        : 'Mapped address is within '+distance+' m of your selected pin. Please verify the exact gate or entrance on the map.';
-      saveLocation(input,lat,lng,message);
+      saveLocation(input,lat,lng,'Close mapped address match ('+distance+' m). The pin coordinates remain the delivery location; verify the gate or entrance.');
     }catch{
       if(reverseLookupSequence.get(input)===requestId&&input.value.trim()===original){
         $('loc-status').textContent='Address lookup is unavailable. Your exact pin and Plus Code are saved; please enter a street address or landmark if known.';
       }
     }
   }
-  window.swiftHaulShowAddressOnMap = (input, lat, lng) => {
+  window.swiftHaulGetMapCenter = () => map ? map.getCenter() : null;\n  window.swiftHaulShowAddressOnMap = (input, lat, lng) => {
     activeField = input;
     ensureMap();
     if (!map) return;
