@@ -143,7 +143,7 @@ function addOrder(order, prepend = false) {
     const paymentLabel=document.createElement('label');paymentLabel.textContent='Choose payment method';
     const paymentSelect=document.createElement('select');paymentSelect.setAttribute('aria-label','Payment method for booking '+order.waybill);
     const choices=[['eft','EFT bank transfer']];
-    if(Number(order.price)>=5)choices.push(['card','PayFast hosted checkout'],['card','Card · Visa / Mastercard via PayFast']);
+    if(Number(order.price)>=5)choices.push(['card','Visa / Mastercard · PayFast secure checkout']);
     choices.push(['dispatch','Arrange payment with dispatch']);
     if(Number(order.distance_meters)<12000)choices.push(['cash','Cash payment']);
     for(const [value,label] of choices){const option=document.createElement('option');option.value=value;option.textContent=label;paymentSelect.append(option);}
@@ -156,9 +156,8 @@ function addOrder(order, prepend = false) {
   }
   if(order.payment_method==='card'&&!order.paid_at&&!order.refunded_at&&!['cancelled','completed'].includes(order.status)){
     const cardPay=document.createElement('button');cardPay.type='button';
-    cardPay.textContent='PayFast checkout awaiting staging activation';
-    cardPay.disabled=true;
-    cardPay.title='The secure PayFast checkout function is not deployed to staging yet.';
+    cardPay.textContent='Pay securely with Visa / Mastercard';
+    cardPay.addEventListener('click',()=>startPayFastCheckout(order,cardPay));
     actions.append(cardPay);
   }
   if(order.payment_method==='eft'&&!order.paid_at&&!order.refunded_at&&!['cancelled','completed'].includes(order.status)&&eftPayment?.status!=='submitted'&&eftPayment?.status!=='verified'){
