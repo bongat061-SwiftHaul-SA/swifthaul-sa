@@ -1,8 +1,13 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './supabase-config.js';
+import { createNativePinLock } from './native-pin-lock.js';
 
+const nativePin = await createNativePinLock('customer');
 const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+  auth: {
+    persistSession: true, autoRefreshToken: true, detectSessionInUrl: true,
+    ...(nativePin.storage ? { storage: nativePin.storage } : {})
+  }
 });
 window.swiftHaulSupabase = supabase;
 const authScreen = document.getElementById('auth-screen');
@@ -36,6 +41,7 @@ function setMode(next) {
   status.textContent = '';
 }
 async function validateAccount(session) {
+  await nativePin.requireUnlock();
   // account-me is a GET-only Edge Function; functions.invoke() sends POST by default.
   const response = await fetch(`${SUPABASE_URL}/functions/v1/account-me`, {
     method: 'GET',
@@ -154,6 +160,7 @@ document.querySelectorAll('[data-social-provider]').forEach(button => button.add
 document.getElementById('sign-out').addEventListener('click', async () => {
   const { error } = await supabase.auth.signOut();
   if (error) { status.textContent = 'Unable to finish signing out. Please retry.'; return; }
+  await nativePin.clearPin();
   currentUser = null; location.replace(location.pathname);
 });
 supabase.auth.onAuthStateChange((event, session) => {
