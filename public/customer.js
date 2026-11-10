@@ -209,12 +209,14 @@ const assistanceRequested=document.getElementById('assistance-requested');
 const assistanceOptions=document.getElementById('assistance-options');
 const assistanceBlocks=document.getElementById('assistance-blocks');
 const assistancePrice=document.getElementById('assistance-price');
+const assistanceReview=document.getElementById('assistance-review');
 function assistanceQuote(){
-  if(!assistanceRequested?.checked){assistanceOptions.hidden=true;return {requested:false,minutes:0,fee:0};}
+  if(!assistanceRequested?.checked){assistanceOptions.hidden=true;if(assistanceReview)assistanceReview.textContent='No extra help requested · R0.00';return {requested:false,minutes:0,fee:0};}
   assistanceOptions.hidden=false;
+  if(assistanceReview)assistanceReview.textContent='Basic loading/carrying help requested · R0.00 · Dispatch confirmation required';
   const blocks=Math.min(4,Math.max(1,Number(assistanceBlocks.value)||1));
   if(!currentQuote){assistancePrice.textContent='Calculate your vehicle quote first. No assistance fee will be charged.';return {requested:true,minutes:blocks*30,fee:0};}
-  if(currentQuote.vehicle==='bike'){assistancePrice.textContent='Bike deliveries cannot carry a separate helper. Choose a van or truck if you need loading or carrying assistance.';return {requested:true,minutes:blocks*30,fee:0};}
+  if(currentQuote.vehicle==='bike'){assistancePrice.textContent='Bike deliveries cannot carry a separate helper. Choose a van or truck if you need loading or carrying assistance.';if(assistanceReview)assistanceReview.textContent='Not available with bike delivery · R0.00';return {requested:true,minutes:blocks*30,fee:0};}
   const van=currentQuote.vehicle==='van',fee=0;
   assistancePrice.textContent=(van?'1 helper':'2 helpers')+' · '+(blocks*30)+' minutes · No additional charge. Subject to availability and safe handling.';
   return {requested:true,minutes:blocks*30,fee};
