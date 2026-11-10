@@ -322,6 +322,7 @@ calculateButton.addEventListener('click', async () => {
   if(!Number(form.elements.namedItem('weight')?.value)||['length','width','height'].some(key=>!form.elements.namedItem(key).reportValidity())){quoteStatus.textContent='Add a photo or description, estimate your load, then review the suggested dimensions.';return;}
   const data=Object.fromEntries(new FormData(form));
   if (!data.pickup.trim() || !data.dropoff.trim()) {quoteStatus.textContent='Enter both pickup and drop-off addresses.';return;}
+  if(!data.pickup_latitude||!data.pickup_longitude||!data.dropoff_latitude||!data.dropoff_longitude){quoteStatus.textContent='Confirm both map pins before calculating. Choose a South African address suggestion, then adjust each pin to the exact entrance or gate.';return;}
   resetQuote();const active=new AbortController();quoteRequest=active;calculateButton.disabled=true;
   quoteStatus.textContent='Mapping the addresses and calculating your fare…';
   try {
