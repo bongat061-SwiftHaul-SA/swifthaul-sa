@@ -48,9 +48,10 @@
       ensureHidden(prefix+'_'+suffix).value=String(value);
     }
     input.dataset.locationSelected='true';
+    input.dispatchEvent(new Event('change',{bubbles:true}));
+    window.swiftHaulShowAddressOnMap?.(input,lat,lng);
     const pinButton=input.nextElementSibling;
     if(pinButton&&pinButton.textContent.toLowerCase().includes('pin'))pinButton.textContent=code?'Pin selected · '+code:'Pin selected';
-    input.dispatchEvent(new Event('change',{bubbles:true}));
   }
   function attach(input,label){
     const wrap=input.parentElement;
