@@ -272,13 +272,20 @@ document.querySelectorAll('[data-social-provider]').forEach(button => button.add
   }
 }));
 
-document.getElementById('sign-out').addEventListener('click', async () => {
-  const { error } = await supabase.auth.signOut();
-  if (error) {
-    status.textContent = 'Unable to finish signing out. Please retry.';
+// On Android, this control locks the app while retaining the encrypted Supabase
+// session so the enrolled PIN can unlock it again. It is deliberately not a
+// Supabase sign-out; a true sign-out would revoke/erase the session and cannot
+// be reversed with a local PIN alone.
+const signOutButton = document.getElementById('sign-out');
+if (nativePin.isNative) signOutButton.textContent = 'Lock app';
+signOutButton.addEventListener('click', async () => {
+  if (nativePin.isNative) {
+    await nativePin.lock();
+    window.location.replace(window.location.pathname);
     return;
   }
-  await nativePin.clearPin();
+  const { error } = await supabase.auth.signOut();
+  if (error) { status.textContent = 'Unable to finish signing out. Please retry.'; return; }
   currentUser = null;
   window.location.replace(window.location.pathname);
 });
@@ -291,7 +298,6 @@ supabase.auth.onAuthStateChange((event, session) => {
     return;
   }
   if (event === 'SIGNED_OUT') {
-    nativePin.clearPin().catch(error => console.warn('Could not clear local PIN:', error));
     currentUser = null;
     if (document.body.dataset.guestPreview !== 'true') {
       workspace.hidden = true;
