@@ -291,6 +291,7 @@ supabase.auth.onAuthStateChange((event, session) => {
     return;
   }
   if (event === 'SIGNED_OUT') {
+    nativePin.clearPin().catch(error => console.warn('Could not clear local PIN:', error));
     currentUser = null;
     if (document.body.dataset.guestPreview !== 'true') {
       workspace.hidden = true;
