@@ -158,7 +158,7 @@ function addOrder(order, prepend = false) {
     cardPay.addEventListener('click',()=>startPayFastCheckout(order,cardPay));
     actions.append(cardPay);
   }
-  if(!order.paid_at&&!order.refunded_at&&!['cancelled'].includes(order.status)&&eftPayment?.status!=='submitted'&&eftPayment?.status!=='verified'){
+  if(order.payment_method==='eft'&&!order.paid_at&&!order.refunded_at&&!['cancelled','completed'].includes(order.status)&&eftPayment?.status!=='submitted'&&eftPayment?.status!=='verified'){
     const eft=document.createElement('button');eft.type='button';eft.textContent=eftPayment?.status==='rejected'?'Resubmit EFT proof':'Pay by EFT / submit proof';
     eft.addEventListener('click',()=>{
       const box=document.createElement('div');box.className='eft-instructions';
