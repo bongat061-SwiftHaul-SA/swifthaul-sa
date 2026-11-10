@@ -38,7 +38,7 @@ Deno.serve(async (req: Request) => {
 
   if (req.method === "GET") {
     let query = admin.from("customer_bookings")
-      .select("waybill,pickup,dropoff,recipient,vehicle,price,payment_method,paid_at,completed_at,scheduled_at,return_address,status,driver_user_id,created_at,failure_reason,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash")
+      .select("waybill,pickup,dropoff,recipient,vehicle,price,payment_method,paid_at,completed_at,scheduled_at,return_address,status,driver_user_id,created_at,failure_reason,counter_offer,counter_offer_status,original_price,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash")
       .order("created_at", { ascending: false }).limit(100);
     if (isDriver) query = query.eq("driver_user_id", actorId);
     const { data, error } = await query;
@@ -71,10 +71,26 @@ Deno.serve(async (req: Request) => {
   if (typeof body.waybill !== "string" || body.waybill.length > 100) return reply(400, { error: "invalid_waybill" });
 
   const { data: order, error: orderError } = await admin.from("customer_bookings")
-    .select("waybill,status,driver_user_id,pin,pin_attempts,pin_locked_until,completed_at,refunded_at,assistance_requested,assistance_status")
+    .select("waybill,status,driver_user_id,pin,pin_attempts,pin_locked_until,completed_at,refunded_at,assistance_requested,assistance_status,counter_offer,counter_offer_status,price,original_price")
     .eq("waybill", body.waybill).maybeSingle();
   if (orderError) return reply(500, { error: "delivery_lookup_failed" });
   if (!order) return reply(404, { error: "delivery_not_found" });
+
+  if (isDispatcher && body.action === "counteroffer_decision") {
+    if (order.counter_offer_status !== "pending" || !Number.isFinite(Number(order.counter_offer)) || Number(order.counter_offer) <= 0)
+      return reply(409, { error: "no_pending_counteroffer" });
+    if (body.decision !== "accepted" && body.decision !== "rejected")
+      return reply(400, { error: "choose_accept_or_reject" });
+    const update = body.decision === "accepted"
+      ? { counter_offer_status: "accepted", original_price: order.original_price ?? order.price, price: Number(order.counter_offer) }
+      : { counter_offer_status: "rejected" };
+    const { data: changed, error } = await admin.from("customer_bookings")
+      .update(update).eq("waybill", order.waybill).eq("counter_offer_status", "pending")
+      .select("waybill,counter_offer,counter_offer_status,price,original_price").maybeSingle();
+    if (error) return reply(500, { error: "counteroffer_decision_save_failed" });
+    if (!changed) return reply(409, { error: "counteroffer_already_reviewed" });
+    return reply(200, { updated: true, ...changed });
+  }
 
   if (isDispatcher && body.action === "assistance_decision") {
     if (!order.assistance_requested || order.assistance_status !== "requested_pending_dispatch_confirmation")
