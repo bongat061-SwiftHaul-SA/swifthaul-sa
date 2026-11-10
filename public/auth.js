@@ -166,6 +166,7 @@ document.getElementById('sign-out').addEventListener('click', async () => {
 supabase.auth.onAuthStateChange((event, session) => {
   if (event === 'PASSWORD_RECOVERY') { setMode('reset'); authScreen.hidden = false; workspace.hidden = true; return; }
   if (event === 'SIGNED_OUT') {
+    nativePin.clearPin().catch(error => console.warn('Could not clear local PIN:', error));
     currentUser = null;
     if (document.body.dataset.guestPreview !== 'true') {
       workspace.hidden = true; authScreen.hidden = false; document.dispatchEvent(new Event('account-cleared'));
