@@ -23,6 +23,12 @@ export async function createNativePinLock(appId) {
   };
   const pinKey = 'quick_unlock_v1';
   const attemptsKey = 'quick_unlock_attempts_v1';
+  const getJson = async key => {
+    const raw = await SecureStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  };
+  const setJson = (key, value) => SecureStorage.setItem(key, JSON.stringify(value));
+  const removeValue = key => SecureStorage.removeItem(key);
   let unlocked = false;
   let lastActivity = Date.now();
   let promptPromise = null;
@@ -30,8 +36,7 @@ export async function createNativePinLock(appId) {
   let overlay;
 
   const getPinRecord = async () => {
-    const raw = await SecureStorage.getItem(pinKey);
-    return raw ? JSON.parse(raw) : null;
+    return getJson(pinKey);
   };
   const derive = async (pin, salt) => {
     const material = await crypto.subtle.importKey(
@@ -117,18 +122,18 @@ export async function createNativePinLock(appId) {
       const onSubmit = async event => {
         event.preventDefault();
         const pin = pinInput.value;
-        if (!/^\\d{6}$/.test(pin)) { error.textContent = 'Enter all six digits.'; return; }
+        if (!/^\d{6}$/.test(pin)) { error.textContent = 'Enter all six digits.'; return; }
         submit.disabled = true;
         try {
           if (setup) {
             if (confirmInput.value !== pin) { error.textContent = 'The PINs do not match.'; submit.disabled = false; return; }
             const salt = crypto.getRandomValues(new Uint8Array(16));
             const hash = await derive(pin, salt);
-            await SecureStorage.set(pinKey, { version: 1, salt: toBase64(salt), hash });
-            await SecureStorage.remove(attemptsKey);
+            await setJson(pinKey, { version: 1, salt: toBase64(salt), hash });
+            await removeValue(attemptsKey);
             finish(true);
           } else {
-            const attempts = await SecureStorage.get(attemptsKey) || { count: 0, lockedUntil: 0 };
+            const attempts = await getJson(attemptsKey) || { count: 0, lockedUntil: 0 };
             if (Date.now() < attempts.lockedUntil) {
               const seconds = Math.ceil((attempts.lockedUntil - Date.now()) / 1000);
               error.textContent = `Too many attempts. Try again in ${seconds} seconds.`;
@@ -140,7 +145,7 @@ export async function createNativePinLock(appId) {
             if (!equal(candidate, record.hash)) {
               const count = attempts.count + 1;
               const lockedUntil = count >= 5 ? Date.now() + 60000 : 0;
-              await SecureStorage.set(attemptsKey, { count: count >= 5 ? 0 : count, lockedUntil });
+              await setJson(attemptsKey, { count: count >= 5 ? 0 : count, lockedUntil });
               error.textContent = lockedUntil
                 ? 'Five incorrect attempts. PIN unlock is paused for one minute.'
                 : `Incorrect PIN. ${5 - count} attempt(s) remaining.`;
@@ -149,7 +154,7 @@ export async function createNativePinLock(appId) {
               pinInput.focus();
               return;
             }
-            await SecureStorage.remove(attemptsKey);
+            await removeValue(attemptsKey);
             finish(true);
           }
         } catch (err) {
@@ -177,8 +182,8 @@ export async function createNativePinLock(appId) {
     try {
       await promptPromise;
     } catch {
-      await SecureStorage.remove(pinKey);
-      await SecureStorage.remove(attemptsKey);
+      await removeValue(pinKey);
+      await removeValue(attemptsKey);
       const { error } = await window.swiftHaulSupabase.auth.signOut({ scope: 'local' });
       if (error) throw error;
       window.location.replace(window.location.pathname);
@@ -213,8 +218,8 @@ export async function createNativePinLock(appId) {
     requireUnlock,
     lock,
     clearPin: async () => {
-      await SecureStorage.remove(pinKey);
-      await SecureStorage.remove(attemptsKey);
+      await removeValue(pinKey);
+      await removeValue(attemptsKey);
       unlocked = false;
     }
   };
