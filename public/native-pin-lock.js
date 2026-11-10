@@ -232,7 +232,7 @@ export async function createNativePinLock(appId) {
   // Do not lock on document visibilitychange: Android WebView also fires that
   // during ordinary multi-page navigation. Use the native app lifecycle event.
   try {
-    const appModule = await import('https://esm.sh/@capacitor/app@7.0.1?external=@capacitor/core');
+    const appModule = await import('https://esm.sh/@capacitor/app@7.0.1?deps=@capacitor/core@7.6.10');
     appLifecycle = await appModule.App.addListener('appStateChange', ({ isActive }) => {
       if (!isActive) lock().catch(error => console.warn('SwiftHaul PIN lock failed:', error));
     });
@@ -242,6 +242,8 @@ export async function createNativePinLock(appId) {
   const recordActivity = () => {
     if (unlocked) {
       lastActivity = Date.now();
+      SecureStorage.setItem(unlockUntilKey, String(lastActivity + 5 * 60 * 1000))
+        .catch(error => console.warn('SwiftHaul PIN activity could not be saved:', error));
       scheduleIdleLock();
     }
   };
