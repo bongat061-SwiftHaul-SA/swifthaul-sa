@@ -33,6 +33,7 @@ export async function createNativePinLock(appId) {
   };
   const pinKey = 'quick_unlock_v1';
   const attemptsKey = 'quick_unlock_attempts_v1';
+  const unlockUntilKey = 'quick_unlock_until_v1';
   const getJson = async key => {
     const raw = await SecureStorage.getItem(key);
     return raw ? JSON.parse(raw) : null;
@@ -44,6 +45,7 @@ export async function createNativePinLock(appId) {
   let promptPromise = null;
   let idleTimer = null;
   let overlay;
+  let appLifecycle = null;
 
   const getPinRecord = async () => {
     return getJson(pinKey);
@@ -179,6 +181,16 @@ export async function createNativePinLock(appId) {
 
   async function requireUnlock() {
     if (unlocked && Date.now() - lastActivity < 5 * 60 * 1000) return;
+    // A full page navigation creates a fresh JS context. Reuse the encrypted
+    // short-lived unlock marker so internal page changes do not ask for PIN again.
+    const unlockUntil = Number(await SecureStorage.getItem(unlockUntilKey) || 0);
+    if (unlockUntil > Date.now()) {
+      unlocked = true;
+      lastActivity = Date.now();
+      scheduleIdleLock();
+      return;
+    }
+    await removeValue(unlockUntilKey);
     unlocked = false;
     if (promptPromise) return promptPromise;
     promptPromise = (async () => {
@@ -187,6 +199,7 @@ export async function createNativePinLock(appId) {
       else await showPinPrompt(false);
       unlocked = true;
       lastActivity = Date.now();
+      await SecureStorage.setItem(unlockUntilKey, String(lastActivity + 5 * 60 * 1000));
       scheduleIdleLock();
     })();
     try {
@@ -204,15 +217,28 @@ export async function createNativePinLock(appId) {
 
   const scheduleIdleLock = () => {
     clearTimeout(idleTimer);
-    if (unlocked) idleTimer = setTimeout(() => {
+    if (unlocked) idleTimer = setTimeout(async () => {
       unlocked = false;
+      await removeValue(unlockUntilKey);
       requireUnlock().catch(() => {});
-    }, 5 * 60 * 1000);
+    }, Math.max(0, lastActivity + 5 * 60 * 1000 - Date.now()));
   };
-  const lock = () => { unlocked = false; clearTimeout(idleTimer); };
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') lock();
-  });
+  const lock = async () => {
+    unlocked = false;
+    clearTimeout(idleTimer);
+    await removeValue(unlockUntilKey);
+  };
+
+  // Do not lock on document visibilitychange: Android WebView also fires that
+  // during ordinary multi-page navigation. Use the native app lifecycle event.
+  try {
+    const appModule = await import('https://esm.sh/@capacitor/app@7.0.1?external=@capacitor/core');
+    appLifecycle = await appModule.App.addListener('appStateChange', ({ isActive }) => {
+      if (!isActive) lock().catch(error => console.warn('SwiftHaul PIN lock failed:', error));
+    });
+  } catch (error) {
+    console.warn('SwiftHaul: native background-lock listener unavailable.', error);
+  }
   const recordActivity = () => {
     if (unlocked) {
       lastActivity = Date.now();
@@ -230,6 +256,7 @@ export async function createNativePinLock(appId) {
     clearPin: async () => {
       await removeValue(pinKey);
       await removeValue(attemptsKey);
+      await removeValue(unlockUntilKey);
       unlocked = false;
     }
   };
