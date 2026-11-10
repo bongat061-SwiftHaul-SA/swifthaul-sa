@@ -102,7 +102,7 @@
     '.swift-booking-actions{position:sticky!important;bottom:-14px!important;z-index:5!important;margin:9px -16px -14px!important;padding:9px 16px 11px!important;background:#fff!important;border-top:1px solid #e9eeeb!important;box-shadow:0 -7px 16px #fff!important}',
     '.swift-booking-actions #submit{min-height:46px!important;border-radius:11px!important;background:#142d23!important;font-size:12px!important}',
     '@media(max-width:650px){#delivery-map-stage{height:430px!important;min-height:390px!important;max-height:58svh!important;margin:0 -4px 16px!important;border-radius:15px!important}.swift-location-sheet{left:8px!important;right:8px!important;bottom:8px!important;max-height:76%!important;padding:11px 12px 10px!important;border-radius:15px!important}.swift-sheet-head h3{font-size:14px!important}.swift-sheet-head p{font-size:9px!important}.swift-route-steps{gap:5px!important;padding:5px 7px!important;font-size:7px!important}.swift-location-fields{gap:4px!important}.swift-location-fields input{height:37px!important;min-height:37px!important;font-size:11px!important}.swift-sheet-tools{gap:5px!important}.swift-sheet-tools button{min-height:29px!important;padding:5px 7px!important;font-size:8px!important}.swift-pin-meta{font-size:8px!important}.swift-sheet-quote #quote-map{height:110px!important}.swift-booking-actions{margin:8px -12px -10px!important;padding:8px 12px 10px!important}}'
-  ].join('\\n');
+  ].join('\n');
   document.head.append(style);
 
   const pickupWrap = pickup.closest('.field');
