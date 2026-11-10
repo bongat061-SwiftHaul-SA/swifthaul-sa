@@ -103,7 +103,10 @@
       controller?.abort();controller=new AbortController();
       status.textContent='Finding matching addresses…';
       try{
-        const bias=window.swiftHaulGetMapCenter?.();\n        const params={q:query,limit:'8',lang:'en'};\n        if(bias&&Number.isFinite(bias.lat)&&Number.isFinite(bias.lng)){params.lat=String(bias.lat);params.lon=String(bias.lng);}\n        const url='https://photon.komoot.io/api/?'+new URLSearchParams(params);
+        const bias=window.swiftHaulGetMapCenter?.();
+        const params={q:query,limit:'8',lang:'en'};
+        if(bias&&Number.isFinite(bias.lat)&&Number.isFinite(bias.lng)){params.lat=String(bias.lat);params.lon=String(bias.lng);}
+        const url='https://photon.komoot.io/api/?'+new URLSearchParams(params);
         const response=await fetch(url,{signal:controller.signal,headers:{Accept:'application/json'}});
         if(!response.ok)throw new Error('Address search unavailable');
         const data=await response.json();
