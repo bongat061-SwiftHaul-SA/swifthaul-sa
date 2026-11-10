@@ -7,7 +7,8 @@
     "@netlify/identity": "^2.0.0",
     "@netlify/functions": "^6.0.3",
     "@capacitor/core": "7.6.10",
-    "@capacitor/android": "7.6.10"
+    "@capacitor/android": "7.6.10",
+    "@aparajita/capacitor-secure-storage": "7.1.6"
   },
   "devDependencies": {
     "@capacitor/cli": "7.6.10"
