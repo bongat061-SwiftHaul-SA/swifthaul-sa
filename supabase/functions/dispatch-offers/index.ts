@@ -46,6 +46,10 @@ Deno.serve(async req => {
     const {data:offer,error}=await db.from("driver_delivery_offers").select("id,waybill,status,expires_at").eq("id",body.offer_id).eq("driver_user_id",actor).maybeSingle();
     if(error||!offer) return reply(404,{error:"offer_not_found"});
     if(offer.status!=="offered"||new Date(offer.expires_at).getTime()<=Date.now()) return reply(409,{error:"offer_expired_or_closed"});
+    const {data:currentDriver,error:currentDriverError}=await db.from("driver_profiles")
+      .select("verification_status").eq("user_id",actor).maybeSingle();
+    if(currentDriverError) return reply(500,{error:"driver_status_lookup_failed"});
+    if(!currentDriver||currentDriver.verification_status!=="approved") return reply(403,{error:"approved_driver_required"});
     if(body.response==="decline") {
       await db.from("driver_delivery_offers").update({status:"declined",responded_at:new Date().toISOString()}).eq("id",offer.id).eq("status","offered");
       return reply(200,{declined:true});
@@ -71,7 +75,13 @@ Deno.serve(async req => {
     const excluded=new Set((sent??[]).map(x=>x.driver_user_id));
     const {data:drivers,error:de}=await db.from("driver_profiles").select("user_id,vehicle_type,is_online,verification_status").eq("is_online",true).eq("verification_status","approved");
     if(de) return reply(500,{error:"driver_candidate_lookup_failed"});
-    const eligible=(drivers??[]).filter(d=>!excluded.has(d.user_id)&&(!booking.vehicle||String(d.vehicle_type).toLowerCase()===String(booking.vehicle).toLowerCase()));
+    const onlineIds=(drivers??[]).map(d=>d.user_id);
+    if(!onlineIds.length) return reply(404,{error:"no_eligible_online_drivers"});
+    const {data:activeAccounts,error:activeError}=await db.from("user_profiles")
+      .select("id").in("id",onlineIds).eq("role","driver").eq("account_status","active");
+    if(activeError) return reply(500,{error:"driver_account_lookup_failed"});
+    const activeIds=new Set((activeAccounts??[]).map(x=>x.id));
+    const eligible=(drivers??[]).filter(d=>activeIds.has(d.user_id)&&!excluded.has(d.user_id)&&(!booking.vehicle||String(d.vehicle_type).toLowerCase()===String(booking.vehicle).toLowerCase()));
     if(!eligible.length) return reply(404,{error:"no_eligible_online_drivers"});
     const ids=eligible.map(d=>d.user_id);
     const {data:members,error:me}=await db.from("driver_memberships").select("driver_user_id").in("driver_user_id",ids).eq("status","active").lte("starts_at",now).gt("ends_at",now);
