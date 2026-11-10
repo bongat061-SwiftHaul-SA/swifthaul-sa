@@ -45,21 +45,11 @@ async function routeFor(pickupAddress: string, dropoffAddress: string, pickupPin
     if (!r.ok) throw new Error("Map provider unavailable");
     return await r.json();
   };
-  const geocode = async (address: string) => {
-    const url = new URL("https://photon.komoot.io/api/");
-    url.search = new URLSearchParams({ q: address, limit: "1", bbox: "16,-35,33,-22" }).toString();
-    const data = await getJSON(url), feature = data.features?.[0], coords = feature?.geometry?.coordinates;
-    if (!Array.isArray(coords) || coords.length !== 2 || !coords.every(Number.isFinite) ||
-        coords[0] < 16 || coords[0] > 33 || coords[1] < -35 || coords[1] > -22) return null;
-    const p = feature.properties || {};
-    const label = [p.name, [p.housenumber, p.street].filter(Boolean).join(" "), p.city || p.town || p.district, p.country].filter(Boolean).join(", ");
-    return { longitude: coords[0], latitude: coords[1], label: label || address };
-  };
+  if (!pickupPin || !dropoffPin) throw new InputError("Confirm both pickup and drop-off map pins before calculating the route. Address suggestions alone are not precise enough.", 422);
   const [pickup, dropoff] = await Promise.all([
-    pickupPin ? Promise.resolve({ ...pickupPin, label: pickupAddress }) : geocode(pickupAddress),
-    dropoffPin ? Promise.resolve({ ...dropoffPin, label: dropoffAddress }) : geocode(dropoffAddress),
+    Promise.resolve({ ...pickupPin, label: pickupAddress }),
+    Promise.resolve({ ...dropoffPin, label: dropoffAddress }),
   ]);
-  if (!pickup || !dropoff) throw new InputError("We could not locate one of these addresses in South Africa. Enter a fuller address or choose a map pin.", 422);
   const url = new URL(`https://router.project-osrm.org/route/v1/driving/${pickup.longitude},${pickup.latitude};${dropoff.longitude},${dropoff.latitude}`);
   url.search = new URLSearchParams({ overview: "simplified", geometries: "geojson", alternatives: "false", steps: "false" }).toString();
   const data = await getJSON(url), r = data.routes?.[0], coordinates = r?.geometry?.coordinates;
@@ -192,7 +182,7 @@ Deno.serve(async (req: Request) => {
   }
 
   if (body.action !== "book" || typeof body.quote_id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.quote_id) ||
-      body.terms_accepted !== true || body.terms_version !== "2026-11-08-cargo-insurance-enquiry" ||
+      body.terms_accepted !== true || body.terms_version !== "2026-11-10-lower-weight-fees-free-assistance" ||
       typeof body.recipient !== "string" || !body.recipient.trim() || body.recipient.length > 500)
     return reply(400, { error: "calculate_a_quote_and_enter_recipient" });
   if (body.nedbank_cargo_insurance_interest !== undefined && typeof body.nedbank_cargo_insurance_interest !== "boolean") return reply(400, { error: "invalid_insurance_enquiry_selection" });

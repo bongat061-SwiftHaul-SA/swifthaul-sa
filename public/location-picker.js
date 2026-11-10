@@ -130,7 +130,7 @@
     '<div class="swift-location-fields"></div>' +
     '<div class="swift-sheet-tools"><button type="button" id="loc-current" class="swift-current">◎ Use my location</button><button type="button" id="loc-open">Re-centre map</button><a href="https://www.openstreetmap.org/?mlat=-26.32517&amp;mlon=28.19535#map=14/-26.32517/28.19535&amp;layers=T" target="_blank" rel="noopener noreferrer" style="font-size:10px;color:#21664e;font-weight:700">Open transport map ↗</a></div>' +
     '<div class="swift-pin-meta"><span>Selected pin</span><strong id="loc-coordinates">Choose pickup or drop-off</strong></div>' +
-    '<p id="loc-status" role="status" aria-live="polite">Select a pickup or drop-off field, then tap the map to fine-tune its pin.</p>' +
+    '<p id="loc-status" role="status" aria-live="polite">Select a South African address suggestion or tap the map. Confirm each pin at the exact gate or entrance before calculating.</p>' +
     '<div class="swift-sheet-quote"></div></section>';
   form.insertBefore(stage, pickupWrap);
   const fields = stage.querySelector('.swift-location-fields');
@@ -178,6 +178,8 @@
   quoteArea.append(bookingActions);
 
   const $ = id => document.getElementById(id);
+  function hiddenField(name){let field=form.querySelector('[name="'+name+'"]');if(!field){field=document.createElement('input');field.type='hidden';field.name=name;form.append(field);}return field;}
+  function geohash(lat,lng,precision=9){const alphabet='0123456789bcdefghjkmnpqrstuvwxyz';let latR=[-90,90],lngR=[-180,180],even=true,bits=0,ch=0,out='';while(out.length<precision){const range=even?lngR:latR,mid=(range[0]+range[1])/2;ch<<=1;if((even?lng:lat)>=mid){ch|=1;range[0]=mid;}else range[1]=mid;even=!even;if(++bits===5){out+=alphabet[ch];bits=0;ch=0;}}return out;}
   const state = { pickup: null, dropoff: null };
   let map = null;
   let activeField = pickup;
@@ -223,7 +225,7 @@
       fitLocations();
     });
     map.on('click',event=>{
-      if(activeField) saveLocation(activeField,event.lngLat.lat,event.lngLat.lng,'Map pin adjusted. Check the selected address.');
+      if(activeField){saveLocation(activeField,event.lngLat.lat,event.lngLat.lng,'Map pin adjusted. Finding the nearest mapped address…');reverseLabel(activeField,event.lngLat.lat,event.lngLat.lng);}
     });
     map.on('error',()=>{$('loc-status').textContent='Map tiles could not be loaded. Check your connection; address fields and manual pin coordinates remain available.';});
     requestAnimationFrame(()=>map&&map.resize());
@@ -236,7 +238,8 @@
       .setLngLat([lng,lat]).addTo(map);
     marker.on('dragend',()=>{
       const p=marker.getLngLat();
-      saveLocation(input,p.lat,p.lng,'Pin moved. The updated location is saved.');
+      saveLocation(input,p.lat,p.lng,'Pin moved. Updating the nearest mapped address…');
+      reverseLabel(input,p.lat,p.lng);
     });
     state[key].marker=marker;
   }
@@ -268,7 +271,8 @@
     if(!Number.isFinite(lat)||!Number.isFinite(lng)) return;
     const key=input.name==='pickup'?'pickup':'dropoff';
     state[key]={...state[key],lat,lng};
-    Object.entries({latitude:lat,longitude:lng}).forEach(([suffix,value])=>{hiddenField(key+'_'+suffix).value=String(value);});
+    const plusCode=window.OpenLocationCode?.encode(lat,lng,10)||'';
+    Object.entries({latitude:lat,longitude:lng,plus_code:plusCode,geohash:geohash(lat,lng)}).forEach(([suffix,value])=>{hiddenField(key+'_'+suffix).value=String(value);});
     const pinButton=input.parentElement.querySelector('.swift-pin-button');
     if(pinButton){pinButton.setAttribute('aria-pressed','true');pinButton.textContent='✓ Pin confirmed';}
     activeField=input;
@@ -277,11 +281,26 @@
     if(map){placeMarker(key,lat,lng);fitLocations();}
   }
 
+  async function reverseLabel(input,lat,lng){
+    const original=input.value.trim();
+    try{
+      const url='https://photon.komoot.io/reverse/?'+new URLSearchParams({lat:String(lat),lon:String(lng),lang:'en'});
+      const response=await fetch(url,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(7000)});
+      if(!response.ok)return;
+      const feature=(await response.json()).features?.[0],p=feature?.properties||{};
+      const street=[p.housenumber,p.street].filter(Boolean).join(' ');
+      const label=[street||p.name,p.suburb||p.district,p.city||p.town||p.village,p.state,p.postcode].filter(Boolean).join(', ');
+      if(!label||input.value.trim()!==original)return;
+      input.dataset.justSelected='true';input.value=label;input.dispatchEvent(new Event('input',{bubbles:true}));
+      saveLocation(input,lat,lng,'Exact map pin saved. Address text shows the nearest mapped address; verify the gate or entrance visually.');
+    }catch{}
+  }
   window.swiftHaulShowAddressOnMap = (input, lat, lng) => {
     activeField = input;
     ensureMap();
     if (!map) return;
-    saveLocation(input, Number(lat), Number(lng), 'Address matched. Check the pin and adjust it if the entrance is different.');
+    saveLocation(input, Number(lat), Number(lng), 'Address suggestion selected. The map is centred on its mapped point; adjust to the exact gate or entrance.');
+    cameraMove([Number(lng),Number(lat)],18);
     if(map) map.resize();
   };
 

@@ -51,6 +51,7 @@
     const pinButton=input.nextElementSibling;
     if(pinButton&&pinButton.textContent.toLowerCase().includes('pin'))pinButton.textContent=code?'Pin selected · '+code:'Pin selected';
     input.dispatchEvent(new Event('change',{bubbles:true}));
+    window.swiftHaulShowAddressOnMap?.(input,lat,lng);
   }
   function attach(input,label){
     const wrap=input.parentElement;
@@ -75,7 +76,7 @@
     const choose=index=>{
       const feature=features[index];if(!feature)return;
       setLocation(input,feature);
-      close();status.textContent='Address selected. Check the pin and adjust it if the entrance is different.';
+      close();status.textContent='Address suggestion selected. Confirm the pin at the exact property entrance before calculating your fare.';
     };
     const highlight=()=>{
       [...list.querySelectorAll('button')].forEach((button,i)=>button.setAttribute('aria-selected',String(i===active)));
@@ -103,13 +104,21 @@
       controller?.abort();controller=new AbortController();
       status.textContent='Finding matching addresses…';
       try{
-        const url='https://photon.komoot.io/api/?'+new URLSearchParams({q:query,limit:'6',lang:'en'});
+        const searchText=/\b(south africa|za)\b/i.test(query)?query:query+', South Africa';
+        const url='https://photon.komoot.io/api/?'+new URLSearchParams({q:searchText,limit:'12',lang:'en',bbox:'16,-35,33,-22'});
         const response=await fetch(url,{signal:controller.signal,headers:{Accept:'application/json'}});
         if(!response.ok)throw new Error('Address search unavailable');
         const data=await response.json();
-        const items=(data.features||[]).filter(item=>item.geometry?.type==='Point'&&Array.isArray(item.geometry.coordinates));
+        const items=(data.features||[]).filter(item=>{
+          if(item.geometry?.type!=='Point'||!Array.isArray(item.geometry.coordinates))return false;
+          const p=item.properties||{},coords=item.geometry.coordinates;
+          return coords[0]>=16&&coords[0]<=33&&coords[1]>=-35&&coords[1]<=-22&&(!p.country||/south africa/i.test(p.country));
+        }).sort((a,b)=>{
+          const score=f=>{const p=f.properties||{};return (p.housenumber?8:0)+(p.street?4:0)+(p.postcode?2:0)+(p.city||p.town||p.village?1:0);};
+          return score(b)-score(a);
+        });
         render(items);
-        status.textContent=items.length?'Choose the closest match. You can fine-tune the pin on the map.':'No matching addresses found. Try adding the suburb, city or postal code.';
+        status.textContent=items.length?'Choose the closest South African match. The map will centre on it; move the pin to the exact gate or entrance.':'No matching addresses found. Try adding the suburb, city or postal code.';
       }catch(error){
         if(error.name==='AbortError')return;
         close();status.textContent='Address suggestions are temporarily unavailable. You can still enter the address and use Pick / copy pin.';
@@ -148,7 +157,7 @@
   }
   const helper=document.createElement('p');
   helper.className='address-helper';
-  helper.textContent='Start typing to choose a suggested address. Then use Pick / copy pin to confirm the exact gate, entrance or collection point. Address matches are suggestions; always verify the map pin.';
+  helper.textContent='Address suggestions are limited to South Africa. Choose the closest match, then confirm the pickup and drop-off pins at the exact gate, entrance or collection point. The confirmed pin sets the route and distance.';
   const first=document.getElementById('custPickup');
   first?.parentElement?.insertAdjacentElement('afterend',helper);
 })();
