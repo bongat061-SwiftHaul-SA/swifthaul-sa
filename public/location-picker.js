@@ -310,7 +310,8 @@
       }
     }
   }
-  window.swiftHaulGetMapCenter = () => map ? map.getCenter() : null;\n  window.swiftHaulShowAddressOnMap = (input, lat, lng) => {
+  window.swiftHaulGetMapCenter = () => map ? map.getCenter() : null;
+  window.swiftHaulShowAddressOnMap = (input, lat, lng) => {
     activeField = input;
     ensureMap();
     if (!map) return;
