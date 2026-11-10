@@ -125,7 +125,8 @@ function addOrder(order, prepend = false) {
     order.payment_source==='pay_later'?'Pay later · repayment due in 7 days':
     order.payment_source==='wallet'?'Paid from SwiftHaul wallet · Refund '+money((order.wallet_refund_used||0)/100)+' + promotional '+money((order.wallet_promo_used||0)/100):
     order.payment_method==='cash'?'Payment: Cash requested · payment unconfirmed':
-    order.payment_method==='eft'?'Payment: EFT · awaiting proof':'Payment: Arrange with dispatch · payment unconfirmed';
+    order.payment_method==='eft'?'Payment: EFT · awaiting proof':
+    order.payment_method==='card'?'Payment: Visa / Mastercard · awaiting PayFast confirmation':'Payment: Arrange with dispatch · payment unconfirmed';
   card.append(paymentInfo);
   if(order.counter_offer){const offer=document.createElement('p');offer.textContent=`Counteroffer: ${money(order.counter_offer)} · ${order.counter_offer_status}. ${order.counter_offer_status==='pending'?'Original fare '+money(order.price)+' remains until company approval.':order.counter_offer_status==='accepted'?'Accepted fare '+money(order.price)+'. Original fare '+money(order.original_price)+'.':'Original fare '+money(order.price)+'.'}`;card.append(offer);}
   if(order.load) {const weight=document.createElement('p');weight.textContent=`${order.load.truckClass || order.vehicle.toUpperCase()} · ${mass(order.load.chargeable)} chargeable kg · Distance ${money(order.distance_fee)} + weight ${money(order.load.weightFee)}`;card.append(weight);}
@@ -309,7 +310,7 @@ function downloadPDF(order) {
     if(order.scheduled_at) line('Requested pickup: '+localTime(order.scheduled_at));
     if(order.return_address) line('Return request (separate quote, excluded from total): '+order.return_address+(order.return_at?' at '+localTime(order.return_at):''));
     line(`Acceptance PIN: ${order.pin}`); line(`Fare: ${money(order.price)} ZAR`, 13);
-    line('Payment option: '+(order.payment_method==='cash'?'Cash requested':order.payment_method==='eft'?'EFT bank transfer · reference '+order.waybill:'Arrange with dispatch'));
+    line('Payment option: '+(order.payment_method==='cash'?'Cash requested':order.payment_method==='eft'?'EFT bank transfer · reference '+order.waybill:order.payment_method==='card'?'Visa / Mastercard · PayFast payment pending':'Arrange with dispatch'));
     if(order.counter_offer)line('Counteroffer: '+money(order.counter_offer)+'; status: '+order.counter_offer_status+(order.counter_offer_status==='pending'?'. Original fare remains pending company approval.':'.'));
     line('Payment status: '+(order.paid_at?'Confirmed via '+order.payment_source:order.payment_source==='pay_later'?'Pay later; repayment due':'Not confirmed'));
     if(order.original_price)line('Original quoted fare before accepted counteroffer: '+money(order.original_price));
