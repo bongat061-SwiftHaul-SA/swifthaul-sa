@@ -229,15 +229,13 @@ form.addEventListener('submit', async event => {
   if (!currentQuote || new Date(currentQuote.expires_at).getTime() <= Date.now()) {resetQuote();report('Calculate a fresh route quote before booking.',true);return;}
   const epoch=accountEpoch;
   const acceptedQuote=currentQuote;
-  const termsAcknowledgement=document.getElementById('booking-terms-accepted');
-  if(!termsAcknowledgement?.checked){termsAcknowledgement?.focus();report('Please read and acknowledge the customer protection and handling terms before booking.',true);return;}
   const data = Object.fromEntries(new FormData(form));
   const assistance=assistanceQuote();
   if(assistance.requested && acceptedQuote.vehicle==='bike'){report('A bike cannot carry a separate helper. Please choose a van or truck for loading or carrying assistance.',true);return;}
   if (['pickup', 'dropoff', 'recipient'].some(key => !data[key].trim())) { report('Enter pickup, drop-off and recipient details.', true); return; }
   const submit = document.getElementById('submit'); bookingBusy=true; submit.disabled = true; report('Saving your booking…');
   try {
-    const result = await customerApi('POST', {action:'book',terms_accepted:true,terms_version:'2026-11-10-lower-weight-fees-free-assistance',nedbank_cargo_insurance_interest:data.nedbank_cargo_insurance_interest==='true',quote_id:acceptedQuote.id,assistance_requested:assistance.requested,assistance_minutes:assistance.minutes,assistance_fee_cents:Math.round(assistance.fee*100),recipient:data.recipient,payment_method:data.payment_method,counter_offer:data.counter_offer || null,scheduled_at:data.scheduled_at ? data.scheduled_at+':00+02:00' : null,return_address:data.return_address || null,return_at:data.return_at ? data.return_at+':00+02:00' : null,pickup_latitude:data.pickup_latitude?Number(data.pickup_latitude):null,pickup_longitude:data.pickup_longitude?Number(data.pickup_longitude):null,dropoff_latitude:data.dropoff_latitude?Number(data.dropoff_latitude):null,dropoff_longitude:data.dropoff_longitude?Number(data.dropoff_longitude):null});
+    const result = await customerApi('POST', {action:'book',terms_accepted:true,terms_version:'2026-11-10-protection-terms-only',quote_id:acceptedQuote.id,assistance_requested:assistance.requested,assistance_minutes:assistance.minutes,assistance_fee_cents:Math.round(assistance.fee*100),recipient:data.recipient,payment_method:data.payment_method,counter_offer:data.counter_offer || null,scheduled_at:data.scheduled_at ? data.scheduled_at+':00+02:00' : null,return_address:data.return_address || null,return_at:data.return_at ? data.return_at+':00+02:00' : null,pickup_latitude:data.pickup_latitude?Number(data.pickup_latitude):null,pickup_longitude:data.pickup_longitude?Number(data.pickup_longitude):null,dropoff_latitude:data.dropoff_latitude?Number(data.dropoff_latitude):null,dropoff_longitude:data.dropoff_longitude?Number(data.dropoff_longitude):null});
     if (epoch !== accountEpoch) return;
     if (!result.order) throw new Error('Unable to save your booking. Please try again.');
     container.querySelector('.empty')?.remove(); addOrder(result.order, true);
