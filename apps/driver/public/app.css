@@ -295,3 +295,27 @@ body[data-app="driver"] #workspace .driver-tracking-map .leaflet-control-zoom a{
 @media(max-width:600px){body[data-app="driver"] #workspace .tracking-map-stage{height:54dvh;min-height:340px}}
 
 .driver-approval-banner{margin:0 0 22px;padding:18px 20px;border:1px solid #e7c979;border-radius:16px;background:#fff7df;color:#735317;font-size:13px;line-height:1.7;font-weight:800}.driver-documents-panel{margin-top:22px;padding-top:20px;border-top:1px solid var(--line)}.driver-documents-panel h3{font-size:16px}.driver-documents-panel p{font-size:12px;line-height:1.7;color:var(--muted)}.driver-documents-panel form{display:grid;gap:14px;margin-top:16px}.driver-documents-panel label{display:grid;gap:6px}.driver-documents-panel input[type=file]{font-size:12px;padding:10px;background:#f8faf8}
+
+
+/* Driver account settings */
+body[data-app="driver"] .driver-account-settings{display:grid;gap:22px;margin-top:24px;padding-top:22px;border-top:1px solid var(--line)}
+body[data-app="driver"] .driver-account-settings form{display:grid;gap:12px;padding:18px;border:1px solid var(--line);border-radius:16px;background:#fff}
+body[data-app="driver"] .driver-account-settings h3{margin:0;color:#173d31;font-size:16px}
+body[data-app="driver"] .driver-account-settings label{display:grid;gap:7px;color:var(--ink);font-size:12px;font-weight:800}
+body[data-app="driver"] .driver-account-settings input:not([type=file]){width:100%;min-height:46px;padding:12px;border:1px solid #d7e0da;border-radius:11px;background:#fff;color:#173d31;font:inherit}
+body[data-app="driver"] .driver-account-settings button{min-height:44px;padding:11px 16px;border:1px solid #d6e0d9;border-radius:11px;background:#fff;color:#173d31;font-weight:800;cursor:pointer}
+body[data-app="driver"] .driver-account-settings button.primary{background:#173d31;border-color:#173d31;color:#fff}
+body[data-app="driver"] .driver-account-settings button.danger{background:#a52b2b;border-color:#a52b2b;color:#fff}
+body[data-app="driver"] .driver-account-settings button:disabled{opacity:.55;cursor:wait}
+body[data-app="driver"] .driver-account-settings [role=status]{min-height:18px;margin:0;color:#176b52;font-size:12px;line-height:1.6}
+body[data-app="driver"] .driver-account-settings [role=status][data-error="true"]{color:#a52b2b}
+body[data-app="driver"] .driver-profile-photo-row{display:flex;align-items:center;gap:16px;padding:18px;border:1px solid var(--line);border-radius:16px;background:#fff}
+body[data-app="driver"] .driver-profile-photo-row img,.driver-profile-photo-placeholder{width:88px;height:88px;flex:0 0 88px;border-radius:50%;object-fit:cover;background:#e7efe9}
+body[data-app="driver"] .driver-profile-photo-placeholder{display:grid;place-items:center;color:#173d31;font-size:25px;font-weight:900}
+body[data-app="driver"] .driver-profile-photo-row p{margin:5px 0;font-size:11px}
+body[data-app="driver"] .driver-photo-upload{display:inline-flex!important;width:max-content;padding:10px 13px;border-radius:10px;background:#173d31;color:#fff!important;cursor:pointer}
+body[data-app="driver"] .driver-delete-account{padding:18px;border:1px solid #efcaca;border-radius:16px;background:#fff9f9}
+body[data-app="driver"] .driver-delete-account h3{color:#9c2929}
+body[data-app="driver"] .driver-delete-account p{font-size:12px;line-height:1.7;color:#6f5555}
+body[data-app="driver"] .driver-delete-account form{border:0;background:transparent;padding:0}
+@media(max-width:520px){body[data-app="driver"] .driver-profile-photo-row{align-items:flex-start;flex-direction:column}}
