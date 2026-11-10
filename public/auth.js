@@ -185,8 +185,9 @@ async function init() {
     await validateAccount(session);
   } else {
     sessionStorage.removeItem('swifthaul-social-intent');
+    authScreen.hidden = false;
   } }
-  catch (error) { status.textContent = error?.message || 'Sign-in is unavailable. Please try again.'; }
+  catch (error) { authScreen.hidden = false; status.textContent = error?.message || 'Sign-in is unavailable. Please try again.'; }
 }
 init();
 document.addEventListener('visibilitychange', async () => {
