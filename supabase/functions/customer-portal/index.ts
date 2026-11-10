@@ -11,8 +11,13 @@ const cors = {
 const reply = (status: number, body: Record<string, unknown>) =>
   new Response(JSON.stringify(body), { status, headers: cors });
 const validText = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0 && v.length <= 500;
-const baseFees = { bike: 40, van: 80, truck: 180 } as const;
-type Vehicle = keyof typeof baseFees;
+const distancePricing = {
+  bike: { minimumFare: 49, includedKm: 2, perKmRate: 7.5 },
+  van: { minimumFare: 89, includedKm: 2, perKmRate: 10 },
+  "4-ton": { minimumFare: 249, includedKm: 5, perKmRate: 18 },
+  "8-ton": { minimumFare: 349, includedKm: 5, perKmRate: 25 },
+} as const;
+type Vehicle = "bike" | "van" | "truck";
 class InputError extends Error { status: number; constructor(message: string, status = 400) { super(message); this.status = status; } }
 
 function calculateLoad(input: unknown) {
@@ -163,8 +168,15 @@ Deno.serve(async (req: Request) => {
     try {
       const pickupPin = pin(body.pickup_location), dropoffPin = pin(body.dropoff_location), load = calculateLoad(body.parcel);
       const route = await routeFor(body.pickup.trim(), body.dropoff.trim(), pickupPin, dropoffPin);
-      const band = Math.floor(route.distance / 12000), distanceFee = baseFees[load.vehicle] * (2 ** band);
-      if (!Number.isSafeInteger(distanceFee)) throw new InputError("This route requires a manual quote. Contact dispatch.", 422);
+      const band = Math.floor(route.distance / 12000); // Retained only for legacy reporting; no longer determines the fare.
+      const tariff = load.vehicle === "truck"
+        ? (load.truckClass === "4-ton" ? distancePricing["4-ton"] : distancePricing["8-ton"])
+        : distancePricing[load.vehicle];
+      const distanceKm = route.distance / 1000;
+      const additionalDistanceKm = Math.max(0, distanceKm - tariff.includedKm);
+      const rawDistanceFee = tariff.minimumFare + additionalDistanceKm * tariff.perKmRate;
+      const distanceFee = Math.round((rawDistanceFee + Number.EPSILON) * 100) / 100;
+      if (!Number.isSafeInteger(Math.round(distanceFee * 100))) throw new InputError("This route requires a manual quote. Contact dispatch.", 422);
       const cents = Math.round(distanceFee * 100) + Math.round(load.weightFee * 100);
       if (!Number.isSafeInteger(cents)) throw new InputError("This load and route require a manual quote.", 422);
       const id = crypto.randomUUID();
@@ -175,14 +187,14 @@ Deno.serve(async (req: Request) => {
         expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
       }).select("id,expires_at").single();
       if (error || !quote) return reply(503, { error: "quote_save_failed" });
-      return reply(200, { quote: { id: quote.id, expires_at: quote.expires_at, price: cents / 100, band, vehicle: load.vehicle, route, load, distanceFee } });
+      return reply(200, { quote: { id: quote.id, expires_at: quote.expires_at, price: cents / 100, band, vehicle: load.vehicle, route, load, distanceFee, minimumFare: tariff.minimumFare, includedDistanceKm: tariff.includedKm, perKmRate: tariff.perKmRate, additionalDistanceKm } });
     } catch (e) {
       return reply(e instanceof InputError ? e.status : 502, { error: e instanceof Error ? e.message : "route_quote_failed" });
     }
   }
 
   if (body.action !== "book" || typeof body.quote_id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.quote_id) ||
-      body.terms_accepted !== true || body.terms_version !== "2026-11-10-protection-terms-only" ||
+      body.terms_accepted !== true || body.terms_version !== "2026-11-10-proposed-distance-tariff" ||
       typeof body.recipient !== "string" || !body.recipient.trim() || body.recipient.length > 500)
     return reply(400, { error: "calculate_a_quote_and_enter_recipient" });
   if (body.nedbank_cargo_insurance_interest !== undefined && typeof body.nedbank_cargo_insurance_interest !== "boolean") return reply(400, { error: "invalid_insurance_enquiry_selection" });
