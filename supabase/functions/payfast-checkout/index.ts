@@ -12,8 +12,8 @@ const cors = {
 const reply = (status: number, body: Record<string, unknown>) =>
   new Response(JSON.stringify(body), { status, headers: cors });
 const SANDBOX_PROCESS_URL = "https://sandbox.payfast.co.za/eng/process";
-const PROJECT_URL = "https://jikstpnvsdjhcibtjilp.supabase.co";
-const SITE_URL = "https://bongat061-swifthaul-sa.github.io/swifthaul-sa/public/customer.html";
+const PROJECT_URL = Deno.env.get("SUPABASE_URL") || "https://tagkbropgzthsbjlhyvz.supabase.co";
+const SITE_URL = Deno.env.get("SWIFTHAUL_CUSTOMER_URL") || "https://bongat061-swifthaul-sa.github.io/swifthaul-sa-preview/public/customer.html";
 function urlencode(value: string) {
   return encodeURIComponent(value.trim()).replace(/[!'()*]/g, c => "%" + c.charCodeAt(0).toString(16).toUpperCase()).replace(/%[0-9a-f]{2}/gi, m => m.toUpperCase()).replace(/%20/g, "+");
 }
