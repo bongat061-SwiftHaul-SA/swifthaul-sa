@@ -26,7 +26,7 @@ function calculateLoad(input: unknown) {
   const vehicle: Vehicle = chargeable <= 20 ? "bike" : chargeable <= 1000 ? "van" : "truck";
   const truckClass = vehicle === "truck" ? (chargeable <= 4000 ? "4-ton" : "8-ton") : null;
   const included = vehicle === "bike" ? 5 : vehicle === "van" ? 50 : 1000;
-  const rate = vehicle === "bike" ? 8.5 : vehicle === "van" ? 5 : truckClass === "4-ton" ? 0.45 : 0.5;
+  const rate = vehicle === "bike" ? 0.85 : vehicle === "van" ? 0.5 : truckClass === "4-ton" ? 0.045 : 0.05;
   const extra = Math.max(0, chargeable - included);
   const weightFee = Math.round((extra * rate + Number.EPSILON) * 100) / 100;
   return { weight, length, width, height, volumetric, chargeable, vehicle, truckClass, included, rate, extra, weightFee, divisor: 5000 };
@@ -226,8 +226,8 @@ Deno.serve(async (req: Request) => {
     if (!Number.isInteger(assistanceMinutes) || assistanceMinutes < 30 || assistanceMinutes > 120 || assistanceMinutes % 30 !== 0)
       return reply(400, { error: "choose_assistance_duration_between_30_and_120_minutes" });
     if (quote.vehicle !== "van" && quote.vehicle !== "truck") return reply(400, { error: "assistance_requires_van_or_truck" });
-    const expectedFee = (quote.vehicle === "van" ? 18000 : 35000) + ((assistanceMinutes / 30) - 1) * (quote.vehicle === "van" ? 10000 : 18000);
-    if (assistanceFeeCents !== expectedFee) return reply(400, { error: "assistance_quote_changed_recalculate_and_review" });
+    const expectedFee = 0;
+    if (assistanceFeeCents !== expectedFee) return reply(400, { error: "assistance_must_be_free" });
   } else if ((body.assistance_minutes ?? 0) !== 0 || (body.assistance_fee_cents ?? 0) !== 0) return reply(400, { error: "unexpected_assistance_amount" });
   const method = body.payment_method ?? "dispatch";
   if (method !== "cash" && method !== "dispatch" && method !== "eft") return reply(400, { error: "choose_eft_or_eligible_cash_payment" });
