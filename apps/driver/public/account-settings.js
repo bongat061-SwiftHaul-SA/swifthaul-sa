@@ -169,7 +169,7 @@
           });
           if (error || !data?.success) throw new Error(data?.error || error?.message || "Account closure failed.");
           setStatus("driver-delete-status", data.message || "Account closed.");
-          await supabase.auth.signOut();
+          await supabase.auth.signOut({ scope: "local" });
           window.location.replace(window.location.pathname);
         } catch (error) {
           setStatus("driver-delete-status", error.message || "Unable to close account.", true);
