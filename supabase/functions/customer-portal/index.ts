@@ -204,7 +204,7 @@ Deno.serve(async (req: Request) => {
       .eq("waybill", body.waybill).eq("owner_hash", owner).maybeSingle();
     if (bookingError) return reply(503, { error: "booking_lookup_failed" });
     if (!booking) return reply(404, { error: "booking_not_found" });
-    if (booking.paid_at || booking.refunded_at || ["cancelled", "completed"].includes(booking.status))
+    if (booking.paid_at || booking.refunded_at || booking.status !== "pending")
       return reply(409, { error: "booking_payment_is_locked" });
     const method = body.payment_method;
     if (method === "cash" && Number(booking.distance_meters) >= 12000)
@@ -216,8 +216,7 @@ Deno.serve(async (req: Request) => {
     const { data: updated, error: updateError } = await admin.from("customer_bookings")
       .update({ payment_method: method })
       .eq("waybill", booking.waybill).eq("owner_hash", owner)
-      .is("paid_at", null).is("refunded_at", null)
-      .not("status", "in", '("cancelled","completed")')
+      .is("paid_at", null).is("refunded_at", null).eq("status", "pending")
       .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,nedbank_cargo_insurance_interest,status")
       .maybeSingle();
     if (updateError) {
