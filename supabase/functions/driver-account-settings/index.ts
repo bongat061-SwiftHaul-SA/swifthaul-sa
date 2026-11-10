@@ -89,9 +89,20 @@ Deno.serve(async (req: Request) => {
       console.error("Account anonymisation failed", profileUpdateError.message);
       return reply(500, { error: "account_anonymisation_failed" });
     }
+    const avatarPath = typeof authData.user.user_metadata?.avatar_path === "string"
+      ? authData.user.user_metadata.avatar_path : null;
+    if (avatarPath && avatarPath.startsWith(userId + "/")) {
+      const { error: photoError } = await admin.storage.from("driver-profile-photos").remove([avatarPath]);
+      if (photoError) console.warn("Could not remove driver profile photo", photoError.message);
+    }
     const { error: banError } = await admin.auth.admin.updateUserById(userId, {
       ban_duration: "876000h",
-      user_metadata: { account_deleted: true, deleted_at: new Date().toISOString() },
+      user_metadata: {
+        ...authData.user.user_metadata,
+        avatar_path: null,
+        account_deleted: true,
+        deleted_at: new Date().toISOString(),
+      },
     });
     if (banError) {
       console.error("Driver sign-in block failed", banError.message);
