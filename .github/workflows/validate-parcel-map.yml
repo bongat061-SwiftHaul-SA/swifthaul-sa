@@ -1,0 +1,39 @@
+name: Validate SwiftHaul parcel map staging
+on:
+  push:
+    branches:
+      - feature/uber-style-parcel-map-staging
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "public/location-picker.js"
+      - "public/address-autocomplete.js"
+      - "public/map-utils.js"
+      - "public/customer.html"
+      - ".github/workflows/validate-parcel-map.yml"
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check customer map JavaScript syntax
+        run: |
+          node --input-type=module --check < public/location-picker.js
+          node --input-type=module --check < public/address-autocomplete.js
+          node --input-type=module --check < public/map-utils.js
+          node --input-type=module --check < public/route-preview.js
+      - name: Verify map and address picker are loaded by customer app
+        run: |
+          grep -q 'location-picker.js' public/customer.html
+          grep -q 'address-autocomplete.js' public/customer.html
+          grep -q 'maplibre-gl.js' public/customer.html
+          grep -q 'OpenLocationCode' public/location-picker.js
+          grep -q 'swiftHaulGetMapCenter' public/location-picker.js
+          grep -q 'params.lat' public/address-autocomplete.js
+          grep -q 'params.lon' public/address-autocomplete.js
