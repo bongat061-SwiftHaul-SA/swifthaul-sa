@@ -114,7 +114,12 @@ Deno.serve(async (req: Request) => {
     const { data: driver, error } = await admin.from("driver_profiles")
       .select("user_id,verification_status").eq("user_id", body.driver_id).maybeSingle();
     if (error) return reply(500, { error: "driver_lookup_failed" });
-    if (!driver || driver.verification_status !== "approved") return reply(409, { error: "driver_not_approved" });
+    const { data: driverAccount, error: driverAccountError } = await admin.from("user_profiles")
+      .select("role,account_status").eq("id", body.driver_id).maybeSingle();
+    if (driverAccountError) return reply(500, { error: "driver_account_lookup_failed" });
+    if (!driver || driver.verification_status !== "approved" ||
+        !driverAccount || driverAccount.role !== "driver" || driverAccount.account_status !== "active")
+      return reply(409, { error: "approved_active_driver_required" });
     const { error: updateError } = await admin.from("customer_bookings")
       .update({ driver_user_id: driver.user_id, assigned_driver: driver.user_id, status: "assigned" })
       .eq("waybill", order.waybill);
