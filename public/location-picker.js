@@ -69,7 +69,7 @@
     '.swift-map-marker{width:38px;height:38px;border-radius:50% 50% 50% 8px}',
     '.swift-map-marker span{font-size:15px}',
     '@media(max-width:650px){#delivery-map-stage{height:78svh;min-height:650px;margin:-22px -18px 22px;border-radius:0 0 20px 20px}.swift-location-sheet{left:10px;right:10px;bottom:10px;max-height:58%;padding:15px 16px;border-radius:21px}.swift-sheet-head{gap:8px}.swift-sheet-head h3{font-size:15px}.swift-route-steps{gap:5px;padding:7px 8px;font-size:8px}.swift-location-fields{gap:6px}.swift-location-fields input{height:40px;min-height:40px}.swift-sheet-tools{gap:6px}.swift-sheet-tools button{padding:7px 9px;font-size:9px}.swift-pin-meta{margin-top:7px}.swift-sheet-quote #quote-result{font-size:10px}}',
-  ].join('\\n');
+  ].join('\n');
   style.textContent += [
     '#delivery-map-stage{height:clamp(650px,84vh,900px)!important;min-height:650px!important;margin:0!important;border-radius:20px!important}',
     '.swift-location-sheet{left:clamp(12px,2vw,24px)!important;right:clamp(12px,2vw,24px)!important;bottom:clamp(12px,2vw,24px)!important;max-height:76%!important;overflow-y:auto!important;padding:18px!important;border-radius:22px!important}',
@@ -113,7 +113,42 @@
     '.swift-booking-actions #submit{width:100%!important;min-height:52px!important;border-radius:13px!important;background:#142d23!important;border-color:#142d23!important}',
     '.swift-booking-actions #message{margin:6px 0 0!important;font-size:10px!important}',
     '@media(max-width:650px){#delivery-map-stage{height:88svh!important;min-height:660px!important;margin:0!important;border-radius:18px!important}.swift-location-sheet{left:9px!important;right:9px!important;bottom:9px!important;max-height:77%!important;padding:13px!important;border-radius:19px!important}.swift-sheet-head h3{font-size:15px!important}.swift-location-fields{gap:5px!important}.swift-location-fields input{min-height:39px!important;height:39px!important}.swift-location-sheet .load-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.swift-location-sheet .load-grid input{min-height:37px!important;height:37px!important}.swift-booking-actions{bottom:-13px!important;margin:10px -13px -13px!important;padding:10px 13px 12px!important}.swift-sheet-quote #quote-map{height:125px!important}}'
-  ].join('\\n');
+  ].join('\n');
+
+  style.textContent += [
+    '#delivery-map-stage{height:calc(100svh - 118px)!important;min-height:640px!important;max-height:980px!important;margin:0 -30px 26px!important;border:0!important;border-radius:0 0 26px 26px!important;background:#e9eef0!important;box-shadow:0 12px 34px #14231e14!important}',
+    '#global-location-map{background:#e9eef0!important}',
+    '#global-location-map .maplibregl-canvas{outline:0!important}',
+    '#global-location-map .maplibregl-ctrl-top-right{top:14px!important;right:14px!important}',
+    '#global-location-map .maplibregl-ctrl-group{border:0!important;border-radius:14px!important;overflow:hidden!important;box-shadow:0 3px 14px #15231e22!important}',
+    '#global-location-map .maplibregl-ctrl-group button{width:40px!important;height:40px!important}',
+    '.swift-location-sheet{left:clamp(12px,3vw,34px)!important;right:clamp(12px,3vw,34px)!important;bottom:clamp(12px,2.2vh,24px)!important;max-height:48%!important;overflow-y:auto!important;padding:18px 20px 16px!important;border:1px solid #e8ece9!important;border-radius:22px!important;box-shadow:0 12px 42px #12251d30!important;background:#fff!important}',
+    '.swift-sheet-head{margin-bottom:12px!important;align-items:center!important}',
+    '.swift-sheet-head h3{font-size:17px!important;letter-spacing:-.45px!important;color:#17241f!important}',
+    '.swift-sheet-head p{font-size:10px!important;color:#78847e!important}',
+    '.swift-route-steps{background:#f2f5f3!important;border-radius:999px!important;padding:7px 10px!important;font-size:8px!important}',
+    '.swift-location-fields{display:grid!important;grid-template-columns:1fr!important;gap:8px!important}',
+    '.swift-location-fields .field{padding-left:20px!important}',
+    '.swift-location-fields .field:before{left:2px!important;top:16px!important;width:9px!important;height:9px!important}',
+    '.swift-location-fields input{height:44px!important;min-height:44px!important;border:1px solid #e5eae7!important;border-radius:11px!important;background:#f8faf9!important;font-size:13px!important}',
+    '.swift-pin-button{margin-top:3px!important;padding:5px 8px!important;font-size:9px!important}',
+    '.swift-sheet-tools{margin-top:8px!important;gap:7px!important}',
+    '.swift-sheet-tools button{min-height:34px!important;border-radius:10px!important;font-size:10px!important}',
+    '.swift-pin-meta{display:flex!important;flex-wrap:wrap!important;gap:6px 9px!important;margin-top:8px!important;padding:8px 10px!important;border-radius:10px!important;background:#f5f7f6!important}',
+    '.swift-pin-meta strong{font-size:10px!important}',
+    '#loc-status{font-size:9px!important;line-height:1.35!important;margin-top:6px!important}',
+    '.swift-location-sheet .parcel-fields{margin:8px 0!important;padding:10px!important;border-radius:12px!important}',
+    '.swift-more-options{margin:7px 0!important;border-radius:11px!important}',
+    '.swift-more-options>summary{padding:10px 12px!important;font-size:10px!important}',
+    '.swift-sheet-quote{margin-top:8px!important}',
+    '.swift-sheet-quote #calculate-route{min-height:46px!important;border-radius:12px!important;font-size:12px!important;font-weight:850!important;background:#142d23!important}',
+    '.swift-sheet-quote #quote-result{padding:11px!important;border-radius:13px!important;background:#f6f8f7!important}',
+    '.swift-sheet-quote #quote-map{height:130px!important;border-radius:10px!important}',
+    '.swift-booking-actions{position:sticky!important;bottom:-16px!important;z-index:5!important;margin:10px -20px -16px!important;padding:10px 20px 13px!important;background:#fff!important;border-top:1px solid #e9eeeb!important;box-shadow:0 -8px 18px #fff!important}',
+    '.swift-booking-actions #submit{min-height:50px!important;border-radius:12px!important;background:#142d23!important;font-size:13px!important}',
+    '@media(max-width:650px){#delivery-map-stage{height:calc(100svh - 92px)!important;min-height:620px!important;margin:0 -18px 20px!important;border-radius:0 0 20px 20px!important}.swift-location-sheet{left:9px!important;right:9px!important;bottom:9px!important;max-height:52%!important;padding:13px 14px 12px!important;border-radius:19px!important}.swift-sheet-head{gap:6px!important}.swift-sheet-head h3{font-size:15px!important}.swift-sheet-head p{font-size:9px!important}.swift-route-steps{gap:5px!important;padding:6px 7px!important;font-size:7px!important}.swift-location-fields{gap:5px!important}.swift-location-fields input{height:40px!important;min-height:40px!important;padding:9px 10px!important;font-size:12px!important}.swift-sheet-tools{gap:5px!important}.swift-sheet-tools button{min-height:32px!important;padding:6px 8px!important;font-size:9px!important}.swift-pin-meta{font-size:9px!important}.swift-sheet-quote #quote-map{height:112px!important}.swift-booking-actions{margin:8px -14px -12px!important;padding:9px 14px 12px!important}}',
+  ].join('\n');
+
   document.head.append(style);
 
   const pickupWrap = pickup.closest('.field');
@@ -186,15 +221,7 @@
   let routeLine = false;
   let mapLoaded = false;
   const routeData = {type:'Feature',properties:{},geometry:{type:'LineString',coordinates:[]}};
-  const mapStyle = {
-    version:8,
-    sources:{carto:{type:'raster',tiles:[
-      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-      'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
-    ],tileSize:256,attribution:'&copy; OpenStreetMap contributors'}},
-    layers:[{id:'carto-voyager',type:'raster',source:'carto'}]
-  };
+  const mapStyle = 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
   const cameraMove = (center, zoom=14) => { if(map) map.flyTo({center,zoom,duration:350}); };
   const clearRoute = () => {
     if(map && mapLoaded && map.getSource('customer-route')) map.getSource('customer-route').setData({type:'Feature',properties:{},geometry:{type:'LineString',coordinates:[]}});
@@ -217,7 +244,7 @@
   };
   function ensureMap() {
     if(map || !window.maplibregl) return;
-    map=new maplibregl.Map({container:'global-location-map',style:mapStyle,center:[28.195352552065742,-26.32516865200042],zoom:14,attributionControl:true});
+    map=new maplibregl.Map({container:'global-location-map',style:mapStyle,center:[28.195352552065742,-26.32516865200042],zoom:13.5,attributionControl:true,dragRotate:false,pitchWithRotate:false, maxPitch:0});
     map.addControl(new maplibregl.NavigationControl({showCompass:false}),'top-right');
     map.on('load',()=>{
       mapLoaded=true;routeStyle();
