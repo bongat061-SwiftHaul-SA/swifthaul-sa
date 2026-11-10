@@ -157,7 +157,7 @@
   }
   const helper=document.createElement('p');
   helper.className='address-helper';
-  helper.textContent='Start typing to choose a suggested address. Then use Pick / copy pin to confirm the exact gate, entrance or collection point. Address matches are suggestions; always verify the map pin.';
+  helper.textContent='Address suggestions are limited to South Africa. Choose the closest match, then confirm the pickup and drop-off pins at the exact gate, entrance or collection point. The confirmed pin sets the route and distance.';
   const first=document.getElementById('custPickup');
   first?.parentElement?.insertAdjacentElement('afterend',helper);
 })();
