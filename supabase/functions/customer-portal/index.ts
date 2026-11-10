@@ -193,6 +193,41 @@ Deno.serve(async (req: Request) => {
     }
   }
 
+  // Payment choice is made after a booking exists. The authenticated owner is
+  // derived from the verified Supabase session above, never from client input.
+  if (body.action === "set_payment_method") {
+    if (typeof body.waybill !== "string" || !/^SH-[0-9A-F-]{36}$/i.test(body.waybill) ||
+        !["cash", "dispatch", "eft", "card"].includes(body.payment_method))
+      return reply(400, { error: "valid_booking_and_payment_method_required" });
+    const { data: booking, error: bookingError } = await admin.from("customer_bookings")
+      .select("waybill,distance_meters,price,payment_method,counter_offer,counter_offer_status,paid_at,refunded_at,status")
+      .eq("waybill", body.waybill).eq("owner_hash", owner).maybeSingle();
+    if (bookingError) return reply(503, { error: "booking_lookup_failed" });
+    if (!booking) return reply(404, { error: "booking_not_found" });
+    if (booking.paid_at || booking.refunded_at || ["cancelled", "completed"].includes(booking.status))
+      return reply(409, { error: "booking_payment_is_locked" });
+    const method = body.payment_method;
+    if (method === "cash" && Number(booking.distance_meters) >= 12000)
+      return reply(400, { error: "cash_available_only_below_12km" });
+    if (method === "card" && (!Number.isFinite(Number(booking.price)) || Number(booking.price) < 5))
+      return reply(400, { error: "payfast_card_requires_fare_of_at_least_R5" });
+    if (booking.counter_offer && booking.counter_offer_status === "pending" && method !== "dispatch")
+      return reply(400, { error: "counteroffers_require_dispatch_payment" });
+    const { data: updated, error: updateError } = await admin.from("customer_bookings")
+      .update({ payment_method: method })
+      .eq("waybill", booking.waybill).eq("owner_hash", owner)
+      .is("paid_at", null).is("refunded_at", null)
+      .not("status", "in", '("cancelled","completed")')
+      .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,nedbank_cargo_insurance_interest,status")
+      .maybeSingle();
+    if (updateError) {
+      console.error("Customer payment method update failed", updateError.message);
+      return reply(503, { error: "payment_method_update_failed" });
+    }
+    if (!updated) return reply(409, { error: "booking_payment_is_locked" });
+    return reply(200, { order: updated });
+  }
+
   if (body.action !== "book" || typeof body.quote_id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.quote_id) ||
       body.terms_accepted !== true || body.terms_version !== "2026-11-10-proposed-distance-tariff" ||
       typeof body.recipient !== "string" || !body.recipient.trim() || body.recipient.length > 500)
