@@ -13,7 +13,7 @@ export async function createNativePinLock(appId) {
     };
   }
 
-  const { SecureStorage } = await import('https://esm.sh/@aparajita/capacitor-secure-storage@7.1.6?external=@capacitor/core');
+  const { SecureStorage } = await import('https://esm.sh/@aparajita/capacitor-secure-storage@7.1.6');
   await SecureStorage.setKeyPrefix(`swifthaul_${appId}_`);
 
   const storage = {
