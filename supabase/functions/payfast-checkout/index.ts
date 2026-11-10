@@ -42,9 +42,10 @@ Deno.serve(async (req: Request) => {
     return reply(400, { error: "invalid_payment_request" });
 
   const { data: booking, error: bookingError } = await admin.from("customer_bookings")
-    .select("waybill,owner_hash,price,paid_at,refunded_at,status,counter_offer_status")
+    .select("waybill,owner_hash,price,payment_method,paid_at,refunded_at,status,counter_offer_status")
     .eq("waybill", body.waybill).eq("owner_hash", user.id).maybeSingle();
   if (bookingError || !booking) return reply(404, { error: "booking_not_found" });
+  if (booking.payment_method !== "card") return reply(409, { error: "booking_not_set_to_card_payment" });
   if (booking.paid_at || booking.refunded_at || ["cancelled","completed"].includes(booking.status))
     return reply(409, { error: "booking_not_payable" });
   if (booking.counter_offer_status === "pending")
