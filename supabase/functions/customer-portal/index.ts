@@ -55,11 +55,11 @@ async function routeFor(pickupAddress: string, dropoffAddress: string, pickupPin
     const label = [p.name, [p.housenumber, p.street].filter(Boolean).join(" "), p.city || p.town || p.district, p.country].filter(Boolean).join(", ");
     return { longitude: coords[0], latitude: coords[1], label: label || address };
   };
+  if (!pickupPin || !dropoffPin) throw new InputError("Confirm both pickup and drop-off map pins before calculating the route. Address suggestions alone are not precise enough.", 422);
   const [pickup, dropoff] = await Promise.all([
-    pickupPin ? Promise.resolve({ ...pickupPin, label: pickupAddress }) : geocode(pickupAddress),
-    dropoffPin ? Promise.resolve({ ...dropoffPin, label: dropoffAddress }) : geocode(dropoffAddress),
+    Promise.resolve({ ...pickupPin, label: pickupAddress }),
+    Promise.resolve({ ...dropoffPin, label: dropoffAddress }),
   ]);
-  if (!pickup || !dropoff) throw new InputError("We could not locate one of these addresses in South Africa. Enter a fuller address or choose a map pin.", 422);
   const url = new URL(`https://router.project-osrm.org/route/v1/driving/${pickup.longitude},${pickup.latitude};${dropoff.longitude},${dropoff.latitude}`);
   url.search = new URLSearchParams({ overview: "simplified", geometries: "geojson", alternatives: "false", steps: "false" }).toString();
   const data = await getJSON(url), r = data.routes?.[0], coordinates = r?.geometry?.coordinates;
