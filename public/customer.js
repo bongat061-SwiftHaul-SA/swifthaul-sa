@@ -156,8 +156,9 @@ function addOrder(order, prepend = false) {
   }
   if(order.payment_method==='card'&&!order.paid_at&&!order.refunded_at&&!['cancelled','completed'].includes(order.status)){
     const cardPay=document.createElement('button');cardPay.type='button';
-    cardPay.textContent='Pay securely with Visa / Mastercard';
-    cardPay.addEventListener('click',()=>startPayFastCheckout(order,cardPay));
+    cardPay.textContent='PayFast checkout awaiting staging activation';
+    cardPay.disabled=true;
+    cardPay.title='The secure PayFast checkout function is not deployed to staging yet.';
     actions.append(cardPay);
   }
   if(order.payment_method==='eft'&&!order.paid_at&&!order.refunded_at&&!['cancelled','completed'].includes(order.status)&&eftPayment?.status!=='submitted'&&eftPayment?.status!=='verified'){
