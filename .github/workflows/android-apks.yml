@@ -1,0 +1,84 @@
+name: Build SwiftHaul Android APKs
+
+on:
+  push:
+    branches:
+      - main
+      - feature/android-apk-packaging
+      - feature/uber-style-parcel-map-staging
+  pull_request:
+    paths:
+      - "public/**"
+      - "apps/driver/**"
+      - "apps/company/**"
+      - ".github/workflows/android-apks.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-apks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build ${{ matrix.label }} APK
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Customer
+            path: .
+            artifact: swifthaul-customer-apk
+          - label: Driver
+            path: apps/driver
+            artifact: swifthaul-driver-apk
+          - label: Company-Admin
+            path: apps/company
+            artifact: swifthaul-company-admin-apk
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install pinned app dependencies
+        working-directory: ${{ matrix.path }}
+        run: npm install --no-audit --no-fund
+
+      # Package the current customer website, not the legacy root entry point.
+      - name: Use current customer website as APK entry point
+        if: matrix.label == 'Customer'
+        run: cp public/customer.html public/index.html
+
+      - name: Generate Android project and sync app assets
+        working-directory: ${{ matrix.path }}
+        run: |
+          npx cap add android
+          npx cap sync android
+
+      - name: Build debug APK
+        working-directory: ${{ matrix.path }}/android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon assembleDebug
+
+      - name: Publish APK build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.path }}/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
