@@ -9,7 +9,8 @@
   },
   "dependencies": {
     "@capacitor/android": "^7.4.3",
-    "@capacitor/core": "^7.4.3"
+    "@capacitor/core": "^7.4.3",
+    "@aparajita/capacitor-secure-storage": "7.1.6"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.4.3",
