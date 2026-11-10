@@ -6,6 +6,7 @@ on:
   pull_request:
     branches:
       - main
+      - fix/map-address-accuracy-staging
     paths:
       - "public/location-picker.js"
       - "public/address-autocomplete.js"
