@@ -71,7 +71,7 @@ Deno.serve(async (req: Request) => {
   if (typeof body.waybill !== "string" || body.waybill.length > 100) return reply(400, { error: "invalid_waybill" });
 
   const { data: order, error: orderError } = await admin.from("customer_bookings")
-    .select("waybill,status,driver_user_id,pin,pin_attempts,pin_locked_until,completed_at,refunded_at,assistance_requested,assistance_status")
+    .select("waybill,status,driver_user_id,pin,pin_attempts,pin_locked_until,completed_at,refunded_at,assistance_requested,assistance_status,payment_method,paid_at,counter_offer_status")
     .eq("waybill", body.waybill).maybeSingle();
   if (orderError) return reply(500, { error: "delivery_lookup_failed" });
   if (!order) return reply(404, { error: "delivery_not_found" });
@@ -107,8 +107,12 @@ Deno.serve(async (req: Request) => {
   };
 
   if (isDispatcher && body.action === "assign") {
-    if (["delivered", "failed", "cancelled"].includes(order.status) || order.refunded_at)
-      return reply(409, { error: "delivery_is_closed" });
+    if (order.status !== "pending" || order.driver_user_id || order.refunded_at)
+      return reply(409, { error: "delivery_not_open_for_assignment" });
+    if (order.paid_at == null && !["cash", "dispatch"].includes(String(order.payment_method)))
+      return reply(409, { error: "payment_confirmation_required" });
+    if (order.counter_offer_status === "pending")
+      return reply(409, { error: "counter_offer_requires_dispatch_decision" });
     if (typeof body.driver_id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.driver_id))
       return reply(400, { error: "enter_valid_driver_account_id" });
     const { data: driver, error } = await admin.from("driver_profiles")
@@ -122,7 +126,7 @@ Deno.serve(async (req: Request) => {
       return reply(409, { error: "approved_active_driver_required" });
     const { error: updateError } = await admin.from("customer_bookings")
       .update({ driver_user_id: driver.user_id, assigned_driver: driver.user_id, status: "assigned" })
-      .eq("waybill", order.waybill);
+      .eq("waybill", order.waybill).eq("status", "pending").is("driver_user_id", null);
     if (updateError) return reply(500, { error: "assignment_failed" });
     await admin.from("delivery_status_events").insert({
       waybill: order.waybill, actor_user_id: actorId, previous_status: order.status,
