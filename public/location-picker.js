@@ -129,7 +129,7 @@
     '<div class="swift-route-steps" aria-label="Pickup to drop-off"><span class="step-dot"></span><span>Pickup</span><span class="step-line"></span><span class="step-dot drop"></span><span>Drop-off</span></div></div>' +
     '<div class="swift-location-fields"></div>' +
     '<div class="swift-sheet-tools"><button type="button" id="loc-current" class="swift-current">◎ Use my location</button><button type="button" id="loc-open">Re-centre map</button><a href="https://www.openstreetmap.org/?mlat=-26.32517&amp;mlon=28.19535#map=14/-26.32517/28.19535&amp;layers=T" target="_blank" rel="noopener noreferrer" style="font-size:10px;color:#21664e;font-weight:700">Open transport map ↗</a></div>' +
-    '<div class="swift-pin-meta"><span>Selected pin</span><strong id="loc-coordinates">Choose pickup or drop-off</strong></div>' +
+    '<div class="swift-pin-meta"><span>Pin coordinates</span><strong id="loc-coordinates">Choose pickup or drop-off</strong><span>Plus Code</span><strong id="loc-plus-code">Not set</strong></div>' +
     '<p id="loc-status" role="status" aria-live="polite">Select a South African address suggestion or tap the map. Confirm each pin at the exact gate or entrance before calculating.</p>' +
     '<div class="swift-sheet-quote"></div></section>';
   form.insertBefore(stage, pickupWrap);
@@ -276,24 +276,55 @@
     const pinButton=input.parentElement.querySelector('.swift-pin-button');
     if(pinButton){pinButton.setAttribute('aria-pressed','true');pinButton.textContent='✓ Pin confirmed';}
     activeField=input;
-    $('loc-coordinates').textContent=lat.toFixed(6)+', '+lng.toFixed(6);
+    $('loc-coordinates').textContent=lat.toFixed(6)+', '+lng.toFixed(6);\n    $('loc-plus-code').textContent=plusCode||'Unavailable';
     $('loc-status').textContent=message||(key==='pickup'?'Pickup pin saved.':'Drop-off pin saved.');
     if(map){placeMarker(key,lat,lng);fitLocations();}
   }
 
+  const reverseLookupSequence = new WeakMap();
+  function distanceMetres(lat1,lon1,lat2,lon2){
+    const rad=value=>value*Math.PI/180;
+    const dLat=rad(lat2-lat1),dLon=rad(lon2-lon1);
+    const a=Math.sin(dLat/2)**2+Math.cos(rad(lat1))*Math.cos(rad(lat2))*Math.sin(dLon/2)**2;
+    return 6371000*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+  }
   async function reverseLabel(input,lat,lng){
     const original=input.value.trim();
+    const requestId=(reverseLookupSequence.get(input)||0)+1;
+    reverseLookupSequence.set(input,requestId);
     try{
       const url='https://photon.komoot.io/reverse/?'+new URLSearchParams({lat:String(lat),lon:String(lng),lang:'en'});
-      const response=await fetch(url,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(7000)});
-      if(!response.ok)return;
+      const response=await fetch(url,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(9000)});
+      if(!response.ok)throw new Error('Address lookup unavailable');
       const feature=(await response.json()).features?.[0],p=feature?.properties||{};
+      const coords=feature?.geometry?.coordinates;
+      if(reverseLookupSequence.get(input)!==requestId||input.value.trim()!==original)return;
+      if(!Array.isArray(coords)||coords.length<2||!Number.isFinite(Number(coords[0]))||!Number.isFinite(Number(coords[1]))){
+        $('loc-status').textContent='No reliable street address was found. Your exact pin and Plus Code are saved; please enter a street address or nearby landmark if known.';
+        return;
+      }
+      const distance=Math.round(distanceMetres(lat,lng,Number(coords[1]),Number(coords[0])));
       const street=[p.housenumber,p.street].filter(Boolean).join(' ');
       const label=[street||p.name,p.suburb||p.district,p.city||p.town||p.village,p.state,p.postcode].filter(Boolean).join(', ');
-      if(!label||input.value.trim()!==original)return;
-      input.dataset.justSelected='true';input.value=label;input.dispatchEvent(new Event('input',{bubbles:true}));
-      saveLocation(input,lat,lng,'Exact map pin saved. Address text shows the nearest mapped address; verify the gate or entrance visually.');
-    }catch{}
+      if(!label||distance>250){
+        $('loc-status').textContent=distance>250
+          ? 'The nearest mapped address is '+distance+' m from your pin, so it was not filled in. Your pin and Plus Code remain the location reference.'
+          : 'No reliable street address was found. Your exact pin and Plus Code remain saved; please enter a street address or landmark if known.';
+        return;
+      }
+      input.dataset.justSelected='true';
+      input.value=label;
+      input.dispatchEvent(new Event('input',{bubbles:true}));
+      queueMicrotask(()=>{input.dataset.justSelected='false';});
+      const message=distance>75
+        ? 'Nearby mapped address only ('+distance+' m from your pin). It is not confirmed as the exact property; use the pin and verify the entrance.'
+        : 'Mapped address is within '+distance+' m of your selected pin. Please verify the exact gate or entrance on the map.';
+      saveLocation(input,lat,lng,message);
+    }catch{
+      if(reverseLookupSequence.get(input)===requestId&&input.value.trim()===original){
+        $('loc-status').textContent='Address lookup is unavailable. Your exact pin and Plus Code are saved; please enter a street address or landmark if known.';
+      }
+    }
   }
   window.swiftHaulShowAddressOnMap = (input, lat, lng) => {
     activeField = input;
