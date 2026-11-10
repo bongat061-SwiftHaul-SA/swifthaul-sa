@@ -45,16 +45,6 @@ async function routeFor(pickupAddress: string, dropoffAddress: string, pickupPin
     if (!r.ok) throw new Error("Map provider unavailable");
     return await r.json();
   };
-  const geocode = async (address: string) => {
-    const url = new URL("https://photon.komoot.io/api/");
-    url.search = new URLSearchParams({ q: address, limit: "1", bbox: "16,-35,33,-22" }).toString();
-    const data = await getJSON(url), feature = data.features?.[0], coords = feature?.geometry?.coordinates;
-    if (!Array.isArray(coords) || coords.length !== 2 || !coords.every(Number.isFinite) ||
-        coords[0] < 16 || coords[0] > 33 || coords[1] < -35 || coords[1] > -22) return null;
-    const p = feature.properties || {};
-    const label = [p.name, [p.housenumber, p.street].filter(Boolean).join(" "), p.city || p.town || p.district, p.country].filter(Boolean).join(", ");
-    return { longitude: coords[0], latitude: coords[1], label: label || address };
-  };
   if (!pickupPin || !dropoffPin) throw new InputError("Confirm both pickup and drop-off map pins before calculating the route. Address suggestions alone are not precise enough.", 422);
   const [pickup, dropoff] = await Promise.all([
     Promise.resolve({ ...pickupPin, label: pickupAddress }),
