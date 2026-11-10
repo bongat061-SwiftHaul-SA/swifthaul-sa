@@ -54,8 +54,10 @@ Deno.serve(async req => {
       await db.from("driver_delivery_offers").update({status:"declined",responded_at:new Date().toISOString()}).eq("id",offer.id).eq("status","offered");
       return reply(200,{declined:true});
     }
-    const {data:booking,error:be}=await db.from("customer_bookings").select("waybill,status,driver_user_id,refunded_at").eq("waybill",offer.waybill).maybeSingle();
+    const {data:booking,error:be}=await db.from("customer_bookings").select("waybill,status,driver_user_id,refunded_at,payment_method,paid_at,counter_offer_status").eq("waybill",offer.waybill).maybeSingle();
     if(be||!booking||booking.status!=="pending"||booking.driver_user_id||booking.refunded_at) return reply(409,{error:"delivery_no_longer_available"});
+    if(booking.paid_at==null&&!["cash","dispatch"].includes(String(booking.payment_method))) return reply(409,{error:"payment_confirmation_required"});
+    if(booking.counter_offer_status==="pending") return reply(409,{error:"counter_offer_requires_dispatch_decision"});
     const {data:updated,error:ue}=await db.from("customer_bookings").update({driver_user_id:actor,assigned_driver:actor,status:"assigned"}).eq("waybill",offer.waybill).eq("status","pending").is("driver_user_id",null).select("waybill").maybeSingle();
     if(ue||!updated) return reply(409,{error:"delivery_already_assigned"});
     await db.from("driver_delivery_offers").update({status:"accepted",responded_at:new Date().toISOString()}).eq("id",offer.id);
@@ -65,9 +67,11 @@ Deno.serve(async req => {
   }
   if(body.action==="next_offer") {
     if(!dispatcher||typeof body.waybill!=="string") return reply(403,{error:"dispatcher_access_required"});
-    const {data:booking,error:be}=await db.from("customer_bookings").select("waybill,status,driver_user_id,refunded_at,vehicle,pickup_latitude,pickup_longitude").eq("waybill",body.waybill).maybeSingle();
+    const {data:booking,error:be}=await db.from("customer_bookings").select("waybill,status,driver_user_id,refunded_at,vehicle,pickup_latitude,pickup_longitude,payment_method,paid_at,counter_offer_status").eq("waybill",body.waybill).maybeSingle();
     if(be||!booking) return reply(404,{error:"delivery_not_found"});
     if(booking.status!=="pending"||booking.driver_user_id||booking.refunded_at) return reply(409,{error:"delivery_not_open_for_offers"});
+    if(booking.paid_at==null&&!["cash","dispatch"].includes(String(booking.payment_method))) return reply(409,{error:"payment_confirmation_required"});
+    if(booking.counter_offer_status==="pending") return reply(409,{error:"counter_offer_requires_dispatch_decision"});
     const now=new Date().toISOString();
     await db.from("driver_delivery_offers").update({status:"expired"}).eq("waybill",booking.waybill).eq("status","offered").lte("expires_at",now);
     const {data:sent}=await db.from("driver_delivery_offers").select("driver_user_id,status").eq("waybill",booking.waybill);
