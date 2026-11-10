@@ -138,6 +138,20 @@ function addOrder(order, prepend = false) {
   const track = document.createElement('button'); track.type = 'button'; track.className = 'track-delivery'; track.textContent = 'Track Delivery'; track.addEventListener('click', () => {
     if (document.body.dataset.guestPreview !== 'true') document.dispatchEvent(new CustomEvent('delivery-route', {detail:{waybill:order.waybill,pickup:order.pickup,dropoff:order.dropoff}}));
   });
+  if(!order.paid_at&&!order.refunded_at&&!['cancelled','completed'].includes(order.status)){
+    const paymentBox=document.createElement('div');paymentBox.className='payment-choice';
+    const paymentLabel=document.createElement('label');paymentLabel.textContent='Choose payment method';
+    const paymentSelect=document.createElement('select');paymentSelect.setAttribute('aria-label','Payment method for booking '+order.waybill);
+    const choices=[['eft','EFT bank transfer'],['card','PayFast hosted checkout'],['card','Card · Visa / Mastercard via PayFast'],['dispatch','Arrange payment with dispatch']];
+    if(Number(order.distance_meters)<12000)choices.push(['cash','Cash payment']);
+    for(const [value,label] of choices){const option=document.createElement('option');option.value=value;option.textContent=label;paymentSelect.append(option);}
+    paymentSelect.value=order.payment_method||'dispatch';
+    if(order.counter_offer&&order.counter_offer_status==='pending'){paymentSelect.value='dispatch';paymentSelect.disabled=true;const hint=document.createElement('p');hint.className='subtle';hint.textContent='A pending counteroffer must remain on dispatch payment until the company decides.';paymentBox.append(hint);}
+    paymentLabel.append(paymentSelect);
+    const applyPayment=document.createElement('button');applyPayment.type='button';applyPayment.textContent='Save payment choice';
+    applyPayment.addEventListener('click',async()=>{applyPayment.disabled=true;report('Updating payment choice…');try{const updated=await customerApi('POST',{action:'set_payment_method',waybill:order.waybill,payment_method:paymentSelect.value});if(!updated.order)throw new Error('Payment choice was not saved.');await loadOrders();report('Payment choice saved. Use the separate payment action on your booking to continue.');}catch(error){report(error?.message||'Unable to update payment choice.',true);applyPayment.disabled=false;}});
+    paymentBox.append(paymentLabel,applyPayment);card.append(paymentBox);
+  }
   if(order.payment_method==='card'&&!order.paid_at&&!order.refunded_at&&!['cancelled','completed'].includes(order.status)){
     const cardPay=document.createElement('button');cardPay.type='button';
     cardPay.textContent='Pay securely with Visa / Mastercard';
@@ -273,13 +287,12 @@ form.addEventListener('submit', async event => {
   if (['pickup', 'dropoff', 'recipient'].some(key => !data[key].trim())) { report('Enter pickup, drop-off and recipient details.', true); return; }
   const submit = document.getElementById('submit'); bookingBusy=true; submit.disabled = true; report('Saving your booking…');
   try {
-    const result = await customerApi('POST', {action:'book',terms_accepted:true,terms_version:'2026-11-10-proposed-distance-tariff',quote_id:acceptedQuote.id,assistance_requested:assistance.requested,assistance_minutes:assistance.minutes,assistance_fee_cents:Math.round(assistance.fee*100),recipient:data.recipient,payment_method:data.payment_method,counter_offer:data.counter_offer || null,scheduled_at:data.scheduled_at ? data.scheduled_at+':00+02:00' : null,return_address:data.return_address || null,return_at:data.return_at ? data.return_at+':00+02:00' : null,pickup_latitude:data.pickup_latitude?Number(data.pickup_latitude):null,pickup_longitude:data.pickup_longitude?Number(data.pickup_longitude):null,dropoff_latitude:data.dropoff_latitude?Number(data.dropoff_latitude):null,dropoff_longitude:data.dropoff_longitude?Number(data.dropoff_longitude):null});
+    const result = await customerApi('POST', {action:'book',terms_accepted:true,terms_version:'2026-11-10-proposed-distance-tariff',quote_id:acceptedQuote.id,assistance_requested:assistance.requested,assistance_minutes:assistance.minutes,assistance_fee_cents:Math.round(assistance.fee*100),recipient:data.recipient,payment_method:'dispatch',counter_offer:data.counter_offer || null,scheduled_at:data.scheduled_at ? data.scheduled_at+':00+02:00' : null,return_address:data.return_address || null,return_at:data.return_at ? data.return_at+':00+02:00' : null,pickup_latitude:data.pickup_latitude?Number(data.pickup_latitude):null,pickup_longitude:data.pickup_longitude?Number(data.pickup_longitude):null,dropoff_latitude:data.dropoff_latitude?Number(data.dropoff_latitude):null,dropoff_longitude:data.dropoff_longitude?Number(data.dropoff_longitude):null});
     if (epoch !== accountEpoch) return;
     if (!result.order) throw new Error('Unable to save your booking. Please try again.');
     container.querySelector('.empty')?.remove(); addOrder(result.order, true);
     resetQuote();
-    if (data.payment_method === 'card') await startPayFastCheckout(result.order);
-    else report('Booking created. Follow the selected payment instructions below. WhatsApp sharing is a separate action.');
+    report('Booking created. Choose a payment method on your booking below. WhatsApp sharing is a separate action.');
   } catch (error) {
     if (epoch!==accountEpoch) return;
     const reason = error instanceof Error ? error.message : 'Unable to save your booking.';
@@ -424,26 +437,16 @@ form.addEventListener('input',event=>{if(['weight','length','width','height'].in
 previewLoad();
 
 function updatePaymentOptions(){
-  const distance=currentQuote?.route.distance;
-  const cash=Number.isFinite(distance)&&distance<12000;
-  const counter=Number.isFinite(distance)&&distance<24000;
-  document.getElementById('cash-payment-option').disabled=!cash;
-  if(form.elements.payment_method.value==='cash'&&!cash)form.elements.payment_method.value='dispatch';
-  const cardOption=document.getElementById('card-payment-option');
-  const cardEligible=Number.isFinite(Number(currentQuote?.price))&&Number(currentQuote.price)>=5;
-  cardOption.disabled=!cardEligible;
-  if(!cardEligible&&form.elements.payment_method.value==='card')form.elements.payment_method.value='eft';
+  const counter=Number.isFinite(currentQuote?.route?.distance)&&currentQuote.route.distance<24000;
   const checkbox=document.getElementById('make-counter-offer');checkbox.disabled=!counter;
   if(!counter)checkbox.checked=false;
-  const show=counter&&checkbox.checked&&form.elements.payment_method.value==='dispatch';
+  const show=counter&&checkbox.checked;
   document.getElementById('counter-offer-field').hidden=!show;
   document.getElementById('counter-offer-note').hidden=!show;
   form.elements.counter_offer.disabled=!show;form.elements.counter_offer.required=show;
   if(!show)form.elements.counter_offer.value='';
-  document.getElementById('payment-eligibility').textContent=!currentQuote?'Calculate a route to check card, cash and counteroffer eligibility.':(cardEligible?'Visa / Mastercard checkout is available through PayFast. ':'Card checkout requires a fare of at least R5. ')+(cash?'EFT, card or eligible cash is available.':'EFT and card are available; cash is unavailable for this distance.')+(counter?' Counteroffers are available only when paying through dispatch.':'');
 }
 document.getElementById('make-counter-offer').addEventListener('change',updatePaymentOptions);
-form.elements.payment_method.addEventListener('change',updatePaymentOptions);
 updatePaymentOptions();
 
 document.addEventListener('wallet-updated',loadOrders);
