@@ -165,8 +165,10 @@ const signOutButton = document.getElementById('sign-out');
 if (nativePin.isNative) signOutButton.textContent = 'Lock app';
 signOutButton.addEventListener('click', async () => {
   if (nativePin.isNative) {
+    // Present the PIN overlay immediately. Do not depend on a full page reload
+    // and a second auth-validation pass to display the lock screen.
     await nativePin.lock();
-    window.location.replace(window.location.pathname);
+    await nativePin.requireUnlock();
     return;
   }
   const { error } = await supabase.auth.signOut();
