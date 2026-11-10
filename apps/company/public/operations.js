@@ -117,7 +117,7 @@ if (app === 'driver' || app === 'company') {
           waybill: order.waybill, action: 'counteroffer_decision', decision: 'accepted'
         });
         makeButton(actions, 'Reject counteroffer', {
-          waybill: order.waybill, action: 'counteroffer_decision', decision: 'rejected'
+          waybill: order.waybill, action: 'counteroffer_decision', decision: 'declined'
         });
         offer.append(actions);
       }
