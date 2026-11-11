@@ -97,6 +97,32 @@ if (app === 'driver' || app === 'company') {
       order.paid_at ? 'Paid' : 'Payment pending'
     ].filter(Boolean).join(' · ');
     card.append(title, route, summary);
+    if (app === 'company' && order.counter_offer != null) {
+      const offer = document.createElement('section');
+      offer.className = 'counteroffer-review';
+      const offerTitle = document.createElement('h4');
+      offerTitle.textContent = 'Customer counteroffer';
+      const offerDetails = document.createElement('p');
+      offerDetails.textContent = 'Offered fare: ' + money(order.counter_offer) +
+        ' · Original quoted fare: ' + money(order.original_price ?? order.price) +
+        ' · Status: ' + String(order.counter_offer_status || 'unknown');
+      offer.append(offerTitle, offerDetails);
+      if (order.counter_offer_status === 'pending') {
+        const note = document.createElement('p');
+        note.textContent = 'Review the proposed fare. Accepting changes the booking fare; rejecting leaves the original fare unchanged.';
+        offer.append(note);
+        const actions = document.createElement('div');
+        actions.className = 'order-actions';
+        makeButton(actions, 'Accept counteroffer', {
+          waybill: order.waybill, action: 'counteroffer_decision', decision: 'accepted'
+        });
+        makeButton(actions, 'Reject counteroffer', {
+          waybill: order.waybill, action: 'counteroffer_decision', decision: 'declined'
+        });
+        offer.append(actions);
+      }
+      card.append(offer);
+    }
     if(order.assistance_requested){
       const assistance=document.createElement('p');
       assistance.textContent='Customer requested handling assistance · '+Number(order.assistance_minutes||0)+' min · '+money((Number(order.assistance_fee_cents)||0)/100)+' · '+String(order.assistance_status||'pending confirmation').replaceAll('_',' ');
