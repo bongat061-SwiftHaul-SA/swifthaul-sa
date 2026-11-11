@@ -10,7 +10,7 @@ const cors = {
 };
 const reply = (status: number, body: Record<string, unknown>) =>
   new Response(JSON.stringify(body), { status, headers: cors });
-const validText = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0 && v.length <= 500;
+const validText = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0 && v.length <= 500;\nconst validZaMobile = (v: unknown): v is string => typeof v === "string" && /^(?:\\+27|0)6[0-9]{8}$/.test(v.replace(/[\\s-]/g,""));
 const baseFees = { bike: 40, van: 80, truck: 180 } as const;
 type Vehicle = keyof typeof baseFees;
 class InputError extends Error { status: number; constructor(message: string, status = 400) { super(message); this.status = status; } }
@@ -109,7 +109,7 @@ Deno.serve(async (req: Request) => {
 
   if (req.method === "GET") {
     const { data, error } = await admin.from("customer_bookings")
-      .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,wallet_refund_used,wallet_promo_used,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,nedbank_cargo_insurance_interest,status")
+      .select("waybill,pin,tracking_code,recipient_phone,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,wallet_refund_used,wallet_promo_used,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,nedbank_cargo_insurance_interest,status")
       .eq("owner_hash", owner).order("created_at", { ascending: false }).limit(100);
     if (error) return reply(500, { error: "booking_list_failed" });
     const { data: wallet, error: walletError } = await admin.from("wallet_accounts")
@@ -124,7 +124,7 @@ Deno.serve(async (req: Request) => {
     if (eftError) return reply(500, { error: "eft_payment_list_failed" });
     if (walletError) return reply(500, { error: "wallet_balance_lookup_failed" });
     const walletAvailable = wallet ? Number(wallet.refund_cents) + Math.max(0, Number(wallet.promo_cents) - Number(wallet.promo_debt_cents)) : 0;
-    return reply(200, { orders: data ?? [], refundRequests: refundRequests ?? [], eftPayments: eftPayments ?? [], canImport: false, wallet: {
+    return reply(200, { orders: (data ?? []).map((o:any)=>({...o,pin:o.paid_at?o.pin:null})), refundRequests: refundRequests ?? [], eftPayments: eftPayments ?? [], canImport: false, wallet: {
       refund_cents: wallet ? Number(wallet.refund_cents) : 0,
       promo_cents: wallet ? Number(wallet.promo_cents) : 0,
       promo_debt_cents: wallet ? Number(wallet.promo_debt_cents) : 0,
@@ -183,7 +183,7 @@ Deno.serve(async (req: Request) => {
 
   if (body.action !== "book" || typeof body.quote_id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.quote_id) ||
       body.terms_accepted !== true || body.terms_version !== "2026-11-10-protection-terms-only" ||
-      typeof body.recipient !== "string" || !body.recipient.trim() || body.recipient.length > 500)
+      typeof body.recipient !== "string" || !body.recipient.trim() || body.recipient.length > 500 || !validZaMobile(body.recipient_phone))
     return reply(400, { error: "calculate_a_quote_and_enter_recipient" });
   if (body.nedbank_cargo_insurance_interest !== undefined && typeof body.nedbank_cargo_insurance_interest !== "boolean") return reply(400, { error: "invalid_insurance_enquiry_selection" });
   const { data: existing } = await admin.from("customer_bookings")
@@ -245,7 +245,7 @@ Deno.serve(async (req: Request) => {
   const pinCode = String(crypto.getRandomValues(new Uint32Array(1))[0] % 9000 + 1000);
   const insert = {
     waybill, owner_hash: owner, pin: pinCode, pickup: quote.pickup, dropoff: quote.dropoff,
-    recipient: body.recipient.trim(), vehicle: quote.vehicle, price: quote.price,
+    recipient: body.recipient.trim(), recipient_phone: String(body.recipient_phone).replace(/[\\s-]/g,"").replace(/^0/,"+27"), vehicle: quote.vehicle, price: quote.price,
     distance_meters: distance, price_band: quote.price_band, quote_id: quote.id,
     load: quote.load, distance_fee: quote.distance_fee, scheduled_at: scheduled,
     return_address: returnAddress || null, return_at: returnAt, payment_method: method,
@@ -299,5 +299,5 @@ Deno.serve(async (req: Request) => {
     console.error("Customer booking insert failed", insertError.message);
     return reply(503, { error: "booking_save_failed" });
   }
-  return reply(201, { order });
+  return reply(201, { order: {...order,pin:order.paid_at?order.pin:null} });
 });
