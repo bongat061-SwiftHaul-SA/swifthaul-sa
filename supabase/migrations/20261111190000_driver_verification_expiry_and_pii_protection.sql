@@ -72,7 +72,7 @@ alter table public.driver_documents
  add column if not exists alert_30_sent_at timestamptz,
  add column if not exists alert_7_sent_at timestamptz;
 update public.driver_documents set file_url=storage_path where file_url is null;
-update public.driver_documents set verification_status=case review_status when 'accepted' then 'approved' when 'rejected' then 'rejected' else 'pending' end;
+update public.driver_documents set verification_status=case review_status when 'accepted' then 'approved' when 'rejected' then 'rejected' else 'pending' end where verification_status='pending' and review_status in ('accepted','rejected');
 alter table public.driver_documents drop constraint if exists driver_documents_verification_status_check;
 alter table public.driver_documents add constraint driver_documents_verification_status_check check(verification_status in ('pending','approved','rejected','expired'));
 create index if not exists driver_documents_driver_status_expiry_idx on public.driver_documents(driver_user_id,verification_status,expiry_date);
@@ -195,6 +195,13 @@ begin
 end $$;
 revoke all on function public.process_driver_document_expiry() from public,anon,authenticated;
 grant execute on function public.process_driver_document_expiry() to service_role;
-select cron.schedule('driver-document-expiry-0600-sast','0 4 * * *','select public.process_driver_document_expiry();');
-update public.driver_profiles set onboarding_status=case when verification_status='approved' then 'approved' else 'pending_review' end;
-update public.driver_profiles set can_go_online=false,is_online=false,availability_status='offline';
+do $
+declare v_job_id bigint;
+begin
+ select jobid into v_job_id from cron.job where jobname='driver-document-expiry-0600-sast' limit 1;
+ if v_job_id is null then
+  perform cron.schedule('driver-document-expiry-0600-sast','0 4 * * *','select public.process_driver_document_expiry();');
+ else
+  update cron.job set schedule='0 4 * * *',command='select public.process_driver_document_expiry();',active=true where jobid=v_job_id;
+ end if;
+end $;
