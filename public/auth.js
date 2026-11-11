@@ -11,6 +11,14 @@ const workspace = document.getElementById('workspace');
 const form = document.getElementById('auth-form');
 const status = document.getElementById('auth-status');
 const submit = form.querySelector('[type=submit]');
+function customerReturnUrl() {
+  // Always return confirmed Customer accounts to the current dashboard entry point,
+  // never to a legacy index page or a page query captured during signup.
+  const url = new URL('customer.html', window.location.href);
+  url.search = '';
+  url.hash = '';
+  return url.toString();
+}
 function showSignIn(message = '') {
   if (restoreScreen) restoreScreen.hidden = true;
   authScreen.hidden = false;
@@ -223,7 +231,7 @@ form.addEventListener('submit', async event => {
       return;
     }
     if (mode === 'recovery') {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: location.href.split('#')[0] });
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: customerReturnUrl() });
       if (error) throw error;
       status.textContent = 'If an account exists, a reset link is on its way. Check your inbox.'; return;
     }
@@ -235,7 +243,7 @@ form.addEventListener('submit', async event => {
     if (mode === 'signup') {
       const { data, error } = await supabase.auth.signUp({
         email, password,
-        options: { emailRedirectTo: location.href.split('#')[0], data: {
+        options: { emailRedirectTo: customerReturnUrl(), data: {
           app_type: 'customer', full_name: form.elements.name.value.trim(),
           referral_code: form.elements.referralCode?.value.trim().toUpperCase() || '',
           terms_accepted: true, terms_version: '2026-10-30-wallet'
