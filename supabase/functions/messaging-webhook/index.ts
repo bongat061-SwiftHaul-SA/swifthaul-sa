@@ -14,6 +14,17 @@ async function verifySignature(raw:string, signature:string, secret:string) {
   return mismatch === 0;
 }
 
+async function verifyTwilioSignature(url:string, params:URLSearchParams, signature:string, authToken:string) {
+  const keys=[...new Set([...params.keys()])].sort();
+  const data=url+keys.map(key=>key+params.get(key)).join("");
+  const key=await crypto.subtle.importKey("raw",new TextEncoder().encode(authToken),{name:"HMAC",hash:"SHA-1"},false,["sign"]);
+  const digest=new Uint8Array(await crypto.subtle.sign("HMAC",key,new TextEncoder().encode(data)));
+  const expected=btoa(String.fromCharCode(...digest));
+  if(expected.length!==signature.length)return false;
+  let mismatch=0;for(let i=0;i<expected.length;i++)mismatch|=expected.charCodeAt(i)^signature.charCodeAt(i);
+  return mismatch===0;
+}
+
 Deno.serve(async(req:Request) => {
   const verifyToken = Deno.env.get("WHATSAPP_WEBHOOK_VERIFY_TOKEN") || "";
   if (req.method === "GET") {
@@ -24,6 +35,27 @@ Deno.serve(async(req:Request) => {
     return new Response("forbidden",{status:403});
   }
   if (req.method !== "POST") return reply(405,{error:"method_not_allowed"});
+  const contentType=req.headers.get("content-type")||"";
+  if(contentType.includes("application/x-www-form-urlencoded")) {
+    const rawForm=await req.text();const params=new URLSearchParams(rawForm);
+    const callbackUrl=Deno.env.get("TWILIO_STATUS_CALLBACK_URL")||"";
+    const authToken=Deno.env.get("TWILIO_AUTH_TOKEN")||"";
+    const signature=req.headers.get("x-twilio-signature")||"";
+    if(!callbackUrl||!authToken||!signature)return reply(503,{error:"twilio_receipt_verification_not_configured"});
+    const actual=new URL(req.url),expectedUrl=new URL(callbackUrl);
+    if(actual.origin+actual.pathname!==expectedUrl.origin+expectedUrl.pathname||!await verifyTwilioSignature(callbackUrl,params,signature,authToken))return reply(401,{error:"invalid_twilio_signature"});
+    const sid=params.get("MessageSid")||"",state=params.get("MessageStatus")||"";
+    const mapped=state==="delivered"?"delivered":state==="read"?"read":(["failed","undelivered"].includes(state)?"failed":(["queued","accepted","sending","sent"].includes(state)?"sent":null));
+    if(!sid||!mapped)return reply(200,{success:true,ignored:true});
+    const db=adminClient();const now=new Date().toISOString();
+    const patch:any={status:mapped,updated_at:now};
+    if(mapped==="delivered"||mapped==="read")patch.delivered_at=now;
+    if(mapped==="read")patch.read_at=now;
+    if(mapped==="failed"){patch.failed_at=now;patch.last_error=(params.get("ErrorMessage")||state).slice(0,500);}
+    const {error}=await db.from("notification_logs").update(patch).eq("provider_message_id",sid);
+    if(error)return reply(500,{error:"twilio_receipt_update_failed"});
+    return reply(200,{success:true});
+  }
   const secret = Deno.env.get("WHATSAPP_APP_SECRET") || "";
   if (!secret) return reply(503,{error:"webhook_secret_not_configured"});
   const raw = await req.text();
