@@ -12,6 +12,7 @@ assert(html.includes('booking-wizard.js') && html.includes('booking-wizard.css')
 assert(['Route & locations','Parcel details','Assistance & protection','Review & book'].every(label => wizard.includes(label)), 'The booking wizard must contain all four requested stages.');
 assert(wizard.includes('form.noValidate = true') && wizard.includes('checkValidity()'), 'Wizard must validate the visible step without hidden-field focus traps.');
 assert(wizard.includes("const mapStage = form.querySelector('#delivery-map-stage')") && wizard.includes('move(mapStage,0)'), 'The pickup/drop-off map stage must remain intact in the first wizard step.');
+assert(wizard.includes('[recipient,schedule,returnTrip].forEach(node=>move(node,0))'), 'Recipient, pickup scheduling and return-trip details must stay in the route step when the map stage exists.');
 assert(wizard.includes('Keep that stage intact on step one'), 'Wizard must document why the interactive location stage stays together.');
 assert(wizard.includes('submit-counter-offer') && html.includes('booking-terms-accepted'), 'Final review must preserve the existing counteroffer and protection acknowledgement controls.');
 assert(customerPages.includes("root.addEventListener('click'") && customerPages.includes("link.dataset.page"), 'Customer page links must use delegated in-app navigation.');
