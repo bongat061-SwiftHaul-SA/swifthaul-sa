@@ -8,6 +8,7 @@ const notifier = read('supabase/functions/account-signin-notify/index.ts');
 const customerWelcome = read('supabase/functions/customer-welcome-notify/index.ts');
 const driverWelcome = read('supabase/functions/driver-application-notify/index.ts');
 const migration = read('supabase/migrations/20261111155000_account_signin_notifications.sql');
+const cashGuard = read('supabase/migrations/20261111160000_harden_driver_cash_deposit_proof.sql');
 const companyConfig = read('apps/company/public/supabase-config.js');
 
 for (const [name, source] of [['Customer', customer], ['Driver', driver], ['Company Admin', company]]) {
@@ -29,6 +30,8 @@ assert.match(driverWelcome, /SWIFTHAUL_SIGNUP_NOTIFY_EMAILS/, 'Driver signup rec
 assert.match(companyConfig, /isGitHubPagesStagingPreview/, 'Company Admin GitHub Pages preview is detected');
 assert.match(companyConfig, /tagkbropgzthsbjlhyvz\.supabase\.co/, 'Company Admin preview uses staging Supabase');
 assert.match(companyConfig, /jikstpnvsdjhcibtjilp\.supabase\.co/, 'Company Admin production host retains production Supabase');
+assert.match(cashGuard, /account_status='active'/, 'cash deposit proof requires an active Driver');
+assert.match(cashGuard, /verification_status='approved'/, 'cash deposit proof requires Driver approval');
 assert.match(migration, /enable row level security/i, 'notification records are protected by RLS');
 assert.match(migration, /revoke all on public\.account_signin_notifications from anon,authenticated/i, 'notification records are not client-accessible');
 console.log('Auth email notification checks passed.');
