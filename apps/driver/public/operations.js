@@ -94,6 +94,69 @@ if (app === 'driver' || app === 'company') {
     }
   }
 
+  async function renderItinerary(routeStops = [], orders = [], driverProfile = {}) {
+    if (app !== 'driver') return;
+    const activeOrders = orders.filter(o => ['assigned','accepted','picked_up','in_transit'].includes(o.status));
+    const capacity = /motor/i.test(driverProfile.vehicle_type || '') ? 2 : /bakkie|van|panel/i.test(driverProfile.vehicle_type || '') ? 3 : /truck|ton/i.test(driverProfile.vehicle_type || '') ? 4 : 2;
+    const section = document.createElement('section');
+    section.className = 'driver-multi-itinerary';
+    const header = document.createElement('div');
+    header.className = 'driver-itinerary-header';
+    const title = document.createElement('h3');
+    title.textContent = 'Multi-Stop Active Itinerary';
+    const counter = document.createElement('span');
+    counter.className = 'driver-active-order-counter';
+    counter.textContent = activeOrders.length + ' / ' + capacity + ' Active Deliveries';
+    header.append(title,counter);
+    const preference = document.createElement('label');
+    preference.className = 'driver-stacked-preference';
+    const toggle = document.createElement('input');
+    toggle.type = 'checkbox';
+    toggle.checked = driverProfile.allow_stacked_orders !== false;
+    toggle.addEventListener('change',async()=>{
+      toggle.disabled=true;
+      try{
+        const client=window.swiftHaulSupabase;
+        const {data,error}=await client.functions.invoke('dispatch-offers',{body:{action:'set_stacked_orders',enabled:toggle.checked}});
+        if(error||data?.error)throw new Error(data?.error||error?.message||'Unable to update stacked delivery preference.');
+        message.textContent=toggle.checked?'Add-on delivery offers enabled.':'Add-on delivery offers paused.';
+      }catch(error){toggle.checked=!toggle.checked;message.textContent=error.message||'Unable to update preference.';}
+      finally{toggle.disabled=false;}
+    });
+    preference.append(toggle,document.createTextNode(' Allow stacked delivery offers'));
+    const stopList = document.createElement('ol');
+    stopList.className = 'driver-itinerary-stops';
+    const visibleStops = routeStops.filter(stop=>stop.status!=='completed');
+    if(!visibleStops.length){
+      const empty=document.createElement('li');
+      empty.textContent='Your next pickup and drop-off stops will appear here.';
+      stopList.append(empty);
+    } else {
+      visibleStops.forEach((stop,index)=>{
+        const item=document.createElement('li');
+        item.className='driver-itinerary-stop';
+        const meta=document.createElement('strong');
+        meta.textContent='Stop '+(index+1)+' of '+visibleStops.length+' · '+String(stop.stop_type||'').toUpperCase();
+        const address=document.createElement('span');
+        address.textContent=stop.address||'Address confirmed on delivery';
+        const ref=document.createElement('small');
+        ref.textContent='Order '+String(stop.order_id||'').slice(0,10)+' · '+(stop.status==='arrived'?'Arrived':'Upcoming');
+        item.append(meta,address,ref);
+        const open=document.createElement('button');
+        open.type='button';
+        open.textContent='Open delivery';
+        open.addEventListener('click',()=>{
+          const target=[...list.querySelectorAll('[data-waybill]')].find(card=>card.dataset.waybill===stop.order_id);
+          target?.scrollIntoView({behavior:'smooth',block:'center'});
+        });
+        item.append(open);
+        stopList.append(item);
+      });
+    }
+    section.append(header,preference,stopList);
+    offerPanel.after(section);
+  }
+
   async function load() {
     if (!active || document.body.dataset.guestPreview === 'true') return;
     const current = ++requestNumber;
@@ -111,6 +174,7 @@ if (app === 'driver' || app === 'company') {
         list.append(notice);
       }
       await loadIncomingOffers(data.orders || []);
+      if (app === 'driver') await renderItinerary(data.routeStops || [], data.orders || [], data.driverProfile || {});
       if (!data.orders?.length) {
         const empty = document.createElement('p');
         empty.textContent = 'No deliveries are currently assigned to this account.';
@@ -313,6 +377,7 @@ if (app === 'driver' || app === 'company') {
     const card = document.createElement('article');
     card.className = 'order';
   card.dataset.deliveryStatus = order.status || '';
+    card.dataset.waybill = order.waybill;
     const title = document.createElement('h3');
     title.textContent = order.waybill;
     const route = document.createElement('p');
