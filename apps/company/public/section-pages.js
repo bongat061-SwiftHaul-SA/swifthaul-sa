@@ -35,7 +35,7 @@
   const pages = {
     overview: { title:'Operations overview.', description:'A company-wide snapshot of delivery activity and fleet availability.', show:['stats'] },
     dispatch: { title:'Dispatch desk.', description:'Monitor assigned deliveries and inspect planned pickup-to-drop-off routes.', show:['dispatches'] },
-    drivers: { title:'Driver management.', description:'Review driver availability, applications and verification information.', show:['drivers'] },
+    drivers: { title:'Driver verification.', description:'Review South African driver identity, documents, background clearance and activation at /admin/drivers.', show:['drivers'] },
     refunds: { title:'Cancellations & refunds.', description:'Review customer cancellation requests and refund records.', show:['refunds'] },
     payouts: { title:'Driver payouts.', description:'Review payout requests and record completed manual EFT payments.', show:['payouts'] },
     'cash-reconciliation': { title:'Cash reconciliation.', description:'Verify driver cash deposits against company bank records and clear cash-held liabilities.', show:['cash-reconciliation'] },
