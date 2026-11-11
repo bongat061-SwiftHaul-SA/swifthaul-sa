@@ -12,11 +12,15 @@
     .address-suggestions .suggestion-main{display:block;font-weight:700}
     .address-suggestions .suggestion-meta{display:block;margin-top:3px;color:#61776f;font-size:10px;font-weight:500}
     .address-search-status{min-height:16px;margin:5px 0 0;color:#61776f;font-size:10px;line-height:1.5}
+    .address-search-button{margin:6px 0 0!important;padding:7px 10px!important;border:1px solid #d6ded8!important;border-radius:8px!important;background:#f3f6f4!important;color:#263b30!important;font-size:10px!important;font-weight:800}
     .address-helper{margin:0 0 14px;color:#61776f;font-size:11px;line-height:1.65}
   `;
   document.head.append(style);
 
   const alphabet='0123456789bcdefghjkmnpqrstuvwxyz';
+  const resultCache=new Map();
+  let lastRequestAt=0;
+  let requestQueue=Promise.resolve();
   function geohash(lat,lng,precision=9){
     let latR=[-90,90],lngR=[-180,180],even=true,bits=0,ch=0,out='';
     while(out.length<precision){const range=even?lngR:latR,mid=(range[0]+range[1])/2;ch<<=1;if((even?lng:lat)>=mid){ch|=1;range[0]=mid}else range[1]=mid;even=!even;if(++bits===5){out+=alphabet[ch];bits=0;ch=0;}}
@@ -29,10 +33,11 @@
   }
   function addressLabel(properties){
     const p=properties||{};
-    const street=[p.housenumber,p.street].filter(Boolean).join(' ');
-    const first=street||p.name||p.street||'';
-    const areas=[p.suburb,p.district,p.city||p.town||p.village,p.state,p.postcode,p.country].filter(Boolean);
-    return [...new Set([first,...areas].filter(Boolean))].join(', ');
+    const road=p.road||p.pedestrian||p.footway||p.street||'';
+    const street=[p.house_number,p.housenumber,road].filter(Boolean).join(' ');
+    const first=street||p.name||p.display_name?.split(',')[0]||road;
+    const areas=[p.neighbourhood,p.suburb,p.city_district,p.district,p.city||p.town||p.village,p.county,p.state,p.postcode,p.country].filter(Boolean);
+    return [...new Set([first,...areas].filter(Boolean))].join(', ')||p.display_name||'';
   }
   function setLocation(input,feature){
     const coords=feature?.geometry?.coordinates;
@@ -51,7 +56,14 @@
     input.dispatchEvent(new Event('change',{bubbles:true}));
     window.swiftHaulShowAddressOnMap?.(input,lat,lng);
     const pinButton=input.nextElementSibling;
-    if(pinButton&&pinButton.textContent.toLowerCase().includes('pin'))pinButton.textContent=code?'Pin selected · '+code:'Pin selected';
+    if(pinButton&&pinButton.classList.contains('swift-pin-button'))pinButton.textContent='◎ Adjust pin on map';
+  }
+  function asFeature(result){
+    const address=result.address||{};
+    return {
+      geometry:{type:'Point',coordinates:[Number(result.lon),Number(result.lat)]},
+      properties:{...address,name:result.name||'',display_name:result.display_name||''}
+    };
   }
   function attach(input,label){
     const wrap=input.parentElement;
@@ -66,12 +78,18 @@
     input.setAttribute('aria-autocomplete','list');
     input.setAttribute('aria-expanded','false');
     input.setAttribute('aria-controls',list.id);
+    input.setAttribute('autocomplete','off');
+    const searchButton=document.createElement('button');
+    searchButton.type='button';
+    searchButton.className='address-search-button';
+    searchButton.textContent='Search address';
+    input.insertAdjacentElement('afterend',searchButton);
     const status=document.createElement('p');
     status.className='address-search-status';
     status.setAttribute('role','status');
     status.setAttribute('aria-live','polite');
     wrap.append(status);
-    let timer=null,controller=null,features=[],active=-1,suppress=false;
+    let controller=null,features=[],active=-1;
     const close=()=>{list.hidden=true;input.setAttribute('aria-expanded','false');input.removeAttribute('aria-activedescendant');active=-1;};
     const choose=index=>{
       const feature=features[index];if(!feature)return;
@@ -90,7 +108,7 @@
         const full=addressLabel(props);
         if(!full)return;
         const button=document.createElement('button');button.type='button';button.id=list.id+'-'+index;button.setAttribute('role','option');button.setAttribute('aria-selected','false');
-        const main=document.createElement('span');main.className='suggestion-main';main.textContent=props.name||[props.housenumber,props.street].filter(Boolean).join(' ')||full.split(',')[0];
+        const main=document.createElement('span');main.className='suggestion-main';main.textContent=props.name||[props.house_number,props.road].filter(Boolean).join(' ')||full.split(',')[0];
         const meta=document.createElement('span');meta.className='suggestion-meta';meta.textContent=full;
         button.append(main,meta);
         button.addEventListener('mousedown',event=>event.preventDefault());
@@ -100,51 +118,67 @@
       if(list.children.length){list.hidden=false;input.setAttribute('aria-expanded','true');}
       else close();
     };
-    async function search(query){
+    async function search(){
+      const query=input.value.trim();
+      if(query.length<3){status.textContent='Enter at least 3 characters, then search.';return;}
       controller?.abort();controller=new AbortController();
-      status.textContent='Finding matching addresses…';
+      status.textContent='Searching OpenStreetMap addresses…';
+      const cacheKey=query.toLocaleLowerCase();
       try{
-        const bias=window.swiftHaulGetMapCenter?.();
-        const params={q:query,limit:'8',lang:'en'};
-        if(bias&&Number.isFinite(bias.lat)&&Number.isFinite(bias.lng)){params.lat=String(bias.lat);params.lon=String(bias.lng);}
-        const url='https://photon.komoot.io/api/?'+new URLSearchParams(params);
-        const response=await fetch(url,{signal:controller.signal,headers:{Accept:'application/json'}});
-        if(!response.ok)throw new Error('Address search unavailable');
-        const data=await response.json();
-        const items=(data.features||[]).filter(item=>item.geometry?.type==='Point'&&Array.isArray(item.geometry.coordinates));
+        let results=resultCache.get(cacheKey);
+        if(!results){
+          const run=requestQueue.then(async()=>{
+            const wait=Math.max(0,1100-(Date.now()-lastRequestAt));
+            if(wait)await new Promise(resolve=>setTimeout(resolve,wait));
+            if(controller.signal.aborted)throw new DOMException('Search cancelled','AbortError');
+            lastRequestAt=Date.now();
+            const params=new URLSearchParams({q:query,format:'jsonv2',addressdetails:'1',limit:'8','accept-language':'en'});
+            const response=await fetch('https://nominatim.openstreetmap.org/search?'+params.toString(),{
+              signal:controller.signal,headers:{Accept:'application/json'}
+            });
+            if(!response.ok)throw new Error('Nominatim address search unavailable ('+response.status+').');
+            return response.json();
+          });
+          requestQueue=run.catch(()=>{});
+          results=await run;
+          resultCache.set(cacheKey,results);
+          if(resultCache.size>80)resultCache.delete(resultCache.keys().next().value);
+        }
+        if(controller.signal.aborted)return;
+        const items=results.map(asFeature).filter(item=>Number.isFinite(item.geometry.coordinates[0])&&Number.isFinite(item.geometry.coordinates[1]));
         render(items);
-        status.textContent=items.length?'Choose the closest match. You can fine-tune the pin on the map.':'No matching addresses found. Try adding the suburb, city or postal code.';
+        status.textContent=items.length?'Choose the closest match. Then check and adjust its exact map pin.':'No matching address found. Try adding the suburb, city, province or postal code.';
       }catch(error){
         if(error.name==='AbortError')return;
-        close();status.textContent='Address suggestions are temporarily unavailable. You can still enter the address and use Pick / copy pin.';
+        close();status.textContent='Nominatim search is temporarily unavailable. You can still type an address and place both pins manually.';
       }
     }
-    input.addEventListener('input',()=>{
-      if(input.dataset.justSelected==='true'){delete input.dataset.justSelected;return;}
-      if(suppress){suppress=false;return;}
-      input.dataset.locationSelected='false';
-      // A manually edited address must not retain coordinates from an older selection.
-      for(const suffix of ['latitude','longitude','plus_code','geohash']){
-        const hidden=form.querySelector('[name="'+input.name+'_'+suffix+'"]');
-        if(hidden)hidden.value='';
-      }
-      clearTimeout(timer);controller?.abort();close();
-      const query=input.value.trim();
-      if(query.length<3){status.textContent='Type at least 3 characters for address suggestions.';return;}
-      timer=setTimeout(()=>search(query),350);
-    });
+    searchButton.addEventListener('click',search);
     input.addEventListener('keydown',event=>{
+      if(event.key==='Enter'){
+        event.preventDefault();
+        if(!list.hidden&&active>=0)choose(active);else search();
+        return;
+      }
       if(list.hidden)return;
       const count=list.querySelectorAll('button').length;
       if(event.key==='ArrowDown'){event.preventDefault();active=Math.min(active+1,count-1);highlight();}
       else if(event.key==='ArrowUp'){event.preventDefault();active=Math.max(active-1,0);highlight();}
-      else if(event.key==='Enter'&&active>=0){event.preventDefault();choose(active);}
       else if(event.key==='Escape'){close();}
     });
+    input.addEventListener('input',()=>{
+      if(input.dataset.justSelected==='true'){delete input.dataset.justSelected;return;}
+      input.dataset.locationSelected='false';
+      for(const suffix of ['latitude','longitude','plus_code','geohash']){
+        const hidden=form.querySelector('[name="'+input.name+'_'+suffix+'"]');
+        if(hidden)hidden.value='';
+      }
+      controller?.abort();close();
+      status.textContent='Edit the address, then tap Search address. The public Nominatim service is queried only when requested.';
+    });
     input.addEventListener('blur',()=>setTimeout(()=>{if(!wrap.contains(document.activeElement))close();},120));
-    input.addEventListener('focus',()=>{if(input.value.trim().length>=3&&!input.dataset.locationSelected)input.dispatchEvent(new Event('input'));});
     input.addEventListener('change',()=>{if(!input.value.trim())status.textContent='';});
-    status.textContent='Type at least 3 characters for address suggestions.';
+    status.textContent='Enter an address and tap Search address to see OpenStreetMap matches.';
   }
   for(const [id,label] of [['custPickup','Pickup'],['custDropoff','Drop-off']]){
     const input=document.getElementById(id);
@@ -152,7 +186,7 @@
   }
   const helper=document.createElement('p');
   helper.className='address-helper';
-  helper.textContent='Start typing to choose a suggested address. Then use Pick / copy pin to confirm the exact gate, entrance or collection point. Address matches are suggestions; always verify the map pin.';
+  helper.textContent='Search for each address, choose the closest OpenStreetMap match, then confirm the exact gate or entrance on the map. Plus Codes are generated from the confirmed pin.';
   const first=document.getElementById('custPickup');
   first?.parentElement?.insertAdjacentElement('afterend',helper);
 })();
