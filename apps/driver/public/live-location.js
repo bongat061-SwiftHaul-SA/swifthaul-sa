@@ -2,7 +2,7 @@
   if (document.body.dataset.app !== "driver") return;
   const activeStatuses = new Set(["accepted", "picked_up", "in_transit"]);
   const style = document.createElement("style");
-  style.textContent = ".live-location-control{margin-top:14px;padding:14px;border:1px solid #dbe7df;border-radius:16px;background:#f7faf7}.live-location-control strong{display:block;color:#173d31}.live-location-control p{font-size:13px;color:#60746a;line-height:1.5}.live-location-control button{margin:4px 8px 0 0;padding:10px 14px;border:0;border-radius:10px;background:#173d31;color:#fff;font-weight:700}.live-location-control button:disabled{opacity:.5}.live-location-control button+button{background:#e8eeea;color:#173d31}";
+  style.textContent = ".live-location-control{margin-top:14px;padding:14px;border:1px solid #3d4a5b;border-radius:16px;background:linear-gradient(145deg,#1c2632,#101720);color:#f2f5f9}.live-location-control strong{display:block;color:#f2f5f9}.live-location-control p{font-size:12px;color:#aab6c5;line-height:1.55}.live-location-control button{margin:4px 8px 0 0;padding:10px 14px;border:1px solid #e5ebf2;border-radius:10px;background:#e5ebf2;color:#121923;font-weight:800}.live-location-control button:disabled{opacity:.5}.live-location-control button+button{background:#182230;border-color:#4b5a6d;color:#e9eef5}";
   document.head.append(style);
   const watches = new Map();
   let enabled = false;
@@ -108,6 +108,7 @@
     syncTimer = null;
     for (const waybill of [...watches.keys()]) stopLocal(waybill);
   };
+  document.addEventListener("driver-offline", () => { for (const waybill of [...watches.keys()]) stopLocal(waybill); });
   document.addEventListener("account-cleared", clear);
   document.addEventListener("guest-preview", clear);
   window.addEventListener("pagehide", clear);
