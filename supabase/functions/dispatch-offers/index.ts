@@ -96,7 +96,7 @@ Deno.serve(async req => {
     if(activeError)return reply(500,{error:"active_order_count_failed"});
     const activeByDriver=new Map<string,any[]>();
     for(const order of activeOrders??[]){const key=order.driver_user_id;activeByDriver.set(key,[...(activeByDriver.get(key)||[]),order]);}
-    const {data:routeStops}=await db.from("driver_route_stops").select("driver_id,lat,lng,status,sequence_order").in("driver_id",ids).neq("status","completed").order("sequence_order");
+    const {data:routeStops}=await db.from("driver_route_stops").select("driver_id,lat,lng,status,sequence_order").in("driver_id",allDriverIds).neq("status","completed").order("sequence_order");
     const stopsByDriver=new Map<string,any[]>();
     for(const stop of routeStops??[]){stopsByDriver.set(stop.driver_id,[...(stopsByDriver.get(stop.driver_id)||[]),stop]);}
     const pointSegmentDistanceKm=(p:any,a:any,b:any)=>{const lat0=p.lat*Math.PI/180,scaleX=Math.cos(lat0)*111.32,scaleY=110.574;const x=(v:any)=>v.lng*scaleX,y=(v:any)=>v.lat*scaleY;const px=x(p),py=y(p),ax=x(a),ay=y(a),bx=x(b),by=y(b);const dx=bx-ax,dy=by-ay,t=Math.max(0,Math.min(1,((px-ax)*dx+(py-ay)*dy)/(dx*dx+dy*dy||1)));return Math.hypot(px-(ax+t*dx),py-(ay+t*dy));};
