@@ -1,5 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { adminClient, fallbackToSms } from "../_shared/notifications.ts";
+import { adminClient, fallbackToSms } from "./shared.ts";
 
 const headers = { "Content-Type":"application/json", "Cache-Control":"no-store" };
 const reply = (status:number, body:Record<string,unknown>) => new Response(JSON.stringify(body),{status,headers});
