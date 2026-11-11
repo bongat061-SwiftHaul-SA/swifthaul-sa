@@ -1,0 +1,32 @@
+name: Validate customer signup pin flow
+
+on:
+  pull_request:
+    paths:
+      - "public/customer.html"
+      - "public/auth.js"
+      - "public/location-picker.js"
+      - "public/address-autocomplete.js"
+      - "public/customer.js"
+      - "apps/driver/public/map.html"
+      - "tests/customer-pin-static-check.cjs"
+      - ".github/workflows/validate-customer-pin.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  customer-pin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check customer map scripts
+        run: |
+          node --input-type=module --check < public/location-picker.js
+          node --input-type=module --check < public/address-autocomplete.js
+          node --input-type=module --check < public/customer.js
+      - name: Verify signup-to-pin wiring
+        run: node tests/customer-pin-static-check.cjs
