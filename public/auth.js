@@ -44,6 +44,15 @@ restoreScreen?.querySelector('[data-session-retry]')?.addEventListener('click', 
 restoreScreen?.querySelector('[data-session-signin]')?.addEventListener('click', () => showSignIn());
 
 let mode = 'login', currentUser = null;
+const serviceConsent = form.elements.acceptTerms;
+const marketingConsent = form.elements.acceptMarketing;
+function syncSignupConsent() {
+  const signup = mode === 'signup';
+  submit.disabled = signup && !serviceConsent.checked;
+}
+serviceConsent.addEventListener('change', syncSignupConsent);
+marketingConsent?.addEventListener('change', () => {});
+
 const CUSTOMER_DEVICE_EMAIL_KEY = 'swifthaul.customer.pin-account';
 function rememberCustomerEmail(email) {
   if (typeof email !== 'string' || !email.includes('@')) return;
@@ -85,6 +94,10 @@ function setMode(next) {
   document.getElementById('terms-acceptance').hidden = !signup;
   form.elements.acceptTerms.required = signup;
   form.elements.acceptTerms.checked = false;
+  if (marketingConsent) marketingConsent.checked = false;
+  const marketingLabel = document.getElementById('marketing-consent');
+  if (marketingLabel) marketingLabel.hidden = !signup;
+  syncSignupConsent();
   document.getElementById('auth-title').textContent = titles[mode];
   form.elements.name.closest('label').hidden = !signup;
   form.elements.name.required = signup;
@@ -202,7 +215,7 @@ async function openWorkspace() {
 form.addEventListener('submit', async event => {
   event.preventDefault();
   if (mode === 'signup' && !form.elements.acceptTerms.checked) {
-    status.textContent = 'Read and accept the terms and conditions to continue.';
+    status.textContent = 'Please accept the Privacy Policy and Terms of Service to create your account.';
     form.elements.acceptTerms.reportValidity(); return;
   }
   submit.disabled = true; status.textContent = 'Please wait…';
@@ -246,7 +259,11 @@ form.addEventListener('submit', async event => {
         options: { emailRedirectTo: customerReturnUrl(), data: {
           app_type: 'customer', full_name: form.elements.name.value.trim(),
           referral_code: form.elements.referralCode?.value.trim().toUpperCase() || '',
-          terms_accepted: true, terms_version: '2026-10-30-wallet'
+          terms_accepted: true, terms_version: '2026-11-11-popia-consent-v1',
+          privacy_consent: true, privacy_policy_version: '2026-11-11-v1',
+          privacy_consent_at: new Date().toISOString(),
+          marketing_consent: Boolean(marketingConsent?.checked),
+          marketing_consent_at: marketingConsent?.checked ? new Date().toISOString() : null
         }}
       });
       if (error) throw error;
@@ -258,7 +275,7 @@ form.addEventListener('submit', async event => {
     if (error) throw error;
     form.elements.password.value = ''; await validateAccount(data.session); await sendSignInNotification(data.session);
   } catch (error) { status.textContent = error?.message || 'Unable to connect. Please try again.'; }
-  finally { submit.disabled = false; }
+  finally { submit.disabled = mode === 'signup' && !serviceConsent.checked; }
 });
 document.querySelectorAll('[data-auth-mode]').forEach(el => el.addEventListener('click', () => setMode(el.dataset.authMode)));
 document.getElementById('sign-out').addEventListener('click', async () => {
