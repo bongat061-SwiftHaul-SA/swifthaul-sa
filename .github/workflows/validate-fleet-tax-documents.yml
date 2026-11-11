@@ -1,0 +1,68 @@
+name: Validate SwiftHaul fleet portal and tax documents
+on:
+  pull_request:
+    paths:
+      - "apps/fleet/**"
+      - "supabase/migrations/*sars_tax_documents*"
+      - "supabase/functions/paystack-webhook/**"
+      - "supabase/functions/order-chat/**"
+      - "public/track-page.js"
+      - "public/track.html"
+      - "tests/tax-documents-static-check.cjs"
+      - ".github/workflows/validate-fleet-tax-documents.yml"
+  push:
+    branches:
+      - feature/sa-sms-whatsapp-notifications-staging
+    paths:
+      - "apps/fleet/**"
+      - "supabase/migrations/*sars_tax_documents*"
+      - "supabase/functions/paystack-webhook/**"
+      - "supabase/functions/order-chat/**"
+      - "public/track-page.js"
+      - "public/track.html"
+      - "tests/tax-documents-static-check.cjs"
+      - ".github/workflows/validate-fleet-tax-documents.yml"
+permissions:
+  contents: read
+jobs:
+  fleet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Validate static tax document wiring
+        run: node tests/tax-documents-static-check.cjs
+      - name: Check customer tracking JavaScript
+        run: node --input-type=module --check < public/track-page.js
+      - name: Type-check updated Paystack and chat functions
+        run: |
+          deno check --node-modules-dir=auto supabase/functions/paystack-webhook/index.ts
+          deno check --node-modules-dir=auto supabase/functions/order-chat/index.ts
+      - name: Install Fleet portal dependencies
+        working-directory: apps/fleet
+        run: npm install --no-audit --no-fund
+      - name: Type-check Fleet portal
+        working-directory: apps/fleet
+        run: npm run typecheck
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
+          SUPABASE_URL: https://tagkbropgzthsbjlhyvz.supabase.co
+          SUPABASE_ANON_KEY: ci-placeholder
+          SUPABASE_SERVICE_ROLE_KEY: ci-placeholder
+          NEXT_PUBLIC_SUPABASE_URL: https://tagkbropgzthsbjlhyvz.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
+      - name: Build Fleet portal
+        working-directory: apps/fleet
+        run: npm run build
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
+          SUPABASE_URL: https://tagkbropgzthsbjlhyvz.supabase.co
+          SUPABASE_ANON_KEY: ci-placeholder
+          SUPABASE_SERVICE_ROLE_KEY: ci-placeholder
+          NEXT_PUBLIC_SUPABASE_URL: https://tagkbropgzthsbjlhyvz.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
