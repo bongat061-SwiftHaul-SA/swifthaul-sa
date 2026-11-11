@@ -15,7 +15,9 @@ assert(wizard.includes("const mapStage = form.querySelector('#delivery-map-stage
 assert(wizard.includes('[recipient,schedule,returnTrip].forEach(node=>move(node,0))'), 'Recipient, pickup scheduling and return-trip details must stay in the route step when the map stage exists.');
 assert(wizard.includes('Keep that stage intact on step one'), 'Wizard must document why the interactive location stage stays together.');
 assert(wizard.includes('submit-counter-offer') && html.includes('booking-terms-accepted'), 'Final review must preserve the existing counteroffer and protection acknowledgement controls.');
+assert(customerPages.includes("title: 'Welcome to SwiftHaul.'") && customerPages.includes("const selected = pages[key] ? key : 'home'") && customerPages.includes('customer-home-actions'), 'Signed-in customer landing must open a dedicated dashboard with separate action destinations.');
 assert(customerPages.includes("root.addEventListener('click'") && customerPages.includes("link.dataset.page"), 'Customer page links must use delegated in-app navigation.');
+assert(!customerShell.includes('premium-quick-actions') && !customerShell.includes('premium-main-cta'), 'Customer premium shell must not inject duplicate dashboard actions.');
 assert(!customerShell.includes('nav.innerHTML ='), 'Customer premium shell must not replace page links after listeners attach.');
 assert(!driverShell.includes('nav.innerHTML ='), 'Driver premium shell must not replace page links after listeners attach.');
 assert(driverPages.includes("link.dataset.page || 'home'"), 'Driver section pages must retain their page navigation handler.');
