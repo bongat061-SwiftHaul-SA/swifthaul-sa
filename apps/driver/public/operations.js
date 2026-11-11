@@ -198,7 +198,8 @@ if (app === 'driver' || app === 'company') {
         main.append(value,tier);
         const metrics=document.createElement('p');metrics.textContent='★ '+Number(score.average_rating??5).toFixed(2)+' average · '+Number(score.total_ratings||0)+' ratings · '+Number(score.on_time_percentage??100).toFixed(1)+'% on time · '+Number(score.completion_percentage??100).toFixed(1)+'% completion';
         const tips=document.createElement('p');tips.className='driver-score-tips';tips.textContent=Number(score.average_rating??5)<4.5?'Tip: communicate clearly, protect parcels and confirm delivery details with the recipient.':Number(score.on_time_percentage??100)<95?'Tip: plan pickup routes early and update customers if delayed.':Number(score.completion_percentage??100)<95?'Tip: accept only deliveries you can complete and report issues promptly.':'Great work. Keep punctual pickups, careful handling and verified proof of delivery.';
-        scorePanel.append(title,main,metrics,tips);
+        const breakdown=document.createElement('p');breakdown.className='driver-score-breakdown';const dist=data.ratingBreakdown||{};breakdown.textContent='Recent star ratings · '+[1,2,3,4,5].map(n=>n+'★ '+Number(dist[String(n)]||0)).join('  ·  ');
+        scorePanel.append(title,main,metrics,breakdown,tips);
       }
       if (app === 'driver' && data.driverProfile?.verification_status !== 'approved') {
         const notice = document.createElement('p');
