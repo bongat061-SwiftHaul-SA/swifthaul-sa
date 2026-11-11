@@ -213,39 +213,6 @@ form.addEventListener('submit', async event => {
   finally { submit.disabled = false; }
 });
 document.querySelectorAll('[data-auth-mode]').forEach(el => el.addEventListener('click', () => setMode(el.dataset.authMode)));
-document.querySelectorAll('[data-social-provider]').forEach(button => button.addEventListener('click', async () => {
-  const provider = button.dataset.socialProvider;
-  if (!['google', 'apple'].includes(provider)) return;
-  const intent = { app: 'customer', mode: 'login' };
-  if (mode === 'signup') {
-    const fullName = form.elements.name.value.trim();
-    if (!fullName) { status.textContent = 'Enter your name before continuing.'; form.elements.name.reportValidity(); return; }
-    if (!form.elements.acceptTerms.checked) { status.textContent = 'Read and accept the terms and conditions to continue.'; form.elements.acceptTerms.reportValidity(); return; }
-    if (form.elements.referralCode?.value.trim()) {
-      status.textContent = 'To apply a referral code, use the email sign-up option. You can still use Google or Apple to sign in afterwards.';
-      return;
-    }
-    intent.mode = 'signup';
-    intent.full_name = fullName;
-  } else if (mode !== 'login') {
-    status.textContent = 'Return to Sign in or Create account to use Google or Apple.';
-    return;
-  }
-  button.disabled = true;
-  status.textContent = 'Connecting to ' + (provider === 'google' ? 'Google' : 'Apple') + '…';
-  sessionStorage.setItem('swifthaul-social-intent', JSON.stringify(intent));
-  try {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo: location.origin + location.pathname }
-    });
-    if (error) throw error;
-  } catch (error) {
-    sessionStorage.removeItem('swifthaul-social-intent');
-    status.textContent = error?.message || 'Social sign-in could not be started.';
-    button.disabled = false;
-  }
-}));
 document.getElementById('sign-out').addEventListener('click', async () => {
   const { error } = await supabase.auth.signOut();
   if (error) { status.textContent = 'Unable to finish signing out. Please retry.'; return; }
@@ -265,21 +232,7 @@ supabase.auth.onAuthStateChange((event, session) => {
 async function init() {
   setMode('login');
   try { const { data: { session }, error } = await supabase.auth.getSession(); if (error) throw error; if (session) {
-    const intentRaw = sessionStorage.getItem('swifthaul-social-intent');
-    if (intentRaw) {
-      const intent = JSON.parse(intentRaw);
-      if (intent.app === 'customer' && intent.mode === 'signup') {
-        const { data: onboardData, error: onboardError } = await supabase.functions.invoke('social-onboard', {
-          body: { app_type: 'customer', full_name: intent.full_name, terms_accepted: true, terms_version: '2026-10-30-wallet' },
-          headers: { Authorization: 'Bearer ' + session.access_token }
-        });
-        if (onboardError) throw new Error(onboardData?.error || onboardError.message || 'Customer profile setup failed.');
-      }
-      sessionStorage.removeItem('swifthaul-social-intent');
-    }
     await validateAccount(session);
-  } else {
-    sessionStorage.removeItem('swifthaul-social-intent');
   } }
   catch (error) { status.textContent = error?.message || 'Sign-in is unavailable. Please try again.'; }
 }
