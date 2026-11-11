@@ -315,3 +315,9 @@ body[data-app] #workspace th{background:#1b222c!important;color:#dce2e9!importan
 body[data-app] #workspace td{background:transparent!important;color:#c2cad4!important;border-color:#303946!important}
 body[data-app] #workspace [hidden]{display:none!important}
 @media(max-width:700px){body[data-app] #workspace .page{padding:18px 14px 120px!important}body[data-app] #workspace .panel{padding:16px!important}}
+
+
+.driver-multi-order-badge{display:inline-flex;align-items:center;width:max-content;padding:5px 10px;border-radius:999px;background:rgba(145,169,203,.16);border:1px solid rgba(190,202,220,.2);color:#e7edf6;font-size:.76rem;font-weight:800}
+.driver-stacked-inspector{margin:10px 0;padding:12px;border:1px solid rgba(190,202,220,.16);border-radius:12px;background:rgba(255,255,255,.035)}
+.driver-stacked-inspector summary{cursor:pointer;font-weight:700;color:#dce6f4}
+.driver-stacked-inspector p{font-size:.86rem;color:#b9c4d2}
