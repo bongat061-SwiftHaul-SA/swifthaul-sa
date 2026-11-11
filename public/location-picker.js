@@ -119,7 +119,9 @@
     '<div class="swift-location-fields"></div>' +
     '<div class="swift-sheet-tools"><button type="button" id="loc-current" class="swift-current">◎ Use my location</button><button type="button" id="loc-open">Re-centre map</button><a href="https://www.openstreetmap.org/?mlat=-26.32517&amp;mlon=28.19535#map=14/-26.32517/28.19535&amp;layers=T" target="_blank" rel="noopener noreferrer" style="font-size:10px;color:#21664e;font-weight:700">Open transport map ↗</a></div>' +
     '<div class="swift-pin-meta"><span>Pin coordinates</span><strong id="loc-coordinates">Choose pickup or drop-off</strong><span>Plus Code</span><strong id="loc-plus-code">Not set</strong></div>' +
-    '<p id="loc-status" role="status" aria-live="polite">Select a South African address suggestion or tap the map. Confirm each pin at the exact gate or entrance before calculating.</p>' +
+    '<p id="loc-status" role="status" aria-live="polite">Search an address or tap the map. Confirm both pins at the exact gate or entrance.</p>' +
+    '<p class="swift-geocoder-credit">Address data © OpenStreetMap contributors · Nominatim</p>' +
+    '<button type="button" id="loc-continue-booking" class="swift-continue-booking" hidden>Continue to Book a delivery →</button>' +
     '<div class="swift-sheet-quote"></div></section>';
   form.insertBefore(stage, pickupWrap);
   const fields = stage.querySelector('.swift-location-fields');
@@ -277,6 +279,22 @@
     return true;
   };
 
+  function updateContinueButton() {
+    const button = $('loc-continue-booking');
+    if (!button) return;
+    const pickupCode = hiddenField('pickup_plus_code').value;
+    const dropoffCode = hiddenField('dropoff_plus_code').value;
+    button.hidden = !(state.pickup && state.dropoff && pickupCode && dropoffCode);
+  }
+  $('loc-continue-booking')?.addEventListener('click', () => {
+    updateContinueButton();
+    if ($('loc-continue-booking').hidden) {
+      $('loc-status').textContent = 'Choose and confirm both pickup and drop-off pins before continuing.';
+      return;
+    }
+    document.dispatchEvent(new CustomEvent('swift-haul:locations-confirmed'));
+  });
+
   function saveLocation(input, lat, lng, message) {
     if(!Number.isFinite(lat)||!Number.isFinite(lng)) return;
     const key=input.name==='pickup'?'pickup':'dropoff';
@@ -290,6 +308,7 @@
     $('loc-plus-code').textContent=plusCode||'Unavailable';
     $('loc-status').textContent=message||(key==='pickup'?'Pickup pin saved.':'Drop-off pin saved.');
     if(map){placeMarker(key,lat,lng);fitLocations();}
+    updateContinueButton();
   }
 
   const reverseLookupSequence = new WeakMap();
@@ -357,6 +376,7 @@
       const previous = state[key];
       if (previous?.marker) previous.marker.remove();
       delete state[key];
+      updateContinueButton();
       clearRoute();
       const remaining = state.pickup || state.dropoff;
       if (remaining && map) cameraMove([remaining.lng,remaining.lat],15);
