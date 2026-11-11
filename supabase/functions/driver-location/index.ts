@@ -34,14 +34,14 @@ Deno.serve(async (req: Request) => {
   if (req.method === "POST") {
     if (profile.role !== "driver") return reply(403, { error: "driver_account_required" });
     const { data: driverProfile, error: driverProfileError } = await admin.from("driver_profiles")
-      .select("verification_status,is_online").eq("user_id", actorId).maybeSingle();
+      .select("verification_status,is_online,can_go_online").eq("user_id", actorId).maybeSingle();
     if (driverProfileError) return reply(500, { error: "driver_profile_lookup_failed" });
-    if (!driverProfile || driverProfile.verification_status !== "approved")
-      return reply(403, { error: "approved_driver_required" });
+    if (!driverProfile) return reply(403, { error: "driver_profile_required" });
     const raw = await req.text();
     if (raw.length > 2048) return reply(413, { error: "request_too_large" });
     let body: Record<string, unknown>;
     try { body = JSON.parse(raw); } catch { return reply(400, { error: "invalid_json" }); }
+    if(body.sharing!==false&&(driverProfile.verification_status!=="approved"||driverProfile.can_go_online!==true||driverProfile.is_online!==true))return reply(403,{error:"driver_not_eligible_or_online_for_live_location"});
     if (typeof body.waybill !== "string" || !body.waybill.trim() || body.waybill.length > 100)
       return reply(400, { error: "invalid_waybill" });
     const { data: booking, error: bookingError } = await admin.from("customer_bookings")
