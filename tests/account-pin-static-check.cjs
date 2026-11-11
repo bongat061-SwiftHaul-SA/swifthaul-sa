@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const customer = fs.readFileSync('public/auth.js', 'utf8');
 const driver = fs.readFileSync('apps/driver/public/auth.js', 'utf8');
 const edge = fs.readFileSync('supabase/functions/account-pin/index.ts', 'utf8');
-const migration = fs.readFileSync('supabase/migrations/20261111103000_add_customer_driver_login_pins.sql', 'utf8');
+const migration = fs.readFileSync('supabase/migrations/20261111091349_add_customer_driver_login_pins.sql', 'utf8');
 
 assert.match(migration, /private\.account_login_pins/);
 assert.match(migration, /extensions\.crypt\(p_pin,\s*extensions\.gen_salt\('bf',\s*12\)\)/);
