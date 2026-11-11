@@ -80,7 +80,14 @@ async function payoutDocument(reference:string){
  let doc=prior;
  if(!doc){[doc]=await db.insert(taxDocuments).values({documentNumber:"",sourceReference:"transfer:"+reference,documentType:"fleet_statement",fleetId:fleetPay.fleet_id||null,totalInclVatZar:String(Number(fleetPay.amount_cents||0)/100),metadata:{settlement_reference:reference,net_eft_payout_zar:Number(fleetPay.amount_cents||0)/100,paid:true}}).onConflictDoNothing().returning();}
  if(!doc){const [d]=await db.select().from(taxDocuments).where(eq(taxDocuments.sourceReference,"transfer:"+reference)).limit(1);if(d?.storageKey)return d;throw new Error("Fleet statement insert conflict.");}
- const data:TaxPdfData={title:"FLEET REMITTANCE STATEMENT",documentNumber:doc.documentNumber,issuedAt:new Date().toISOString(),supplier:company,recipient:{name:"SwiftHaul fleet partner"},order:{waybill:fleetPay.waybill},lines:[{label:"Fleet EFT payout",amount:Number(fleetPay.amount_cents||0)/100}],subtotal:Number(fleetPay.amount_cents||0)/100,vat:0,vatRate:Number(company?.vatRatePercent||15.5),total:Number(fleetPay.amount_cents||0)/100,metadata:{paid:true,note:"Paystack settlement reference: "+reference}};
+ const {data:booking}=await dbs.from("customer_bookings").select("price,driver_user_id").eq("waybill",fleetPay.waybill).maybeSingle();
+ const gross=money(Number(booking?.price||0)),commission=money(gross*0.25),net=money(Number(fleetPay.amount_cents||0)/100);
+ const rate=company?.isVatRegistered?Number(company.vatRatePercent||15.5):0,commissionVat=rate?money(commission*rate/(100+rate)):0,commissionEx=money(commission-commissionVat);
+ const {data:contract}=booking?.driver_user_id?await dbs.from("fleet_driver_contracts").select("fleet_percentage,driver_percentage").eq("fleet_id",fleetPay.fleet_id).eq("driver_id",booking.driver_user_id).eq("is_active",true).maybeSingle():{data:null};
+ const fleetShare=contract?.fleet_percentage?money(gross*0.75*Number(contract.fleet_percentage)/100):net;
+ const driverShare=money(Math.max(0,gross*0.75-fleetShare));
+ const fleetLines=gross>0?[{label:"Gross delivery fare",amount:gross},{label:"SwiftHaul platform commission · excl. VAT",amount:-commissionEx},{label:"VAT included in platform commission · "+rate+"%",amount:-commissionVat},{label:"Driver share after fleet split",amount:-driverShare},{label:"Net fleet EFT payout",amount:net}]:[{label:"Fleet EFT payout",amount:net}];
+ const data:TaxPdfData={title:"FLEET REMITTANCE STATEMENT",documentNumber:doc.documentNumber,issuedAt:new Date().toISOString(),supplier:company,recipient:{name:"SwiftHaul fleet partner"},order:{waybill:fleetPay.waybill},lines:fleetLines,subtotal:net,vat:0,vatRate:rate,total:net,metadata:{paid:true,note:"Paystack settlement reference: "+reference}};
  await savePdf(doc,data);return doc;
 }
 export async function POST(request:NextRequest){
