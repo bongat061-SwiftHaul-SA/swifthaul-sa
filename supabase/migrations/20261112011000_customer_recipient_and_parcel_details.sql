@@ -1,0 +1,1 @@
+alter table public.customer_bookings add column if not exists parcel_notes text not null default ''; alter table public.customer_bookings add column if not exists recipient_phone text;
