@@ -1,4 +1,4 @@
-name: Validate SwiftHaul SMS and WhatsApp notifications
+name: Validate SwiftHaul notifications and stacked dispatch
 on:
   pull_request:
     paths:
@@ -26,6 +26,14 @@ on:
       - "supabase/functions/_shared/notifications.ts"
       - "supabase/functions/notification-dispatch/**"
       - "supabase/functions/messaging-webhook/**"
+      - "supabase/functions/dispatch-offers/**"
+      - "supabase/functions/dispatch-operations/**"
+      - "supabase/migrations/*stacked_driver_delivery_capacity*"
+      - "apps/driver/public/operations.js"
+      - "apps/company/public/operations.js"
+      - "apps/driver/public/dark-premium.css"
+      - "apps/company/public/unified-workspace-dark.css"
+      - "tests/stacked-delivery-static-check.cjs"
       - "supabase/migrations/*unified_sms_whatsapp_notification_queue*"
       - "apps/company/public/notification-admin.*"
       - "apps/company/public/index.html"
