@@ -31,14 +31,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Check notification function syntax
+      - name: Type-check Deno Edge Functions
         run: |
-          node --check --input-type=module < supabase/functions/_shared/notifications.ts
-          node --check --input-type=module < supabase/functions/notification-dispatch/index.ts
-          node --check --input-type=module < supabase/functions/messaging-webhook/index.ts
-          node --check apps/company/public/notification-admin.js
+          deno check supabase/functions/notification-dispatch/index.ts
+          deno check supabase/functions/messaging-webhook/index.ts
+      - name: Check Company Admin interface syntax
+        run: node --check apps/company/public/notification-admin.js
       - name: Verify notification security and admin audit wiring
         run: node tests/notification-service-static-check.cjs
