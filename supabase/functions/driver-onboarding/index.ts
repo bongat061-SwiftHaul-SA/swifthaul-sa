@@ -31,7 +31,9 @@ Deno.serve(async(req:Request)=>{
  const prdp=text(form.get("prdp_holder"),5)==="true",gvm=Number(text(form.get("vehicle_gvm_kg"),8)),prdpCategory=text(form.get("prdp_category"),30),prdpExpiry=text(form.get("prdp_expiry"),10);
  const requiredFiles=identityType==="sa_citizen"?["id_front","id_back","profile_selfie"]:["passport","work_permit"];
  requiredFiles.push("licence_front","licence_back","vehicle_licence_disc","vehicle_insurance","proof_of_address");
- if(identityType==="sa_citizen"&&(!/^\d{13}$/.test(idNumber)||!luhn(idNumber)||!validDate(dob)))return reply(400,{error:"valid_luhn_sa_id_and_date_of_birth_required"});
+if(!validDate(dob)||Date.parse(dob+"T00:00:00")>Date.now())return reply(400,{error:"valid_date_of_birth_required"});
+ const birth=new Date(dob+"T00:00:00"),today=new Date();let applicantAge=today.getFullYear()-birth.getFullYear();if(today.getMonth()<birth.getMonth()||(today.getMonth()===birth.getMonth()&&today.getDate()<birth.getDate()))applicantAge--;if(applicantAge<18)return reply(400,{error:"driver_must_be_at_least_18"});
+ if(identityType==="sa_citizen"&&(!/^\d{13}$/.test(idNumber)||!luhn(idNumber)||idNumber.slice(0,6)!==dob.slice(2,4)+dob.slice(5,7)+dob.slice(8,10)))return reply(400,{error:"valid_luhn_sa_id_matching_birth_date_required"});
  if(identityType==="foreign_national"&&(!passport||!trn))return reply(400,{error:"passport_and_traffic_register_number_required"});
  if(!/^\+27[0-9]{9}$/.test(phone.replace(/[\s-]/g,"").replace(/^0/,"+27"))&&!/^0[0-9]{9}$/.test(phone.replace(/[\s-]/g,"")))return reply(400,{error:"valid_sa_mobile_required"});
  if(!/^\S+@\S+\.\S+$/.test(email)||!["A1","A","B","EB","C1","C","EC1","EC"].includes(licenceCode)||!validDate(licenceExpiry)||Date.parse(licenceExpiry+"T00:00:00")<=Date.now())return reply(400,{error:"valid_email_licence_code_and_future_expiry_required"});
@@ -46,7 +48,7 @@ Deno.serve(async(req:Request)=>{
  if(prdp){const f=form.get("prdp");if(!(f instanceof File)||f.size<1||f.size>10485760||!allowed.has(f.type))return reply(400,{error:"prdp_document_required"});}
  const bank=text(form.get("bank_name"),40),holder=text(form.get("account_holder"),120),account=text(form.get("account_number"),30);
  if(!["FNB","Nedbank","Standard Bank","Absa","Capitec","TymeBank"].includes(bank)||!holder||!/^\d{6,20}$/.test(account))return reply(400,{error:"valid_sa_bank_details_required"});
- const files=[...requiredFiles,...(prdp?["prdp"]:[])],uploaded:string[]=[];
+ const files=[...requiredFiles,...(form.get("enatis_certificate") instanceof File?["enatis_certificate"]:[]),...(form.get("fleet_lease_agreement") instanceof File?["fleet_lease_agreement"]:[]),...(prdp?["prdp"]:[])],uploaded:string[]=[];
  try{
   for(const type of files){
    const file=form.get(type) as File;
@@ -58,7 +60,7 @@ Deno.serve(async(req:Request)=>{
    const {error:recordError}=await db.from("driver_documents").insert({driver_user_id:u.user.id,document_type:type,storage_path:path,original_name:safe,content_type:file.type,file_size_bytes:file.size});
    if(recordError)throw new Error("document_record_failed");
   }
-  const identity={full_name:fullName,phone,email,citizenship:identityType,id_number:identityType==="sa_citizen"?idNumber:null,date_of_birth:identityType==="sa_citizen"?dob:null,passport_number:identityType==="foreign_national"?passport:null,traffic_register_number:identityType==="foreign_national"?trn:null};
+  const identity={full_name:fullName,phone,email,citizenship:identityType,id_number:identityType==="sa_citizen"?idNumber:null,date_of_birth:dob,passport_number:identityType==="foreign_national"?passport:null,traffic_register_number:identityType==="foreign_national"?trn:null};
   const licence={code:licenceCode,expiry:licenceExpiry,prdp_holder:prdp,prdp_category:prdp?prdpCategory:null,prdp_expiry:prdp?prdpExpiry:null};
   const vehicle={type:vehicleType,gross_vehicle_mass_kg:gvm,make:text(form.get("vehicle_make"),60),model:text(form.get("vehicle_model"),60),year,registration_plate:plate.toUpperCase(),vehicle_licence_disc_expiry:text(form.get("vehicle_disc_expiry"),10),insurance_expiry:text(form.get("insurance_expiry"),10)};
   const banking={bank_name:bank,account_holder:holder,account_number:account,universal_branch_code:text(form.get("branch_code"),10)};
