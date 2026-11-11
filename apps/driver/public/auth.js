@@ -86,6 +86,7 @@ function setMode(next) {
   document.getElementById('auth-title').textContent = titles[mode];
   form.elements.name.closest('label').hidden = !signup;
   form.elements.name.required = signup;
+  for (const field of ['city','province']) { const control=form.elements[field]; if(control){control.closest('label').hidden=!signup;control.required=signup;} }
   for (const field of ['phone','licenseNumber','licenseExpiry','vehicleType','vehicleRegistration']) {
     const control = form.elements[field];
     if (control) {
@@ -305,6 +306,8 @@ form.addEventListener('submit', async event => {
           data: {
             app_type: 'driver',
             full_name: form.elements.name.value.trim(),
+            city: form.elements.city.value.trim(),
+            province: form.elements.province.value,
             phone: form.elements.phone.value.trim(),
             license_number: form.elements.licenseNumber.value.trim(),
             license_expiry: form.elements.licenseExpiry.value,
