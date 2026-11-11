@@ -34,7 +34,7 @@ export async function GET(req:NextRequest){
   const count=(role:string)=>Number(allCounts.find(x=>x.role===role)?.n||0);
   const customers=count("customer"),drivers=count("driver"),fleetOwners=count("fleet_owner"),combined=customers+drivers+fleetOwners;
   const active=Number(activeCustomers[0]?.n||0);
-  const paidSenderRows=await db.execute(sql.raw("select count(distinct p.id)::int as n from public.user_profiles p join public.customer_bookings b on b.owner_hash=encode(digest('identity:' || p.id::text,'sha256'),'hex') where p.role='customer' and b.paid_at is not null and b.refunded_at is null"));
+  const paidSenderRows=await db.execute(sql.raw("select count(distinct p.id)::int as n from public.user_profiles p join public.customer_bookings b on b.owner_hash in (p.id::text,encode(digest('identity:' || p.id::text,'sha256'),'hex')) where p.role='customer' and b.paid_at is not null and b.refunded_at is null"));
   const paying=Number(paidSenderRows[0]?.n||0);
   const driverRows=await db.select({verificationStatus:driverProfiles.verificationStatus,accountStatus:userProfiles.accountStatus}).from(userProfiles).innerJoin(driverProfiles,eq(userProfiles.id,driverProfiles.userId)).where(eq(userProfiles.role,"driver"));
   const approved=driverRows.filter(x=>x.accountStatus==="active"&&["approved","verified"].includes(String(x.verificationStatus||"").toLowerCase())).length;
