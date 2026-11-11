@@ -32,10 +32,10 @@
   const oldHeading = form.querySelector(':scope > h2');
   oldHeading?.remove();
   const steps = [
-    {title:'Collection & destination',hint:'Tell us where the delivery starts and where it needs to go.'},
-    {title:'Parcel & vehicle',hint:'Describe your load so we can calculate the correct vehicle and mapped fare.'},
-    {title:'Delivery options',hint:'Choose payment, optional assistance and review the protection terms.'},
-    {title:'Review & book',hint:'Check your details and submit your delivery request.'}
+    {title:'Route & locations',hint:'Choose pickup and drop-off addresses, then confirm both exact map pins and Plus Codes.'},
+    {title:'Parcel details',hint:'Describe your load, review the recommended vehicle and calculate your mapped fare.'},
+    {title:'Assistance & protection',hint:'Choose payment and optional handling, then review the customer protection terms.'},
+    {title:'Review & book',hint:'Check your delivery details, fare and any counteroffer before submitting.'}
   ];
   const shell = document.createElement('section');
   shell.className = 'booking-wizard';
@@ -62,9 +62,22 @@
   form.noValidate = true;
 
   const move = (node,index) => { if(node) panes[index].append(node); };
-  [pickup,dropoff,recipient,schedule,returnTrip].forEach(node=>move(node,0));
-  [parcel,vehicle,vehicleNote,calculate,pricingNote,quote].forEach(node=>move(node,1));
-  [payment,assistance,protection].forEach(node=>move(node,2));
+  // The location picker builds a map stage containing the pickup/drop-off inputs.
+  // Keep that stage intact on step one so the map, address suggestions, draggable
+  // pins and Plus Code readout stay together. The previous implementation moved
+  // the input wrappers out of the map sheet, leaving a large empty map behind.
+  const mapStage = form.querySelector('#delivery-map-stage');
+  if (mapStage) {
+    move(mapStage,0);
+    // The parcel estimator is initially inserted into the map sheet by the
+    // location picker; move only the parcel/quote controls into step two.
+    [parcel,vehicle,vehicleNote,calculate,pricingNote,quote].forEach(node=>move(node,1));
+    [payment,assistance,protection].forEach(node=>move(node,2));
+  } else {
+    [pickup,dropoff,recipient,schedule,returnTrip].forEach(node=>move(node,0));
+    [parcel,vehicle,vehicleNote,calculate,pricingNote,quote].forEach(node=>move(node,1));
+    [payment,assistance,protection].forEach(node=>move(node,2));
+  }
   const review = document.createElement('section');
   review.className = 'booking-review-card';
   review.innerHTML = '<h3>Delivery summary</h3><dl><div><dt>Pickup</dt><dd data-review-pickup>Not entered</dd></div><div><dt>Drop-off</dt><dd data-review-dropoff>Not entered</dd></div><div><dt>Recipient</dt><dd data-review-recipient>Not entered</dd></div><div><dt>Parcel & vehicle</dt><dd data-review-parcel>Complete parcel details</dd></div><div><dt>Fare</dt><dd data-review-fare>Calculate your route</dd></div><div><dt>Payment</dt><dd data-review-payment>Arrange with dispatch</dd></div><div><dt>Assistance</dt><dd data-review-assistance>Not requested</dd></div></dl><p class="booking-review-note">Your request is only confirmed after SwiftHaul dispatch accepts it. Payment is not confirmed by submitting this request.</p>';
