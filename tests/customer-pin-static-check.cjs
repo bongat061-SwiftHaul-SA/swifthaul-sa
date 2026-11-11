@@ -15,6 +15,13 @@ const pickerScript = customerHtml.indexOf('src="location-picker.js');
 assert(mapLib >= 0 && plusCodeLib > mapLib && pickerScript > plusCodeLib,
   'Customer page must load MapLibre and Open Location Code before its pin picker');
 
+assert.match(customerAuth, /form\.elements\.email\.closest\('label'\)\.hidden = reset \|\| pinLogin/,
+  'Customer PIN quick sign-in must hide the email field');
+assert.match(customerAuth, /rememberedCustomerEmail\(\)[\s\S]*email: pinAccountEmail/,
+  'Customer PIN quick sign-in must use the remembered account on this device');
+assert.match(customerAuth, /For your first sign-in on this device, use your email and password/,
+  'A new device must direct the customer to password sign-in before PIN setup');
+
 assert.match(customerAuth, /if \(!data\.session\)[\s\S]*Check your email to confirm it, then sign in/,
   'Email signup must explain confirmation before the authenticated workspace opens');
 assert.match(customerAuth, /authScreen\.hidden = true; workspace\.hidden = false;/,
