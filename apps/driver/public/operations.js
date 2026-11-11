@@ -143,7 +143,7 @@ if (app === 'driver' || app === 'company') {
     preference.append(toggle,document.createTextNode(' Allow stacked delivery offers'));
     const stopList = document.createElement('ol');
     stopList.className = 'driver-itinerary-stops';
-    const visibleStops = routeStops.filter(stop=>stop.status!=='completed');
+    const visibleStops = routeStops;
     if(!visibleStops.length){
       const empty=document.createElement('li');
       empty.textContent='Your next pickup and drop-off stops will appear here.';
@@ -157,7 +157,7 @@ if (app === 'driver' || app === 'company') {
         const address=document.createElement('span');
         address.textContent=stop.address||'Address confirmed on delivery';
         const ref=document.createElement('small');
-        ref.textContent='Order '+String(stop.order_id||'').slice(0,10)+' · '+(stop.status==='arrived'?'Arrived':'Upcoming');
+        ref.textContent='Order '+String(stop.order_id||'').slice(0,10)+' · '+(stop.status==='completed'?'Completed':stop.status==='arrived'?'Arrived':'Upcoming');
         item.append(meta,address,ref);
         const open=document.createElement('button');
         open.type='button';
