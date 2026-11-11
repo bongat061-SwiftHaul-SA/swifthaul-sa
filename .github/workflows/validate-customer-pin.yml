@@ -13,6 +13,7 @@ on:
       - "public/customer-pages.js"\n      - "public/customer-dashboard.css"
       - "public/premium-shell.js"
       - "tests/booking-wizard-static-check.cjs"
+      - "tests/customer-dashboard-static-check.cjs"
       - "apps/driver/public/map.html"
       - "apps/company/public/map.html"
       - "apps/driver/public/auth.js"
@@ -44,6 +45,8 @@ jobs:
           node --check public/premium-shell.js
       - name: Verify booking wizard and in-app navigation
         run: node tests/booking-wizard-static-check.cjs
+      - name: Verify signed-in customer dashboard
+        run: node tests/customer-dashboard-static-check.cjs
       - name: Verify signup-to-pin wiring
         run: node tests/customer-pin-static-check.cjs
       - name: Verify session persistence and workspace navigation
