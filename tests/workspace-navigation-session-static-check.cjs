@@ -30,8 +30,13 @@ for (const [name, path] of pageFiles) {
   assert.match(pages, /addEventListener\(['"]popstate['"]/, name + ' must restore the selected section when browser Back/Forward is used.');
   assert.match(pages, /preventDefault\(\)/, name + ' section links must prevent full page reloads.');
   assert.doesNotMatch(pages, /location\.(?:assign|replace|reload)\s*\(/, name + ' section controller must not force a reload or redirect to sign-in.');
+  assert.match(pages, /navCurrent\.textContent/, name + ' navigation summary must match the selected workspace page.');
 }
 
+const driverShell = read('apps/driver/public/premium-shell.js');
+const customerShell = read('public/premium-shell.js');
+assert.doesNotMatch(driverShell, /premium-bottom-nav|Move anything\.|Your day\. Your deliveries\./, 'Driver shell must not inject a competing navigation or overwrite page-controller headings.');
+assert.doesNotMatch(customerShell, /premium-bottom-nav|Welcome to SwiftHaul\./, 'Customer shell must not inject a competing navigation or overwrite page-controller headings.');
 const driverMap = read('apps/driver/public/map.html');
 const companyMap = read('apps/company/public/map.html');
 assert.match(driverMap, /href="index\.html\?page=deliveries"/, 'Driver map must return to the Driver workspace and its deliveries section.');
