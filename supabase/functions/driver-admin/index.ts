@@ -53,7 +53,12 @@ Deno.serve(async (req: Request) => {
         review_status: doc.review_status, created_at: doc.created_at, signed_url: signed.signedUrl };
       (grouped[doc.driver_user_id] ??= []).push(safeDoc);
     }
-    return reply(200, { drivers: (data ?? []).map((driver: any) => ({ ...driver, documents: grouped[driver.user_id] ?? [] })) });
+    const {data:applications,error:applicationError}=ids.length
+      ? await admin.from("driver_onboarding_applications").select("driver_user_id,identity_type,identity_details,licence_details,vehicle_details,banking_details,verification_status,submitted_at,review_note").in("driver_user_id",ids)
+      : {data:[],error:null};
+    if(applicationError)return reply(500,{error:"driver_application_details_lookup_failed"});
+    const applicationMap=new Map((applications??[]).map((a:any)=>[a.driver_user_id,a]));
+    return reply(200, { drivers: (data ?? []).map((driver: any) => ({ ...driver, documents: grouped[driver.user_id] ?? [], application: applicationMap.get(driver.user_id)??null })) });
   }
 
   const raw = await req.text();
@@ -86,17 +91,27 @@ Deno.serve(async (req: Request) => {
   if (!["approve", "reject", "suspend"].includes(String(body.action)))
     return reply(400, { error: "invalid_review_action" });
   if (body.action === "approve") {
-    const required = ["id_document", "proof_of_address", "bank_confirmation", "drivers_licence", "vehicle_document"];
+    const {data:application,error:applicationError}=await admin.from("driver_onboarding_applications")
+      .select("identity_type,licence_details,vehicle_details,banking_details").eq("driver_user_id",body.user_id).maybeSingle();
+    if(applicationError)return reply(500,{error:"driver_application_lookup_failed"});
+    const required=application?[
+      ...(application.identity_type==="sa_citizen"?["id_front","id_back","profile_selfie"]:["passport","work_permit"]),
+      "licence_front","licence_back","vehicle_licence_disc","vehicle_insurance","proof_of_address"
+    ]:["id_document","proof_of_address","bank_confirmation","drivers_licence","vehicle_document"];
     const { data: documents, error: documentsError } = await admin.from("driver_documents")
       .select("document_type,review_status").eq("driver_user_id", body.user_id);
     if (documentsError) return reply(500, { error: "driver_documents_lookup_failed" });
-    const missing = required.filter((type) => !documents?.some((doc) => doc.document_type === type && doc.review_status === "accepted"));
+    const missing=required.filter((type)=>!documents?.some((doc)=>doc.document_type===type&&doc.review_status==="accepted"));
+    if(application&&!documents?.some(doc=>["enatis_certificate","fleet_lease_agreement"].includes(doc.document_type)&&doc.review_status==="accepted"))missing.push("enatis_certificate_or_fleet_lease_agreement");
+    if(application?.licence_details?.prdp_holder&&!documents?.some(doc=>doc.document_type==="prdp"&&doc.review_status==="accepted"))missing.push("prdp");
+    if(application&&(!application.banking_details?.bank_name||!application.banking_details?.account_holder||!application.banking_details?.account_number))missing.push("banking_details");
     if (missing.length) return reply(409, { error: "required_documents_not_approved", missing_documents: missing });
   }
   const next = body.action === "approve" ? "approved" : body.action === "reject" ? "rejected" : "suspended";
   const { data, error } = await admin.from("driver_profiles")
-    .update({ verification_status: next, updated_at: new Date().toISOString() })
+    .update({ verification_status: next, is_online: false, availability_status: "offline", updated_at: new Date().toISOString() })
     .eq("user_id", body.user_id).select("user_id,verification_status").maybeSingle();
+  if(!error&&data)await admin.from("driver_onboarding_applications").update({verification_status:next==="approved"?"approved":next==="rejected"?"rejected":"reviewing",reviewed_by:authResult.user.id,reviewed_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("driver_user_id",body.user_id);
   if (error) return reply(500, { error: "driver_review_update_failed" });
   if (!data) return reply(404, { error: "driver_not_found" });
   return reply(200, { driver: data });
