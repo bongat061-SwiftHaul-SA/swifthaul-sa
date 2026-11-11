@@ -47,10 +47,10 @@
   finally{busy=false;await load();}
  }
  toggle.addEventListener("change",async()=>{
-  if(!toggle.checked){toggle.disabled=true;try{const d=await call("POST",{action:"set_online",online:false});toggle.checked=d.is_online;state.textContent="You are OFFLINE.";}catch(e){state.textContent=e.message||"Unable to update availability.";}finally{toggle.disabled=false;}return;}
+  if(!toggle.checked){toggle.disabled=true;try{const d=await call("POST",{action:"set_online",online:false});toggle.checked=d.is_online;if(onlineLabel)onlineLabel.textContent=toggle.checked?"Go Offline":"Go Online";state.textContent="You are OFFLINE.";}catch(e){state.textContent=e.message||"Unable to update availability.";}finally{toggle.disabled=false;}return;}
   toggle.disabled=true;
   try{const check=await call("GET");if(check.driver?.can_go_online!==true)throw Error("Your documents or background check are not approved. Review onboarding before going online.");const d=await call("POST",{action:"set_online",online:true});toggle.checked=d.is_online;if(onlineLabel)onlineLabel.textContent=toggle.checked?"Go Offline":"Go Online";state.textContent=d.is_online?"You are ONLINE. GPS and dispatch services can now be enabled for eligible work.":"You are OFFLINE.";}
-  catch(e){toggle.checked=false;state.textContent=e.message||"Unable to update availability.";list.replaceChildren(complianceBanner());}
+  catch(e){toggle.checked=false;if(onlineLabel)onlineLabel.textContent="Go Online";state.textContent=e.message||"Unable to update availability.";list.replaceChildren(complianceBanner());}
   finally{toggle.disabled=false;}
  });
  document.addEventListener("account-ready",()=>{active=true;load();if(timer)clearInterval(timer);timer=setInterval(load,5000);});
