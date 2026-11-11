@@ -6,6 +6,9 @@ const admin=fs.readFileSync("supabase/functions/sos-operations/index.ts","utf8")
 const migration=fs.readFileSync("supabase/migrations/20261112020000_order_chat_and_driver_sos.sql","utf8");
 const driverUi=fs.readFileSync("apps/driver/public/sos.js","utf8");
 const chatUi=fs.readFileSync("public/order-chat.js","utf8");
+const trackingPage=fs.readFileSync("public/track.html","utf8");
+const trackingFallback=fs.readFileSync("public/404.html","utf8");
+const notifyShared=fs.readFileSync("supabase/functions/notification-dispatch/shared.ts","utf8");
 assert.match(chat,/tracking_code/);
 assert.match(chat,/15\*60\*1000/);
 assert.match(chat,/chat_archived/);
@@ -23,4 +26,7 @@ assert.match(driverUi,/tel:10111/);
 assert.match(driverUi,/tel:10177/);
 assert.match(chatUi,/I am at the gate/);
 assert.match(chatUi,/Call via SwiftHaul/);
+assert.match(trackingPage,/track-chat/);
+assert.match(trackingFallback,/track.html\\?code=/);
+assert.match(notifyShared,/sos_alert/);
 console.log("Chat and SOS security/static checks passed.");
