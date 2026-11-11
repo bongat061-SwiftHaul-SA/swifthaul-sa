@@ -6,6 +6,19 @@ on:
       - "public/auth.js"
       - "apps/driver/public/auth.js"
       - "apps/company/public/auth.js"
+      - "public/index.html"
+      - "public/customer.html"
+      - "public/wallet.html"
+      - "apps/driver/public/index.html"
+      - "apps/company/public/index.html"
+      - "apps/driver/public/map.html"
+      - "apps/company/public/map.html"
+      - "public/dark-premium.css"
+      - "apps/driver/public/dark-premium.css"
+      - "public/unified-workspace-dark.css"
+      - "apps/driver/public/unified-workspace-dark.css"
+      - "apps/company/public/unified-workspace-dark.css"
+      - "tests/unified-dark-theme-static-check.cjs"
       - "apps/driver/public/account-settings.js"
       - "supabase/functions/driver-settings/**"
       - "supabase/functions/customer-settings/**"
@@ -42,6 +55,8 @@ jobs:
           node --check apps/driver/public/account-settings.js
           node --check public/settings.js
           node --check apps/company/public/account-deletions.js
+      - name: Verify unified dark-premium interface across apps
+        run: node tests/unified-dark-theme-static-check.cjs
       - name: Verify secure PIN wiring
         run: node tests/account-pin-static-check.cjs
       - name: Verify account self-service flows
