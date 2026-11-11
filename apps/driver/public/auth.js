@@ -14,9 +14,31 @@ const status = document.getElementById('auth-status');
 const submit = form.querySelector('[type=submit]');
 let mode = 'login';
 let currentUser = null;
+const supportsPin = app === 'driver';
+const pinLabel = document.createElement('label');
+pinLabel.textContent = '6-digit PIN';
+pinLabel.hidden = true;
+const pinInput = document.createElement('input');
+pinInput.name = 'loginPin';
+pinInput.type = 'password';
+pinInput.inputMode = 'numeric';
+pinInput.pattern = '[0-9]{6}';
+pinInput.maxLength = 6;
+pinInput.autocomplete = 'one-time-code';
+pinInput.placeholder = 'Enter your 6-digit PIN';
+pinLabel.append(pinInput);
+form.insertBefore(pinLabel, document.getElementById('terms-acceptance'));
+const pinLoginButton = document.createElement('button');
+pinLoginButton.type = 'button';
+pinLoginButton.textContent = 'Use 6-digit PIN';
+pinLoginButton.hidden = !supportsPin;
+form.after(pinLoginButton);
+pinLoginButton.addEventListener('click', () => setMode(mode === 'pin' ? 'login' : 'pin'));
+let pinPanel = null;
 
 const titles = {
   login: 'Welcome back.',
+  pin: 'Sign in with your six-digit PIN.',
   signup: 'Join the SwiftHaul driver network.',
   recovery: 'Forgot your password?',
   reset: 'Choose a new password.'
@@ -27,6 +49,7 @@ function setMode(next) {
   const signup = mode === 'signup';
   const recovery = mode === 'recovery';
   const reset = mode === 'reset';
+  const pinLogin = mode === 'pin';
   document.getElementById('auth-title').textContent = titles[mode];
   form.elements.name.closest('label').hidden = !signup;
   form.elements.name.required = signup;
@@ -39,14 +62,18 @@ function setMode(next) {
   }
   form.elements.email.closest('label').hidden = reset;
   form.elements.email.required = !reset;
-  form.elements.password.closest('label').hidden = recovery;
-  form.elements.password.required = !recovery;
+  form.elements.password.closest('label').hidden = recovery || pinLogin;
+  form.elements.password.required = !recovery && !pinLogin;
+  pinLabel.hidden = !pinLogin;
+  pinInput.required = pinLogin;
+  pinLoginButton.hidden = !supportsPin || !['login','pin'].includes(mode);
+  pinLoginButton.textContent = pinLogin ? 'Use password instead' : 'Use 6-digit PIN';
   form.elements.password.minLength = mode === 'login' ? 1 : 10;
   form.elements.password.autocomplete = mode === 'login' ? 'current-password' : 'new-password';
   document.getElementById('terms-acceptance').hidden = !signup;
   form.elements.acceptTerms.required = signup;
   form.elements.acceptTerms.checked = false;
-  submit.textContent = ({login:'Sign in',signup:'Create driver account',recovery:'Send reset link',reset:'Save new password'})[mode];
+  submit.textContent = ({login:'Sign in',pin:'Sign in with PIN',signup:'Create driver account',recovery:'Send reset link',reset:'Save new password'})[mode];
   status.textContent = '';
 }
 
@@ -89,6 +116,49 @@ function showWorkspace(user) {
   document.dispatchEvent(new CustomEvent('account-ready', { detail: user }));
 }
 
+
+async function refreshPinPanel(session) {
+  if (!supportsPin || !session?.access_token) return;
+  const { data, error } = await supabase.functions.invoke('account-pin', {
+    body: { action: 'status', app_type: 'driver' },
+    headers: { Authorization: 'Bearer ' + session.access_token }
+  });
+  if (error) { console.warn('Driver PIN status unavailable:', error.message); return; }
+  if (!pinPanel) {
+    pinPanel = document.createElement('section');
+    pinPanel.id = 'account-pin-security';
+    pinPanel.className = 'panel';
+    pinPanel.innerHTML = '<h2>Quick sign-in</h2><p data-pin-state>Check your PIN status.</p><button type="button" data-pin-edit>Set up 6-digit PIN</button><form data-pin-form hidden><label>Create 6-digit PIN<input name="pin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="new-password" required></label><label>Confirm 6-digit PIN<input name="confirm_pin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="new-password" required></label><button class="primary" type="submit">Save PIN</button><p data-pin-message role="status"></p></form>';
+    const nav = workspace.querySelector('.section-links');
+    if (nav) nav.after(pinPanel); else workspace.querySelector('main.page')?.prepend(pinPanel);
+    const edit = pinPanel.querySelector('[data-pin-edit]');
+    const setup = pinPanel.querySelector('[data-pin-form]');
+    edit.addEventListener('click', () => { setup.hidden = !setup.hidden; });
+    setup.addEventListener('submit', async event => {
+      event.preventDefault();
+      const pin = setup.elements.pin.value;
+      if (!/^[0-9]{6}$/.test(pin) || pin !== setup.elements.confirm_pin.value) {
+        pinPanel.querySelector('[data-pin-message]').textContent = 'Enter the same six-digit PIN in both fields.';
+        return;
+      }
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) { pinPanel.querySelector('[data-pin-message]').textContent = 'Please sign in again to update your PIN.'; return; }
+      const { data: saved, error: saveError } = await supabase.functions.invoke('account-pin', {
+        body: { action: 'set', app_type: 'driver', pin },
+        headers: { Authorization: 'Bearer ' + sessionData.session.access_token }
+      });
+      if (saveError) { pinPanel.querySelector('[data-pin-message]').textContent = saved?.error || saveError.message; return; }
+      setup.reset();
+      setup.hidden = true;
+      await refreshPinPanel(sessionData.session);
+    });
+  }
+  pinPanel.querySelector('[data-pin-state]').textContent = data?.has_pin
+    ? 'A quick sign-in PIN is enabled for this Driver account. You can change it here.'
+    : 'Create your own six-digit PIN to sign in faster next time. Password sign-in remains available.';
+  pinPanel.querySelector('[data-pin-edit]').textContent = data?.has_pin ? 'Change PIN' : 'Create 6-digit PIN';
+}
+
 async function validateAccount(session) {
   const { data, error } = await supabase.functions.invoke('account-me', {
     method: 'GET',
@@ -117,6 +187,7 @@ async function validateAccount(session) {
     else if (notificationResult?.success !== true) console.warn('Driver onboarding notifications were not completed.');
   }
   showWorkspace(user);
+  await refreshPinPanel(session);
 }
 
 async function openWorkspace() {
@@ -138,6 +209,17 @@ form.addEventListener('submit', async event => {
   try {
     const email = form.elements.email.value.trim().toLowerCase();
     const password = form.elements.password.value;
+    if (mode === 'pin') {
+      const { data: pinData, error: pinError } = await supabase.functions.invoke('account-pin', {
+        body: { action: 'login', app_type: 'driver', email, pin: pinInput.value }
+      });
+      if (pinError) throw new Error(pinData?.error || pinError.message || 'PIN sign-in failed.');
+      const { data: sessionData, error: sessionError } = await supabase.auth.setSession(pinData.session);
+      if (sessionError) throw sessionError;
+      pinInput.value = '';
+      await validateAccount(sessionData.session);
+      return;
+    }
     if (mode === 'recovery') {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: window.location.href.split('#')[0]
