@@ -6,7 +6,7 @@ const operations = fs.readFileSync('supabase/functions/dispatch-operations/index
 const driverUi = fs.readFileSync('apps/driver/public/operations.js','utf8');
 const adminUi = fs.readFileSync('apps/company/public/operations.js','utf8');
 
-for (const type of ['motorbike','bakkie/panel van','truck']) assert.match(migration,new RegExp(type.replace(/[.*+?^\${}()|[\]\\]/g,'\\$&')));
+for (const type of ['motorbike','bakkie/panel van','truck']) assert.ok(migration.includes(type), 'missing vehicle class: ' + type);
 assert.match(migration,/allow_stacked_orders boolean not null default true/);
 assert.match(migration,/driver_route_stops/);
 assert.match(migration,/revoke all on public\.driver_route_stops from anon,authenticated/i);
