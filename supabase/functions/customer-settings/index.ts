@@ -33,7 +33,7 @@ Deno.serve(async(req:Request)=>{
   const {data}=await admin.storage.from("customer-photos").createSignedUrl(path,300);
   return reply(200,{saved:true,photo_url:data?.signedUrl||null});
  }
- if(req.method==="DELETE")return reply(409,{error:"For account deletion, please contact SwiftHaul support so outstanding bookings, wallet balances and financial records can be safely reconciled."});
+ if(req.method==="DELETE"){const raw=await req.text();let b:Record<string,unknown>;try{b=raw?JSON.parse(raw):{}}catch{return reply(400,{error:"invalid_json"})}if(b.confirmation!=="DELETE")return reply(400,{error:"type_DELETE_to_confirm"});const {data:existing,error:lookupError}=await admin.from("account_deletion_requests").select("id,status").eq("user_id",owner).eq("app_type","customer").in("status",["pending","reviewing"]).maybeSingle();if(lookupError)return reply(500,{error:"deletion_request_lookup_failed"});if(existing)return reply(200,{requested:true,status:existing.status});const {error:insertError}=await admin.from("account_deletion_requests").insert({user_id:owner,app_type:"customer",reason:typeof b.reason==="string"?b.reason.slice(0,500):null});if(insertError)return reply(500,{error:"deletion_request_failed"});return reply(202,{requested:true,status:"pending",message:"Your deletion request is queued for review. Your account remains active until deliveries, wallet balances and financial records are reconciled."});}
  const raw=await req.text();if(raw.length>12000)return reply(413,{error:"request_too_large"});
  let b:Record<string,unknown>;try{b=JSON.parse(raw)}catch{return reply(400,{error:"invalid_json"})}
  const fields=["full_name","phone","details","bank_name","account_holder","account_number","branch_code"] as const;
