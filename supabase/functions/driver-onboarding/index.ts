@@ -6,6 +6,11 @@ const allowed=new Set(["application/pdf","image/jpeg","image/png","image/webp"])
 const docTypes=new Set(["id_front","id_back","profile_selfie","passport","work_permit","licence_front","licence_back","prdp","vehicle_licence_disc","enatis_certificate","fleet_lease_agreement","vehicle_insurance","proof_of_address"]);
 const text=(v:FormDataEntryValue|null,max=200)=>typeof v==="string"?v.trim().slice(0,max):"";
 const validDate=(v:string)=>/^\d{4}-\d{2}-\d{2}$/.test(v)&&!Number.isNaN(Date.parse(v+"T00:00:00"));
+const b64=(bytes:Uint8Array)=>btoa(Array.from(bytes).map(x=>String.fromCharCode(x)).join(""));
+const fromB64=(value:string)=>Uint8Array.from(atob(value),c=>c.charCodeAt(0));
+const piiKey=async(db:any)=>{const {data,error}=await db.rpc("get_driver_pii_aes256_gcm_key");if(error||typeof data!=="string")throw new Error("secure_pii_key_unavailable");return crypto.subtle.importKey("raw",fromB64(data),{name:"AES-GCM"},false,["encrypt","decrypt"]);};
+const encryptGcm=async(db:any,value:string)=>{const key=await piiKey(db),iv=crypto.getRandomValues(new Uint8Array(12)),cipher=new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM",iv,tagLength:128},key,new TextEncoder().encode(value)));return "v1:"+b64(iv)+":"+b64(cipher);};
+const sha256=async(value:string)=>Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(value)))).map(x=>x.toString(16).padStart(2,"0")).join("");
 const luhn=(v:string)=>{let sum=0,alt=false;for(let i=v.length-1;i>=0;i--){let n=Number(v[i]);if(alt){n*=2;if(n>9)n-=9;}sum+=n;alt=!alt;}return sum%10===0;};
 Deno.serve(async(req:Request)=>{
  if(req.method==="OPTIONS")return new Response("ok",{headers});
@@ -64,6 +69,8 @@ if(!["sa_citizen","foreign_national"].includes(identityType))return reply(400,{e
  if(!validDate(dob)||Date.parse(dob+"T00:00:00")>Date.now())return reply(400,{error:"valid_date_of_birth_required"});
  const birth=new Date(dob+"T00:00:00"),today=new Date();let applicantAge=today.getFullYear()-birth.getFullYear();if(today.getMonth()<birth.getMonth()||(today.getMonth()===birth.getMonth()&&today.getDate()<birth.getDate()))applicantAge--;if(applicantAge<18)return reply(400,{error:"driver_must_be_at_least_18"});
  if(identityType==="sa_citizen"&&(!/^\d{13}$/.test(idNumber)||!luhn(idNumber)||idNumber.slice(0,6)!==dob.slice(2,4)+dob.slice(5,7)+dob.slice(8,10)))return reply(400,{error:"valid_luhn_sa_id_matching_birth_date_required"});
+  const saIdHash=identityType==="sa_citizen"?await sha256(idNumber):null;
+  if(saIdHash){const {data:duplicate,error:duplicateError}=await db.from("driver_profiles").select("user_id").eq("sa_id_hash",saIdHash).neq("user_id",u.user.id).maybeSingle();if(duplicateError)return reply(500,{error:"identity_duplicate_check_failed"});if(duplicate)return reply(409,{error:"sa_id_already_registered"});}
  if(identityType==="foreign_national"&&(!passport||!trn))return reply(400,{error:"passport_and_traffic_register_number_required"});
  if(!/^\+27[0-9]{9}$/.test(phone.replace(/[\s-]/g,"").replace(/^0/,"+27"))&&!/^0[0-9]{9}$/.test(phone.replace(/[\s-]/g,"")))return reply(400,{error:"valid_sa_mobile_required"});
  if(!/^\S+@\S+\.\S+$/.test(email)||!["A1","A","B","EB","C1","C","EC1","EC"].includes(licenceCode)||!validDate(licenceExpiry)||Date.parse(licenceExpiry+"T00:00:00")<=Date.now())return reply(400,{error:"valid_email_licence_code_and_future_expiry_required"});
@@ -97,33 +104,33 @@ if(!["sa_citizen","foreign_national"].includes(identityType))return reply(400,{e
    const {error:recordError}=await db.from("driver_documents").insert({driver_user_id:u.user.id,document_type:type,storage_path:path,file_url:path,original_name:safe,content_type:file.type,file_size_bytes:file.size,expiry_date:expiry,issued_at:issuedFor(type),verification_status:"pending",review_status:"pending"});
    if(recordError)throw new Error("document_record_failed");
   }
-  const identity={full_name:fullName,phone,email,citizenship:identityType,id_number:identityType==="sa_citizen"?idNumber:null,date_of_birth:dob,passport_number:identityType==="foreign_national"?passport:null,traffic_register_number:identityType==="foreign_national"?trn:null};
+  const identity={full_name:fullName,phone,email,citizenship:identityType,date_of_birth:dob,traffic_register_number:identityType==="foreign_national"?trn:null};
   const licence={code:licenceCode,expiry:licenceExpiry,prdp_holder:prdp,prdp_category:prdp?prdpCategory:null,prdp_expiry:prdp?prdpExpiry:null};
   const vehicle={type:vehicleType,gross_vehicle_mass_kg:gvm,make:text(form.get("vehicle_make"),60),model:text(form.get("vehicle_model"),60),year,registration_plate:plate.toUpperCase(),vehicle_licence_disc_expiry:text(form.get("vehicle_disc_expiry"),10),insurance_expiry:text(form.get("insurance_expiry"),10)};
   const universalCodes:Record<string,string>={"FNB":"250655","Nedbank":"198765","Standard Bank":"051001","Absa":"632005","Capitec":"470010","TymeBank":"678910"};
  if(text(form.get("branch_code"),10)!==universalCodes[bank])return reply(400,{error:"bank_universal_branch_code_mismatch"});
- const banking={bank_name:bank,account_holder:holder,account_number:account,universal_branch_code:universalCodes[bank]};
-  const [{data:identityCipher,error:identityEncryptError},{data:bankCipher,error:bankEncryptError}]=await Promise.all([
+ const banking={bank_name:bank,account_holder:holder,universal_branch_code:universalCodes[bank]};
+  const [identityCipher,bankCipher,idCipher,passportCipher,accountCipher]=await Promise.all([
    db.rpc("encrypt_driver_pii",{p_plaintext:JSON.stringify(identity)}),
-   db.rpc("encrypt_driver_pii",{p_plaintext:JSON.stringify(banking)})
+   db.rpc("encrypt_driver_pii",{p_plaintext:JSON.stringify(banking)}),
+   identityType==="sa_citizen"?encryptGcm(db,idNumber):Promise.resolve(null),
+   identityType==="foreign_national"?encryptGcm(db,passport):Promise.resolve(null),
+   encryptGcm(db,account)
   ]);
-  if(identityEncryptError||bankEncryptError||!identityCipher||!bankCipher)throw new Error("secure_pii_encryption_unavailable");
+  if(identityCipher.error||bankCipher.error||!identityCipher.data||!bankCipher.data)throw new Error("secure_pii_encryption_unavailable");
   const {error:saveError}=await db.from("driver_onboarding_applications").upsert({driver_user_id:u.user.id,identity_type:identityType,identity_details:{},identity_details_encrypted:identityCipher,licence_details:licence,vehicle_details:vehicle,banking_details:{},banking_details_encrypted:bankCipher,verification_status:"pending",submitted_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:"driver_user_id"});
   if(saveError)throw new Error("application_save_failed");
-  const idCipher=identityType==="sa_citizen"?await db.rpc("encrypt_driver_pii",{p_plaintext:idNumber}):{data:null,error:null};
-  const passportCipher=identityType==="foreign_national"?await db.rpc("encrypt_driver_pii",{p_plaintext:passport}):{data:null,error:null};
-  const accountCipher=await db.rpc("encrypt_driver_pii",{p_plaintext:account});
-  const bankDetailsCipher=await db.rpc("encrypt_driver_pii",{p_plaintext:JSON.stringify(banking)});
-  if(idCipher.error||passportCipher.error||accountCipher.error||bankDetailsCipher.error)throw new Error("secure_profile_pii_encryption_failed");
+  const bankDetailsCipher=bankCipher;
+  if(bankDetailsCipher.error)throw new Error("secure_profile_pii_encryption_failed");
   const {error:profileSaveError}=await db.from("driver_profiles").update({
    verification_status:"pending",onboarding_status:"pending_review",can_go_online:false,is_online:false,availability_status:"offline",
    phone,license_expiry:licenceExpiry,
    vehicle_type:vehicleType==="motorbike"?"bike":vehicleType==="truck"?"truck":vehicleType==="hatchback_sedan"?"car":"van",
-   vehicle_registration:plate.toUpperCase(),identity_type:identityType,identity_number_encrypted:idCipher.data||null,
-   passport_number_encrypted:passportCipher.data||null,identity_last4:identityType==="sa_citizen"?idNumber.slice(-4):passport.slice(-4),
+   vehicle_registration:plate.toUpperCase(),identity_type:identityType,identity_number_encrypted:null,
+   passport_number_encrypted:null,sa_id_number_aesgcm:idCipher,passport_number_aesgcm:passportCipher,account_number_aesgcm:accountCipher,sa_id_hash:saIdHash,identity_last4:identityType==="sa_citizen"?idNumber.slice(-4):passport.slice(-4),
    licence_code:licenceCode,prdp_holder:prdp,prdp_category:prdp?prdpCategory:null,prdp_expiry:prdp?prdpExpiry:null,
    vehicle_make:vehicle.make,vehicle_model:vehicle.model,vehicle_year:year,vehicle_gvm_kg:gvm||null,
-   bank_name:null,bank_account_holder:null,bank_account_encrypted:accountCipher.data,bank_details_encrypted:bankDetailsCipher.data,universal_branch_code:null
+   bank_name:null,bank_account_holder:null,bank_account_encrypted:null,bank_details_encrypted:bankDetailsCipher.data,universal_branch_code:null
   }).eq("user_id",u.user.id);
   if(profileSaveError)throw new Error("driver_profile_onboarding_update_failed");
   await db.from("driver_verification_audit").insert({driver_user_id:u.user.id,event_type:"onboarding_submitted",details:{identity_type:identityType,document_count:files.length}});
