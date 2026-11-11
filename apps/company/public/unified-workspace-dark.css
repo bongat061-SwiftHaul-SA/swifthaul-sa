@@ -321,3 +321,6 @@ body[data-app] #workspace [hidden]{display:none!important}
 .driver-stacked-inspector{margin:10px 0;padding:12px;border:1px solid rgba(190,202,220,.16);border-radius:12px;background:rgba(255,255,255,.035)}
 .driver-stacked-inspector summary{cursor:pointer;font-weight:700;color:#dce6f4}
 .driver-stacked-inspector p{font-size:.86rem;color:#b9c4d2}
+
+
+.admin-quality-panel{background:#12171d;border:1px solid #343e49;border-radius:14px;padding:15px;margin:14px 0;color:#f5f7fa}.admin-quality-panel h3{margin:0 0 10px}.admin-quality-panel select{background:#0b0f14;color:#f3f5f7;border:1px solid #46515d;border-radius:8px;padding:9px}.admin-quality-card{padding:12px;margin:10px 0;background:#1a2027;border:1px solid #75434a;border-radius:10px}.admin-quality-card p{font-size:12px;color:#bdc7d1;margin:6px 0}
