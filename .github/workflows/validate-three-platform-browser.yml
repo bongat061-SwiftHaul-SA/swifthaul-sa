@@ -1,5 +1,6 @@
 name: SwiftHaul three-platform browser smoke tests
 on:
+  workflow_dispatch:
   push:
     branches:
       - feature/sa-sms-whatsapp-notifications-staging
