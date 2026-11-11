@@ -24,7 +24,7 @@ export async function GET(req:NextRequest){
   const csv=[csvHeader.join(","),...docs.map(d=>[d.documentNumber,d.documentType,d.orderId,d.driverId,d.fleetId,d.subtotalExclVatZar,d.vatAmountZar,d.totalInclVatZar,d.issuedAt.toISOString(),d.storageKey].map(q).join(","))].join("\r\n");
   files["tax-ledger-"+month+".csv"]=strToU8(csv);
   const zipped=zipSync(files,{level:6});
-  return new NextResponse(zipped,{headers:{"Content-Type":"application/zip","Content-Disposition":'attachment; filename="swifthaul-tax-ledger-'+month+'.zip"'}});
+  return new NextResponse(Buffer.from(zipped),{headers:{"Content-Type":"application/zip","Content-Disposition":'attachment; filename="swifthaul-tax-ledger-'+month+'.zip"'}});
  }
  if(req.nextUrl.searchParams.get("format")==="csv"){
   const cols=["document_number","document_type","order_id","driver_id","fleet_id","subtotal_excl_vat_zar","vat_amount_zar","total_incl_vat_zar","issued_at","storage_key"];
