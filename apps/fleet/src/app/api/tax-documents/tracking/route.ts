@@ -18,6 +18,7 @@ export async function POST(req:NextRequest){
  const [issued]=await db.select().from(taxDocuments).where(and(eq(taxDocuments.orderId,b.waybill),eq(taxDocuments.documentType,"sender_tax_invoice"))).orderBy(desc(taxDocuments.issuedAt)).limit(1);
  if(issued?.storageKey)return NextResponse.json({ok:true,document_id:issued.id,document_number:issued.documentNumber,already_issued:true});
  if(issued&&!issued.storageKey)return NextResponse.json({error:"Your full tax invoice is already being prepared. Please try again shortly."},{status:409});
+ const {data:taxSettings}=await svc.from("tariff_settings").select("is_vat_registered").order("updated_at",{ascending:false}).limit(1).maybeSingle();if(!taxSettings?.is_vat_registered)return NextResponse.json({error:"SwiftHaul is not configured as a VAT-registered supplier. You can download the payment receipt instead."},{status:409});
  const {error:updateError}=await svc.from("customer_bookings").update({billing_company_name:name,billing_vat_number:vat||null,billing_address:address}).eq("waybill",b.waybill);if(updateError)return NextResponse.json({error:"Billing details could not be saved."},{status:500});
  const secret=process.env.TAX_DOCUMENT_WEBHOOK_SECRET;if(!secret)return NextResponse.json({error:"Invoice generation is not configured on this server."},{status:503});
  const payload=JSON.stringify({event:"sender.invoice.requested",waybill:b.waybill});const signature=createHmac("sha256",secret).update(payload).digest("hex");const origin=new URL(req.url).origin;
