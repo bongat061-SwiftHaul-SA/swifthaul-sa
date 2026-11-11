@@ -18,11 +18,21 @@ Deno.serve(async(req:Request)=>{
  if(order.status!=="delivered")return reply(409,{error:"rating_available_after_delivery"});
  const {data:vehicle}=await db.from("fleet_vehicles").select("fleet_id").eq("assigned_driver_id",order.driver_user_id).eq("is_active",true).maybeSingle();
  if(req.method==="GET"){
-  const {data:ratings,error:rError}=await db.from("delivery_ratings").select("rater_role,stars,tags,comment,created_at").eq("order_id",order.waybill);
+  const {data:ratings,error:rError}=await db.from("delivery_ratings").select("rater_role").eq("order_id",order.waybill);
   if(rError)return reply(500,{error:"rating_lookup_failed"});
   return reply(200,{success:true,ratings:ratings||[],can_rate_sender:!(ratings||[]).some(x=>x.rater_role==="sender"),can_rate_recipient:!(ratings||[]).some(x=>x.rater_role==="recipient")});
  }
  const role=String(body.rater_role||"recipient");
+ if(role==="sender"){
+  const bearer=(req.headers.get("Authorization")||"").match(/^Bearer\\s+(.+)$/i)?.[1];
+  if(!bearer)return reply(401,{error:"sender_rating_requires_customer_sign_in"});
+  const auth=createClient(url,anon,{auth:{persistSession:false,autoRefreshToken:false}});
+  const {data:session,error:authError}=await auth.auth.getUser(bearer);
+  if(authError||!session.user)return reply(401,{error:"invalid_customer_session"});
+  const {data:customer}=await db.from("user_profiles").select("role,account_status").eq("id",session.user.id).maybeSingle();
+  if(!customer||customer.role!=="customer"||customer.account_status!=="active")return reply(403,{error:"active_customer_account_required"});
+ }
+
  if(!["sender","recipient"].includes(role))return reply(400,{error:"invalid_rater_role"});
  const stars=Number(body.stars);
  if(!Number.isInteger(stars)||stars<1||stars>5)return reply(400,{error:"stars_must_be_1_to_5"});
