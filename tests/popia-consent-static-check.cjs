@@ -18,7 +18,7 @@ for (const item of cases) {
   assert.match(section, /href="terms\.html"/, item.app + ': Terms link target');
   assert.ok(section.includes(item.purpose), item.app + ': consent purpose disclosed');
   assert.match(section, /id="marketing-consent"[\s\S]*?name="acceptMarketing"/, item.app + ': separate marketing checkbox');
-  assert.match(auth, /submit\\.disabled = (?:signup|mode === 'signup') && !serviceConsent\\.checked/, item.app + ': signup disabled until consent');
+  assert.match(auth, /submit\.disabled = (?:signup|mode === 'signup') && !serviceConsent\\.checked/, item.app + ': signup disabled until consent');
   assert.match(auth, /serviceConsent\.addEventListener\('change', syncSignupConsent\)/, item.app + ': checkbox updates button state');
   assert.match(auth, /privacy_consent_at: new Date\(\)\.toISOString\(\)/, item.app + ': consent timestamp recorded');
   assert.match(auth, /marketing_consent: Boolean\(marketingConsent\?\.checked\)/, item.app + ': marketing choice recorded separately');
