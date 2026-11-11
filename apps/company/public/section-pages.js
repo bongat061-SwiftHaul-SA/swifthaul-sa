@@ -48,7 +48,7 @@
     notifications: { title:'Notification audit.', description:'Review WhatsApp and SMS delivery receipts, automatic fallback and failed-message retries.', show:['notifications'] },
     account: { title:'Company account.', description:'Company administrator profile and support information.', show:['account'] }
   };
-  const nodes = { stats, dispatches, drivers, account, refunds, payouts, offers, finance, reports, insurance, "insurance-claims": root.querySelector("#insurance-claims-admin"), deletions: root.querySelector("#account-deletions"), "cash-reconciliation": root.querySelector("#cash-reconciliation") };
+  const nodes = { stats, dispatches, drivers, account, refunds, payouts, offers, finance, reports, insurance, "insurance-claims": root.querySelector("#insurance-claims-admin"), deletions: root.querySelector("#account-deletions"), notifications: root.querySelector("#notification-audit"), "cash-reconciliation": root.querySelector("#cash-reconciliation") };
   function render(key, updateUrl) {
     const page = pages[key] || pages.overview;
     Object.entries(nodes).forEach(([name,node]) => { if(node) node.hidden = !page.show.includes(name); });
