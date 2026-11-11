@@ -11,9 +11,11 @@ if (app === 'driver' || app === 'company') {
   const offerPanel = document.createElement('section');
   offerPanel.className = 'driver-stacked-offers';
   offerPanel.setAttribute('aria-label', 'Incoming delivery offers');
+  const itineraryPanel = document.createElement('section');
+  itineraryPanel.className = 'driver-itinerary-panel';
   const list = document.createElement('div');
   list.className = 'operations-list';
-  panel.replaceChildren(heading, refresh, message, offerPanel, list);
+  panel.replaceChildren(heading, refresh, message, offerPanel, itineraryPanel, list);
 
   let active = false;
   let requestNumber = 0;
@@ -154,7 +156,7 @@ if (app === 'driver' || app === 'company') {
       });
     }
     section.append(header,preference,stopList);
-    offerPanel.after(section);
+    itineraryPanel.replaceChildren(section);
   }
 
   async function load() {
