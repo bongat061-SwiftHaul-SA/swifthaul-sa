@@ -26,7 +26,7 @@ assert(css.includes('.workspace-grid[hidden]{display:none!important}'), 'Custome
 assert(css.includes('.customer-home-actions') && css.includes('.customer-book-cta') && css.includes('@media(min-width:760px)'), 'Customer dashboard must include responsive action cards and a prominent booking action.');
 assert(css.includes('body[data-app="customer"]') && !css.includes('body[data-app="driver"]'), 'Customer dashboard styles must be isolated from Driver and Company Admin.');
 assert(location.includes('id="loc-continue-booking"') && location.includes('swift-haul:locations-confirmed'), 'Location selection must offer Continue only after both exact pins are confirmed.');
-assert(wizard.includes('swift-haul:locations-confirmed') && wizard.includes('Continue to Book a delivery'), 'Pin confirmation must return the customer to the Book a delivery steps.');
+assert(wizard.includes('swift-haul:locations-confirmed') && location.includes('Continue to Book a delivery'), 'Pin confirmation must return the customer to the Book a delivery steps.');
 assert(address.includes('nominatim.openstreetmap.org/search') && address.includes('Search address') && !address.includes('photon.komoot.io'), 'Customer address search must use on-demand Nominatim results, not Photon autocomplete.');
 assert(location.includes('nominatim.openstreetmap.org/reverse') && location.includes('plus_code'), 'Map pin reverse geocoding must use Nominatim and retain Plus Codes.');
 assert(pages.includes('customer-tracking-intro') && pages.includes('Tracking'), 'Customer must have a dedicated Tracking page.');
