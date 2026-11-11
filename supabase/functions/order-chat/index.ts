@@ -36,6 +36,10 @@ Deno.serve(async(req:Request)=>{
  if(readOnly)return reply(423,{error:"chat_archived",archive_at:archiveAt?.toISOString()||null});
  const message=typeof body.message_text==="string"?body.message_text.trim():"";
  if(!message||message.length>2000)return reply(400,{error:"message_text_required_max_2000"});
+ const since=new Date(Date.now()-60000).toISOString();
+ const {count:recentCount,error:rateError}=await db.from("order_messages").select("id",{count:"exact",head:true}).eq("order_id",waybill).eq("sender_role",senderRole).gte("created_at",since);
+ if(rateError)return reply(500,{error:"chat_rate_check_failed"});
+ if((recentCount||0)>=10)return reply(429,{error:"chat_rate_limit_exceeded"});
  const {data:created,error}=await db.from("order_messages").insert({order_id:waybill,sender_role:senderRole,sender_id:actorId,message_text:message}).select("id,order_id,sender_role,sender_id,message_text,is_read,created_at").single();
  if(error||!created)return reply(500,{error:"chat_message_send_failed"});
  try{await fetch(url+"/realtime/v1/api/broadcast/order:"+waybill+"/events/new_message?private=true",{method:"POST",headers:{apikey:service,Authorization:"Bearer "+service,"Content-Type":"application/json"},body:JSON.stringify({id:created.id,order_id:waybill,sender_role:senderRole,message_text:message,created_at:created.created_at})});}catch(e){console.error("chat realtime broadcast failed",String(e));}
