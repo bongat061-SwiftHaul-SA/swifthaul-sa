@@ -12,45 +12,54 @@
   const account = root.querySelector('#settings');
   const heading = root.querySelector('.page-heading h1');
   const description = root.querySelector('.page-heading .subtle');
+  if (!nav || !grid || !bookingColumn || !activityColumn) return;
+
+  nav.innerHTML = '<a href="?page=home" data-page="home">Home</a><a href="?page=book" data-page="book">Book</a><a href="?page=activity" data-page="activity">Deliveries</a><a href="?page=wallet" data-page="wallet">Wallet</a><a href="?page=account" data-page="account">Account</a><a href="https://wa.me/27615083880" target="_blank" rel="noopener noreferrer">Help</a>';
+
+  const home = document.createElement('section');
+  home.className = 'customer-home';
+  home.id = 'customer-home';
+  home.innerHTML = '<div class="customer-home-intro"><span class="customer-kicker">YOUR CUSTOMER SPACE</span><h2>What can we move for you?</h2><p>Arrange a pickup, follow a delivery and manage everything in one place.</p><a class="customer-book-cta" href="?page=book" data-page="book"><span><small>START A DELIVERY</small><strong>Book a delivery</strong></span><b aria-hidden="true">→</b></a></div><div class="customer-home-actions" aria-label="Customer shortcuts"><a href="?page=activity" data-page="activity"><span class="customer-action-icon">↗</span><strong>My deliveries</strong><small>Track and review orders</small></a><a href="?page=wallet" data-page="wallet"><span class="customer-action-icon">R</span><strong>Wallet &amp; payments</strong><small>Balances and rewards</small></a><a href="?page=account" data-page="account"><span class="customer-action-icon">◎</span><strong>Profile &amp; account</strong><small>PIN, details and photo</small></a><a href="https://wa.me/27615083880" target="_blank" rel="noopener noreferrer"><span class="customer-action-icon">?</span><strong>Customer support</strong><small>Speak to our team</small></a></div><div class="customer-home-note"><span class="customer-note-mark">✓</span><div><strong>Every delivery, clearly managed.</strong><p>Your booking quote, delivery updates and account tools are kept in their own dedicated pages.</p></div></div>';
+  grid.before(home);
+
   const pages = {
-    book: { title: 'Book a delivery.', description: 'Enter your pickup and drop-off details, choose a vehicle and confirm your delivery quote.', current: 'Book a delivery' },
-    activity: { title: 'Your activity.', description: 'Review bookings, delivery progress, invoices and payment actions in one focused place.', current: 'Activity' },
+    home: { title: 'Welcome to SwiftHaul.', description: 'Your deliveries, payments and account — all in one place.', current: 'Home' },
+    book: { title: 'Book a delivery.', description: 'Set your pickup and destination, review the route and confirm your delivery.', current: 'Book' },
+    activity: { title: 'Your deliveries.', description: 'Review bookings, delivery progress, invoices and payment actions.', current: 'Deliveries' },
     wallet: { title: 'Your wallet.', description: 'Check refund balances, rewards, withdrawals and pay-later activity.', current: 'Wallet' },
-    account: { title: 'Your account.', description: 'Manage your profile, picture, sign-in details, PIN and account preferences.', current: 'Account' }
+    account: { title: 'Your account.', description: 'Manage your profile, picture, sign-in details, PIN and preferences.', current: 'Account' }
   };
   function render(key, updateUrl) {
-    const page = pages[key] || pages.book;
-    const selected = pages[key] ? key : 'book';
-    if (bookingColumn) bookingColumn.hidden = selected !== 'book';
-    if (activityColumn) activityColumn.hidden = selected !== 'activity';
-    if (grid) grid.hidden = !['book','activity'].includes(selected);
-    if (wallet) wallet.hidden = selected !== 'wallet';
+    const selected = pages[key] ? key : 'home';
+    const page = pages[selected];
+    home.hidden = selected !== 'home';
+    bookingColumn.hidden = selected !== 'book';
+    activityColumn.hidden = selected !== 'activity';
+    grid.hidden = !['book','activity'].includes(selected);
+    wallet.hidden = selected !== 'wallet';
     if (account) account.hidden = selected !== 'account';
     if (heading) heading.textContent = page.title;
     if (description) description.textContent = page.description;
-    nav?.querySelectorAll('a[data-page]').forEach(link => {
+    nav.querySelectorAll('a[data-page]').forEach(link => {
       const active = link.dataset.page === selected;
       link.classList.toggle('is-active', active);
       if (active) link.setAttribute('aria-current','page'); else link.removeAttribute('aria-current');
     });
-    const current = nav?.closest('details')?.querySelector('[data-nav-current]');
-    if (current) current.textContent = page.current;
     body.dataset.customerPage = selected;
-    document.title = 'SwiftHaul SA · Customer · ' + page.title.replace(/\.$/,'');
+    document.title = 'SwiftHaul SA · Customer · ' + page.current;
     if (updateUrl) {
       const params = new URLSearchParams(location.search);
       params.set('page', selected);
       history.pushState({ page:selected }, '', location.pathname + '?' + params.toString());
     }
-    nav?.closest('details')?.removeAttribute('open');
     window.scrollTo({ top:0, behavior:'instant' });
   }
   root.addEventListener('click', event => {
     const link = event.target.closest('a[data-page]');
     if (!link || !root.contains(link)) return;
     event.preventDefault();
-    render(link.dataset.page || 'book', true);
+    render(link.dataset.page || 'home', true);
   });
-  window.addEventListener('popstate', () => render(new URLSearchParams(location.search).get('page') || body.dataset.customerView || 'book', false));
-  render(new URLSearchParams(location.search).get('page') || body.dataset.customerView || 'book', false);
+  window.addEventListener('popstate', () => render(new URLSearchParams(location.search).get('page') || 'home', false));
+  render(new URLSearchParams(location.search).get('page') || 'home', false);
 })();
