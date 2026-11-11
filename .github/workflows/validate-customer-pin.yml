@@ -4,6 +4,9 @@ on:
   pull_request:
     paths:
       - "public/customer.html"
+      - "public/index.html"
+      - "apps/driver/public/index.html"
+      - "apps/company/public/index.html"
       - "public/auth.js"
       - "public/location-picker.js"
       - "public/address-autocomplete.js"
