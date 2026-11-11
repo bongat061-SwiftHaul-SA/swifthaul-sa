@@ -38,3 +38,21 @@ drop trigger if exists user_profiles_growth_milestone_insert on public.user_prof
 drop trigger if exists user_profiles_growth_milestone_role_update on public.user_profiles;
 create trigger user_profiles_growth_milestone_insert after insert on public.user_profiles for each row execute function public.check_and_unlock_growth_milestones();
 create trigger user_profiles_growth_milestone_role_update after update of role on public.user_profiles for each row execute function public.check_and_unlock_growth_milestones();
+
+create index if not exists user_profiles_growth_role_created_idx on public.user_profiles(role,created_at desc);
+-- Backfill milestones already achieved before this migration was installed.
+with counts as (
+ select
+  (select count(*)::integer from public.user_profiles where role='customer') customers,
+  (select count(*)::integer from public.user_profiles where role='driver') drivers,
+  (select count(*)::integer from public.user_profiles where role in ('customer','driver','fleet_owner')) combined
+)
+update public.growth_milestones gm
+set is_unlocked=true,unlocked_at=now(),
+ trigger_user_id=case
+  when gm.category='customers' then (select id from public.user_profiles where role='customer' order by created_at desc limit 1)
+  when gm.category='drivers' then (select id from public.user_profiles where role='driver' order by created_at desc limit 1)
+  else (select id from public.user_profiles where role in ('customer','driver','fleet_owner') order by created_at desc limit 1)
+ end
+from counts
+where not gm.is_unlocked and ((gm.category='customers' and gm.target_count<=counts.customers) or (gm.category='drivers' and gm.target_count<=counts.drivers) or (gm.category='combined_users' and gm.target_count<=counts.combined));
