@@ -9,7 +9,7 @@ assert.match(migration, /private\.account_login_pins/);
 assert.match(migration, /extensions\.crypt\(p_pin,\s*extensions\.gen_salt\('bf',\s*12\)\)/);
 assert.match(migration, /v_attempts\s*>=\s*5/);
 assert.match(migration, /interval '15 minutes'/);
-assert.match(migration, /revoke all on function public\.verify_account_login_pin[\s\S]*from public,anon,authenticated/i);
+assert.match(migration, /revoke all on function public\.verify_account_login_pin[\s\S]*from public,\s*anon,\s*authenticated/i);
 assert.match(migration, /grant execute on function public\.verify_account_login_pin[\s\S]*to service_role/i);
 assert.match(edge, /auth\.admin\.generateLink/);
 assert.match(edge, /auth\.verifyOtp/);
