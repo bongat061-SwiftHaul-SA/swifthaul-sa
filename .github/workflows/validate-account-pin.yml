@@ -1,0 +1,31 @@
+name: Validate Customer and Driver PIN authentication
+
+on:
+  pull_request:
+    paths:
+      - "public/auth.js"
+      - "apps/driver/public/auth.js"
+      - "public/supabase-config.js"
+      - "apps/driver/public/supabase-config.js"
+      - "supabase/functions/account-pin/**"
+      - "supabase/migrations/*login_pins*"
+      - "tests/account-pin-static-check.cjs"
+      - ".github/workflows/validate-account-pin.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  account-pin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check JavaScript syntax
+        run: |
+          node --input-type=module --check < public/auth.js
+          node --input-type=module --check < apps/driver/public/auth.js
+      - name: Verify secure PIN wiring
+        run: node tests/account-pin-static-check.cjs
