@@ -25,6 +25,7 @@ body[data-app="customer"] #workspace .premium-hero{padding:20px 22px!important;b
 body[data-app="customer"] #workspace .premium-hero:after{display:none}
 body[data-app="customer"] #workspace .premium-quick-actions,body[data-app="customer"] #workspace .premium-main-cta{display:none!important}
 body[data-app="customer"] #workspace .workspace-grid{display:block}
+body[data-app="customer"] #workspace .workspace-grid[hidden]{display:none!important}
 body[data-app="customer"] #workspace .workspace-grid>div{min-width:0}
 body[data-app="customer"] #workspace .workspace-grid>div[hidden]{display:none!important}
 body[data-app="customer"] #workspace #new-delivery .panel{padding:clamp(16px,3vw,24px)}
