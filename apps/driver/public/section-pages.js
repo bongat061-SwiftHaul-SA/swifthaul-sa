@@ -13,6 +13,7 @@
   historyPanel.innerHTML = '<h2>Delivery history</h2><p class="subtle">Completed, failed and cancelled deliveries are listed here after your account loads its dispatch records.</p><div id="driver-delivery-history-list" class="operations-list"><p>No completed deliveries yet.</p></div>';
   grid?.insertAdjacentElement('afterend', historyPanel);
   const account = root.querySelector('#account-details');
+  const onboarding = root.querySelector('#driver-onboarding-root');
   const availability = root.querySelector('#availability');
   const payouts = root.querySelector('#payouts');
   const premium = root.querySelector('#premium');
@@ -28,9 +29,10 @@
     cash: { title: 'Cash & deposits.', description: 'Record customer cash held for SwiftHaul and reconcile your company deposits.', show: ['cash'] },
     membership: { title: 'Premium membership.', description: 'Manage membership, priority benefits and rewards.', show: ['premium'] },
     'insurance-claims': { title: 'Insurance claims.', description: 'Submit and track accident claims linked to your active assigned dispatches.', show: ['insurance-claims'] },
-    account: { title: 'Your account.', description: 'Your driver profile and support details.', show: ['account'] }
+    account: { title: 'Your account.', description: 'Your driver profile and support details.', show: ['account'] },
+    onboarding: { title: 'Driver onboarding.', description: 'Complete your South African identity, licence, vehicle, banking and verification steps.', show: ['onboarding'] }
   };
-  const pageNodes = { stats, dispatches, history: historyPanel, availability, payouts, cash, premium, account, 'insurance-claims': insuranceClaims };
+  const pageNodes = { stats, dispatches, history: historyPanel, availability, payouts, cash, premium, account, onboarding, 'insurance-claims': insuranceClaims };
   const earningsNote = document.createElement('section');
   earningsNote.className = 'panel driver-earnings-note';
   earningsNote.innerHTML = '<h2>How delivery earnings work</h2><p>For completed deliveries, the current standard split is 75% to the driver and 25% to the platform. Vehicle-specific rates may be introduced after operating costs are established.</p>';
