@@ -1,0 +1,2 @@
+import FleetSOSPanel from "../../FleetSOSPanel";
+export default function AdminOperations(){return <><header><div><p className="eyebrow">COMPANY ADMIN · EMERGENCY RESPONSE</p><h1>Operations response</h1><p className="muted">Review active driver SOS incidents and record responder actions.</p></div></header><FleetSOSPanel/></>};
