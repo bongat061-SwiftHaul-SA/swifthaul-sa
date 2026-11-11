@@ -69,6 +69,7 @@ function addOrder(order, prepend = false) {
   const waybill = document.createElement('span'); waybill.className = 'waybill'; waybill.textContent = order.waybill;
   const status = document.createElement('span'); status.className = 'status'; status.textContent = order.refunded_at?'REFUNDED':order.completed_at?'COMPLETED':order.assigned_driver?'ASSIGNED':'UNASSIGNED';
   head.append(waybill, status);
+  if(order.tracking_code){const track=document.createElement("a");track.href="track.html?code="+encodeURIComponent(order.tracking_code);track.textContent="Open live tracking";track.className="order-track-link";track.target="_blank";track.rel="noopener noreferrer";head.append(track);}
   const route = document.createElement('p'); route.className = 'route'; route.textContent = `${order.pickup} → ${order.dropoff}`;
   for (const [kind,label] of [['pickup','Pickup'],['dropoff','Drop-off']]) {
     const lat=order[kind+'_latitude'],lng=order[kind+'_longitude'];
@@ -79,7 +80,7 @@ function addOrder(order, prepend = false) {
     if(lat!=null&&lng!=null){const mapLink=document.createElement('a');mapLink.href='https://www.google.com/maps?q='+encodeURIComponent(lat+','+lng);mapLink.target='_blank';mapLink.rel='noopener noreferrer';mapLink.textContent='Open '+label.toLowerCase()+' pin in Maps ↗';card.append(mapLink);}
   }
   const meta = document.createElement('div'); meta.className = 'order-meta';
-  const pin = document.createElement('span'); pin.textContent = `Recipient PIN: ${order.pin} · Share only after delivery`;
+  const pin = document.createElement('span'); pin.textContent = order.pin ? `Recipient OTP: ${order.pin} · Share only with the recipient` : "Recipient OTP will appear after payment is confirmed.";
   const fee = document.createElement('span'); fee.textContent = `${order.vehicle.toUpperCase()} · ${money(order.price)}`;
   meta.append(pin, fee);
   if (order.distance_meters != null) {const distance=document.createElement('span');distance.textContent=`${km(order.distance_meters)} km`;meta.append(distance);}
@@ -139,6 +140,11 @@ function addOrder(order, prepend = false) {
       box.append(heading,info,contact,reference,file,note,send);eft.replaceWith(box);
     });
     actions.append(eft);
+  }
+  if(!order.paid_at&&!order.refunded_at&&order.payment_method==="paystack"){
+    const payButton=document.createElement("button");payButton.type="button";payButton.className="primary";payButton.textContent="Pay securely with Paystack";
+    payButton.addEventListener("click",async()=>{payButton.disabled=true;try{await startPaystackCheckout(order.waybill);}catch(error){report(error.message||"Unable to open Paystack checkout.",true);payButton.disabled=false;}});
+    card.append(payButton);
   }
   const existingRefund = refundRequestsByWaybill.get(order.waybill);
   if (existingRefund) {
@@ -223,6 +229,13 @@ function assistanceQuote(){
 }
 assistanceRequested?.addEventListener('change',()=>{const q=assistanceQuote();if(q.requested&&currentQuote?.vehicle==='bike')assistanceRequested.checked=false;});
 assistanceBlocks?.addEventListener('change',assistanceQuote);
+async function startPaystackCheckout(waybill){
+ const client=window.swiftHaulSupabase;if(!client)throw new Error("Payment connection unavailable. Reload and sign in again.");
+ const {data,error}=await client.functions.invoke("paystack-payment-initialize",{body:{waybill}});
+ if(error)throw new Error(await customerFunctionError(error,"Paystack checkout is unavailable."));
+ if(!data?.authorization_url)throw new Error(data?.error||"Paystack did not return a checkout link.");
+ window.location.assign(data.authorization_url);
+}
 form.addEventListener('submit', async event => {
   event.preventDefault();
   if (!ready || bookingBusy || document.body.dataset.guestPreview === 'true') return;
@@ -235,11 +248,12 @@ form.addEventListener('submit', async event => {
   if (['pickup', 'dropoff', 'recipient'].some(key => !data[key].trim())) { report('Enter pickup, drop-off and recipient details.', true); return; }
   const submit = document.getElementById('submit'); bookingBusy=true; submit.disabled = true; report('Saving your booking…');
   try {
-    const result = await customerApi('POST', {action:'book',terms_accepted:true,terms_version:'2026-11-10-protection-terms-only',quote_id:acceptedQuote.id,assistance_requested:assistance.requested,assistance_minutes:assistance.minutes,assistance_fee_cents:Math.round(assistance.fee*100),recipient:data.recipient,payment_method:data.payment_method,counter_offer:data.counter_offer || null,scheduled_at:data.scheduled_at ? data.scheduled_at+':00+02:00' : null,return_address:data.return_address || null,return_at:data.return_at ? data.return_at+':00+02:00' : null,pickup_latitude:data.pickup_latitude?Number(data.pickup_latitude):null,pickup_longitude:data.pickup_longitude?Number(data.pickup_longitude):null,dropoff_latitude:data.dropoff_latitude?Number(data.dropoff_latitude):null,dropoff_longitude:data.dropoff_longitude?Number(data.dropoff_longitude):null});
+    const result = await customerApi('POST', {action:'book',terms_accepted:true,terms_version:'2026-11-10-protection-terms-only',quote_id:acceptedQuote.id,recipient_phone:data.recipient_phone,parcel_notes:data.parcel_notes||'',assistance_requested:assistance.requested,assistance_minutes:assistance.minutes,assistance_fee_cents:Math.round(assistance.fee*100),recipient:data.recipient,payment_method:data.payment_method,counter_offer:data.counter_offer || null,scheduled_at:data.scheduled_at ? data.scheduled_at+':00+02:00' : null,return_address:data.return_address || null,return_at:data.return_at ? data.return_at+':00+02:00' : null,pickup_latitude:data.pickup_latitude?Number(data.pickup_latitude):null,pickup_longitude:data.pickup_longitude?Number(data.pickup_longitude):null,dropoff_latitude:data.dropoff_latitude?Number(data.dropoff_latitude):null,dropoff_longitude:data.dropoff_longitude?Number(data.dropoff_longitude):null});
     if (epoch !== accountEpoch) return;
     if (!result.order) throw new Error('Unable to save your booking. Please try again.');
     container.querySelector('.empty')?.remove(); addOrder(result.order, true);
-    report('Booking created. Choose cash (if eligible) or EFT instructions below. WhatsApp sharing is a separate action.');
+    if(data.payment_method==='paystack'){report('Booking saved. Opening secure Paystack checkout…');await startPaystackCheckout(result.order.waybill);return;}
+    report('Booking created. Choose your available payment option below. WhatsApp sharing is a separate action.');
     resetQuote();
   } catch (error) {
     if (epoch!==accountEpoch) return;
@@ -283,7 +297,8 @@ function downloadPDF(order) {
 document.addEventListener('account-ready', () => {
   calculateButton.disabled=false;loadOrders();
   const params=new URLSearchParams(location.search), payment=params.get('payment');
-  if(payment==='return'||payment==='cancel') report('Card payments are currently unavailable. Choose EFT or eligible cash for your booking.');
+  if(payment==='paystack_return') {report('Paystack returned you to SwiftHaul. We are checking the verified payment notification; refresh your bookings shortly.');loadOrders();}
+  if(payment==='return'||payment==='cancel') report('Payment checkout was cancelled. You can retry Paystack from the booking card.');
   if(payment){history.replaceState({},'',location.pathname+location.hash);}
 });
 document.addEventListener('account-cleared', () => {accountEpoch++;loadVersion++; ready = false;form.reset();toggleBookingOptions();previewLoad();resetQuote(); container.replaceChildren(); document.getElementById('legacy-import').hidden=true; document.getElementById('submit').disabled = true;});
