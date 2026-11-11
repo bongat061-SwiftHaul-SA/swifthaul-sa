@@ -14,30 +14,8 @@
     const brand = topbar.querySelector('.wordmark');
     if (brand) brand.innerHTML = '<span class="premium-mark">S</span><span class="premium-brand-name">SWIFTHAUL</span><small class="app-tag">'+(app === 'customer' ? 'CUSTOMER' : 'DRIVER')+'</small>';
   }
-  const title = heading.querySelector('h1');
-  const subtitle = heading.querySelector('.subtle');
   heading.classList.add('premium-hero');
-  if (app === 'customer') {
-    if (title) title.textContent = 'Move anything.\nWe’ll take it there.';
-    if (subtitle) subtitle.textContent = 'Reliable delivery, from your door to its destination.';
-    const cta = document.createElement('a');
-    cta.className = 'premium-main-cta';
-    cta.href = '#new-delivery';
-    cta.innerHTML = '<span><small>READY WHEN YOU ARE</small><strong>Book a delivery</strong></span><b aria-hidden="true">→</b>';
-    heading.append(cta);
-    const quick = document.createElement('section');
-    quick.className = 'premium-quick-actions';
-    quick.setAttribute('aria-label','Quick actions');
-    quick.innerHTML = '<a href="#new-delivery"><span class="quick-icon">＋</span><strong>New delivery</strong><small>Book a pickup</small></a><a href="#bookings"><span class="quick-icon">↗</span><strong>Track delivery</strong><small>View activity</small></a><a href="wallet.html"><span class="quick-icon">R</span><strong>Wallet</strong><small>Balance & rewards</small></a><a href="settings.html"><span class="quick-icon">⌘</span><strong>Account</strong><small>Your details</small></a>';
-    heading.after(quick);
-    const booking = document.getElementById('new-delivery');
-    const orders = document.getElementById('bookings');
-    booking?.classList.add('premium-primary-section');
-    orders?.classList.add('premium-secondary-section');
-    // Keep the page-controller links intact so customer navigation stays in-app.
-  } else {
-    if (title) title.textContent = 'Your day. Your deliveries.';
-    if (subtitle) subtitle.textContent = 'Stay ready, manage dispatches and keep track of your earnings.';
+  if (app === 'driver') {
     const stats = document.getElementById('earnings');
     const dispatch = document.getElementById('dispatches');
     const online = document.getElementById('driver-online-toggle');
@@ -60,7 +38,6 @@
     payout?.classList.add('premium-secondary-section');
     if (status) status.classList.add('premium-status-copy');
   }
-  nav.classList.add('premium-bottom-nav');
   nav.setAttribute('aria-label', app === 'customer' ? 'Customer navigation' : 'Driver navigation');
   const footer = workspace.querySelector('.footer');
   if (footer) footer.classList.add('premium-footer');
