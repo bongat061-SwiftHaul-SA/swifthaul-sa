@@ -6,7 +6,7 @@ const edge = fs.readFileSync('supabase/functions/account-pin/index.ts', 'utf8');
 const migration = fs.readFileSync('supabase/migrations/20261111103000_add_customer_driver_login_pins.sql', 'utf8');
 
 assert.match(migration, /private\.account_login_pins/);
-assert.match(migration, /extensions\.crypt\(p_pin,extensions\.gen_salt\('bf',12\)\)/);
+assert.match(migration, /extensions\.crypt\(p_pin,\s*extensions\.gen_salt\('bf',\s*12\)\)/);
 assert.match(migration, /v_attempts>=5/);
 assert.match(migration, /interval '15 minutes'/);
 assert.match(migration, /revoke all on function public\.verify_account_login_pin[\s\S]*from public,anon,authenticated/i);
