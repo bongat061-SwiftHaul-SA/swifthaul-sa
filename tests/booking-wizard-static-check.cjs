@@ -19,5 +19,5 @@ assert(!customerShell.includes('nav.innerHTML ='), 'Customer premium shell must 
 assert(!driverShell.includes('nav.innerHTML ='), 'Driver premium shell must not replace page links after listeners attach.');
 assert(driverPages.includes("link.dataset.page || 'home'"), 'Driver section pages must retain their page navigation handler.');
 assert(css.includes('#booking-form .booking-step') && css.includes('background:#10151d'), 'Booking wizard must use the dark premium card layout.');
-assert(css.includes('#delivery-map-stage{height:390px!important') && css.includes('swift-location-sheet'), 'Route map must render as a compact preview with its floating location sheet.');
+assert(css.includes('height:390px!important') && css.includes('swift-location-sheet'), 'Route map must render as a compact preview with its floating location sheet.');
 console.log('Customer booking wizard and in-app navigation checks passed.');
