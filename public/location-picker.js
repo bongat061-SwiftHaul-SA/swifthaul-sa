@@ -324,7 +324,7 @@
     reverseLookupSequence.set(input,requestId);
     try{
       const url='https://nominatim.openstreetmap.org/reverse?'+new URLSearchParams({format:'jsonv2',addressdetails:'1',lat:String(lat),lon:String(lng),zoom:'18','accept-language':'en'});
-      const response=await fetch(url,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(9000)});
+      const response=await (window.swiftHaulNominatimFetch ? window.swiftHaulNominatimFetch(url,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(9000)}) : fetch(url,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(9000)}));
       if(!response.ok)throw new Error('Nominatim reverse lookup unavailable');
       const result=await response.json(),p=result?.address||{};
       const coords=[Number(result?.lon),Number(result?.lat)];
