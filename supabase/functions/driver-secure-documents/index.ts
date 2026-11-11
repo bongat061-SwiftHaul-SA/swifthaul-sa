@@ -31,7 +31,7 @@ Deno.serve(async(req:Request)=>{
   await db.from("driver_profiles").update({onboarding_status:"pending_review",verification_status:"pending",can_go_online:false,is_online:false,availability_status:"offline"}).eq("user_id",t.driver_user_id);
   return reply(201,{uploaded:true,document_id:doc.id,verification_status:"pending"});
  }
- const bearer=(req.headers.get("Authorization")||"").match(/^Bearer\\s+(.+)$/i)?.[1];
+ const bearer=(req.headers.get("Authorization")||"").match(/^Bearer\s+(.+)$/i)?.[1];
  if(!bearer)return reply(401,{error:"missing_bearer_token"});
  const auth=createClient(url,anon,{auth:{persistSession:false,autoRefreshToken:false}});
  const {data:u,error:authError}=await auth.auth.getUser(bearer);
