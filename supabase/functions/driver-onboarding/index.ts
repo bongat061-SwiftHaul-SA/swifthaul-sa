@@ -19,11 +19,37 @@ Deno.serve(async(req:Request)=>{
  const {data:p,error:pe}=await db.from("user_profiles").select("role,account_status").eq("id",u.user.id).maybeSingle();
  if(pe||p?.role!=="driver"||p?.account_status!=="active")return reply(403,{error:"active_driver_account_required"});
  if(req.method==="GET"){
-  const {data,error}=await db.from("driver_onboarding_applications").select("identity_type,verification_status,submitted_at,review_note").eq("driver_user_id",u.user.id).maybeSingle();
+  const {data:application,error}=await db.from("driver_onboarding_applications").select("identity_type,verification_status,submitted_at,review_note").eq("driver_user_id",u.user.id).maybeSingle();
   if(error)return reply(500,{error:"application_status_unavailable"});
-  return reply(200,{application:data||null});
+  const {data:documents, error:documentsError}=await db.from("driver_documents").select("id,document_type,verification_status,expiry_date,issued_at,rejection_reason,reviewed_at").eq("driver_user_id",u.user.id).in("verification_status",["rejected","expired"]).order("created_at",{ascending:false});
+  if(documentsError)return reply(500,{error:"driver_document_status_unavailable"});
+  const {data:notifications,error:notificationError}=await db.from("driver_onboarding_notifications").select("id,title,message,notification_type,created_at,read_at").eq("driver_user_id",u.user.id).order("created_at",{ascending:false}).limit(20);
+  if(notificationError)return reply(500,{error:"driver_notifications_unavailable"});
+  return reply(200,{application:application||null,rejected_documents:documents||[],notifications:notifications||[]});
  }
  const form=await req.formData();
+ const action=text(form.get("action"),50);
+ if(action==="replace_document"){
+  const type=text(form.get("document_type"),50),file=form.get("file"),expiry=text(form.get("expiry_date"),10),issued=text(form.get("issued_at"),10);
+  if(!docTypes.has(type))return reply(400,{error:"unsupported_document_type"});
+  if(!(file instanceof File)||file.size<1||file.size>10485760||!allowed.has(file.type))return reply(400,{error:"upload_a_valid_document_file"});
+  const {data:rejected,error:rejectedError}=await db.from("driver_documents").select("id").eq("driver_user_id",u.user.id).eq("document_type",type).in("verification_status",["rejected","expired"]).limit(1);
+  if(rejectedError)return reply(500,{error:"rejected_document_lookup_failed"});
+  if(!rejected?.length)return reply(409,{error:"document_not_marked_for_reupload"});
+  const expiring=["licence_front","licence_back","vehicle_licence_disc","vehicle_insurance","prdp","passport","work_permit","enatis_certificate","fleet_lease_agreement"].includes(type);
+  if(expiring&&(!validDate(expiry)||Date.parse(expiry+"T00:00:00")<=Date.now()))return reply(400,{error:"replacement_document_expiry_must_be_in_future"});
+  if(type==="proof_of_address"&&(!validDate(issued)||Date.now()-Date.parse(issued+"T00:00:00")>92*86400000||Date.parse(issued+"T00:00:00")>Date.now()))return reply(400,{error:"proof_of_residence_must_be_under_three_months_old"});
+  const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,"_").slice(-100)||"document",storagePath=u.user.id+"/onboarding/"+type+"/"+crypto.randomUUID()+"-"+safe;
+  const {error:uploadError}=await db.storage.from("driver-application-documents").upload(storagePath,new Uint8Array(await file.arrayBuffer()),{contentType:file.type,upsert:false});
+  if(uploadError)return reply(500,{error:"replacement_document_upload_failed"});
+  const {data:created,error:createError}=await db.from("driver_documents").insert({driver_user_id:u.user.id,document_type:type,storage_path:storagePath,file_url:storagePath,original_name:safe,content_type:file.type,file_size_bytes:file.size,expiry_date:expiring?expiry||null:null,issued_at:type==="proof_of_address"?issued:null,verification_status:"pending",review_status:"pending"}).select("id").single();
+  if(createError){await db.storage.from("driver-application-documents").remove([storagePath]);return reply(500,{error:"replacement_document_record_failed"});}
+  await db.from("driver_profiles").update({onboarding_status:"pending_review",verification_status:"pending",can_go_online:false,is_online:false,availability_status:"offline"}).eq("user_id",u.user.id);
+  await db.from("driver_onboarding_applications").update({verification_status:"pending",updated_at:new Date().toISOString()}).eq("driver_user_id",u.user.id);
+  await db.from("driver_verification_audit").insert({driver_user_id:u.user.id,document_id:created.id,event_type:"replacement_document_submitted",details:{document_type:type}});
+  await db.from("driver_onboarding_notifications").insert({driver_user_id:u.user.id,document_id:created.id,notification_type:"replacement_submitted",title:"Replacement document received",message:"Your replacement "+type.replaceAll("_"," ")+" has been submitted for review."});
+  return reply(201,{submitted:true,document_id:created.id,status:"pending"});
+ }
  const identityType=text(form.get("identity_type"),30),fullName=text(form.get("full_name"),120),phone=text(form.get("phone"),20),email=text(form.get("email"),254);
  const licenceCode=text(form.get("licence_code"),5),licenceExpiry=text(form.get("licence_expiry"),10),vehicleType=text(form.get("vehicle_type"),30);
  const plate=text(form.get("registration_plate"),20),year=Number(text(form.get("vehicle_year"),4));
@@ -32,7 +58,7 @@ Deno.serve(async(req:Request)=>{
  const requiredFiles=identityType==="sa_citizen"?["id_front","id_back","profile_selfie"]:["passport","work_permit"];
  requiredFiles.push("licence_front","licence_back","vehicle_licence_disc","vehicle_insurance","proof_of_address");
 if(!["sa_citizen","foreign_national"].includes(identityType))return reply(400,{error:"valid_identity_type_required"});
- if(text(form.get("background_consent"),5)!=="true")return reply(400,{error:"background_verification_consent_required"});
+ if(text(form.get("background_consent"),5)!=="on")return reply(400,{error:"background_verification_consent_required"});
  if(email.toLowerCase()!==(u.user.email||"").toLowerCase())return reply(400,{error:"application_email_must_match_signed_in_account"});
  if(!validDate(dob)||Date.parse(dob+"T00:00:00")>Date.now())return reply(400,{error:"valid_date_of_birth_required"});
  const birth=new Date(dob+"T00:00:00"),today=new Date();let applicantAge=today.getFullYear()-birth.getFullYear();if(today.getMonth()<birth.getMonth()||(today.getMonth()===birth.getMonth()&&today.getDate()<birth.getDate()))applicantAge--;if(applicantAge<18)return reply(400,{error:"driver_must_be_at_least_18"});
