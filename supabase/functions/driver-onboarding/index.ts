@@ -21,11 +21,12 @@ Deno.serve(async(req:Request)=>{
  if(req.method==="GET"){
   const {data:application,error}=await db.from("driver_onboarding_applications").select("identity_type,verification_status,submitted_at,review_note").eq("driver_user_id",u.user.id).maybeSingle();
   if(error)return reply(500,{error:"application_status_unavailable"});
-  const {data:documents, error:documentsError}=await db.from("driver_documents").select("id,document_type,verification_status,expiry_date,issued_at,rejection_reason,reviewed_at").eq("driver_user_id",u.user.id).in("verification_status",["rejected","expired"]).order("created_at",{ascending:false});
+  const {data:allDocuments, error:documentsError}=await db.from("driver_documents").select("id,document_type,verification_status,expiry_date,issued_at,rejection_reason,reviewed_at,created_at").eq("driver_user_id",u.user.id).order("created_at",{ascending:false});
   if(documentsError)return reply(500,{error:"driver_document_status_unavailable"});
+  const seenTypes=new Set<string>();const documents=(allDocuments||[]).filter((d:any)=>{if(seenTypes.has(d.document_type))return false;seenTypes.add(d.document_type);return ["rejected","expired"].includes(d.verification_status);});
   const {data:notifications,error:notificationError}=await db.from("driver_onboarding_notifications").select("id,title,message,notification_type,created_at,read_at").eq("driver_user_id",u.user.id).order("created_at",{ascending:false}).limit(20);
   if(notificationError)return reply(500,{error:"driver_notifications_unavailable"});
-  return reply(200,{application:application||null,rejected_documents:documents||[],notifications:notifications||[]});
+  return reply(200,{application:application||null,rejected_documents:documents,notifications:notifications||[]});
  }
  const form=await req.formData();
  const action=text(form.get("action"),50);
