@@ -11,7 +11,7 @@ Deno.serve(async(req:Request)=>{
  const db=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});
  const {data:profile,error:pe}=await db.from("user_profiles").select("role,account_status").eq("id",u.user.id).maybeSingle();
  if(pe||profile?.role!=="driver"||profile.account_status!=="active")return reply(403,{error:"active_driver_account_required"});
- const dateKey=new Intl.DateTimeFormat("en-CA",{timeZone:"Africa/Johannesburg",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+ const parts=new Intl.DateTimeFormat("en-CA",{timeZone:"Africa/Johannesburg",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());const dateKey=parts.find(p=>p.type==="year")!.value+"-"+parts.find(p=>p.type==="month")!.value+"-"+parts.find(p=>p.type==="day")!.value;
  const dayStart=new Date(dateKey+"T00:00:00+02:00");const weekday=dayStart.getUTCDay();const weekStart=new Date(dayStart);weekStart.setUTCDate(weekStart.getUTCDate()-((weekday+6)%7));
  const todayStart=dayStart.toISOString(),weekStartIso=weekStart.toISOString();
  const [{data:trips,error:te},{data:ledger,error:le},{data:payouts,error:pe2}]=await Promise.all([
