@@ -4,6 +4,15 @@ on:
     paths:
       - "apps/driver/public/driver-onboarding.js"
       - "apps/driver/public/availability.js"
+      - "apps/driver/public/operations.js"
+      - "apps/driver/public/section-pages.js"
+      - "apps/driver/public/driver-earnings.js"
+      - "apps/driver/public/index.html"
+      - "supabase/functions/driver-secure-documents/**"
+      - "supabase/functions/driver-earnings-dashboard/**"
+      - "supabase/migrations/20261111230000_driver_secure_storage_aes_gcm_and_access_audit.sql"
+      - "supabase/migrations/20261111232000_driver_trip_arrival_checkpoints.sql"
+      - "apps/driver/public/availability.js"
       - "apps/driver/public/index.html"
       - "apps/driver/public/section-pages.js"
       - "apps/driver/public/dark-premium.css"
@@ -61,6 +70,10 @@ jobs:
       - name: Check Driver and Company Admin JavaScript syntax
         run: |
           node --check apps/driver/public/driver-onboarding.js
+          node --check apps/driver/public/availability.js
+          node --check apps/driver/public/operations.js
+          node --check apps/driver/public/section-pages.js
+          node --check apps/driver/public/driver-earnings.js
           node --check apps/company/public/driver-admin.js
           node --check apps/driver/public/availability.js
       - name: Validate South African onboarding, verification and eligibility gates
