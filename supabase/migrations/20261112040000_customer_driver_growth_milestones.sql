@@ -68,8 +68,8 @@ begin
  values(new.id,coalesce(new.raw_user_meta_data ->> 'full_name',''),
   case when requested_driver then coalesce(new.raw_user_meta_data ->> 'phone','') else '' end,
   case when requested_driver then 'driver' else 'customer' end,
-  nullif(btrim(new.raw_user_meta_data ->> 'city'),''),
-  nullif(btrim(new.raw_user_meta_data ->> 'province'),''));
+  nullif(left(btrim(new.raw_user_meta_data ->> 'city'),100),''),
+  nullif(left(btrim(new.raw_user_meta_data ->> 'province'),40),''));
  if requested_driver then
   insert into public.driver_profiles(user_id,phone,license_number,license_expiry,vehicle_type,vehicle_registration,verification_status,availability_status)
   values(new.id,coalesce(new.raw_user_meta_data ->> 'phone',''),
