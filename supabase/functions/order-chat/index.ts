@@ -31,7 +31,7 @@ Deno.serve(async(req:Request)=>{
   const {data,error}=await db.from("order_messages").select("id,order_id,sender_role,sender_id,message_text,attachment_url,is_read,created_at").eq("order_id",waybill).order("created_at",{ascending:true}).limit(100);
   if(error)return reply(500,{error:"chat_history_unavailable"});
   if(actorId){await db.from("order_messages").update({is_read:true}).eq("order_id",waybill).neq("sender_id",actorId).eq("is_read",false)};
-  return reply(200,{success:true,order:{waybill,status:booking.status,pickup:booking.pickup,dropoff:booking.dropoff,vehicle:booking.vehicle},messages:data||[],read_only:readOnly,archive_at:archiveAt?.toISOString()||null,server_time:new Date().toISOString()});
+  return reply(200,{success:true,order:{waybill,status:booking.status,pickup:booking.pickup,dropoff:booking.dropoff,vehicle:booking.vehicle,paid_at:booking.paid_at,price:booking.price},messages:data||[],read_only:readOnly,archive_at:archiveAt?.toISOString()||null,server_time:new Date().toISOString()});
  }
  if(readOnly)return reply(423,{error:"chat_archived",archive_at:archiveAt?.toISOString()||null});
  const message=typeof body.message_text==="string"?body.message_text.trim():"";
