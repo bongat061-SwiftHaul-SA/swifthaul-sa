@@ -39,6 +39,13 @@ Deno.serve(async (req: Request) => {
     return reply(200,{success:true,notifications:data || []});
   }
 
+  if (body.action === "process_queue") {
+    const {data:queued,error}=await db.from("notification_logs").select("*").eq("status","queued").lte("next_attempt_at",new Date().toISOString()).order("created_at",{ascending:true}).limit(25);
+    if(error)return reply(500,{error:"notification_queue_lookup_failed"});
+    for(const row of queued||[])await sendQueued(db,row);
+    return reply(200,{success:true,processed:(queued||[]).length});
+  }
+
   if (body.action === "retry") {
     if (isInternal) return reply(403,{error:"admin_session_required"});
     const id = clean(body.id,80);
