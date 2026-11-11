@@ -27,12 +27,14 @@
   const submit = form.querySelector('#submit');
   const counterSubmit = form.querySelector('#submit-counter-offer');
   const message = form.querySelector('#message');
+  const pageHeading = document.querySelector('#workspace .page-heading h1');
+  const pageDescription = document.querySelector('#workspace .page-heading .subtle');
   if (![pickup,dropoff,recipient,parcel,vehicle,payment,assistance,protection,calculate,quote,submit,counterSubmit].every(Boolean)) return;
 
   const oldHeading = form.querySelector(':scope > h2');
   oldHeading?.remove();
   const steps = [
-    {title:'Route & locations',hint:'Choose pickup and drop-off addresses, then confirm both exact map pins and Plus Codes.'},
+    {title:'Confirm pickup & drop-off',hint:'Choose both addresses, place each pin at the exact entrance and verify the Plus Codes. Continue to the separate Book a delivery page when both pins are confirmed.'},
     {title:'Parcel details',hint:'Describe your load, review the recommended vehicle and calculate your mapped fare.'},
     {title:'Assistance & protection',hint:'Choose payment and optional handling, then review the customer protection terms.'},
     {title:'Review & book',hint:'Check your delivery details, fare and any counteroffer before submitting.'}
@@ -119,9 +121,11 @@
     hint.textContent=steps[active].hint;
     progress.forEach((bar,i)=>bar.classList.toggle('is-complete',i<=active));
     back.hidden=active===0;
-    next.hidden=active===3;
+    next.hidden=active===0 || active===3;
     next.textContent=active===2?'Review booking':'Continue';
     if(active===3)updateReview();
+    if(pageHeading)pageHeading.textContent=active===0?'Confirm pickup & drop-off.':'Book a delivery.';
+    if(pageDescription)pageDescription.textContent=active===0?'Choose both addresses and confirm the exact map pins before continuing.':'Add your parcel details, review the fare and complete your booking request.';
     controls.hidden=false;
     shell.scrollIntoView({behavior:'smooth',block:'start'});
   };
@@ -129,6 +133,15 @@
     const controls=[...panes[active].querySelectorAll('input,select,textarea')].filter(el=>!el.disabled && el.type!=='hidden');
     const invalid=controls.find(el=>!el.checkValidity());
     if(invalid){invalid.reportValidity();return false;}
+    if(active===0){
+      const complete = ['pickup','dropoff'].every(key => {
+        const lat = form.querySelector('[name="'+key+'_latitude"]')?.value;
+        const lng = form.querySelector('[name="'+key+'_longitude"]')?.value;
+        const code = form.querySelector('[name="'+key+'_plus_code"]')?.value;
+        return lat && lng && code;
+      });
+      if(!complete){announce('Confirm both exact map pins and Plus Codes before continuing.');return false;}
+    }
     if(active===1){
       if(!(Number(form.elements.weight.value)>0)){announce('Please estimate your parcel weight and dimensions before continuing.');return false;}
       if(quote.hidden){announce('Calculate the mapped route and fare before continuing.');calculate.focus();return false;}
@@ -138,6 +151,10 @@
   next.addEventListener('click',()=>{
     if(!validateStep())return;
     show(active+1);
+  });
+  document.addEventListener('swift-haul:locations-confirmed',()=>{
+    if(active!==0 || !validateStep())return;
+    show(1);
   });
   back.addEventListener('click',()=>show(active-1));
   form.addEventListener('submit',event=>{
