@@ -1,0 +1,41 @@
+name: Validate South African Driver Onboarding
+on:
+  pull_request:
+    paths:
+      - "apps/driver/public/driver-onboarding.js"
+      - "apps/driver/public/availability.js"
+      - "apps/driver/public/index.html"
+      - "apps/driver/public/dark-premium.css"
+      - "apps/company/public/driver-admin.js"
+      - "supabase/functions/driver-onboarding/**"
+      - "supabase/functions/driver-admin/**"
+      - "supabase/functions/dispatch-offers/**"
+      - "supabase/migrations/20261111180000_south_african_driver_onboarding.sql"
+      - "tests/driver-onboarding-static-check.cjs"
+  push:
+    branches:
+      - release/dark-premium-mainline-candidate
+    paths:
+      - "apps/driver/public/driver-onboarding.js"
+      - "apps/company/public/driver-admin.js"
+      - "supabase/functions/driver-onboarding/**"
+      - "supabase/functions/driver-admin/**"
+      - "supabase/migrations/20261111180000_south_african_driver_onboarding.sql"
+      - "tests/driver-onboarding-static-check.cjs"
+permissions:
+  contents: read
+jobs:
+  driver-onboarding:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check Driver and Company Admin JavaScript syntax
+        run: |
+          node --check apps/driver/public/driver-onboarding.js
+          node --check apps/company/public/driver-admin.js
+          node --check apps/driver/public/availability.js
+      - name: Validate South African onboarding and approval gates
+        run: node tests/driver-onboarding-static-check.cjs
