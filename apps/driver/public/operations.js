@@ -8,9 +8,12 @@ if (app === 'driver' || app === 'company') {
   const refresh = document.createElement('button');
   refresh.type = 'button';
   refresh.textContent = 'Refresh deliveries';
+  const offerPanel = document.createElement('section');
+  offerPanel.className = 'driver-stacked-offers';
+  offerPanel.setAttribute('aria-label', 'Incoming delivery offers');
   const list = document.createElement('div');
   list.className = 'operations-list';
-  panel.replaceChildren(heading, refresh, message, list);
+  panel.replaceChildren(heading, refresh, message, offerPanel, list);
 
   let active = false;
   let requestNumber = 0;
@@ -34,6 +37,63 @@ if (app === 'driver' || app === 'company') {
     return data;
   }
 
+  async function loadIncomingOffers(currentOrders = []) {
+    if (app !== 'driver') return;
+    offerPanel.replaceChildren();
+    try {
+      const client = window.swiftHaulSupabase;
+      const { data, error } = await client.functions.invoke('dispatch-offers');
+      if (error || data?.error) throw new Error(data?.error || error?.message || 'Unable to load offers.');
+      const offers = data?.offers || [];
+      if (!offers.length) return;
+      const heading = document.createElement('h3');
+      heading.textContent = 'Incoming delivery requests';
+      offerPanel.append(heading);
+      const currentNet = currentOrders.filter(o => !['delivered','failed','cancelled'].includes(o.status)).reduce((sum,o)=>sum+Number(o.price||0)*0.75,0);
+      for (const offer of offers) {
+        const booking = Array.isArray(offer.customer_bookings) ? offer.customer_bookings[0] : offer.customer_bookings || {};
+        const card = document.createElement('article');
+        card.className = 'order driver-offer-card';
+        const title = document.createElement('h4');
+        title.textContent = offer.add_on_order ? 'Add-On Order' : 'New delivery request';
+        const payout = document.createElement('p');
+        payout.className = 'driver-offer-payout';
+        payout.textContent = (offer.add_on_order ? 'Add-On Order · ' : 'Net payout · ') + money(offer.net_payout_zar);
+        const route = document.createElement('p');
+        route.textContent = (booking.pickup || 'Pickup') + ' → ' + (booking.dropoff || 'Drop-off');
+        const detail = document.createElement('p');
+        detail.textContent = offer.add_on_order
+          ? (offer.extra_detour_km == null ? 'Matches your active route corridor' : '+' + Number(offer.extra_detour_km).toFixed(1) + ' km estimated detour') + ' · Combined route net ' + money(currentNet + Number(offer.net_payout_zar || 0))
+          : (Number(offer.distance_meters || 0) / 1000).toFixed(1) + ' km pickup distance';
+        const actions = document.createElement('div');
+        actions.className = 'driver-offer-actions';
+        for (const [label,response] of [['Accept','accept'],['Decline','decline']]) {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.textContent = label;
+          button.addEventListener('click', async () => {
+            button.disabled = true;
+            try {
+              const result = await client.functions.invoke('dispatch-offers', { body: { action: 'respond_offer', offer_id: offer.id, response } });
+              if (result.error || result.data?.error) throw new Error(result.data?.error || result.error?.message || 'Unable to respond to offer.');
+              await load();
+            } catch (error) {
+              message.textContent = error.message || 'Unable to respond to offer.';
+              button.disabled = false;
+            }
+          });
+          actions.append(button);
+        }
+        card.append(title,payout,route,detail,actions);
+        offerPanel.append(card);
+      }
+    } catch (error) {
+      const note = document.createElement('p');
+      note.textContent = error.message || 'Incoming offers are temporarily unavailable.';
+      offerPanel.append(note);
+    }
+  }
+
   async function load() {
     if (!active || document.body.dataset.guestPreview === 'true') return;
     const current = ++requestNumber;
@@ -50,6 +110,7 @@ if (app === 'driver' || app === 'company') {
         notice.textContent = 'Your driver application is awaiting verification. Dispatch access will be enabled after approval.';
         list.append(notice);
       }
+      await loadIncomingOffers(data.orders || []);
       if (!data.orders?.length) {
         const empty = document.createElement('p');
         empty.textContent = 'No deliveries are currently assigned to this account.';
