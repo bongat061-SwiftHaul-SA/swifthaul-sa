@@ -1,0 +1,1 @@
+alter table public.customer_bookings add column if not exists arrived_pickup_at timestamptz, add column if not exists arrived_dropoff_at timestamptz;
