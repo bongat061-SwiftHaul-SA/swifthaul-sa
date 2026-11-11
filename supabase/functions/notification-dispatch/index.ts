@@ -4,7 +4,7 @@ import { adminClient, formatSAPhoneNumber, sendQueued, type NotificationEvent, t
 
 const headers = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info", "Access-Control-Allow-Methods": "POST, OPTIONS", "Content-Type": "application/json", "Cache-Control": "no-store" };
 const reply = (status: number, body: Record<string, unknown>) => new Response(JSON.stringify(body), { status, headers });
-const events = ["order_dispatched","delivery_otp","document_expiry","payout_success","document_rejected"];
+const events = ["order_dispatched","delivery_otp","document_expiry","payout_success","document_rejected","sos_alert"];
 const clean = (v: unknown, max = 200) => typeof v === "string" ? v.trim().slice(0,max) : "";
 
 Deno.serve(async (req: Request) => {
