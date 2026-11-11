@@ -62,8 +62,9 @@ Deno.serve(async (req: Request) => {
     const { data: driver } = isDriver
       ? await admin.from("driver_profiles").select("verification_status,availability_status,allow_stacked_orders,vehicle_type").eq("user_id", actorId).maybeSingle()
       : { data: null };
-    const {data:routeStops}=isDriver
-      ? await admin.from("driver_route_stops").select("id,order_id,stop_type,sequence_order,address,lat,lng,status,completed_at").eq("driver_id",actorId).order("sequence_order")
+    const activeWaybills=(orders as Array<Record<string,unknown>>).filter(order=>["assigned","accepted","picked_up","in_transit"].includes(String(order.status))).map(order=>String(order.waybill));
+    const {data:routeStops}=isDriver&&activeWaybills.length
+      ? await admin.from("driver_route_stops").select("id,order_id,stop_type,sequence_order,address,lat,lng,status,completed_at").eq("driver_id",actorId).in("order_id",activeWaybills).order("sequence_order")
       : {data:[]};
     const driverOrderCounts:Record<string,number>={};
     if(!isDriver)for(const order of orders as Array<Record<string,unknown>>){if(!["assigned","accepted","picked_up","in_transit"].includes(String(order.status)))continue;const id=String(order.driver_user_id||"");if(id)driverOrderCounts[id]=(driverOrderCounts[id]||0)+1;}
