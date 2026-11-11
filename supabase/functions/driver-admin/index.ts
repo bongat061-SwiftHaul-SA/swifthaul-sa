@@ -16,6 +16,8 @@ Deno.serve(async(req:Request)=>{
  const {data:actor,error:actorError}=await admin.from("user_profiles").select("role,account_status").eq("id",authResult.user.id).maybeSingle();
  if(actorError)return reply(500,{error:"profile_lookup_failed"});
  if(!actor||actor.role!=="admin"||actor.account_status!=="active")return reply(403,{error:"administrator_access_required"});
+ const fromB64=(v:string)=>Uint8Array.from(atob(v),x=>x.charCodeAt(0));
+ const decryptGcm=async(cipher:string|null)=>{if(!cipher)return null;const parts=cipher.split(":");if(parts.length!==3||parts[0]!=="v1")throw new Error("driver_gcm_ciphertext_invalid");const {data:keyText,error:keyError}=await admin.rpc("get_driver_pii_aes256_gcm_key");if(keyError||typeof keyText!=="string")throw new Error("driver_gcm_key_unavailable");const key=await crypto.subtle.importKey("raw",fromB64(keyText),{name:"AES-GCM"},false,["decrypt"]);const plain=await crypto.subtle.decrypt({name:"AES-GCM",iv:fromB64(parts[1]),tagLength:128},key,fromB64(parts[2]));return new TextDecoder().decode(plain);};
  const decrypt=async(cipher:string|null,fallback:unknown)=>{
   if(!cipher)return fallback??{};
   const {data,error}=await admin.rpc("decrypt_driver_pii",{p_ciphertext:cipher});
@@ -24,7 +26,7 @@ Deno.serve(async(req:Request)=>{
  };
  if(req.method==="GET"){
   const {data:drivers,error}=await admin.from("driver_profiles")
-   .select("user_id,phone,license_number,license_expiry,vehicle_type,vehicle_registration,verification_status,availability_status,created_at,onboarding_status,can_go_online,identity_type,licence_code,prdp_holder,prdp_category,prdp_expiry,vehicle_make,vehicle_model,vehicle_year,vehicle_gvm_kg,bank_name,bank_account_holder,universal_branch_code,criminal_background_clearance,criminal_background_reviewed_at,user_profiles!inner(full_name)")
+   .select("user_id,phone,license_number,license_expiry,vehicle_type,vehicle_registration,verification_status,availability_status,created_at,onboarding_status,can_go_online,identity_type,licence_code,prdp_holder,prdp_category,prdp_expiry,vehicle_make,vehicle_model,vehicle_year,vehicle_gvm_kg,bank_name,bank_account_holder,universal_branch_code,sa_id_number_aesgcm,passport_number_aesgcm,account_number_aesgcm,criminal_background_clearance,criminal_background_reviewed_at,user_profiles!inner(full_name)")
    .order("created_at",{ascending:false}).limit(200);
   if(error)return reply(500,{error:"driver_list_failed"});
   const ids=(drivers??[]).map((d:any)=>d.user_id);
@@ -34,8 +36,10 @@ Deno.serve(async(req:Request)=>{
   if(docsError)return reply(500,{error:"driver_documents_lookup_failed"});
   const grouped:Record<string,unknown[]>={};
   for(const doc of docs??[]){
-   const {data:signed,error:signedError}=await admin.storage.from("driver-application-documents").createSignedUrl(doc.storage_path,300);
+   const {data:signed,error:signedError}=await admin.storage.from("driver-application-documents").createSignedUrl(doc.storage_path,600);
    if(signedError||!signed?.signedUrl)return reply(500,{error:"driver_document_link_failed"});
+   const {error:accessLogError}=await admin.from("document_access_logs").insert({admin_id:authResult.user.id,driver_id:doc.driver_user_id,document_id:doc.id,document_type:doc.document_type,access_action:"admin_dashboard_signed_read_url"});
+   if(accessLogError)return reply(500,{error:"document_access_audit_failed"});
    (grouped[doc.driver_user_id]??=[]).push({id:doc.id,document_type:doc.document_type,original_name:doc.original_name,
     review_status:doc.review_status,verification_status:doc.verification_status,expiry_date:doc.expiry_date,issued_at:doc.issued_at,
     rejection_reason:doc.rejection_reason,review_note:doc.review_note,reviewed_by:doc.reviewed_by,reviewed_at:doc.reviewed_at,
@@ -49,11 +53,13 @@ Deno.serve(async(req:Request)=>{
   for(const app of apps??[]){
    const identity=await decrypt(app.identity_details_encrypted,app.identity_details);
    const banking=await decrypt(app.banking_details_encrypted,app.banking_details);
+   const profile=(drivers??[]).find((d:any)=>d.user_id===app.driver_user_id);
+   if(profile){const id=await decryptGcm(profile.sa_id_number_aesgcm),passport=await decryptGcm(profile.passport_number_aesgcm),account=await decryptGcm(profile.account_number_aesgcm);if(id)identity.id_number=id;if(passport)identity.passport_number=passport;if(account)banking.account_number=account;}
    appMap.set(app.driver_user_id,{driver_user_id:app.driver_user_id,identity_type:app.identity_type,identity_details:identity,
     licence_details:app.licence_details,vehicle_details:app.vehicle_details,banking_details:banking,
     verification_status:app.verification_status,submitted_at:app.submitted_at,review_note:app.review_note});
   }
-  return reply(200,{drivers:(drivers??[]).map((d:any)=>({...d,documents:grouped[d.user_id]??[],application:appMap.get(d.user_id)??null}))});
+  return reply(200,{drivers:(drivers??[]).map((d:any)=>{const {sa_id_number_aesgcm,passport_number_aesgcm,account_number_aesgcm,...safe}=d;return {...safe,documents:grouped[d.user_id]??[],application:appMap.get(d.user_id)??null};})});
  }
  const raw=await req.text();if(raw.length>8192)return reply(413,{error:"request_too_large"});
  let body:Record<string,unknown>;try{body=JSON.parse(raw);}catch{return reply(400,{error:"invalid_json"});}
