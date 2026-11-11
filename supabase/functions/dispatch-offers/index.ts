@@ -50,12 +50,8 @@ Deno.serve(async req => {
       await db.from("driver_delivery_offers").update({status:"declined",responded_at:new Date().toISOString()}).eq("id",offer.id).eq("status","offered");
       return reply(200,{declined:true});
     }
-    const {data:booking,error:be}=await db.from("customer_bookings").select("waybill,status,driver_user_id,refunded_at").eq("waybill",offer.waybill).maybeSingle();
-    if(be||!booking||booking.status!=="pending"||booking.driver_user_id||booking.refunded_at) return reply(409,{error:"delivery_no_longer_available"});
-    const {data:updated,error:ue}=await db.from("customer_bookings").update({driver_user_id:actor,assigned_driver:actor,status:"assigned"}).eq("waybill",offer.waybill).eq("status","pending").is("driver_user_id",null).select("waybill").maybeSingle();
-    if(ue||!updated) return reply(409,{error:"delivery_already_assigned"});
-    await db.from("driver_delivery_offers").update({status:"accepted",responded_at:new Date().toISOString()}).eq("id",offer.id);
-    await db.from("driver_delivery_offers").update({status:"cancelled",responded_at:new Date().toISOString()}).eq("waybill",offer.waybill).eq("status","offered").neq("id",offer.id);
+    const {data:accepted,error:acceptError}=await db.rpc("accept_driver_delivery_offer",{p_driver_user_id:actor,p_waybill:offer.waybill,p_offer_id:offer.id});
+    if(acceptError||!accepted?.accepted) return reply(409,{error:acceptError?.message||"delivery_already_assigned"});
     await db.from("delivery_status_events").insert({waybill:offer.waybill,actor_user_id:actor,previous_status:"pending",new_status:"assigned",notes:"Accepted driver dispatch offer"});
     return reply(200,{accepted:true,waybill:offer.waybill});
   }
@@ -85,11 +81,11 @@ Deno.serve(async req => {
     const pointSegmentDistanceKm=(p:any,a:any,b:any)=>{const lat0=p.lat*Math.PI/180,scaleX=Math.cos(lat0)*111.32,scaleY=110.574;const x=(v:any)=>v.lng*scaleX,y=(v:any)=>v.lat*scaleY;const px=x(p),py=y(p),ax=x(a),ay=y(a),bx=x(b),by=y(b);const dx=bx-ax,dy=by-ay,t=Math.max(0,Math.min(1,((px-ax)*dx+(py-ay)*dy)/(dx*dx+dy*dy||1)));return Math.hypot(px-(ax+t*dx),py-(ay+t*dy));};
     const withinCorridor=(driverId:string)=>{const stops=(stopsByDriver.get(driverId)||[]).filter(x=>x.lat!=null&&x.lng!=null);if(stops.length<2)return false;const points=[{lat:Number(booking.pickup_latitude),lng:Number(booking.pickup_longitude)},{lat:Number(booking.dropoff_latitude),lng:Number(booking.dropoff_longitude)}];if(points.some(p=>!Number.isFinite(p.lat)||!Number.isFinite(p.lng)))return false;return points.every(p=>stops.slice(0,-1).some((a,i)=>pointSegmentDistanceKm(p,a,stops[i+1])<=3));};
     const eligible=(drivers??[]).filter(d=>{
-      if(excluded.has(d.user_id)||!d.is_online||!d.allow_stacked_orders)return false;
+      if(excluded.has(d.user_id)||!d.is_online)return false;
       if(booking.vehicle&&vehicleType(String(d.vehicle_type||""))!==vehicleType(String(booking.vehicle)))return false;
       const count=(activeByDriver.get(d.user_id)||[]).length,cap=capacity.get(vehicleType(String(d.vehicle_type||"")))||1;
       if(count>=cap)return false;
-      if(count>0&&!withinCorridor(d.user_id))return false;
+      if(count>0&&(!d.allow_stacked_orders||!withinCorridor(d.user_id)))return false;
       return true;
     });
     if(!eligible.length) return reply(404,{error:"no_eligible_online_drivers"});
