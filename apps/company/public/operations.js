@@ -50,7 +50,7 @@ if (app === 'driver' || app === 'company') {
         empty.textContent = 'No deliveries are currently assigned to this account.';
         list.append(empty);
       }
-      for (const order of data.orders || []) render(order);
+      for (const order of data.orders || []) render(order, data.driverOrderCounts || {}, data.orders || []);
       message.textContent = '';
     } catch (error) {
       if (current === requestNumber) message.textContent = error.message || 'Unable to load deliveries.';
@@ -81,7 +81,7 @@ if (app === 'driver' || app === 'company') {
     return button;
   }
 
-  function render(order) {
+  function render(order, driverOrderCounts = {}, allOrders = []) {
     const card = document.createElement('article');
     card.className = 'order';
   card.dataset.deliveryStatus = order.status || '';
@@ -97,6 +97,15 @@ if (app === 'driver' || app === 'company') {
       order.paid_at ? 'Paid' : 'Payment pending'
     ].filter(Boolean).join(' · ');
     card.append(title, route, summary);
+    if(app==='company'&&order.driver_user_id&&Number(driverOrderCounts[order.driver_user_id]||0)>1){
+      const count=Number(driverOrderCounts[order.driver_user_id]);
+      const badge=document.createElement('span');badge.className='driver-multi-order-badge';badge.textContent=count+' Orders';card.append(badge);
+      const inspector=document.createElement('details');inspector.className='driver-stacked-inspector';
+      const summaryLabel=document.createElement('summary');summaryLabel.textContent='Open driver inspector · stacked deliveries';inspector.append(summaryLabel);
+      const stacked=allOrders.filter(item=>item.driver_user_id===order.driver_user_id&&!['delivered','failed','cancelled'].includes(item.status));
+      for(const item of stacked){const row=document.createElement('p');row.textContent=item.waybill+' · '+item.pickup+' → '+item.dropoff+' · '+statusLabel(item.status);inspector.append(row);}
+      card.append(inspector);
+    }
     if (app === 'company' && order.counter_offer != null) {
       const offer = document.createElement('section');
       offer.className = 'counteroffer-review';
