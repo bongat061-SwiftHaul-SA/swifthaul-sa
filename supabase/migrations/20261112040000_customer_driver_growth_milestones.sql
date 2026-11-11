@@ -56,3 +56,27 @@ set is_unlocked=true,unlocked_at=now(),
  end
 from counts
 where not gm.is_unlocked and ((gm.category='customers' and gm.target_count<=counts.customers) or (gm.category='drivers' and gm.target_count<=counts.drivers) or (gm.category='combined_users' and gm.target_count<=counts.combined));
+
+-- Keep profile location fields in sync with signup metadata for the admin feed.
+create or replace function public.handle_new_auth_user()
+returns trigger language plpgsql set search_path=''
+as $function$
+declare requested_driver boolean := coalesce(new.raw_user_meta_data ->> 'app_type','')='driver';
+begin
+ insert into public.user_profiles(id,full_name,phone,role,city,province)
+ values(new.id,coalesce(new.raw_user_meta_data ->> 'full_name',''),
+  case when requested_driver then coalesce(new.raw_user_meta_data ->> 'phone','') else '' end,
+  case when requested_driver then 'driver' else 'customer' end,
+  nullif(btrim(new.raw_user_meta_data ->> 'city'),''),
+  nullif(btrim(new.raw_user_meta_data ->> 'province'),''));
+ if requested_driver then
+  insert into public.driver_profiles(user_id,phone,license_number,license_expiry,vehicle_type,vehicle_registration,verification_status,availability_status)
+  values(new.id,coalesce(new.raw_user_meta_data ->> 'phone',''),
+   nullif(new.raw_user_meta_data ->> 'license_number',''),
+   nullif(new.raw_user_meta_data ->> 'license_expiry','')::date,
+   nullif(new.raw_user_meta_data ->> 'vehicle_type',''),
+   nullif(new.raw_user_meta_data ->> 'vehicle_registration',''),'pending','offline');
+ end if;
+ return new;
+end;
+$function$;
