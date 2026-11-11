@@ -124,6 +124,17 @@ async function refreshPinPanel(session) {
   pinPanel.querySelector('[data-pin-edit]').textContent=data?.has_pin?'Change PIN':'Create 6-digit PIN';
 }
 
+async function sendSignInNotification(session) {
+  if (!session?.access_token) return;
+  try {
+    const { data, error } = await supabase.functions.invoke('account-signin-notify', {
+      body: {}, headers: { Authorization: 'Bearer ' + session.access_token }
+    });
+    if (error) console.warn('Sign-in security email could not be sent:', error.message);
+    else if (data?.email_sent !== true) console.warn('Sign-in security email pending:', data?.reason || 'email provider unavailable');
+  } catch (error) { console.warn('Sign-in security email pending:', error?.message || error); }
+}
+
 async function validateAccount(session) {
   const { data, error } = await supabase.functions.invoke('account-me', {
     method: 'GET',
@@ -170,7 +181,7 @@ form.addEventListener('submit', async event => {
       const {data:pinData,error:pinError}=await supabase.functions.invoke('account-pin',{body:{action:'login',app_type:'company',email:pinAccountEmail,pin:pinInput.value}});
       if(pinError)throw new Error(pinData?.error||pinError.message||'PIN sign-in failed.');
       const {data:sessionData,error:sessionError}=await supabase.auth.setSession(pinData.session);
-      if(sessionError)throw sessionError;pinInput.value='';await validateAccount(sessionData.session);return;
+      if(sessionError)throw sessionError;pinInput.value='';await validateAccount(sessionData.session);await sendSignInNotification(sessionData.session);return;
     }
     if (mode === 'recovery') {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -217,6 +228,7 @@ form.addEventListener('submit', async event => {
     if (error) throw error;
     form.elements.password.value = '';
     await validateAccount(data.session);
+    await sendSignInNotification(data.session);
   } catch (error) {
     status.textContent = error?.message || 'Unable to connect. Please try again.';
   } finally {
