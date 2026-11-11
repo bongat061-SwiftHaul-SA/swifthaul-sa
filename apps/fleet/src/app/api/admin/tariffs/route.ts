@@ -55,10 +55,13 @@ export async function PUT(request: NextRequest) {
       if(!Number.isFinite(rate)||rate<0||rate>100)return NextResponse.json({error:"VAT rate must be between 0 and 100."},{status:400});
       if(v.isVatRegistered&&(!vat||!String(v.legalEntityName||"").trim()||!String(v.registeredAddress||"").trim()))return NextResponse.json({error:"VAT registration requires a legal entity name, 10-digit VAT number and registered address."},{status:400});
       const [previous]=await db.select().from(tariffSettings).orderBy(desc(tariffSettings.updatedAt)).limit(1);
-      const patch={legalEntityName:String(v.legalEntityName||"").trim()||null,c ipcRegNumber:undefined};
-      const values={legalEntityName:String(v.legalEntityName||"").trim()||null,c ipcRegNumber:undefined};
-      const update={legalEntityName:values.legalEntityName,c ipcRegNumber:undefined};
-      return NextResponse.json({error:"Tax profile handler placeholder."},{status:501});
+      const values={legalEntityName:String(v.legalEntityName||"").trim()||null,c ipcRegNumber:null};
+      const patch={legalEntityName:values.legalEntityName,c ipcRegNumber:values.c ipcRegNumber};
+      let updated;
+      if(previous)[updated]=await db.update(tariffSettings).set({...patch,c ipcRegNumber: v.cipcRegNumber||null,isVatRegistered:Boolean(v.isVatRegistered),vatNumber:vat||null,vatRatePercent:String(rate),registeredAddress:String(v.registeredAddress||"").trim()||null,updatedBy:actor,updatedAt:new Date()}).where(eq(tariffSettings.id,previous.id)).returning();
+      else [updated]=await db.insert(tariffSettings).values({...patch,c ipcRegNumber:v.cipcRegNumber||null,isVatRegistered:Boolean(v.isVatRegistered),vatNumber:vat||null,vatRatePercent:String(rate),registeredAddress:String(v.registeredAddress||"").trim()||null,updatedBy:actor}).returning();
+      await db.insert(tariffAuditLogs).values({changedBy:actor,entityType:"tariff_settings",entityId:updated.id,action:previous?"update":"insert",previousValues:previous||null,newValues:updated});
+      return NextResponse.json({item:updated});
     }
     if (body.kind === "surge") {
       const v = body.values || {};
