@@ -45,6 +45,8 @@
     }
     if (heading) heading.textContent = page.title;
     if (description) description.textContent = page.description;
+    const navCurrent = nav?.closest('.workspace-navigation')?.querySelector('[data-nav-current]');
+    if (navCurrent) navCurrent.textContent = page.title.replace(/\.$/,'');
     nav?.querySelectorAll('a').forEach(link => {
       const selected = link.dataset.page === key;
       link.classList.toggle('is-active', selected);
@@ -52,9 +54,10 @@
     });
     document.title = 'SwiftHaul SA · Driver · ' + page.title.replace(/\.$/,'');
     if (updateUrl) history.pushState({ page:key }, '', '?page=' + encodeURIComponent(key));
+    nav?.closest('details')?.removeAttribute('open');
     window.scrollTo({ top:0, behavior:'instant' });
   }
-  nav?.querySelectorAll('a').forEach(link => {
+  root.querySelectorAll('a[data-page]').forEach(link => {
     link.addEventListener('click', event => {
       event.preventDefault();
       render(link.dataset.page || 'home', true);
