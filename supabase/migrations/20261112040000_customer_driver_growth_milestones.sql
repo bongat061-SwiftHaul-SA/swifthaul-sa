@@ -81,3 +81,5 @@ begin
  return new;
 end;
 $function$;
+
+create index if not exists customer_bookings_paid_owner_growth_idx on public.customer_bookings(owner_hash,paid_at) where paid_at is not null and refunded_at is null;
