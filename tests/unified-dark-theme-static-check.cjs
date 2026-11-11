@@ -35,4 +35,14 @@ assert.match(companyMap, /unified-workspace-dark\.css/);
 assert.match(companyTheme, /body\[data-app="company"\] #auth-screen/);
 assert.match(companyTheme, /body\[data-app="company"\] #workspace/);
 
+
+const customerTheme = fs.readFileSync('public/unified-workspace-dark.css', 'utf8');
+const driverTheme = fs.readFileSync('apps/driver/public/unified-workspace-dark.css', 'utf8');
+for (const [name, css] of [['Customer', customerTheme], ['Driver', driverTheme], ['Company Admin', companyTheme]]) {
+  assert.match(css, /Consistent action layout across Customer, Driver and Company Admin/, `${name} must include the shared action-layout rules`);
+  assert.match(css, /\.order-actions/, `${name} must align grouped order actions`);
+  assert.match(css, /flex-wrap:wrap!important/, `${name} must allow action buttons to wrap on narrow screens`);
+  assert.match(css, /auth-panel form>button\.primary/, `${name} must align sign-in actions`);
+}
+
 process.stdout.write('Customer, Driver and Company Admin dark-premium theme wiring checks passed.\\n');
