@@ -73,6 +73,8 @@ assert.match(customer, /customer-pages\.js/);
 assert.match(customerWallet, /customer-pages\.js/);
 assert.match(customerSettings, /customer-pages\.js/);
 assert.match(driverPages, /removeAttribute\('open'\)/);
+assert.match(driver, /href=\"\\?page=availability\" data-page=\"availability\"/);
+assert.match(driverPages, /root\\.querySelectorAll\\('a\\[data-page\\]'\\)/);
 assert.match(companyPages, /removeAttribute\('open'\)/);
 
 process.stdout.write('Customer, Driver and Company Admin dark-premium theme wiring and focused workspace page routing checks passed.\\n');
