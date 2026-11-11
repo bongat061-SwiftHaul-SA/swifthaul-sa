@@ -1,6 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.49.1";
 
-export type NotificationEvent = "order_dispatched" | "delivery_otp" | "document_expiry" | "payout_success" | "document_rejected";
+export type NotificationEvent = "order_dispatched" | "delivery_otp" | "document_expiry" | "payout_success" | "document_rejected" | "sos_alert";
 export type RecipientType = "sender" | "recipient" | "driver";
 
 export function formatSAPhoneNumber(input: string): string {
@@ -67,6 +67,7 @@ export function plainTextFor(event: NotificationEvent, payload: Record<string, u
     case "document_expiry": return "SwiftHaul driver alert: " + p("document_name") + " " + p("expiry_message") + ". Please update your document in the Driver app.";
     case "document_rejected": return "SwiftHaul: Your " + p("document_name") + " was not approved. Reason: " + p("rejection_reason") + ". Please upload a replacement in the Driver app.";
     case "payout_success": return "SwiftHaul payout completed: R" + p("amount_zar") + " has been transferred to your verified bank account. Reference: " + p("reference");
+    case "sos_alert": return "URGENT SwiftHaul SOS (" + p("recipient_type") + "). " + p("alert_text") + " Incident: " + p("incident_id") + ". Vehicle: " + p("vehicle_plate") + ". Order: " + p("order_id");
   }
 }
 
