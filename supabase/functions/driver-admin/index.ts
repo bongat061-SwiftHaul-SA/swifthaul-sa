@@ -98,7 +98,7 @@ Deno.serve(async(req:Request)=>{
   return reply(200,{criminal_background_clearance:data.criminal_background_clearance,can_go_online:eligible===true});
  }
  if(body.action==="activate"){
-  const {data:profile,error:profileError}=await admin.from("driver_profiles").select("user_id,identity_type,prdp_holder,criminal_background_clearance,license_expiry").eq("user_id",driverId).maybeSingle();
+  const {data:profile,error:profileError}=await admin.from("driver_profiles").select("user_id,identity_type,prdp_holder,criminal_background_clearance,license_expiry,bank_details_encrypted,account_number_aesgcm,paystack_recipient_code").eq("user_id",driverId).maybeSingle();
   if(profileError)return reply(500,{error:"driver_profile_lookup_failed"});
   if(!profile)return reply(404,{error:"driver_not_found"});
   if(!profile.criminal_background_clearance)return reply(409,{error:"criminal_background_clearance_required"});
@@ -116,9 +116,38 @@ Deno.serve(async(req:Request)=>{
   await admin.from("driver_onboarding_applications").update({verification_status:"approved",reviewed_by:actorId,reviewed_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("driver_user_id",driverId);
   const {data:eligible,error:eligibilityError}=await admin.rpc("driver_can_accept_work",{p_driver_user_id:driverId});
   if(eligibilityError||eligible!==true){await admin.from("driver_profiles").update({onboarding_status:"pending_review",verification_status:"pending",can_go_online:false}).eq("user_id",driverId);return reply(409,{error:"driver_activation_checks_failed"});}
+  let payoutSetup="pending_paystack_credentials";
+  const paystackSecret=Deno.env.get("PAYSTACK_SECRET_KEY");
+  if(profile.paystack_recipient_code)payoutSetup="ready";
+  else if(paystackSecret){
+   try{
+    const banking=await decrypt(profile.bank_details_encrypted,null);
+    const account=await decryptGcm(profile.account_number_aesgcm);
+    const bankName=String(banking.bank_name||banking.bank||"").trim();
+    const holder=String(banking.account_holder||banking.account_holder_name||"").trim();
+    if(bankName&&holder&&account){
+     let bankCode:string|null=null;
+     for(let page=1;page<=5&&!bankCode;page++){
+      const br=await fetch("https://api.paystack.co/bank?currency=ZAR&perPage=100&page="+page,{headers:{Authorization:"Bearer "+paystackSecret},signal:AbortSignal.timeout(10000)});
+      const bd=await br.json().catch(()=>null);if(!br.ok||bd?.status!==true)break;
+      const match=(bd.data||[]).find((item:any)=>item.active!==false&&String(item.name||"").toLowerCase().replace(/[^a-z]/g,"")===bankName.toLowerCase().replace(/[^a-z]/g,""));
+      if(match)bankCode=String(match.code);
+      if(!(bd.data||[]).length)break;
+     }
+     if(bankCode){
+      const rr=await fetch("https://api.paystack.co/transferrecipient",{method:"POST",headers:{Authorization:"Bearer "+paystackSecret,"Content-Type":"application/json"},body:JSON.stringify({type:"basa",name:holder,account_number:account,bank_code:bankCode,currency:"ZAR",description:"SwiftHaul verified driver payout"}),signal:AbortSignal.timeout(12000)});
+      const rd=await rr.json().catch(()=>null);
+      if(rr.ok&&rd?.status===true&&rd?.data?.recipient_code){
+       const {error:saveRecipientError}=await admin.from("driver_profiles").update({paystack_recipient_code:rd.data.recipient_code,paystack_recipient_created_at:new Date().toISOString()}).eq("user_id",driverId);
+       payoutSetup=saveRecipientError?"recipient_save_failed":"ready";
+      }else payoutSetup="recipient_creation_failed";
+     }else payoutSetup="paystack_bank_code_not_found";
+    }else payoutSetup="verified_bank_details_missing";
+   }catch(e){console.error("Paystack recipient setup failed",e instanceof Error?e.message:"unknown");payoutSetup="recipient_creation_failed";}
+  }
   await admin.from("driver_verification_audit").insert({driver_user_id:driverId,actor_user_id:actorId,event_type:"driver_activated",details:{}});
   await admin.from("driver_onboarding_notifications").insert({driver_user_id:driverId,notification_type:"driver_activated",title:"Driver account activated",message:"Your driver documents and background clearance have been approved. You can now go online."});
-  return reply(200,{activated:true,can_go_online:true});
+  return reply(200,{activated:true,can_go_online:true,payout_setup:payoutSetup});
  }
  if(body.action==="reject"||body.action==="suspend"){
   const reason=typeof body.reason==="string"?body.reason.trim().slice(0,500):"";
