@@ -1,5 +1,6 @@
 (() => {
-  const app = document.body.dataset.app;
+  const body = document.body;
+  const app = body.dataset.app;
   if (!['customer','driver'].includes(app)) return;
   const workspace = document.getElementById('workspace');
   const page = workspace?.querySelector('main.page');
@@ -14,15 +15,8 @@
     const brand = topbar.querySelector('.wordmark');
     if (brand) brand.innerHTML = '<span class="premium-mark">S</span><span class="premium-brand-name">SWIFTHAUL</span><small class="app-tag">'+(app === 'customer' ? 'CUSTOMER' : 'DRIVER')+'</small>';
   }
-  const title = heading.querySelector('h1');
-  const subtitle = heading.querySelector('.subtle');
   heading.classList.add('premium-hero');
-  if (app === 'customer') {
-    if (title) title.textContent = 'Welcome to SwiftHaul.';
-    if (subtitle) subtitle.textContent = 'Your deliveries, payments and account — all in one place.';
-  } else {
-    if (title) title.textContent = 'Your day. Your deliveries.';
-    if (subtitle) subtitle.textContent = 'Stay ready, manage dispatches and keep track of your earnings.';
+  if (app === 'driver') {
     const stats = document.getElementById('earnings');
     const dispatch = document.getElementById('dispatches');
     const online = document.getElementById('driver-online-toggle');
@@ -44,7 +38,6 @@
     payout?.classList.add('premium-secondary-section');
     if (status) status.classList.add('premium-status-copy');
   }
-  nav.classList.add('premium-bottom-nav');
   nav.setAttribute('aria-label', app === 'customer' ? 'Customer navigation' : 'Driver navigation');
   const footer = workspace.querySelector('.footer');
   if (footer) footer.classList.add('premium-footer');
