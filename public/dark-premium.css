@@ -248,3 +248,47 @@ body[data-app="driver"] .footer{padding-bottom:90px!important}
  body[data-app="driver"] #cash-management,body[data-app="driver"] #insurance-claims{padding:17px!important}
  body[data-app="driver"] #premium .workspace-grid{grid-template-columns:1fr!important}
 }
+
+/* Driver live-trip screen: road-first map, navigation banner and floating trip sheet */
+body[data-app="driver"] .driver-tracking{display:flex!important;flex-direction:column!important;gap:0!important;margin-top:16px!important;border:1px solid #35404d!important;border-radius:20px!important;overflow:hidden!important;background:#0d131c!important;box-shadow:0 16px 38px #0006!important}
+body[data-app="driver"] .driver-tracking .tracking-head{order:0!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;padding:16px 18px!important;background:linear-gradient(110deg,#e9edf2,#cbd2dc)!important;color:#11151b!important}
+body[data-app="driver"] .driver-tracking .tracking-head h4{margin:0!important;color:#11151b!important;font-size:16px!important;font-weight:900!important;letter-spacing:-.3px!important}
+body[data-app="driver"] .driver-tracking .tracking-state{color:#28313d!important;font-size:10px!important;font-weight:850!important}
+body[data-app="driver"] .driver-tracking .tracking-map-stage{order:1!important;position:relative!important;height:clamp(300px,48vh,520px)!important;min-height:300px!important;margin:0!important;border-radius:0!important;overflow:hidden!important;background:#e4e9ed!important}
+body[data-app="driver"] .driver-tracking .driver-tracking-map{position:absolute!important;inset:0!important;width:100%!important;height:100%!important}
+body[data-app="driver"] .driver-tracking .tracking-map-tools{top:12px!important;right:12px!important}
+body[data-app="driver"] .driver-tracking .tracking-map-tool{background:#111720eF!important;color:#f5f7fa!important;border:1px solid #485363!important;border-radius:11px!important}
+body[data-app="driver"] .driver-tracking .tracking-map-legend{left:12px!important;bottom:12px!important;background:#101720ed!important;color:#e6ebf1!important;border:1px solid #465160!important;border-radius:999px!important;padding:9px 12px!important}
+body[data-app="driver"] .driver-tracking .tracking-trip-sheet{order:2!important;position:relative!important;z-index:2!important;margin:-28px 10px 10px!important;padding:18px!important;border:1px solid #3a4554!important;border-radius:20px!important;background:rgba(15,21,30,.98)!important;color:#f4f6f9!important;box-shadow:0 14px 36px #0008!important}
+body[data-app="driver"] .driver-tracking .tracking-eta-row{display:grid!important;grid-template-columns:1fr 1fr!important;gap:10px!important}
+body[data-app="driver"] .driver-tracking .tracking-eta,
+body[data-app="driver"] .driver-tracking .tracking-distance{padding:13px!important;border:1px solid #303946!important;border-radius:14px!important;background:#1a222d!important}
+body[data-app="driver"] .driver-tracking .tracking-eta strong,
+body[data-app="driver"] .driver-tracking .tracking-distance strong{display:block!important;color:#fff!important;font-size:23px!important;font-weight:900!important;letter-spacing:-.6px!important}
+body[data-app="driver"] .driver-tracking .tracking-eta span,
+body[data-app="driver"] .driver-tracking .tracking-distance span{display:block!important;margin-top:4px!important;color:#aeb8c5!important;font-size:10px!important}
+body[data-app="driver"] .driver-tracking .tracking-route-progress{margin:17px 0!important}
+body[data-app="driver"] .driver-tracking .tracking-progress-track{height:5px!important;border-radius:99px!important;background:#394453!important;overflow:hidden!important}
+body[data-app="driver"] .driver-tracking .tracking-progress-fill{background:linear-gradient(90deg,#fff,#9eb6d4)!important;border-radius:99px!important}
+body[data-app="driver"] .driver-tracking .tracking-route-labels{display:flex!important;justify-content:space-between!important;gap:12px!important;margin-top:9px!important;color:#cbd3dd!important;font-size:10px!important}
+body[data-app="driver"] .driver-tracking .tracking-actions{display:flex!important;gap:9px!important;flex-wrap:wrap!important}
+body[data-app="driver"] .driver-tracking .tracking-actions button{min-height:45px!important;padding:0 18px!important;border-radius:12px!important}
+body[data-app="driver"] .driver-tracking .tracking-actions .primary{background:#edf1f5!important;color:#10151b!important;border:1px solid #fff!important;font-weight:900!important}
+body[data-app="driver"] .driver-tracking .tracking-actions button:not(.primary){background:#222b37!important;color:#edf1f5!important;border:1px solid #465160!important}
+body[data-app="driver"] .driver-tracking .tracking-note,
+body[data-app="driver"] .driver-tracking .tracking-updated{color:#aeb8c5!important;font-size:10px!important;line-height:1.5!important}
+body[data-app="driver"] .driver-tracking .tracking-note{margin:12px 0 5px!important}
+body[data-app="driver"] .driver-tracking .tracking-map-legend .pickup-dot{background:#e9edf2!important}
+body[data-app="driver"] .driver-tracking .tracking-map-legend .dropoff-dot{background:#9eb6d4!important}
+body[data-app="driver"] .driver-tracking .tracking-map-legend .driver-dot{background:#fff!important}
+body[data-app="driver"] .maplibregl-ctrl-group{background:#111720!important;border:1px solid #465160!important;border-radius:11px!important;overflow:hidden!important}
+body[data-app="driver"] .maplibregl-ctrl-group button{background-color:#111720!important}
+body[data-app="driver"] .maplibregl-ctrl-attrib{background:#101720df!important;color:#dce2e9!important}
+@media(max-width:700px){
+ body[data-app="driver"] .driver-tracking{margin:12px -4px 0!important;border-radius:17px!important}
+ body[data-app="driver"] .driver-tracking .tracking-head{padding:14px!important}
+ body[data-app="driver"] .driver-tracking .tracking-map-stage{height:43svh!important;min-height:280px!important}
+ body[data-app="driver"] .driver-tracking .tracking-trip-sheet{margin:-22px 7px 7px!important;padding:13px!important;border-radius:17px!important}
+ body[data-app="driver"] .driver-tracking .tracking-eta strong,
+ body[data-app="driver"] .driver-tracking .tracking-distance strong{font-size:21px!important}
+}
