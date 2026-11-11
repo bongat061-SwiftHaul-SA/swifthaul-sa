@@ -55,7 +55,7 @@
     nav?.closest('details')?.removeAttribute('open');
     window.scrollTo({ top:0, behavior:'instant' });
   }
-  nav?.querySelectorAll('a').forEach(link => {
+  root.querySelectorAll('a[data-page]').forEach(link => {
     link.addEventListener('click', event => {
       event.preventDefault();
       render(link.dataset.page || 'home', true);
