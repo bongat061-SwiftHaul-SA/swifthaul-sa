@@ -70,8 +70,8 @@ function parseLocation(body: Record<string, unknown>, prefix: "pickup" | "dropof
   const hasHash = hash !== undefined && hash !== null && hash !== "";
   if (!hasLat && !hasLng && !hasCode && !hasHash)
     return { latitude: null, longitude: null, plus_code: null, geohash: null };
-  if (!hasLat || !hasLng || typeof lat !== "number" || !Number.isFinite(lat) || Math.abs(lat) > 90 ||
-      typeof lng !== "number" || !Number.isFinite(lng) || Math.abs(lng) > 180)
+  if (!hasLat || !hasLng || typeof lat !== "number" || !Number.isFinite(lat) || lat < -35.2 || lat > -22.0 ||
+      typeof lng !== "number" || !Number.isFinite(lng) || lng < 16.4 || lng > 33.2)
     throw new InputError("Choose a valid map pin with both latitude and longitude.");
   // Plus Codes and Geohashes are optional legacy metadata; coordinates are the canonical pin.
   if ((hasCode && (typeof code !== "string" || code.length < 4 || code.length > 16 || !code.includes("+"))) ||
