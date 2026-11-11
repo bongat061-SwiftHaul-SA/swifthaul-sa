@@ -31,3 +31,9 @@ body[data-app="customer"] #workspace .workspace-grid>div[hidden]{display:none!im
 body[data-app="customer"] #workspace #new-delivery .panel{padding:clamp(16px,3vw,24px)}
 @media(min-width:760px){body[data-app="customer"] #workspace .customer-home-actions{grid-template-columns:repeat(4,minmax(0,1fr))}body[data-app="customer"] #workspace .customer-home-actions>a{grid-template-columns:1fr;grid-template-rows:auto auto auto;align-content:start;gap:8px;min-height:130px}body[data-app="customer"] #workspace .customer-action-icon{grid-row:auto}}
 @media(max-width:480px){body[data-app="customer"] #workspace .customer-home-intro{padding:22px 18px}body[data-app="customer"] #workspace .customer-home-actions{gap:8px}body[data-app="customer"] #workspace .customer-home-actions>a{padding:12px;column-gap:9px}body[data-app="customer"] #workspace .customer-home-actions strong{font-size:11px}body[data-app="customer"] #workspace .customer-home-actions small{font-size:9px}}
+
+body[data-app="customer"] #workspace .customer-tracking-intro{margin:0 0 14px;padding:17px 19px;border:1px solid #303946;border-radius:16px;background:linear-gradient(145deg,#1c232e,#111720);color:#eef2f6}
+body[data-app="customer"] #workspace .customer-tracking-intro[hidden]{display:none!important}
+body[data-app="customer"] #workspace .customer-tracking-intro h2{margin:0 0 6px;color:#fff;font-size:18px}
+body[data-app="customer"] #workspace .customer-tracking-intro p{margin:0;color:#aeb8c6;font-size:12px;line-height:1.6}
+body[data-app="customer"] #workspace .customer-tracking-intro strong{color:#f4f6f9}
