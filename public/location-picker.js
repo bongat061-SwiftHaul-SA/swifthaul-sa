@@ -396,13 +396,33 @@
     }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 });
   });
 
+  const workspace = document.getElementById('workspace');
+  let mapSizeObserver = null;
+  function resizeVisibleMap() {
+    if (!workspace || workspace.hidden) return;
+    ensureMap();
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (!map || workspace.hidden) return;
+      map.resize();
+      fitLocations();
+    }));
+  }
+  if (workspace && 'ResizeObserver' in window) {
+    mapSizeObserver = new ResizeObserver(() => {
+      if (!workspace.hidden && map) map.resize();
+    });
+    mapSizeObserver.observe(stage);
+  }
   const revealObserver = new MutationObserver(() => {
-    if (!document.getElementById('workspace')?.hidden) {
-      ensureMap();
-      setTimeout(() => map && map.resize(), 180);
+    if (!workspace?.hidden) {
+      resizeVisibleMap();
       revealObserver.disconnect();
     }
   });
-  revealObserver.observe(document.getElementById('workspace'), { attributes: true, attributeFilter: ['hidden'] });
-  if (!document.getElementById('workspace')?.hidden) { ensureMap(); setTimeout(() => map && map.resize(), 180); }
+  if (workspace) revealObserver.observe(workspace, { attributes: true, attributeFilter: ['hidden'] });
+  if (workspace && !workspace.hidden) resizeVisibleMap();
+  window.addEventListener('pageshow', resizeVisibleMap);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') resizeVisibleMap();
+  });
 })();
