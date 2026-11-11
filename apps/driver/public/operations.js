@@ -549,8 +549,10 @@ if (app === 'driver' || app === 'company') {
         card.append(recipient);
       }
       if (order.status === 'assigned') makeButton(card, 'Accept delivery', { waybill: order.waybill, action: 'accept' });
-      if (order.status === 'accepted') makeButton(card, 'Confirm pickup', { waybill: order.waybill, action: 'pickup' });
+      if (order.status === 'accepted' && !order.arrived_pickup_at) makeButton(card, 'Arrived at pickup', { waybill: order.waybill, action: 'arrive_pickup' });
+      if (order.status === 'accepted' && order.arrived_pickup_at) makeButton(card, 'Confirm pickup', { waybill: order.waybill, action: 'pickup' });
       if (order.status === 'picked_up') makeButton(card, 'Start delivery', { waybill: order.waybill, action: 'in_transit' });
+      if (order.status === 'in_transit' && !order.arrived_dropoff_at) makeButton(card, 'Arrived at drop-off', { waybill: order.waybill, action: 'arrive_dropoff' });
       if (order.status === 'in_transit') {
         if (order.proof) {
           const proofNote = document.createElement('p');
