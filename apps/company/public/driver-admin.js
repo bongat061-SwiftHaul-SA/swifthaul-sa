@@ -6,7 +6,11 @@ if(panel){
   refresh.type='button';refresh.textContent='Refresh driver applications';
   const status=document.createElement('p');status.setAttribute('role','status');
   const list=document.createElement('div');list.className='operations-list';
-  panel.append(note,refresh,status,list);
+  const quality=document.createElement('section');quality.className='admin-quality-panel';
+  const qualityTitle=document.createElement('h3');qualityTitle.textContent='Driver Quality & Ratings';
+  const qualityFilter=document.createElement('select');qualityFilter.setAttribute('aria-label','Filter driver quality');qualityFilter.innerHTML='<option value="all">All drivers</option><option value="watchlist">Watchlist</option><option value="review_required">Review required</option><option value="low_rated">Below 4 stars</option>';
+  const qualityList=document.createElement('div');qualityList.className='admin-quality-list';quality.append(qualityTitle,qualityFilter,qualityList);
+  panel.append(note,refresh,status,quality,list);
   let active=false,epoch=0,isAdmin=false;
   async function call(method,body){
     const client=window.swiftHaulSupabase;
@@ -22,6 +26,9 @@ if(panel){
     try{
       const data=await call('GET');
       if(current!==epoch)return;
+      try{
+        const q=await window.swiftHaulSupabase.functions.invoke('dispatch-operations',{method:'GET'});
+        if(!q.error&&!q.data?.error){const scores=q.data.driverScores||[],alerts=q.data.qualityAlerts||[];qualityList.replaceChildren();const filter=qualityFilter.value;const filtered=scores.filter(d=>filter==='all'||(filter==='low_rated'?Number(d.average_rating)<4:d.performance_tier===filter));if(!filtered.length){const empty=document.createElement('p');empty.textContent='No drivers match this quality filter.';qualityList.append(empty);}for(const d of filtered){const row=document.createElement('article');row.className='admin-quality-card';const name=document.createElement('strong');name.textContent=String(d.user_id)+' · '+String(d.performance_tier||'unrated').replace('_',' ').toUpperCase();const metrics=document.createElement('p');metrics.textContent='Score '+d.performance_score+'/100 · ★ '+Number(d.average_rating||5).toFixed(2)+' ('+d.total_ratings+' ratings) · On time '+d.on_time_percentage+'% · Completion '+d.completion_percentage+'%';const related=alerts.filter(a=>a.driver_id===d.user_id&&a.status!=='dismissed');const alertText=document.createElement('p');alertText.textContent=related.length+' open quality alert(s)';row.append(name,metrics,alertText);qualityList.append(row);}}}catch(e){console.warn('Driver quality panel unavailable',e);}
       list.replaceChildren();
       if(!data.drivers?.length){status.textContent='No driver applications yet.';return;}
       for(const driver of data.drivers)render(driver);
@@ -78,6 +85,7 @@ if(panel){
     if(driver.verification_status==='approved')button('Suspend driver','suspend');
     list.append(card);
   }
+  qualityFilter.addEventListener('change',()=>{if(active)isAdmin&&load();});
   refresh.addEventListener('click',load);
   document.addEventListener('account-ready',event=>{
     active=true;isAdmin=event.detail.role==='admin';
