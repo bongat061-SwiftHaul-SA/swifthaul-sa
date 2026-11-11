@@ -83,7 +83,6 @@ async function payoutDocument(reference:string){
  const {data:booking}=await dbs.from("customer_bookings").select("price,driver_user_id").eq("waybill",fleetPay.waybill).maybeSingle();
  const gross=money(Number(booking?.price||0)),commission=money(gross*0.25),net=money(Number(fleetPay.amount_cents||0)/100);
  const rate=company?.isVatRegistered?Number(company.vatRatePercent||15.5):0,commissionVat=rate?money(commission*rate/(100+rate)):0,commissionEx=money(commission-commissionVat);
- const {data:contract}=booking?.driver_user_id?await dbs.from("fleet_driver_contracts").select("fleet_percentage,driver_percentage").eq("fleet_id",fleetPay.fleet_id).eq("driver_id",booking.driver_user_id).eq("is_active",true).maybeSingle():{data:null};
  const fleetShare=net;
  const driverShare=money(Math.max(0,gross*0.75-fleetShare));
  const fleetLines=gross>0?[{label:"Gross delivery fare",amount:gross},{label:"SwiftHaul platform commission · excl. VAT",amount:-commissionEx},{label:"VAT included in platform commission · "+rate+"%",amount:-commissionVat},{label:"Driver share after fleet split",amount:-driverShare}]:[{label:"Fleet EFT payout",amount:net}];
