@@ -34,7 +34,8 @@
     const orders = document.getElementById('bookings');
     booking?.classList.add('premium-primary-section');
     orders?.classList.add('premium-secondary-section');
-    nav.innerHTML = '<a href="#new-delivery" data-shell-nav>Book</a><a href="#bookings" data-shell-nav>Activity</a><a href="wallet.html">Wallet</a><a href="settings.html">Account</a>';
+    // Keep the data-page links installed by customer-pages.js. Replacing this nav
+    // with standalone HTML links caused full page reloads and apparent sign-in resets.
   } else {
     if (title) title.textContent = 'Your day. Your deliveries.';
     if (subtitle) subtitle.textContent = 'Stay ready, manage dispatches and keep track of your earnings.';
@@ -64,10 +65,14 @@
   const footer = workspace.querySelector('.footer');
   if (footer) footer.classList.add('premium-footer');
   const markActive = () => {
+    const customerPage = new URLSearchParams(location.search).get('page') || 'book';
     const hash = location.hash || (app === 'customer' ? '#new-delivery' : '');
     nav.querySelectorAll('a').forEach(a => {
       const href = a.getAttribute('href');
-      a.classList.toggle('is-active', href === hash || (href === '?page=home' && !location.search));
+      const active = app === 'customer'
+        ? (a.dataset.page === customerPage)
+        : (href === hash || (href === '?page=home' && !location.search));
+      a.classList.toggle('is-active', active);
     });
   };
   markActive();
