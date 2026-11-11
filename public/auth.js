@@ -26,7 +26,7 @@ function showSignIn(message = '') {
   document.body.dataset.authState = 'anonymous';
   if (message) status.textContent = message;
 }
-function showSessionRestore(message = 'Restoring your secure session…') {
+function showSessionRestore(message = 'Restoring your secure session…', allowRecoveryActions = false) {
   authScreen.hidden = true;
   workspace.hidden = true;
   if (restoreScreen) {
@@ -34,9 +34,9 @@ function showSessionRestore(message = 'Restoring your secure session…') {
     const note = restoreScreen.querySelector('[data-session-message]');
     if (note) note.textContent = message;
     const retry = restoreScreen.querySelector('[data-session-retry]');
-    if (retry) retry.hidden = false;
+    if (retry) retry.hidden = !allowRecoveryActions;
     const signIn = restoreScreen.querySelector('[data-session-signin]');
-    if (signIn) signIn.hidden = false;
+    if (signIn) signIn.hidden = !allowRecoveryActions;
   }
   document.body.dataset.authState = 'checking';
 }
@@ -277,16 +277,23 @@ supabase.auth.onAuthStateChange((event, session) => {
   if (event === 'TOKEN_REFRESHED' && session && currentUser)
     validateAccount(session).catch(error => console.warn('Customer session refresh validation will retry on the next page load:', error));
 });
+let restoreTimer = null;
 async function init() {
   setMode('login');
-  showSessionRestore();
+  if (restoreTimer) clearTimeout(restoreTimer);
+  if (restoreScreen) restoreScreen.hidden = true;
+  // Avoid flashing the restore interstitial during normal, fast in-app returns.
+  restoreTimer = setTimeout(() => showSessionRestore(), 450);
   try {
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error) throw error;
-    if (session) { await validateAccount(session); return; }
-    showSignIn();
+    if (session) { await validateAccount(session); }
+    else showSignIn();
   } catch (error) {
-    showSessionRestore(error?.message || 'We could not verify your saved session. Try again, or return to sign in.');
+    showSessionRestore(error?.message || 'We could not verify your saved session. Try again, or return to sign in.', true);
+  } finally {
+    if (restoreTimer) clearTimeout(restoreTimer);
+    restoreTimer = null;
   }
 }
 init();
