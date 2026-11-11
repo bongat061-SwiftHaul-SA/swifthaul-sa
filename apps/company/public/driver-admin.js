@@ -30,9 +30,16 @@ if(panel){
   }
   async function review(driver,action,button){
     if(action==='approve'){
-      const required=['id_document','proof_of_address','bank_confirmation','drivers_licence','vehicle_document'];
+      const app=driver.application;
+      const required=app?[
+        ...(app.identity_type==='sa_citizen'?['id_front','id_back','profile_selfie']:['passport','work_permit']),
+        'licence_front','licence_back','vehicle_licence_disc','vehicle_insurance','proof_of_address'
+      ]:['id_document','proof_of_address','bank_confirmation','drivers_licence','vehicle_document'];
       const missing=required.filter(type=>!(driver.documents||[]).some(doc=>doc.document_type===type&&doc.review_status==='accepted'));
-      if(missing.length){status.textContent='Approval blocked. Accept these documents first: '+missing.map(type=>type.replaceAll('_',' ')).join(', ')+'.';return;}
+      if(app&&!(driver.documents||[]).some(doc=>['enatis_certificate','fleet_lease_agreement'].includes(doc.document_type)&&doc.review_status==='accepted'))missing.push('enatis certificate or fleet lease agreement');
+      if(app?.licence_details?.prdp_holder&&!(driver.documents||[]).some(doc=>doc.document_type==='prdp'&&doc.review_status==='accepted'))missing.push('PrDP');
+      if(app&&(!app.banking_details?.bank_name||!app.banking_details?.account_holder||!app.banking_details?.account_number))missing.push('banking details');
+      if(missing.length){status.textContent='Approval blocked. Accept/complete: '+missing.map(type=>type.replaceAll('_',' ')).join(', ')+'.';return;}
     }
     button.disabled=true;
     try{await call('POST',{user_id:driver.user_id,action});await load();status.textContent='Driver status updated.';}
@@ -54,6 +61,22 @@ if(panel){
     details.textContent=[driver.phone,driver.license_number?'Licence '+driver.license_number:'Licence missing',driver.license_expiry?'Expires '+driver.license_expiry:'Expiry missing',String(driver.vehicle_type||'Vehicle missing').toUpperCase(),driver.vehicle_registration||'Registration missing'].join(' · ');
     const state=document.createElement('p');state.textContent='Verification: '+driver.verification_status;
     card.append(title,details,state);
+    if(driver.application){
+      const app=driver.application,summary=document.createElement('p');
+      const identity=app.identity_details||{},licence=app.licence_details||{},vehicle=app.vehicle_details||{},bank=app.banking_details||{};
+      summary.textContent=[
+        'Applicant type: '+app.identity_type,
+        'DOB: '+(identity.date_of_birth||'—'),
+        'SA ID / Passport: '+(identity.id_number||identity.passport_number||'—'),
+        'TRN: '+(identity.traffic_register_number||'—'),
+        'Licence: '+(licence.code||'—')+' · expires '+(licence.expiry||'—'),
+        'PrDP: '+(licence.prdp_holder?(licence.prdp_category+' · expires '+licence.prdp_expiry):'Not declared'),
+        'Vehicle: '+[vehicle.make,vehicle.model,vehicle.year,vehicle.type,vehicle.registration_plate,vehicle.gross_vehicle_mass_kg?vehicle.gross_vehicle_mass_kg+' kg':''].filter(Boolean).join(' · '),
+        'Bank: '+(bank.bank_name||'—')+' · '+(bank.account_holder||'—')+' · account '+(bank.account_number||'—')+' · branch '+(bank.universal_branch_code||'—'),
+        'Application submitted: '+(app.submitted_at||'—')
+      ].join(' | ');
+      card.append(summary);
+    }
     const docsTitle=document.createElement('strong');docsTitle.textContent='Verification documents';
     card.append(docsTitle);
     const docs=driver.documents||[];
