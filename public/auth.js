@@ -137,6 +137,17 @@ async function refreshPinPanel(session) {
   pinPanel.querySelector('[data-pin-edit]').textContent = data?.has_pin ? 'Change PIN' : 'Create 6-digit PIN';
 }
 
+async function sendSignInNotification(session) {
+  if (!session?.access_token) return;
+  try {
+    const { data, error } = await supabase.functions.invoke('account-signin-notify', {
+      body: {}, headers: { Authorization: 'Bearer ' + session.access_token }
+    });
+    if (error) console.warn('Sign-in security email could not be sent:', error.message);
+    else if (data?.email_sent !== true) console.warn('Sign-in security email pending:', data?.reason || 'email provider unavailable');
+  } catch (error) { console.warn('Sign-in security email pending:', error?.message || error); }
+}
+
 async function validateAccount(session) {
   // account-me is a GET-only Edge Function; functions.invoke() sends POST by default.
   const response = await fetch(`${SUPABASE_URL}/functions/v1/account-me`, {
@@ -208,6 +219,7 @@ form.addEventListener('submit', async event => {
       if (sessionError) throw sessionError;
       pinInput.value = '';
       await validateAccount(sessionData.session);
+      await sendSignInNotification(sessionData.session);
       return;
     }
     if (mode === 'recovery') {
@@ -236,7 +248,7 @@ form.addEventListener('submit', async event => {
     }
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
-    form.elements.password.value = ''; await validateAccount(data.session);
+    form.elements.password.value = ''; await validateAccount(data.session); await sendSignInNotification(data.session);
   } catch (error) { status.textContent = error?.message || 'Unable to connect. Please try again.'; }
   finally { submit.disabled = false; }
 });
