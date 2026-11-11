@@ -11,13 +11,13 @@ Deno.serve(async(req:Request)=>{
  if(!secret)return reply(503,{error:"paystack_secret_not_configured"});
  const auth=createClient(url,anon,{auth:{persistSession:false,autoRefreshToken:false}}),{data:u,error:ue}=await auth.auth.getUser(token);
  if(ue||!u.user)return reply(401,{error:"invalid_session"});
- const db=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});
+ const db=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});\n const digest=new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode("identity:"+u.user.id)));const ownerHash=Array.from(digest,b=>b.toString(16).padStart(2,"0")).join("");
  const {data:profile,error:pe}=await db.from("user_profiles").select("role,account_status").eq("id",u.user.id).maybeSingle();
  if(pe||!profile)return reply(403,{error:"active_customer_account_required"});
  if(profile.role!=="customer"||profile.account_status!=="active")return reply(403,{error:"active_customer_account_required"});
  let body:Record<string,unknown>;try{body=await req.json()}catch{return reply(400,{error:"invalid_json"})}
  if(typeof body.waybill!=="string"||body.waybill.length>100)return reply(400,{error:"booking_reference_required"});
- const {data:b,error:be}=await db.from("customer_bookings").select("waybill,owner_hash,price,paid_at,refunded_at,status,counter_offer_status,payment_method").eq("waybill",body.waybill).eq("owner_hash",u.user.id).maybeSingle();
+ const {data:b,error:be}=await db.from("customer_bookings").select("waybill,owner_hash,price,paid_at,refunded_at,status,counter_offer_status,payment_method").eq("waybill",body.waybill).eq("owner_hash",ownerHash).maybeSingle();
  if(be||!b)return reply(404,{error:"booking_not_found"});
  if(b.payment_method!=="card"||b.paid_at||b.refunded_at||["cancelled","delivered"].includes(b.status)||b.counter_offer_status==="pending")return reply(409,{error:"booking_not_payable"});
  const amountCents=Math.round(Number(b.price)*100);
