@@ -34,7 +34,7 @@
     const orders = document.getElementById('bookings');
     booking?.classList.add('premium-primary-section');
     orders?.classList.add('premium-secondary-section');
-    nav.innerHTML = '<a href="#new-delivery" data-shell-nav>Book</a><a href="#bookings" data-shell-nav>Activity</a><a href="wallet.html">Wallet</a><a href="settings.html">Account</a>';
+    // Keep the page-controller links intact so customer navigation stays in-app.
   } else {
     if (title) title.textContent = 'Your day. Your deliveries.';
     if (subtitle) subtitle.textContent = 'Stay ready, manage dispatches and keep track of your earnings.';
