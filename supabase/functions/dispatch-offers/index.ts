@@ -80,7 +80,7 @@ Deno.serve(async req => {
   }
   if(body.action==="next_offer") {
     if(!dispatcher||typeof body.waybill!=="string") return reply(403,{error:"dispatcher_access_required"});
-    const {data:booking,error:be}=await db.from("customer_bookings").select("waybill,status,driver_user_id,refunded_at,vehicle,pickup_latitude,pickup_longitude").eq("waybill",body.waybill).maybeSingle();
+    const {data:booking,error:be}=await db.from("customer_bookings").select("waybill,status,driver_user_id,refunded_at,vehicle,price,pickup_latitude,pickup_longitude,dropoff_latitude,dropoff_longitude").eq("waybill",body.waybill).maybeSingle();
     if(be||!booking) return reply(404,{error:"delivery_not_found"});
     if(booking.status!=="pending"||booking.driver_user_id||booking.refunded_at) return reply(409,{error:"delivery_not_open_for_offers"});
     const now=new Date().toISOString();
@@ -93,8 +93,8 @@ Deno.serve(async req => {
     const vehicleType=(value:string)=>{const v=value.toLowerCase();if(v.includes("motor"))return "motorbike";if(v.includes("bakkie")||v.includes("van")||v.includes("panel"))return "bakkie/panel van";if(v.includes("truck")||v.includes("ton"))return "truck";return "hatchback/sedan";};
     const {data:classes}=await db.from("vehicle_classes").select("vehicle_type,max_concurrent_orders");
     const capacity=new Map((classes??[]).map((v:any)=>[v.vehicle_type,Number(v.max_concurrent_orders)]));
-    const ids=(drivers??[]).map(d=>d.user_id);
-    const {data:activeOrders,error:activeError}=await db.from("customer_bookings").select("waybill,driver_user_id,pickup_latitude,pickup_longitude,dropoff_latitude,dropoff_longitude").in("driver_user_id",ids).in("status",["assigned","accepted","picked_up","in_transit"]).is("completed_at",null);
+    const allDriverIds=(drivers??[]).map(d=>d.user_id);
+    const {data:activeOrders,error:activeError}=await db.from("customer_bookings").select("waybill,driver_user_id,pickup_latitude,pickup_longitude,dropoff_latitude,dropoff_longitude").in("driver_user_id",allDriverIds).in("status",["assigned","accepted","picked_up","in_transit"]).is("completed_at",null);
     if(activeError)return reply(500,{error:"active_order_count_failed"});
     const activeByDriver=new Map<string,any[]>();
     for(const order of activeOrders??[]){const key=order.driver_user_id;activeByDriver.set(key,[...(activeByDriver.get(key)||[]),order]);}
