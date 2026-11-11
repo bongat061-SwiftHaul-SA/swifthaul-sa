@@ -26,9 +26,9 @@ Deno.serve(async req => {
   if(req.method==="GET") {
     if(!driver) return reply(403,{error:"driver_account_required"});
     const {data:profile}=await db.from("driver_profiles").select("is_online,online_updated_at,verification_status,onboarding_status,can_go_online").eq("user_id",actor).maybeSingle();
-    const {data:offers,error}=await db.from("driver_delivery_offers").select("id,waybill,priority_tier,distance_meters,offered_at,expires_at,status,customer_bookings(pickup,dropoff,vehicle,price,pickup_plus_code,dropoff_plus_code)").eq("driver_user_id",actor).eq("status","offered").gt("expires_at",new Date().toISOString()).order("offered_at",{ascending:false});
+    const {data:offers,error}=await db.from("driver_delivery_offers").select("id,waybill,priority_tier,distance_meters,offered_at,expires_at,status,customer_bookings(pickup,dropoff,vehicle,price,distance_meters,pickup_plus_code,dropoff_plus_code)").eq("driver_user_id",actor).eq("status","offered").gt("expires_at",new Date().toISOString()).order("offered_at",{ascending:false});
     if(error) return reply(500,{error:"offer_list_failed"});
-    return reply(200,{driver:profile,offers:offers??[]});
+    return reply(200,{driver:profile,offers:(offers??[]).map((o:any)=>({...o,distance_meters:o.distance_meters??o.customer_bookings?.distance_meters??null,gross_zar:Number(o.customer_bookings?.price??0),net_payout_zar:Math.round(Number(o.customer_bookings?.price??0)*75)/100}))});
   }
 
   let body:Record<string,unknown>;
@@ -89,7 +89,7 @@ Deno.serve(async req => {
       return {...x,rotation:last.get(candidate.user_id)??0};
     }).sort((a,b)=>Number(b.premium)-Number(a.premium)||a.rotation-b.rotation);
     const chosen=ranked[0];
-    const expires=new Date(Date.now()+60_000).toISOString();
+    const expires=new Date(Date.now()+30_000).toISOString();
     const {data:offer,error:oe}=await db.from("driver_delivery_offers").insert({waybill:booking.waybill,driver_user_id:chosen.d.user_id,priority_tier:chosen.premium?"premium":"standard",expires_at:expires}).select("id,driver_user_id,priority_tier,expires_at").single();
     if(oe) return reply(500,{error:"offer_create_failed"});
     return reply(200,{offer,rotation:"least-recently-offered",priority:"active premium drivers before standard drivers"});
