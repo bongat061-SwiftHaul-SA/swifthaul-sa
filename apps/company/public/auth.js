@@ -78,7 +78,7 @@ async function refreshPinPanel(session) {
     pinPanel.querySelector('[data-pin-edit]').addEventListener('click',()=>{const form=pinPanel.querySelector('[data-pin-form]');form.hidden=!form.hidden;});
     pinPanel.querySelector('[data-pin-form]').addEventListener('submit',async event=>{
       event.preventDefault();const setup=event.currentTarget,pin=setup.elements.pin.value,message=pinPanel.querySelector('[data-pin-message]');
-      if(!/^\\d{6}$/.test(pin)||pin!==setup.elements.confirm_pin.value){message.textContent='Enter the same six-digit PIN in both fields.';return;}
+      if(!/^\d{6}$/.test(pin)||pin!==setup.elements.confirm_pin.value){message.textContent='Enter the same six-digit PIN in both fields.';return;}
       const {data:current}=await supabase.auth.getSession();if(!current.session){message.textContent='Please sign in again before changing your PIN.';return;}
       const {data:saved,error:saveError}=await supabase.functions.invoke('account-pin',{body:{action:'set',app_type:'company',pin,password:setup.elements.password.value},headers:{Authorization:'Bearer '+current.session.access_token}});
       if(saveError){message.textContent=saved?.error||saveError.message;return;}
@@ -128,7 +128,7 @@ form.addEventListener('submit', async event => {
     const email = form.elements.email.value.trim().toLowerCase();
     const password = form.elements.password.value;
     if(mode==='pin'){
-      if(!/^\\d{6}$/.test(pinInput.value))throw new Error('Enter your six-digit PIN.');
+      if(!/^\d{6}$/.test(pinInput.value))throw new Error('Enter your six-digit PIN.');
       const {data:pinData,error:pinError}=await supabase.functions.invoke('account-pin',{body:{action:'login',app_type:'company',email,pin:pinInput.value}});
       if(pinError)throw new Error(pinData?.error||pinError.message||'PIN sign-in failed.');
       const {data:sessionData,error:sessionError}=await supabase.auth.setSession(pinData.session);
