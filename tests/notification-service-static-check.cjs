@@ -18,7 +18,7 @@ assert.match(webhook,/x-hub-signature-256/);
 assert.match(webhook,/fallbackToSms/);
 assert.match(migration,/create table if not exists public\.notification_logs/);
 assert.match(migration,/enable row level security/);
-assert.match(migration,/recipient_phone ~ '\^\\\\\+27/);
+assert.ok(migration.includes("recipient_phone ~ '^\\\\+27"));
 assert.match(admin,/notification-dispatch/);
 assert.match(admin,/Resend message/);
 assert.match(company,/data-page="notifications"/);
