@@ -129,8 +129,9 @@ async function refreshPinPanel(session) {
     pinPanel.id = 'account-pin-security';
     pinPanel.className = 'panel';
     pinPanel.innerHTML = '<h2>Quick sign-in</h2><p data-pin-state>Check your PIN status.</p><button type="button" data-pin-edit>Set up 6-digit PIN</button><form data-pin-form hidden><label>Create 6-digit PIN<input name="pin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="new-password" required></label><label>Confirm 6-digit PIN<input name="confirm_pin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="new-password" required></label><label>Confirm account password<input name="password" type="password" autocomplete="current-password" required></label><button class="primary" type="submit">Save PIN</button><p data-pin-message role="status"></p></form>';
-    const nav = workspace.querySelector('.section-links');
-    if (nav) nav.after(pinPanel); else workspace.querySelector('main.page')?.prepend(pinPanel);
+    const accountSettings = workspace.querySelector('#driver-account-settings');
+    if (accountSettings) accountSettings.append(pinPanel);
+    else { const account = workspace.querySelector('#account-details'); if (account) account.append(pinPanel); else workspace.querySelector('main.page')?.prepend(pinPanel); }
     const edit = pinPanel.querySelector('[data-pin-edit]');
     const setup = pinPanel.querySelector('[data-pin-form]');
     edit.addEventListener('click', () => { setup.hidden = !setup.hidden; });
