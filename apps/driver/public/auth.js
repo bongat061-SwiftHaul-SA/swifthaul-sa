@@ -128,7 +128,7 @@ async function refreshPinPanel(session) {
     pinPanel = document.createElement('section');
     pinPanel.id = 'account-pin-security';
     pinPanel.className = 'panel';
-    pinPanel.innerHTML = '<h2>Quick sign-in</h2><p data-pin-state>Check your PIN status.</p><button type="button" data-pin-edit>Set up 6-digit PIN</button><form data-pin-form hidden><label>Create 6-digit PIN<input name="pin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="new-password" required></label><label>Confirm 6-digit PIN<input name="confirm_pin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="new-password" required></label><button class="primary" type="submit">Save PIN</button><p data-pin-message role="status"></p></form>';
+    pinPanel.innerHTML = '<h2>Quick sign-in</h2><p data-pin-state>Check your PIN status.</p><button type="button" data-pin-edit>Set up 6-digit PIN</button><form data-pin-form hidden><label>Create 6-digit PIN<input name="pin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="new-password" required></label><label>Confirm 6-digit PIN<input name="confirm_pin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="new-password" required></label><label>Confirm account password<input name="password" type="password" autocomplete="current-password" required></label><button class="primary" type="submit">Save PIN</button><p data-pin-message role="status"></p></form>';
     const nav = workspace.querySelector('.section-links');
     if (nav) nav.after(pinPanel); else workspace.querySelector('main.page')?.prepend(pinPanel);
     const edit = pinPanel.querySelector('[data-pin-edit]');
@@ -144,7 +144,7 @@ async function refreshPinPanel(session) {
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) { pinPanel.querySelector('[data-pin-message]').textContent = 'Please sign in again to update your PIN.'; return; }
       const { data: saved, error: saveError } = await supabase.functions.invoke('account-pin', {
-        body: { action: 'set', app_type: 'driver', pin },
+        body: { action: 'set', app_type: 'driver', pin, password: setup.elements.password.value },
         headers: { Authorization: 'Bearer ' + sessionData.session.access_token }
       });
       if (saveError) { pinPanel.querySelector('[data-pin-message]').textContent = saved?.error || saveError.message; return; }
