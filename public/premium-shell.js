@@ -28,7 +28,7 @@
     const quick = document.createElement('section');
     quick.className = 'premium-quick-actions';
     quick.setAttribute('aria-label','Quick actions');
-    quick.innerHTML = '<a href="#new-delivery"><span class="quick-icon">＋</span><strong>New delivery</strong><small>Book a pickup</small></a><a href="#bookings"><span class="quick-icon">↗</span><strong>Track delivery</strong><small>View activity</small></a><a href="wallet.html"><span class="quick-icon">R</span><strong>Wallet</strong><small>Balance & rewards</small></a><a href="settings.html"><span class="quick-icon">⌘</span><strong>Account</strong><small>Your details</small></a>';
+    quick.innerHTML = '<a href="#new-delivery"><span class="quick-icon">＋</span><strong>New delivery</strong><small>Book a pickup</small></a><a href="?page=activity" data-page="activity"><span class="quick-icon">↗</span><strong>Track delivery</strong><small>View activity</small></a><a href="?page=wallet" data-page="wallet"><span class="quick-icon">R</span><strong>Wallet</strong><small>Balance & rewards</small></a><a href="?page=account" data-page="account"><span class="quick-icon">⌘</span><strong>Account</strong><small>Your details</small></a>';
     heading.after(quick);
     const booking = document.getElementById('new-delivery');
     const orders = document.getElementById('bookings');
