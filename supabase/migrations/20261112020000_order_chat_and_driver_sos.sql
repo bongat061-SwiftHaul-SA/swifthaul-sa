@@ -66,7 +66,11 @@ create policy "swifthaul_private_order_sos_broadcast_read" on realtime.messages 
  ))
  or (realtime.topic() like 'order:%' and exists (
    select 1 from public.customer_bookings b where b.waybill=substring(realtime.topic() from 7)
-   and (b.driver_user_id=(select auth.uid())
+   and (b.driver_user_id=(select auth.uid()) or b.owner_hash=(select auth.uid())::text
     or exists(select 1 from public.user_profiles p where p.id=(select auth.uid()) and p.role in ('admin','company_admin','dispatcher')))
  ))
 );
+
+alter table public.notification_logs drop constraint if exists notification_logs_event_type_check;
+alter table public.notification_logs add constraint notification_logs_event_type_check
+check(event_type = any(array['order_dispatched','delivery_otp','document_expiry','payout_success','document_rejected','sos_alert']::text[]));
