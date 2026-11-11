@@ -87,7 +87,7 @@ if(!["sa_citizen","foreign_national"].includes(identityType))return reply(400,{e
  for(const t of requiredFiles){const f=form.get(t);if(!(f instanceof File)||f.size<1||f.size>10485760||!allowed.has(f.type))return reply(400,{error:"missing_or_invalid_document_"+t});}
  if(prdp){const f=form.get("prdp");if(!(f instanceof File)||f.size<1||f.size>10485760||!allowed.has(f.type))return reply(400,{error:"prdp_document_required"});}
  if(text(form.get("background_consent"),5)!=="on")return reply(400,{error:"background_verification_consent_required"});
- const bank=text(form.get("bank_name"),40),holder=text(form.get("account_holder"),120),account=text(form.get("account_number"),30);
+ const bank=text(form.get("bank_name"),40),holder=text(form.get("account_holder"),120),account=text(form.get("account_number"),30),accountType=text(form.get("account_type"),20);
  if(!["FNB","Nedbank","Standard Bank","Absa","Capitec","TymeBank"].includes(bank)||!holder||!/^\d{6,20}$/.test(account))return reply(400,{error:"valid_sa_bank_details_required"});
  const files=[...requiredFiles,...(form.get("enatis_certificate") instanceof File&&(form.get("enatis_certificate") as File).size>0?["enatis_certificate"]:[]),...(form.get("fleet_lease_agreement") instanceof File&&(form.get("fleet_lease_agreement") as File).size>0?["fleet_lease_agreement"]:[]),...(prdp?["prdp"]:[])],uploaded:string[]=[];
  const expiryFor=(type:string):string|null=>({licence_front:licenceExpiry,licence_back:licenceExpiry,vehicle_licence_disc:discExpiry,vehicle_insurance:insuranceExpiry,prdp:prdpExpiry,passport:text(form.get("passport_expiry"),10)||null,work_permit:text(form.get("work_permit_expiry"),10)||null,enatis_certificate:text(form.get("registration_document_expiry"),10)||null,fleet_lease_agreement:text(form.get("registration_document_expiry"),10)||null}[type]??null);
@@ -109,7 +109,7 @@ if(!["sa_citizen","foreign_national"].includes(identityType))return reply(400,{e
   const vehicle={type:vehicleType,gross_vehicle_mass_kg:gvm,make:text(form.get("vehicle_make"),60),model:text(form.get("vehicle_model"),60),year,registration_plate:plate.toUpperCase(),vehicle_licence_disc_expiry:text(form.get("vehicle_disc_expiry"),10),insurance_expiry:text(form.get("insurance_expiry"),10)};
   const universalCodes:Record<string,string>={"FNB":"250655","Nedbank":"198765","Standard Bank":"051001","Absa":"632005","Capitec":"470010","TymeBank":"678910"};
  if(text(form.get("branch_code"),10)!==universalCodes[bank])return reply(400,{error:"bank_universal_branch_code_mismatch"});
- const banking={bank_name:bank,account_holder:holder,universal_branch_code:universalCodes[bank]};
+ const banking={bank_name:bank,account_holder:holder,account_type:accountType,universal_branch_code:universalCodes[bank]};
   const [identityCipher,bankCipher,idCipher,passportCipher,accountCipher]=await Promise.all([
    db.rpc("encrypt_driver_pii",{p_plaintext:JSON.stringify(identity)}),
    db.rpc("encrypt_driver_pii",{p_plaintext:JSON.stringify(banking)}),
