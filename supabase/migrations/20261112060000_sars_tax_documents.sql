@@ -26,7 +26,7 @@ create sequence if not exists public.tax_document_number_seq start 1 increment 1
 create table if not exists public.tax_documents (
  id uuid primary key default gen_random_uuid(),
  document_number text not null unique,
- source_reference text unique,
+ source_reference text,
  document_type text not null check (document_type in ('sender_tax_invoice','sender_receipt','driver_remittance','fleet_statement')),
  order_id text, driver_id uuid, fleet_id uuid,
  subtotal_excl_vat_zar numeric(12,2) not null default 0,
@@ -36,7 +36,8 @@ create table if not exists public.tax_documents (
  issued_at timestamptz not null default now(),
  created_at timestamptz not null default now(),
  metadata jsonb not null default '{}'::jsonb,
- constraint tax_documents_target_check check (order_id is not null or driver_id is not null or fleet_id is not null)
+ constraint tax_documents_target_check check (order_id is not null or driver_id is not null or fleet_id is not null),
+ constraint tax_documents_source_reference_unique unique(source_reference)
 );
 create index if not exists tax_documents_order_idx on public.tax_documents(order_id,issued_at desc);
 create index if not exists tax_documents_driver_idx on public.tax_documents(driver_id,issued_at desc);
