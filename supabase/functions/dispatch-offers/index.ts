@@ -35,9 +35,11 @@ Deno.serve(async req => {
   try { body=await req.json(); } catch { return reply(400,{error:"invalid_json"}); }
   if(body.action==="set_online") {
     if(!driver||typeof body.online!=="boolean") return reply(400,{error:"invalid_online_preference"});
-    const {data:eligible,error:eligibilityError}=await db.rpc("driver_can_accept_work",{p_driver_user_id:actor});
-    if(eligibilityError||eligible!==true) return reply(403,{error:"driver_onboarding_documents_or_background_clearance_incomplete"});
-    const {error}=await db.from("driver_profiles").update({is_online:body.online,online_updated_at:new Date().toISOString()}).eq("user_id",actor);
+    if(body.online){
+      const {data:eligible,error:eligibilityError}=await db.rpc("driver_can_accept_work",{p_driver_user_id:actor});
+      if(eligibilityError||eligible!==true) return reply(403,{error:"driver_onboarding_documents_or_background_clearance_incomplete"});
+    }
+    const {error}=await db.from("driver_profiles").update({is_online:body.online,online_updated_at:new Date().toISOString(),availability_status:body.online?"available":"offline"}).eq("user_id",actor);
     if(error) return reply(500,{error:"online_status_update_failed"});
     return reply(200,{is_online:body.online});
   }
