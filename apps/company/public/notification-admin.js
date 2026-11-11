@@ -3,7 +3,7 @@
   if(!root)return;
   const panel=document.createElement('section');
   panel.id='notification-audit';panel.className='panel';panel.hidden=true;
-  panel.innerHTML='<h2>Notification audit</h2><p class="subtle">Review WhatsApp and SMS lifecycle messages, delivery receipts, and automatic fallback attempts.</p><div class="notification-toolbar"><label for="notification-filter">Status</label><select id="notification-filter"><option value="">All messages</option><option value="queued">Queued</option><option value="sent">Sent</option><option value="delivered">Delivered</option><option value="read">Read</option><option value="failed">Failed</option></select><button type="button" id="notification-refresh">Refresh audit</button></div><p id="notification-status" role="status" aria-live="polite">Sign in as a Company Admin to view notification records.</p><div id="notification-list" class="notification-list"></div>';
+  panel.innerHTML='<h2>Notification audit</h2><p class="subtle">Review WhatsApp and SMS lifecycle messages, delivery receipts, and automatic fallback attempts.</p><div class="notification-toolbar"><label for="notification-filter">Status</label><select id="notification-filter"><option value="">All messages</option><option value="queued">Queued</option><option value="sent">Sent</option><option value="delivered">Delivered</option><option value="read">Read</option><option value="failed">Failed</option></select><button type="button" id="notification-refresh">Refresh audit</button><button type="button" id="notification-process-queued">Process queued alerts</button></div><p id="notification-status" role="status" aria-live="polite">Sign in as a Company Admin to view notification records.</p><div id="notification-list" class="notification-list"></div>';
   root.append(panel);
   const status=panel.querySelector('#notification-status'),list=panel.querySelector('#notification-list'),filter=panel.querySelector('#notification-filter');
   let active=false,request=0;
@@ -46,6 +46,7 @@
     list.append(card);
   }
   panel.querySelector('#notification-refresh').addEventListener('click',load);
+  panel.querySelector('#notification-process-queued').addEventListener('click',async event=>{const button=event.currentTarget;button.disabled=true;button.textContent='Processing…';try{const result=await invoke({action:'process_queue'});status.textContent=(result.processed||0)+' queued alert(s) processed.';await load();}catch(error){status.textContent=error.message;}finally{button.disabled=false;button.textContent='Process queued alerts';}});
   filter.addEventListener('change',load);
   document.addEventListener('account-ready',event=>{active=event.detail?.role==='admin'||event.detail?.role==='company_admin';if(active)load();else status.textContent='Only Company Admin accounts can view notification audit records.';});
   document.addEventListener('account-cleared',()=>{active=false;request++;list.replaceChildren();status.textContent='';});
