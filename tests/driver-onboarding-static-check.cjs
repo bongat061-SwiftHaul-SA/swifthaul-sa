@@ -23,8 +23,8 @@ const payoutEdge=fs.readFileSync('supabase/functions/driver-payouts/index.ts','u
 const payoutUi=fs.readFileSync('apps/driver/public/payouts.js','utf8');
 const dispatch=fs.readFileSync('supabase/functions/dispatch-operations/index.ts','utf8');
 const checks=[
- ['four-step South African onboarding',/Personal & identity verification[\s\S]*Licence & PrDP[\s\S]*Vehicle & documents[\s\S]*Banking & checks/.test(js)],
- ['dedicated driver onboarding page and /admin/drivers route',/onboarding: \{ title: 'Driver onboarding'/.test(driverPages)&&/page=drivers/.test(adminRoute)],
+ ['four-step South African onboarding',/Personal & identity verification[\s\S]*Driver licence & PrDP[\s\S]*Vehicle & compliance documents[\s\S]*Banking & background check/.test(js)],
+ ['dedicated driver onboarding page and /admin/drivers route',/onboarding: \{ title: 'Driver onboarding\.'/.test(driverPages)&&/page=drivers/.test(adminRoute)],
  ['South African cellphone format validation',/\+27/.test(js)&&/valid_sa_mobile_required/.test(edge)],
  ['South African ID Luhn checksum and DOB age validation',/function luhn\(v\)/.test(js)&&/luhn\(idNumber\)/.test(edge)&&/applicantAge<18/.test(edge)],
  ['citizen and foreign national document branches',/sa_citizen/.test(js)&&/foreign_national/.test(js)&&/passport_expiry/.test(js)&&/work_permit_expiry/.test(js)],
@@ -49,7 +49,7 @@ const checks=[
  ['30-second dispatch offers show driver net payout and distance',/Date.now\(\)\+30_000/.test(offers)&&/net_payout_zar/.test(offers)&&/30 SEC/.test(availability)&&/net payout/i.test(availability)],
  ['go-online UI blocks uncleared drivers and links to onboarding',/can_go_online/.test(availability)&&/Review onboarding documents/.test(availability)],
  ['active trip has pickup and drop-off arrival checkpoints',/arrive_pickup/.test(dispatch)&&/arrive_dropoff/.test(dispatch)&&/arrived_pickup_at/.test(tripSchema)&&/Arrived at pickup/.test(operations)&&/Arrived at drop-off/.test(operations)],
- ['driver dashboard and earnings tab render daily, weekly, trip and EFT data',/dashboard: \{ title: 'Live trip dashboard'/.test(driverPages)&&/earnings: \{ title: 'Your earnings'/.test(driverPages)&&/today_net_cents/.test(earnings)&&/weekly_net_cents/.test(earnings)&&/Gross fare/.test(earningsUi)&&/payout_status/.test(earnings)],
+ ['driver dashboard and earnings tab render daily, weekly, trip and EFT data',/dashboard: \{ title: 'Live trip dashboard\.'/.test(driverPages)&&/earnings: \{ title: 'Your earnings\.'/.test(driverPages)&&/today_net_cents/.test(earnings)&&/weekly_net_cents/.test(earnings)&&/Gross fare/.test(earningsUi)&&/payout_status/.test(earnings)],
  ['dashboard route and earnings script are wired',/page=dashboard/.test(fs.readFileSync('apps/driver/public/index.html','utf8'))&&/driver-earnings.js/.test(fs.readFileSync('apps/driver/public/index.html','utf8'))],
  ['verified payout account is used without sending plaintext bank details from client',/account_type/.test(js)&&/account_number_aesgcm/.test(payoutEdge)&&/request_driver_payout_secure/.test(payoutEdge)&&/account_number_aesgcm/.test(payoutSchema)&&/account_number:undefined/.test(payoutEdge)&&/amount_cents:amount/.test(payoutUi)]
 ];
