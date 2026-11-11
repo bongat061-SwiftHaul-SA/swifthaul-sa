@@ -200,10 +200,23 @@
     if(map || !window.maplibregl) return;
     map=new maplibregl.Map({container:'global-location-map',style:mapStyle,center:[28.195352552065742,-26.32516865200042],zoom:13.5,attributionControl:true,dragRotate:false,pitchWithRotate:false, maxPitch:0});
     map.addControl(new maplibregl.NavigationControl({showCompass:false}),'top-right');
+    // If the detailed Voyager style stalls on a slow mobile connection, switch
+    // to a lightweight OpenStreetMap raster style instead of leaving a blank map.
+    let fallbackTimer = setTimeout(() => {
+      if (mapLoaded || !map) return;
+      map.setStyle({
+        version:8,
+        sources:{osm:{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,attribution:'&copy; OpenStreetMap contributors'}},
+        layers:[{id:'osm-raster',type:'raster',source:'osm'}]
+      });
+      $('loc-status').textContent='Loading the lightweight map view. Address search and exact pin placement remain available.';
+    },10000);
     map.on('load',()=>{
+      clearTimeout(fallbackTimer);
       mapLoaded=true;routeStyle();
       for(const key of ['pickup','dropoff']) if(state[key]) placeMarker(key,state[key].lat,state[key].lng);
       fitLocations();
+      requestAnimationFrame(()=>map&&map.resize());
     });
     map.on('click',event=>{
       if(activeField){saveLocation(activeField,event.lngLat.lat,event.lngLat.lng,'Map pin adjusted. Finding the nearest mapped address…');reverseLabel(activeField,event.lngLat.lat,event.lngLat.lng);}
