@@ -51,6 +51,7 @@ if(!["sa_citizen","foreign_national"].includes(identityType))return reply(400,{e
  if(!validDate(text(form.get("registration_document_expiry"),10))||Date.parse(text(form.get("registration_document_expiry"),10)+"T00:00:00")<=Date.now())return reply(400,{error:"registration_document_must_be_current"});
  for(const t of requiredFiles){const f=form.get(t);if(!(f instanceof File)||f.size<1||f.size>10485760||!allowed.has(f.type))return reply(400,{error:"missing_or_invalid_document_"+t});}
  if(prdp){const f=form.get("prdp");if(!(f instanceof File)||f.size<1||f.size>10485760||!allowed.has(f.type))return reply(400,{error:"prdp_document_required"});}
+ if(text(form.get("background_consent"),5)!=="on")return reply(400,{error:"background_verification_consent_required"});
  const bank=text(form.get("bank_name"),40),holder=text(form.get("account_holder"),120),account=text(form.get("account_number"),30);
  if(!["FNB","Nedbank","Standard Bank","Absa","Capitec","TymeBank"].includes(bank)||!holder||!/^\d{6,20}$/.test(account))return reply(400,{error:"valid_sa_bank_details_required"});
  const files=[...requiredFiles,...(form.get("enatis_certificate") instanceof File?["enatis_certificate"]:[]),...(form.get("fleet_lease_agreement") instanceof File?["fleet_lease_agreement"]:[]),...(prdp?["prdp"]:[])],uploaded:string[]=[];
@@ -100,7 +101,7 @@ if(!["sa_citizen","foreign_national"].includes(identityType))return reply(400,{e
   await db.from("driver_onboarding_notifications").insert({driver_user_id:u.user.id,notification_type:"application_submitted",title:"Application received",message:"Your driver onboarding application is pending document and background verification."});
   return reply(201,{submitted:true,status:"pending",message:"Application submitted. You cannot go online until SwiftHaul approves your documents."});
  }catch(e){
-  if(uploaded.length)await db.storage.from("driver-application-documents").remove(uploaded);
+  if(uploaded.length){await db.from("driver_documents").delete().eq("driver_user_id",u.user.id).in("storage_path",uploaded);await db.storage.from("driver-application-documents").remove(uploaded);}
   return reply(500,{error:e instanceof Error?e.message:"application_submission_failed"});
  }
 });
