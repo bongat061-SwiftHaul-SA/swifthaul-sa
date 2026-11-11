@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 type VehicleType = "motorbike" | "hatchback_sedan" | "bakkie" | "truck";
 const money = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
-const validTypes: VehicleType[] = ["motorbike","hatchback_sedan","bakkie_van","truck"];
+const validTypes: VehicleType[] = ["motorbike","hatchback_sedan","bakkie","truck"];
 
 function isRuleActive(rule: typeof surgeRules.$inferSelect, now: Date) {
   if (!rule.isActive) return false;
