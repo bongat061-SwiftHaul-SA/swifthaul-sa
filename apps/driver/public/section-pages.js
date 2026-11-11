@@ -16,6 +16,7 @@
   const account = root.querySelector('#account-details');
   const onboarding = root.querySelector('#driver-onboarding-root');
   const availability = root.querySelector('#availability');
+  if (homeHero && availability) homeHero.insertAdjacentElement('afterend', availability);
   const payouts = root.querySelector('#payouts');
   const premium = root.querySelector('#premium');
   const insuranceClaims = root.querySelector('#insurance-claims');
