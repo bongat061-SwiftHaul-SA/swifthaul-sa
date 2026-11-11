@@ -95,7 +95,7 @@ Deno.serve(async(req:Request)=>{
   const required=profile.identity_type==="sa_citizen"?["id_front","id_back","profile_selfie","licence_front","licence_back","vehicle_licence_disc","vehicle_insurance","proof_of_address"]:["passport","work_permit","licence_front","licence_back","vehicle_licence_disc","vehicle_insurance","proof_of_address"];
   const {data:documents,error:docError}=await admin.from("driver_documents").select("document_type,verification_status,expiry_date").eq("driver_user_id",driverId);
   if(docError)return reply(500,{error:"driver_documents_lookup_failed"});
-  const valid=(d:any)=>d.verification_status==="approved"&&(!d.expiry_date||d.expiry_date>=today());
+  const valid=(d:any)=>{const expiryRequired=["licence_front","licence_back","vehicle_licence_disc","vehicle_insurance","passport","work_permit","enatis_certificate","fleet_lease_agreement","prdp"].includes(d.document_type);return d.verification_status==="approved"&&(!expiryRequired||(!!d.expiry_date&&d.expiry_date>=today()))&&(!d.expiry_date||d.expiry_date>=today())&&(d.document_type!=="proof_of_address"||!!d.issued_at&&d.issued_at>=new Date(Date.now()-92*86400000).toISOString().slice(0,10)&&d.issued_at<=today());};
   const missing=required.filter(t=>!(documents??[]).some((d:any)=>d.document_type===t&&valid(d)));
   if(!(documents??[]).some((d:any)=>["enatis_certificate","fleet_lease_agreement","vehicle_document"].includes(d.document_type)&&valid(d)))missing.push("eNaTIS certificate or fleet lease agreement");
   if(profile.prdp_holder&&!(documents??[]).some((d:any)=>d.document_type==="prdp"&&valid(d)))missing.push("PrDP");
