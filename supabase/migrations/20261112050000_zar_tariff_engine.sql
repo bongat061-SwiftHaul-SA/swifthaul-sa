@@ -1,6 +1,6 @@
 -- Staging ZAR tariff configuration, quote locking and audit trail.
 create table if not exists public.vehicle_tariffs (
- id uuid primary key default gen_random_uuid(), vehicle_type text not null unique check (vehicle_type in ('motorbike','hatchback_sedan','bakkie_van','truck')),
+ id uuid primary key default gen_random_uuid(), vehicle_type text not null unique check (vehicle_type in ('motorbike','hatchback_sedan','bakkie','truck')),
  base_fare_zar numeric(12,2) not null default 0 check (base_fare_zar >= 0), included_km numeric(8,2) not null default 0 check (included_km >= 0),
  tier1_max_km numeric(8,2) not null default 2 check (tier1_max_km >= included_km), tier1_rate_per_km_zar numeric(12,2) not null default 0 check (tier1_rate_per_km_zar >= 0),
  tier2_rate_per_km_zar numeric(12,2) not null default 0 check (tier2_rate_per_km_zar >= 0), minimum_fare_zar numeric(12,2) not null default 0 check (minimum_fare_zar >= 0),
