@@ -92,3 +92,93 @@ body[data-app] #workspace .section-number{color:#9da7b5!important}
 @media(prefers-reduced-motion:reduce){body[data-app] #workspace *,body[data-app] #workspace *:before,body[data-app] #workspace *:after{animation:none!important;transition:none!important}}
 /* Keep map tiles and map labels in their own cartographic colour scheme. */
 body[data-app] #workspace .maplibregl-map,body[data-app] #workspace .leaflet-container{color:#20252c!important}
+
+
+/* Company Admin: complete dark-premium treatment, including sign-in and map subpage. */
+body[data-app="company"]{--brand:#dce2e9;--muted:#a3adba;--line:#303946;--surface:#12161d;--soft:#191f28;--border:#303946;background:#090b0f!important;color:#f4f6f8!important}
+body[data-app="company"] #auth-screen{min-height:100dvh;background:#090b0f!important;color:#f4f6f8!important}
+body[data-app="company"] #auth-screen>.topbar{background:#0d1015!important;border-bottom:1px solid #303946!important;color:#f4f6f8!important}
+body[data-app="company"] #auth-screen .wordmark{color:#f4f6f8!important}
+body[data-app="company"] #auth-screen .wordmark span{color:#c5cdd7!important}
+body[data-app="company"] #auth-screen .app-tag{color:#a3adba!important;border-color:#465160!important}
+body[data-app="company"] #auth-screen .eyebrow{color:#aeb8c6!important}
+body[data-app="company"] #auth-screen .auth-layout{background:#090b0f!important}
+body[data-app="company"] #auth-screen .auth-story{background:linear-gradient(145deg,#171d26,#0d1117 72%)!important;color:#f4f6f8!important}
+body[data-app="company"] #auth-screen .auth-story:after{border-color:#8793a21f!important;box-shadow:0 0 0 65px #8793a20c,0 0 0 130px #8793a208!important}
+body[data-app="company"] #auth-screen .auth-story .eyebrow,
+body[data-app="company"] #auth-screen .story-bottom{color:#aeb8c6!important}
+body[data-app="company"] #auth-screen .auth-story h2,
+body[data-app="company"] #auth-screen .auth-panel h1{color:#f4f6f8!important}
+body[data-app="company"] #auth-screen .auth-story p,
+body[data-app="company"] #auth-screen .subtle,
+body[data-app="company"] #auth-screen .auth-note,
+body[data-app="company"] #auth-screen .social-auth p{color:#a3adba!important}
+body[data-app="company"] #auth-screen .auth-panel{color:#f4f6f8!important}
+body[data-app="company"] #auth-screen label{color:#d6dce4!important}
+body[data-app="company"] #auth-screen input:not([type=checkbox]){background:#10151c!important;color:#f4f6f8!important;border:1px solid #3a4554!important;border-radius:12px!important}
+body[data-app="company"] #auth-screen input::placeholder{color:#778392!important}
+body[data-app="company"] #auth-screen .primary{background:#f0f2f5!important;color:#101318!important;border:1px solid #f0f2f5!important;border-radius:12px!important}
+body[data-app="company"] #auth-screen .quiet,
+body[data-app="company"] #auth-screen button:not(.primary){background:#1b222c!important;color:#e8edf3!important;border:1px solid #465160!important}
+body[data-app="company"] #auth-screen .social-auth button{background:#171d26!important;color:#e8edf3!important;border:1px solid #3a4554!important}
+body[data-app="company"] #auth-screen .guest-button{background:#1b222c!important;color:#e8edf3!important;border-color:#465160!important}
+body[data-app="company"] #auth-screen .auth-links button{background:transparent!important;border:0!important;color:#c2cad4!important}
+body[data-app="company"] #workspace .topbar .wordmark{color:#f4f6f8!important}
+body[data-app="company"] #workspace .topbar .wordmark span{color:#c5cdd7!important}
+body[data-app="company"] #workspace .topbar .app-tag{color:#a3adba!important;border-color:#465160!important}
+body[data-app="company"] #workspace .account{color:#dce2e9!important}
+body[data-app="company"] #workspace .page{grid-template-columns:224px minmax(0,1fr)!important}
+body[data-app="company"] #workspace .section-links{background:#11151c!important;border-color:#303946!important}
+body[data-app="company"] #workspace .section-links:before{color:#8994a2!important}
+body[data-app="company"] #workspace .section-links a{color:#b8c1cd!important}
+body[data-app="company"] #workspace .section-links a:first-child,
+body[data-app="company"] #workspace .section-links a.is-active,
+body[data-app="company"] #workspace .section-links a[aria-current="page"],
+body[data-app="company"] #workspace .section-links a:hover,
+body[data-app="company"] #workspace .section-links a:focus{background:#eef1f5!important;color:#11151b!important}
+body[data-app="company"] #workspace .page>section.panel,
+body[data-app="company"] #workspace .workspace-grid>.panel,
+body[data-app="company"] #workspace .workspace-grid aside>.panel,
+body[data-app="company"] #workspace #monthly-reports{background:#12161d!important;border-color:#303946!important;color:#f4f6f8!important;box-shadow:none!important}
+body[data-app="company"] #workspace .accent-panel{background:#191f28!important;color:#f4f6f8!important;border-color:#465160!important}
+body[data-app="company"] #workspace .accent-panel h2,
+body[data-app="company"] #workspace .accent-panel strong{color:#f4f6f8!important}
+body[data-app="company"] #workspace .accent-panel p{color:#aeb8c6!important}
+body[data-app="company"] #workspace .status,
+body[data-app="company"] #workspace .badge{background:#252d38!important;color:#dce2e9!important;border:1px solid #465160!important}
+body[data-app="company"] #workspace .operations-list .order,
+body[data-app="company"] #workspace .operations-list .card{background:#171d26!important;border-color:#303946!important;color:#e8edf3!important}
+body[data-app="company"] #workspace #financial-content>.stat,
+body[data-app="company"] #workspace #financial-content>.panel{background:#171d26!important;border-color:#303946!important}
+body[data-app="company"] #workspace #monthly-reports input{background:#0b0f15!important;color:#f4f6f8!important;border-color:#3a4554!important}
+body[data-app="company"] #workspace #monthly-reports button{background:#eef1f5!important;color:#11151b!important;border:1px solid #eef1f5!important}
+body[data-app="company"] #workspace .guest-banner{background:#191f28!important;color:#e8edf3!important;border-color:#303946!important}
+
+/* Standalone Company operations map uses the same graphite shell; map tiles stay natural. */
+body[data-app="company"]>.top{background:#0d1015!important;color:#f4f6f8!important;border-bottom:1px solid #303946!important}
+body[data-app="company"]>.top .brand{color:#f4f6f8!important}
+body[data-app="company"]>.top .brand span{color:#c5cdd7!important}
+body[data-app="company"]>.top .back{color:#dce2e9!important}
+body[data-app="company"]>.wrap{color:#f4f6f8!important}
+body[data-app="company"]>.wrap .eyebrow{color:#aeb8c6!important}
+body[data-app="company"]>.wrap .intro h1{color:#f4f6f8!important}
+body[data-app="company"]>.wrap .intro p,
+body[data-app="company"]>.wrap .footer{color:#a3adba!important}
+body[data-app="company"]>.wrap .address-panel{background:#12161d!important;border-color:#303946!important;box-shadow:none!important}
+body[data-app="company"]>.wrap .address-panel input,
+body[data-app="company"]>.wrap .pin-choice select{background:#0b0f15!important;color:#f4f6f8!important;border-color:#3a4554!important}
+body[data-app="company"]>.wrap .address-panel input::placeholder{color:#778392!important}
+body[data-app="company"]>.wrap .search-meta,
+body[data-app="company"]>.wrap .pin-summary{color:#a3adba!important}
+body[data-app="company"]>.wrap .pin-summary strong{color:#f4f6f8!important}
+body[data-app="company"]>.wrap .pin-summary p{color:#a3adba!important}
+body[data-app="company"]>.wrap .address-result{background:#191f28!important;color:#e8edf3!important;border-color:#3a4554!important}
+body[data-app="company"]>.wrap .city-shortcuts button{background:#191f28!important;color:#e8edf3!important;border-color:#3a4554!important}
+body[data-app="company"]>.wrap .city-shortcuts button[aria-pressed=true]{background:#eef1f5!important;color:#11151b!important;border-color:#eef1f5!important}
+body[data-app="company"]>.wrap .search-row button,
+body[data-app="company"]>.wrap .pin-summary button{background:#eef1f5!important;color:#11151b!important}
+body[data-app="company"]>.wrap .map-shell{border-color:#303946!important;box-shadow:none!important}
+@media(max-width:760px){
+ body[data-app="company"] #workspace .page{display:block!important;padding:20px 14px 48px!important}
+ body[data-app="company"] #workspace .section-links{display:flex!important;flex-direction:row!important;overflow-x:auto!important}
+}
