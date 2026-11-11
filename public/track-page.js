@@ -12,5 +12,25 @@ else{
   document.getElementById("track-dropoff").textContent=order.dropoff||"Drop-off location";
   document.getElementById("track-chat").addEventListener("click",()=>window.openSwiftHaulChat({orderId:order.waybill,trackingCode:code,role:"recipient"}));
   content.hidden=false;status.textContent="Your delivery details are available.";
+  if(order.status==="delivered"){
+   const card=document.createElement("section");card.className="track-card";card.id="track-rating-card";
+   const heading=document.createElement("h2");heading.textContent="Rate your delivery";
+   const intro=document.createElement("p");intro.className="track-note";intro.textContent="Your feedback helps SwiftHaul recognise great service and address delivery issues.";
+   const stars=document.createElement("div");stars.style.display="flex";stars.style.gap="8px";stars.setAttribute("role","radiogroup");stars.setAttribute("aria-label","Choose a rating from one to five stars");
+   let selected=0;const starButtons=[];
+   const paint=()=>starButtons.forEach((b,i)=>{b.style.color=i<selected?"#f5c451":"#697581";b.setAttribute("aria-checked",String(i+1===selected));});
+   for(let i=1;i<=5;i++){const b=document.createElement("button");b.type="button";b.textContent="★";b.style.cssText="font-size:32px;background:transparent;border:0;padding:3px;cursor:pointer";b.setAttribute("role","radio");b.setAttribute("aria-label",i+" stars");b.addEventListener("click",()=>{selected=i;paint();renderTags();});stars.append(b);starButtons.push(b);}
+   const tagBox=document.createElement("div");tagBox.className="track-actions";
+   const comment=document.createElement("textarea");comment.maxLength=1200;comment.placeholder="Optional comment";comment.style.cssText="width:100%;min-height:85px;background:#0d1116;color:#fff;border:1px solid #38424d;border-radius:10px;padding:12px;margin-top:12px";
+   const submit=document.createElement("button");submit.type="button";submit.textContent="Submit rating";
+   const feedback=document.createElement("p");feedback.className="track-note";feedback.setAttribute("role","status");
+   const tagsPositive=["On time","Friendly driver","Careful handling","Great communication"],tagsIssue=["Damaged Parcel","Asked for Extra Cash","Late delivery","Poor communication","Parcel mishandled","Other"];
+   const renderTags=()=>{tagBox.replaceChildren();const label=document.createElement("p");label.className="track-note";label.textContent=selected>=4?"What went well? (optional)":selected>=1?"What could be improved? (optional)": "Choose stars to add optional feedback";tagBox.append(label);if(!selected)return;(selected>=4?tagsPositive:tagsIssue).forEach(tag=>{const b=document.createElement("button");b.type="button";b.textContent=tag;b.dataset.selected="false";b.addEventListener("click",()=>{b.dataset.selected=b.dataset.selected==="true"?"false":"true";b.style.background=b.dataset.selected==="true"?"#46515d":"#1b222a";});tagBox.append(b);});};
+   submit.addEventListener("click",async()=>{if(!selected){feedback.textContent="Please select a star rating.";return;}submit.disabled=true;try{const chosen=[...tagBox.querySelectorAll("button[data-selected=true]")].map(b=>b.textContent);const response=await fetch(SUPABASE_URL+"/functions/v1/order-rating",{method:"POST",headers:{apikey:SUPABASE_PUBLISHABLE_KEY,"Content-Type":"application/json"},body:JSON.stringify({tracking_code:code,rater_role:"recipient",stars:selected,tags:chosen,comment:comment.value})});const result=await response.json();if(!response.ok||result.error)throw new Error(result.error||"Rating could not be saved.");feedback.textContent="Thank you. Your rating has been saved.";card.querySelectorAll("button,textarea").forEach(el=>el.disabled=true);}catch(e){feedback.textContent=e.message;submit.disabled=false;}});
+   card.append(heading,intro,stars,tagBox,comment,submit,feedback);
+   const previous=await fetch(SUPABASE_URL+"/functions/v1/order-rating?tracking_code="+encodeURIComponent(code),{headers:{apikey:SUPABASE_PUBLISHABLE_KEY}}).then(r=>r.json()).catch(()=>null);
+   if(previous?.ratings?.some(r=>r.rater_role==="recipient")){feedback.textContent="Thank you. You have already rated this delivery.";stars.querySelectorAll("button").forEach(b=>b.disabled=true);comment.disabled=true;submit.disabled=true;}
+   content.append(card);
+  }
  }catch(e){status.textContent=e.message;status.className="track-error";}
 }
