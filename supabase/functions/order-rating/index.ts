@@ -26,7 +26,10 @@ Deno.serve(async(req:Request)=>{
  if(!["sender","recipient"].includes(role))return reply(400,{error:"invalid_rater_role"});
  const stars=Number(body.stars);
  if(!Number.isInteger(stars)||stars<1||stars>5)return reply(400,{error:"stars_must_be_1_to_5"});
- const positiveTags=["On time","Friendly driver","Careful handling","Great communication"];\n const issueTags=["Damaged Parcel","Asked for Extra Cash","Late delivery","Poor communication","Parcel mishandled","Other"];\n const permitted=stars>=4?positiveTags:issueTags;\n const tags=Array.isArray(body.tags)?[...new Set(body.tags.filter((x:any)=>typeof x==="string"&&permitted.includes(x)))] : [];
+ const positiveTags=["On time","Friendly driver","Careful handling","Great communication"];
+ const issueTags=["Damaged Parcel","Asked for Extra Cash","Late delivery","Poor communication","Parcel mishandled","Other"];
+ const permitted=stars>=4?positiveTags:issueTags;
+ const tags=Array.isArray(body.tags)?[...new Set(body.tags.filter((x:any)=>typeof x==="string"&&permitted.includes(x)))] : [];
  const comment=typeof body.comment==="string"?body.comment.trim().slice(0,1200):null;
  const {data:created,error:insertError}=await db.from("delivery_ratings").insert({order_id:order.waybill,driver_id:order.driver_user_id,fleet_id:vehicle?.fleet_id||null,rater_role:role,stars,tags,comment}).select("id,order_id,driver_id,rater_role,stars,tags,created_at").single();
  if(insertError?.code==="23505")return reply(409,{error:"rating_already_submitted_for_this_role"});
