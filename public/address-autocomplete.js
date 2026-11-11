@@ -4,16 +4,16 @@
 
   const style = document.createElement('style');
   style.textContent = `
-    .address-suggestions{position:absolute;z-index:1200;left:0;right:0;top:100%;margin-top:5px;background:#fff;border:1px solid #c8d3c7;border-radius:10px;box-shadow:0 12px 30px #17352e1c;max-height:260px;overflow:auto}
+    .address-suggestions{position:absolute;z-index:1200;left:0;right:0;top:100%;margin-top:5px;background:#111923;border:1px solid #465467;border-radius:12px;box-shadow:0 12px 30px #0008;max-height:260px;overflow:auto}
     .address-field-wrap{position:relative}
-    .address-suggestions button{display:block;width:100%;padding:12px 14px;border:0;border-bottom:1px solid #edf1eb;border-radius:0;background:#fff;text-align:left;font-size:12px;line-height:1.55;color:#17352e;white-space:normal}
+    .address-suggestions button{display:block;width:100%;padding:12px 14px;border:0;border-bottom:1px solid #2b3745;border-radius:0;background:#111923;text-align:left;font-size:12px;line-height:1.55;color:#edf2f7;white-space:normal}
     .address-suggestions button:last-child{border-bottom:0}
-    .address-suggestions button:hover,.address-suggestions button[aria-selected=true]{background:#edf4e9}
+    .address-suggestions button:hover,.address-suggestions button[aria-selected=true]{background:#273444}
     .address-suggestions .suggestion-main{display:block;font-weight:700}
-    .address-suggestions .suggestion-meta{display:block;margin-top:3px;color:#61776f;font-size:10px;font-weight:500}
-    .address-search-status{min-height:16px;margin:5px 0 0;color:#61776f;font-size:10px;line-height:1.5}
-    .address-search-button{margin:6px 0 0!important;padding:7px 10px!important;border:1px solid #d6ded8!important;border-radius:8px!important;background:#f3f6f4!important;color:#263b30!important;font-size:10px!important;font-weight:800}
-    .address-helper{margin:0 0 14px;color:#61776f;font-size:11px;line-height:1.65}
+    .address-suggestions .suggestion-meta{display:block;margin-top:3px;color:#aab7c7;font-size:10px;font-weight:500}
+    .address-search-status{min-height:16px;margin:5px 0 0;color:#aab7c7;font-size:10px;line-height:1.5}
+    .address-search-button{margin:6px 0 0!important;padding:7px 10px!important;border:1px solid #536276!important;border-radius:8px!important;background:#202b39!important;color:#eef2f7!important;font-size:10px!important;font-weight:800}
+    .address-helper{margin:0 0 14px;color:#aab7c7;font-size:11px;line-height:1.65}
   `;
   document.head.append(style);
 
@@ -140,7 +140,7 @@
       try{
         let results=resultCache.get(cacheKey);
         if(!results){
-          const params=new URLSearchParams({q:query,format:'jsonv2',addressdetails:'1',limit:'8','accept-language':'en'});
+          const params=new URLSearchParams({q:query,format:'jsonv2',addressdetails:'1',limit:'8',countrycodes:'za','accept-language':'en'});
           const response=await window.swiftHaulNominatimFetch('https://nominatim.openstreetmap.org/search?'+params.toString(),{
             signal:activeController.signal,headers:{Accept:'application/json'}
           });
