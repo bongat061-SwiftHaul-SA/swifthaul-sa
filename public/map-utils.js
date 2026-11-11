@@ -8,11 +8,7 @@ window.renderDeliveryMap = (element, route, onTileError = () => {}) => {
     container:element,
     style:{
       version:8,
-      sources:{carto:{type:'raster',tiles:[
-        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-        'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
-      ],tileSize:256,attribution:'&copy; OpenStreetMap contributors'}},
+      sources:{carto:{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,attribution:'&copy; OpenStreetMap contributors'}},
       layers:[{id:'carto-voyager',type:'raster',source:'carto'}]
     },
     center:coords[0],zoom:12,scrollZoom:false,attributionControl:true
