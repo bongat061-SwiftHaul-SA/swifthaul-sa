@@ -31,7 +31,10 @@ Deno.serve(async(req:Request)=>{
  const prdp=text(form.get("prdp_holder"),5)==="true",gvm=Number(text(form.get("vehicle_gvm_kg"),8)),prdpCategory=text(form.get("prdp_category"),30),prdpExpiry=text(form.get("prdp_expiry"),10);
  const requiredFiles=identityType==="sa_citizen"?["id_front","id_back","profile_selfie"]:["passport","work_permit"];
  requiredFiles.push("licence_front","licence_back","vehicle_licence_disc","vehicle_insurance","proof_of_address");
-if(!validDate(dob)||Date.parse(dob+"T00:00:00")>Date.now())return reply(400,{error:"valid_date_of_birth_required"});
+if(!["sa_citizen","foreign_national"].includes(identityType))return reply(400,{error:"valid_identity_type_required"});
+ if(text(form.get("background_consent"),5)!=="true")return reply(400,{error:"background_verification_consent_required"});
+ if(email.toLowerCase()!==(u.user.email||"").toLowerCase())return reply(400,{error:"application_email_must_match_signed_in_account"});
+ if(!validDate(dob)||Date.parse(dob+"T00:00:00")>Date.now())return reply(400,{error:"valid_date_of_birth_required"});
  const birth=new Date(dob+"T00:00:00"),today=new Date();let applicantAge=today.getFullYear()-birth.getFullYear();if(today.getMonth()<birth.getMonth()||(today.getMonth()===birth.getMonth()&&today.getDate()<birth.getDate()))applicantAge--;if(applicantAge<18)return reply(400,{error:"driver_must_be_at_least_18"});
  if(identityType==="sa_citizen"&&(!/^\d{13}$/.test(idNumber)||!luhn(idNumber)||idNumber.slice(0,6)!==dob.slice(2,4)+dob.slice(5,7)+dob.slice(8,10)))return reply(400,{error:"valid_luhn_sa_id_matching_birth_date_required"});
  if(identityType==="foreign_national"&&(!passport||!trn))return reply(400,{error:"passport_and_traffic_register_number_required"});
@@ -63,10 +66,12 @@ if(!validDate(dob)||Date.parse(dob+"T00:00:00")>Date.now())return reply(400,{err
   const identity={full_name:fullName,phone,email,citizenship:identityType,id_number:identityType==="sa_citizen"?idNumber:null,date_of_birth:dob,passport_number:identityType==="foreign_national"?passport:null,traffic_register_number:identityType==="foreign_national"?trn:null};
   const licence={code:licenceCode,expiry:licenceExpiry,prdp_holder:prdp,prdp_category:prdp?prdpCategory:null,prdp_expiry:prdp?prdpExpiry:null};
   const vehicle={type:vehicleType,gross_vehicle_mass_kg:gvm,make:text(form.get("vehicle_make"),60),model:text(form.get("vehicle_model"),60),year,registration_plate:plate.toUpperCase(),vehicle_licence_disc_expiry:text(form.get("vehicle_disc_expiry"),10),insurance_expiry:text(form.get("insurance_expiry"),10)};
-  const banking={bank_name:bank,account_holder:holder,account_number:account,universal_branch_code:text(form.get("branch_code"),10)};
+  const universalCodes:Record<string,string>={"FNB":"250655","Nedbank":"198765","Standard Bank":"051001","Absa":"632005","Capitec":"470010","TymeBank":"678910"};
+ if(text(form.get("branch_code"),10)!==universalCodes[bank])return reply(400,{error:"bank_universal_branch_code_mismatch"});
+ const banking={bank_name:bank,account_holder:holder,account_number:account,universal_branch_code:universalCodes[bank]};
   const {error:saveError}=await db.from("driver_onboarding_applications").upsert({driver_user_id:u.user.id,identity_type:identityType,identity_details:identity,licence_details:licence,vehicle_details:vehicle,banking_details:banking,verification_status:"pending",submitted_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:"driver_user_id"});
   if(saveError)throw new Error("application_save_failed");
-  await db.from("driver_profiles").update({verification_status:"pending",is_online:false,availability_status:"offline",phone,license_expiry:licenceExpiry,vehicle_type:vehicleType==="motorbike"?"bike":vehicleType==="truck"?"truck":vehicleType==="bakkie_panel_van"?"van":"van",vehicle_registration:plate.toUpperCase()}).eq("user_id",u.user.id);
+  await db.from("driver_profiles").update({verification_status:"pending",is_online:false,availability_status:"offline",phone,license_expiry:licenceExpiry,vehicle_type:vehicleType==="motorbike"?"bike":vehicleType==="truck"?"truck":vehicleType==="hatchback_sedan"?"car":"van",vehicle_registration:plate.toUpperCase()}).eq("user_id",u.user.id);
   return reply(201,{submitted:true,status:"pending",message:"Application submitted. You cannot go online until SwiftHaul approves your documents."});
  }catch(e){
   if(uploaded.length)await db.storage.from("driver-application-documents").remove(uploaded);
