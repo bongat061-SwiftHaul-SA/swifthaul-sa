@@ -50,6 +50,12 @@ Deno.serve(async req => {
 
   let body:Record<string,unknown>;
   try { body=await req.json(); } catch { return reply(400,{error:"invalid_json"}); }
+  if(body.action==="set_stacked_orders") {
+    if(!driver||typeof body.enabled!=="boolean")return reply(400,{error:"invalid_stacked_order_preference"});
+    const {error}=await db.from("driver_profiles").update({allow_stacked_orders:body.enabled}).eq("user_id",actor);
+    if(error)return reply(500,{error:"stacked_order_preference_update_failed"});
+    return reply(200,{allow_stacked_orders:body.enabled});
+  }
   if(body.action==="set_online") {
     if(!driver||typeof body.online!=="boolean") return reply(400,{error:"invalid_online_preference"});
     const {data:profile}=await db.from("driver_profiles").select("verification_status").eq("user_id",actor).maybeSingle();
