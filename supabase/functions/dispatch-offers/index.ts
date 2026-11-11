@@ -122,7 +122,7 @@ Deno.serve(async req => {
       return {...x,rotation:last.get(candidate.user_id)??0};
     }).sort((a,b)=>Number(b.premium)-Number(a.premium)||a.rotation-b.rotation);
     const chosen=ranked[0];
-    const expires=new Date(Date.now()+60_000).toISOString();
+    const expires=new Date(Date.now()+30_000).toISOString();
     const activeCount=(activeByDriver.get(chosen.d.user_id)||[]).length;
     const {data:offer,error:oe}=await db.from("driver_delivery_offers").insert({waybill:booking.waybill,driver_user_id:chosen.d.user_id,priority_tier:activeCount>0?"add_on":chosen.premium?"premium":"standard",expires_at:expires}).select("id,driver_user_id,priority_tier,expires_at").single();
     if(oe) return reply(500,{error:"offer_create_failed"});
