@@ -408,3 +408,25 @@ body[data-app="driver"] #driver-account-status{color:#d4dbe5!important;font-size
 .onboarding-reupload label{color:#c5d0dd;font-size:11px}
 .onboarding-reupload button{justify-self:start;min-height:38px;padding:9px 14px;border:1px solid #e9edf2;border-radius:10px;background:#e9edf2;color:#10151d;font-size:11px;font-weight:800}
 .onboarding-reupload button:disabled{opacity:.55}
+
+/* Driver live dispatch and earnings surfaces */
+body[data-app="driver"] .driver-compliance-banner{padding:16px;margin:12px 0;border:1px solid #8b6632;border-radius:16px;background:#251e15;color:#f2dfbd}
+body[data-app="driver"] .driver-compliance-banner p{color:#d7c5a7;font-size:12px;line-height:1.55}
+body[data-app="driver"] .driver-compliance-banner a{display:inline-flex;margin-top:7px;padding:9px 12px;border:1px solid #a98754;border-radius:10px;color:#fff;text-decoration:none;font-size:12px;font-weight:750}
+body[data-app="driver"] .dispatch-offer-modal{position:relative;display:grid;gap:9px;padding:17px;margin:12px 0;border:1px solid #5a6675;border-radius:20px;background:linear-gradient(145deg,#202a37,#101720 78%);box-shadow:0 18px 48px #0008;color:#f5f7fb}
+body[data-app="driver"] .dispatch-offer-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+body[data-app="driver"] .dispatch-offer-kicker,body[data-app="driver"] .dispatch-offer-label{font-size:9px;letter-spacing:.13em;font-weight:850;color:#9eacbc}
+body[data-app="driver"] .dispatch-offer-clock{font-size:12px;color:#fff;font-variant-numeric:tabular-nums}
+body[data-app="driver"] .dispatch-offer-place{margin:0;color:#fff;font-size:15px;line-height:1.35;overflow-wrap:anywhere}
+body[data-app="driver"] .dispatch-offer-label{margin:-7px 0 2px}
+body[data-app="driver"] .dispatch-offer-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:4px 0}
+body[data-app="driver"] .dispatch-offer-stats>div{display:grid;gap:5px;padding:12px;border:1px solid #3b4757;border-radius:13px;background:#0b111a}
+body[data-app="driver"] .dispatch-offer-stats span{font-size:9px;letter-spacing:.1em;color:#9eacbc}
+body[data-app="driver"] .dispatch-offer-stats strong{font-size:19px;color:#fff;font-variant-numeric:tabular-nums}
+body[data-app="driver"] .dispatch-countdown-track{height:6px;overflow:hidden;border-radius:20px;background:#3c4654}
+body[data-app="driver"] .dispatch-countdown-fill{height:100%;width:100%;background:#dce3eb;transition:width .2s linear}
+body[data-app="driver"] .dispatch-offer-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+body[data-app="driver"] .dispatch-offer-actions button{min-height:44px;border-radius:12px;font-weight:800}
+body[data-app="driver"] .dispatch-offer-modal.is-expired{opacity:.55}
+body[data-app="driver"] .dispatch-offer-modal.is-expired .dispatch-countdown-fill{background:#a76a60}
+@media(max-width:520px){body[data-app="driver"] .dispatch-offer-stats strong{font-size:17px}}
