@@ -14,6 +14,7 @@ on:
       - "supabase/functions/account-pin/**"
       - "supabase/migrations/*login_pins*"
       - "tests/account-pin-static-check.cjs"
+      - "tests/account-self-service-static-check.cjs"
       - ".github/workflows/validate-account-pin.yml"
 
 permissions:
@@ -31,5 +32,9 @@ jobs:
         run: |
           node --input-type=module --check < public/auth.js
           node --input-type=module --check < apps/driver/public/auth.js
+          node --check apps/driver/public/account-settings.js
+          node --check public/settings.js
       - name: Verify secure PIN wiring
         run: node tests/account-pin-static-check.cjs
+      - name: Verify account self-service flows
+        run: node tests/account-self-service-static-check.cjs
