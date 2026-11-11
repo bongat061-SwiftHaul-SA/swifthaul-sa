@@ -59,7 +59,8 @@ Deno.serve(async (req: Request) => {
     if (!isInternal) return reply(403,{error:"trusted_backend_call_required"});
     const event = clean(body.event_type,40) as NotificationEvent;
     const recipientType = clean(body.recipient_type,20) as RecipientType;
-    if (!events.includes(event) || !["sender","recipient","driver"].includes(recipientType)) return reply(400,{error:"invalid_notification_event"});
+    if (!events.includes(event)) return reply(400,{error:"invalid_notification_event"});
+    if (!(event==="order_dispatched" && Array.isArray(body.recipients)) && !["sender","recipient","driver"].includes(recipientType)) return reply(400,{error:"invalid_notification_event"});
     if (event === "delivery_otp" && recipientType !== "recipient") return reply(400,{error:"delivery_otp_must_target_recipient"});
     if(event==="order_dispatched"&&Array.isArray(body.recipients)){
       const recipients=body.recipients.filter((r:any)=>r&&["sender","recipient"].includes(r.recipient_type));
