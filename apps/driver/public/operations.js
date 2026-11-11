@@ -66,6 +66,8 @@ if (app === 'driver' || app === 'company') {
         payout.textContent = (offer.add_on_order ? 'Add-On Order · ' : 'Net payout · ') + money(offer.net_payout_zar);
         const route = document.createElement('p');
         route.textContent = (booking.pickup || 'Pickup') + ' → ' + (booking.dropoff || 'Drop-off');
+        const actions = document.createElement('div');
+        actions.className = 'driver-offer-actions';
         const countdown = document.createElement('small');
         countdown.className = 'driver-offer-countdown';
         const updateCountdown = () => {
@@ -82,8 +84,6 @@ if (app === 'driver' || app === 'company') {
         detail.textContent = offer.add_on_order
           ? (offer.extra_detour_km == null ? 'Matches your active route corridor' : '+' + Number(offer.extra_detour_km).toFixed(1) + ' km estimated detour') + ' · Combined route net ' + money(currentNet + Number(offer.net_payout_zar || 0))
           : (Number(offer.distance_meters || 0) / 1000).toFixed(1) + ' km pickup distance';
-        const actions = document.createElement('div');
-        actions.className = 'driver-offer-actions';
         for (const [label,response] of [['Accept','accept'],['Decline','decline']]) {
           const button = document.createElement('button');
           button.type = 'button';
