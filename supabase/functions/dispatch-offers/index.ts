@@ -69,9 +69,29 @@ Deno.serve(async req => {
     const {data:sent}=await db.from("driver_delivery_offers").select("driver_user_id,status").eq("waybill",booking.waybill);
     if((sent??[]).some(x=>x.status==="accepted")) return reply(409,{error:"delivery_offer_already_accepted"});
     const excluded=new Set((sent??[]).map(x=>x.driver_user_id));
-    const {data:drivers,error:de}=await db.from("driver_profiles").select("user_id,vehicle_type,is_online,verification_status").eq("is_online",true).eq("verification_status","approved");
+    const {data:drivers,error:de}=await db.from("driver_profiles").select("user_id,vehicle_type,is_online,verification_status,allow_stacked_orders").eq("is_online",true).eq("verification_status","approved");
     if(de) return reply(500,{error:"driver_candidate_lookup_failed"});
-    const eligible=(drivers??[]).filter(d=>!excluded.has(d.user_id)&&(!booking.vehicle||String(d.vehicle_type).toLowerCase()===String(booking.vehicle).toLowerCase()));
+    const vehicleType=(value:string)=>{const v=value.toLowerCase();if(v.includes("motor"))return "motorbike";if(v.includes("bakkie")||v.includes("van")||v.includes("panel"))return "bakkie/panel van";if(v.includes("truck")||v.includes("ton"))return "truck";return "hatchback/sedan";};
+    const {data:classes}=await db.from("vehicle_classes").select("vehicle_type,max_concurrent_orders");
+    const capacity=new Map((classes??[]).map((v:any)=>[v.vehicle_type,Number(v.max_concurrent_orders)]));
+    const ids=(drivers??[]).map(d=>d.user_id);
+    const {data:activeOrders,error:activeError}=await db.from("customer_bookings").select("waybill,driver_user_id,pickup_latitude,pickup_longitude,dropoff_latitude,dropoff_longitude").in("driver_user_id",ids).in("status",["assigned","accepted","picked_up","in_transit"]).is("completed_at",null);
+    if(activeError)return reply(500,{error:"active_order_count_failed"});
+    const activeByDriver=new Map<string,any[]>();
+    for(const order of activeOrders??[]){const key=order.driver_user_id;activeByDriver.set(key,[...(activeByDriver.get(key)||[]),order]);}
+    const {data:routeStops}=await db.from("driver_route_stops").select("driver_id,lat,lng,status,sequence_order").in("driver_id",ids).neq("status","completed").order("sequence_order");
+    const stopsByDriver=new Map<string,any[]>();
+    for(const stop of routeStops??[]){stopsByDriver.set(stop.driver_id,[...(stopsByDriver.get(stop.driver_id)||[]),stop]);}
+    const pointSegmentDistanceKm=(p:any,a:any,b:any)=>{const lat0=p.lat*Math.PI/180,scaleX=Math.cos(lat0)*111.32,scaleY=110.574;const x=(v:any)=>v.lng*scaleX,y=(v:any)=>v.lat*scaleY;const px=x(p),py=y(p),ax=x(a),ay=y(a),bx=x(b),by=y(b);const dx=bx-ax,dy=by-ay,t=Math.max(0,Math.min(1,((px-ax)*dx+(py-ay)*dy)/(dx*dx+dy*dy||1)));return Math.hypot(px-(ax+t*dx),py-(ay+t*dy));};
+    const withinCorridor=(driverId:string)=>{const stops=(stopsByDriver.get(driverId)||[]).filter(x=>x.lat!=null&&x.lng!=null);if(stops.length<2)return false;const points=[{lat:Number(booking.pickup_latitude),lng:Number(booking.pickup_longitude)},{lat:Number(booking.dropoff_latitude),lng:Number(booking.dropoff_longitude)}];if(points.some(p=>!Number.isFinite(p.lat)||!Number.isFinite(p.lng)))return false;return points.every(p=>stops.slice(0,-1).some((a,i)=>pointSegmentDistanceKm(p,a,stops[i+1])<=3));};
+    const eligible=(drivers??[]).filter(d=>{
+      if(excluded.has(d.user_id)||!d.is_online||!d.allow_stacked_orders)return false;
+      if(booking.vehicle&&vehicleType(String(d.vehicle_type||""))!==vehicleType(String(booking.vehicle)))return false;
+      const count=(activeByDriver.get(d.user_id)||[]).length,cap=capacity.get(vehicleType(String(d.vehicle_type||"")))||1;
+      if(count>=cap)return false;
+      if(count>0&&!withinCorridor(d.user_id))return false;
+      return true;
+    });
     if(!eligible.length) return reply(404,{error:"no_eligible_online_drivers"});
     const ids=eligible.map(d=>d.user_id);
     const {data:members,error:me}=await db.from("driver_memberships").select("driver_user_id").in("driver_user_id",ids).eq("status","active").lte("starts_at",now).gt("ends_at",now);
@@ -86,9 +106,11 @@ Deno.serve(async req => {
     }).sort((a,b)=>Number(b.premium)-Number(a.premium)||a.rotation-b.rotation);
     const chosen=ranked[0];
     const expires=new Date(Date.now()+60_000).toISOString();
-    const {data:offer,error:oe}=await db.from("driver_delivery_offers").insert({waybill:booking.waybill,driver_user_id:chosen.d.user_id,priority_tier:chosen.premium?"premium":"standard",expires_at:expires}).select("id,driver_user_id,priority_tier,expires_at").single();
+    const activeCount=(activeByDriver.get(chosen.d.user_id)||[]).length;
+    const {data:offer,error:oe}=await db.from("driver_delivery_offers").insert({waybill:booking.waybill,driver_user_id:chosen.d.user_id,priority_tier:activeCount>0?"add_on":chosen.premium?"premium":"standard",expires_at:expires}).select("id,driver_user_id,priority_tier,expires_at").single();
     if(oe) return reply(500,{error:"offer_create_failed"});
-    return reply(200,{offer,rotation:"least-recently-offered",priority:"active premium drivers before standard drivers"});
+    const payout=Number(booking.price||0)*0.75;
+    return reply(200,{offer,add_on:activeCount>0,net_payout_zar:Number(payout.toFixed(2)),active_order_count:activeCount,capacity:capacity.get(vehicleType(String(chosen.d.vehicle_type||"")))||1,rotation:"least-recently-offered",priority:"active premium drivers before standard drivers"});
   }
   return reply(400,{error:"unknown_action"});
 });
