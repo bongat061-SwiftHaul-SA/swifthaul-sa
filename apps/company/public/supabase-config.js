@@ -1,6 +1,9 @@
 // Public browser configuration only. Never place a service-role or secret key here.
-// Keep Company Admin preview traffic isolated from production dispatch and financial records.
-const isNetlifyStagingPreview = typeof window !== 'undefined' && window.location.hostname.endsWith('--swifthaul-sa.netlify.app') && window.location.hostname !== 'swifthaul-sa.netlify.app';
+// Company Admin browser previews must use the isolated staging project.
+// The production Company Admin URL remains connected to production.
+const isNetlifyStagingPreview = typeof window !== 'undefined' &&
+  window.location.hostname.endsWith('--swifthaul-sa.netlify.app') &&
+  window.location.hostname !== 'swifthaul-sa.netlify.app';
 const isGitHubPagesStagingPreview = typeof window !== 'undefined' &&
   window.location.hostname === 'bongat061-swifthaul-sa.github.io' &&
   window.location.pathname.startsWith('/swifthaul-sa-preview/');
