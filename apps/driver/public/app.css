@@ -319,3 +319,12 @@ body[data-app="driver"] .driver-delete-account h3{color:#9c2929}
 body[data-app="driver"] .driver-delete-account p{font-size:12px;line-height:1.7;color:#6f5555}
 body[data-app="driver"] .driver-delete-account form{border:0;background:transparent;padding:0}
 @media(max-width:520px){body[data-app="driver"] .driver-profile-photo-row{align-items:flex-start;flex-direction:column}}
+
+/* POPIA registration consent — mandatory service consent, separate optional marketing opt-in. */
+#auth-screen .popia-consent{display:grid;gap:14px;margin:18px 0 16px;padding:16px;border:1px solid rgba(130,145,165,.35);border-radius:14px;background:rgba(20,27,36,.96);color:inherit;font-size:13px;line-height:1.65}
+#auth-screen .popia-consent[hidden],#auth-screen #marketing-consent[hidden]{display:none!important}
+#auth-screen .popia-consent label{display:grid;grid-template-columns:20px minmax(0,1fr);align-items:start;gap:10px;margin:0;font-weight:400;line-height:1.65}
+#auth-screen .popia-consent input[type=checkbox]{width:18px;height:18px;margin:2px 0 0;accent-color:#dce2e9;flex:0 0 auto}
+#auth-screen .popia-consent a{font-weight:700;text-decoration:underline;text-underline-offset:3px}
+#auth-screen .popia-consent .consent-marketing{padding-top:13px;border-top:1px solid rgba(130,145,165,.28)}
+#auth-screen .auth-panel button.primary:disabled{opacity:.45;cursor:not-allowed;filter:saturate(.35)}
