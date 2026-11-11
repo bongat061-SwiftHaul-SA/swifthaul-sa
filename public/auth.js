@@ -88,6 +88,7 @@ function setMode(next) {
   document.getElementById('auth-title').textContent = titles[mode];
   form.elements.name.closest('label').hidden = !signup;
   form.elements.name.required = signup;
+  for (const field of ['city','province']) { const control=form.elements[field]; if(control){control.closest('label').hidden=!signup;control.required=signup;} }
   form.elements.email.closest('label').hidden = reset || pinLogin;
   form.elements.email.required = !reset && !pinLogin;
   form.elements.password.closest('label').hidden = recovery || pinLogin;
@@ -245,6 +246,7 @@ form.addEventListener('submit', async event => {
         email, password,
         options: { emailRedirectTo: customerReturnUrl(), data: {
           app_type: 'customer', full_name: form.elements.name.value.trim(),
+          city: form.elements.city.value.trim(), province: form.elements.province.value,
           referral_code: form.elements.referralCode?.value.trim().toUpperCase() || '',
           terms_accepted: true, terms_version: '2026-10-30-wallet'
         }}
