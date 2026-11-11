@@ -98,7 +98,7 @@ Deno.serve(async(req:Request)=>{
   return reply(200,{criminal_background_clearance:data.criminal_background_clearance,can_go_online:eligible===true});
  }
  if(body.action==="activate"){
-  const {data:profile,error:profileError}=await admin.from("driver_profiles").select("user_id,identity_type,prdp_holder,criminal_background_clearance,license_expiry,bank_details_encrypted,account_number_aesgcm,paystack_recipient_code").eq("user_id",driverId).maybeSingle();
+  const {data:profile,error:profileError}=await admin.from("driver_profiles").select("user_id,identity_type,prdp_holder,criminal_background_clearance,license_expiry,bank_details_encrypted,account_number_aesgcm,sa_id_number_aesgcm,passport_number_aesgcm,paystack_recipient_code").eq("user_id",driverId).maybeSingle();
   if(profileError)return reply(500,{error:"driver_profile_lookup_failed"});
   if(!profile)return reply(404,{error:"driver_not_found"});
   if(!profile.criminal_background_clearance)return reply(409,{error:"criminal_background_clearance_required"});
@@ -138,12 +138,28 @@ Deno.serve(async(req:Request)=>{
       if(!(bd.data||[]).length)break;
      }
      if(bankCode){
-      const rr=await fetch("https://api.paystack.co/transferrecipient",{method:"POST",headers:{Authorization:"Bearer "+paystackSecret,"Content-Type":"application/json"},body:JSON.stringify({type:"basa",name:holder,account_number:account,bank_code:bankCode,currency:"ZAR",description:"SwiftHaul verified driver payout"}),signal:AbortSignal.timeout(12000)});
-      const rd=await rr.json().catch(()=>null);
-      if(rr.ok&&rd?.status===true&&rd?.data?.recipient_code){
-       const {error:saveRecipientError}=await admin.from("driver_profiles").update({paystack_recipient_code:rd.data.recipient_code,paystack_recipient_created_at:new Date().toISOString()}).eq("user_id",driverId);
-       payoutSetup=saveRecipientError?"recipient_save_failed":"ready";
-      }else payoutSetup="recipient_creation_failed";
+      let bankValidation="not_supported";
+      const idNumber=profile.identity_type==="sa_citizen"?await decryptGcm(profile.sa_id_number_aesgcm):await decryptGcm(profile.passport_number_aesgcm);
+      const documentType=profile.identity_type==="sa_citizen"?"identityNumber":"passportNumber";
+      if(idNumber){
+       const vr=await fetch("https://api.paystack.co/bank?currency=ZAR&enabled_for_verification=true&perPage=100&page=1",{headers:{Authorization:"Bearer "+paystackSecret},signal:AbortSignal.timeout(10000)});
+       const vd=await vr.json().catch(()=>null);
+       const supported=(vd?.data||[]).find((item:any)=>String(item.code)===bankCode&&(item.supported_types||[]).includes("personal"));
+       if(supported){
+        const validation=await fetch("https://api.paystack.co/bank/validate",{method:"POST",headers:{Authorization:"Bearer "+paystackSecret,"Content-Type":"application/json"},body:JSON.stringify({bank_code:bankCode,country_code:"ZA",account_number:account,account_name:holder,account_type:"personal",document_type:documentType,document_number:idNumber}),signal:AbortSignal.timeout(15000)});
+        const check=await validation.json().catch(()=>null);
+        if(!validation.ok||check?.status!==true||check?.data?.verified!==true||check?.data?.accountAcceptsCredits===false||check?.data?.accountOpen===false||check?.data?.accountHolderMatch===false){payoutSetup="bank_account_validation_failed";bankCode=null;}
+        else bankValidation="verified";
+       }
+      }
+      if(bankCode){
+       const rr=await fetch("https://api.paystack.co/transferrecipient",{method:"POST",headers:{Authorization:"Bearer "+paystackSecret,"Content-Type":"application/json"},body:JSON.stringify({type:"basa",name:holder,account_number:account,bank_code:bankCode,currency:"ZAR",description:"SwiftHaul verified driver payout"}),signal:AbortSignal.timeout(12000)});
+       const rd=await rr.json().catch(()=>null);
+       if(rr.ok&&rd?.status===true&&rd?.data?.recipient_code){
+        const {error:saveRecipientError}=await admin.from("driver_profiles").update({paystack_recipient_code:rd.data.recipient_code,paystack_recipient_created_at:new Date().toISOString()}).eq("user_id",driverId);
+        payoutSetup=saveRecipientError?"recipient_save_failed":bankValidation==="verified"?"ready":"recipient_ready_manual_bank_check";
+       }else payoutSetup="recipient_creation_failed";
+      }
      }else payoutSetup="paystack_bank_code_not_found";
     }else payoutSetup="verified_bank_details_missing";
    }catch(e){console.error("Paystack recipient setup failed",e instanceof Error?e.message:"unknown");payoutSetup="recipient_creation_failed";}
