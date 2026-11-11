@@ -5,6 +5,10 @@ on:
     paths:
       - "public/auth.js"
       - "apps/driver/public/auth.js"
+      - "apps/driver/public/account-settings.js"
+      - "supabase/functions/driver-settings/**"
+      - "supabase/functions/customer-settings/**"
+      - "supabase/migrations/*account_self_service*"
       - "public/supabase-config.js"
       - "apps/driver/public/supabase-config.js"
       - "supabase/functions/account-pin/**"
