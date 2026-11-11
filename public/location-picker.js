@@ -323,20 +323,20 @@
     const requestId=(reverseLookupSequence.get(input)||0)+1;
     reverseLookupSequence.set(input,requestId);
     try{
-      const url='https://photon.komoot.io/reverse/?'+new URLSearchParams({lat:String(lat),lon:String(lng),lang:'en'});
+      const url='https://nominatim.openstreetmap.org/reverse?'+new URLSearchParams({format:'jsonv2',addressdetails:'1',lat:String(lat),lon:String(lng),zoom:'18','accept-language':'en'});
       const response=await fetch(url,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(9000)});
-      if(!response.ok)throw new Error('Address lookup unavailable');
-      const feature=(await response.json()).features?.[0],p=feature?.properties||{};
-      const coords=feature?.geometry?.coordinates;
+      if(!response.ok)throw new Error('Nominatim reverse lookup unavailable');
+      const result=await response.json(),p=result?.address||{};
+      const coords=[Number(result?.lon),Number(result?.lat)];
       if(reverseLookupSequence.get(input)!==requestId||input.value.trim()!==original)return;
       if(!Array.isArray(coords)||coords.length<2||!Number.isFinite(Number(coords[0]))||!Number.isFinite(Number(coords[1]))){
         $('loc-status').textContent='No reliable street address was found. Your exact pin and Plus Code are saved; please enter a street address or nearby landmark if known.';
         return;
       }
       const distance=Math.round(distanceMetres(lat,lng,Number(coords[1]),Number(coords[0])));
-      const street=[p.housenumber,p.street].filter(Boolean).join(' ');
-      const locality=[p.suburb,p.district,p.city||p.town||p.village,p.state,p.postcode].filter(Boolean);
-      const label=[street||p.name,...locality].filter(Boolean).join(', ');
+      const street=[p.house_number,p.road||p.pedestrian||p.footway].filter(Boolean).join(' ');
+      const locality=[p.neighbourhood,p.suburb,p.city_district,p.city||p.town||p.village,p.county,p.state,p.postcode].filter(Boolean);
+      const label=[street||result?.name||result?.display_name,...locality].filter(Boolean).join(', ');
       if(!label||distance>250){
         $('loc-status').textContent=distance>250
           ? 'Nearest mapped feature is '+distance+' m from this pin. It is not safe to treat it as this property address. Your exact pin and Plus Code are saved.'
