@@ -21,9 +21,9 @@ async function savePdf(doc:any,data:TaxPdfData){
  if(error)throw new Error("Private PDF upload failed: "+error.message);
  await db.update(taxDocuments).set({storageKey:doc.documentNumber+".pdf"}).where(eq(taxDocuments.id,doc.id));
 }
-async function senderDocument(waybill:string,reference:string){
+async function senderDocument(waybill:string,reference:string,forceInvoice=false){
  const dbs=supabaseAdmin();
- const [existing]=await db.select().from(taxDocuments).where(eq(taxDocuments.sourceReference,"charge:"+reference)).limit(1);
+ const [existing]=await db.select().from(taxDocuments).where(eq(taxDocuments.sourceReference,(forceInvoice?"invoice-request:":"charge:")+reference)).limit(1);
  if(existing?.storageKey)return existing;
  const {data:b,error}=await dbs.from("customer_bookings").select("*").eq("waybill",waybill).maybeSingle();
  if(error||!b||!b.paid_at)throw new Error("Paid booking could not be verified for invoice generation.");
@@ -31,7 +31,7 @@ async function senderDocument(waybill:string,reference:string){
  const fullDetails=Boolean(b.billing_company_name&&b.billing_address);
  const fullRequired=total>5000;
  const registered=Boolean(company?.isVatRegistered);
- const docType=registered&&(!fullRequired||fullDetails)?"sender_tax_invoice":"sender_receipt";
+ if(forceInvoice&&(!registered||!fullDetails))throw new Error("A full SARS tax invoice requires confirmed VAT registration and recipient company name and address.");\n const docType=forceInvoice?"sender_tax_invoice":registered&&(!fullRequired||fullDetails)?"sender_tax_invoice":"sender_receipt";
  const rate=registered?Number(company?.vatRatePercent||15.5):0;
  const vat=rate?money(total*rate/(100+rate)):0,subtotal=money(total-vat);
  const {data:q}=b.quote_id?await dbs.from("tariff_quotes").select("fare_breakdown").eq("id",b.quote_id).maybeSingle():{data:null};
@@ -39,8 +39,8 @@ async function senderDocument(waybill:string,reference:string){
  const lines=[{label:"Delivery base fare",amount:Number(br.base_fare_zar||total)},...(Number(br.tier1_charge_zar||0)>0?[{label:"Distance · Tier 1",amount:Number(br.tier1_charge_zar)}]:[]),...(Number(br.tier2_charge_zar||0)>0?[{label:"Distance · Tier 2",amount:Number(br.tier2_charge_zar)}]:[]),...(Number(br.fuel_surcharge_zar||0)>0?[{label:"Fuel surcharge",amount:Number(br.fuel_surcharge_zar)}]:[]),...(Number(br.surge_charge_zar||0)>0?[{label:"Surge pricing · "+Number(br.surge_multiplier||1).toFixed(2)+"x",amount:Number(br.surge_charge_zar)}]:[]),...(Number(br.extra_stop_fees_zar||0)>0?[{label:"Additional stops",amount:Number(br.extra_stop_fees_zar)}]:[])];
  if(lines.reduce((n,l)=>n+l.amount,0)===0)lines.push({label:"Delivery service",amount:total});
  const issuedAt=new Date();
- const [doc]=await db.insert(taxDocuments).values({documentNumber:"",sourceReference:"charge:"+reference,documentType:docType,orderId:waybill,subtotalExclVatZar:String(subtotal),vatAmountZar:String(vat),totalInclVatZar:String(total),metadata:{paid:true,full_invoice_required:fullRequired,missing_billing_details:fullRequired&&!fullDetails,vat_registered:registered}}).onConflictDoNothing().returning();
- if(!doc){const [prior]=await db.select().from(taxDocuments).where(eq(taxDocuments.sourceReference,"charge:"+reference)).limit(1);if(prior)return prior;throw new Error("Tax document insert conflict.");}
+ const [doc]=await db.insert(taxDocuments).values({documentNumber:"",sourceReference:(forceInvoice?"invoice-request:":"charge:")+reference,documentType:docType,orderId:waybill,subtotalExclVatZar:String(subtotal),vatAmountZar:String(vat),totalInclVatZar:String(total),metadata:{paid:true,full_invoice_required:fullRequired,missing_billing_details:fullRequired&&!fullDetails,vat_registered:registered}}).onConflictDoNothing().returning();
+ if(!doc){const [prior]=await db.select().from(taxDocuments).where(eq(taxDocuments.sourceReference,(forceInvoice?"invoice-request:":"charge:")+reference)).limit(1);if(prior)return prior;throw new Error("Tax document insert conflict.");}
  const data:TaxPdfData={title:docType==="sender_tax_invoice"?"TAX INVOICE":registered?"PAYMENT RECEIPT · FULL TAX DETAILS REQUIRED":"INVOICE / RECEIPT",documentNumber:doc.documentNumber,issuedAt:issuedAt.toISOString(),supplier:company,recipient:{name:b.billing_company_name||"Customer",address:b.billing_address||"",vatNumber:b.billing_vat_number||""},order:{waybill,tracking_code:b.tracking_code,pickup:b.pickup,dropoff:b.dropoff,vehicle:b.vehicle,distance_km:b.distance_meters?Number(b.distance_meters)/1000:null},lines,subtotal,vat,vatRate:rate,total,metadata:{paid:true,note:fullRequired&&!fullDetails?"A full tax invoice requires the recipient company name and address, plus VAT number where the recipient is a VAT vendor. Submit billing details to request the full tax invoice.":undefined}};
  await savePdf(doc,data);return doc;
 }
@@ -85,7 +85,7 @@ export async function POST(request:NextRequest){
  const raw=await request.text();
  if(!verify(raw,request.headers.get("x-tax-doc-signature")||"",secret))return NextResponse.json({error:"Invalid webhook signature."},{status:401});
  try{const body=JSON.parse(raw);let doc;
-  if(body.event==="charge.success"&&typeof body.waybill==="string"&&typeof body.reference==="string")doc=await senderDocument(body.waybill,body.reference);
+  if(body.event==="charge.success"&&typeof body.waybill==="string"&&typeof body.reference==="string")doc=await senderDocument(body.waybill,body.reference);\n  else if(body.event==="sender.invoice.requested"&&typeof body.waybill==="string")doc=await senderDocument(body.waybill,body.waybill,true);
   else if(body.event==="transfer.success"&&typeof body.reference==="string")doc=await payoutDocument(body.reference);
   else return NextResponse.json({ignored:true});
   return NextResponse.json({ok:true,document_id:doc.id,document_number:doc.documentNumber});
