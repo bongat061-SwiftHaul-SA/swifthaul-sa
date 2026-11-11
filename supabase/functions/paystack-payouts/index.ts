@@ -7,7 +7,7 @@ Deno.serve(async(req:Request)=>{
  if(req.method==="OPTIONS")return new Response("ok",{headers});
  if(!["GET","POST"].includes(req.method))return reply(405,{error:"method_not_allowed"});
  const url=Deno.env.get("SUPABASE_URL"),anon=Deno.env.get("SUPABASE_ANON_KEY"),service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),secret=Deno.env.get("PAYSTACK_SECRET_KEY");
- if(!url||!service)return reply(500,{error:"server_configuration_error"});if(!secret)return reply(503,{error:"paystack_secret_not_configured"});
+ if(!url||!service)return reply(500,{error:"server_configuration_error"});
  const db=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});
  const cronSecret=Deno.env.get("PAYSTACK_PAYOUT_CRON_SECRET"),cron=req.headers.get("x-payout-cron-secret");
  let actorId:string|null=null,role="system";
@@ -26,6 +26,7 @@ Deno.serve(async(req:Request)=>{
   const {data,error}=await query;
   if(error)return reply(500,{error:"payout_history_failed"});return reply(200,{payouts:data||[]});
  }
+ if(!secret)return reply(503,{error:"paystack_secret_not_configured"});
  let body:Record<string,unknown>={};try{body=await req.json()}catch{return reply(400,{error:"invalid_json"})}
  const send=async(driverId:string,amountCents:number,periodStart?:string,periodEnd?:string)=>{
   if(!Number.isSafeInteger(amountCents)||amountCents<100||amountCents>100000000)return {error:"payout_amount_out_of_range"};
