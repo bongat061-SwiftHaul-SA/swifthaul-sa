@@ -1,0 +1,40 @@
+name: Validate SwiftHaul growth tracker
+on:
+  pull_request:
+    paths:
+      - "apps/fleet/src/app/admin/growth/**"
+      - "apps/fleet/src/app/admin/dashboard/**"
+      - "apps/fleet/src/app/api/admin/growth/**"
+      - "apps/fleet/src/db/schema.ts"
+      - "supabase/migrations/*customer_driver_growth_milestones*"
+      - "tests/growth-milestones-static-check.cjs"
+      - ".github/workflows/validate-growth-tracker.yml"
+  push:
+    branches:
+      - feature/sa-sms-whatsapp-notifications-staging
+    paths:
+      - "apps/fleet/src/app/admin/growth/**"
+      - "apps/fleet/src/app/admin/dashboard/**"
+      - "apps/fleet/src/app/api/admin/growth/**"
+      - "apps/fleet/src/db/schema.ts"
+      - "supabase/migrations/*customer_driver_growth_milestones*"
+      - "tests/growth-milestones-static-check.cjs"
+      - ".github/workflows/validate-growth-tracker.yml"
+permissions:
+  contents: read
+jobs:
+  growth-tracker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install fleet portal dependencies
+        working-directory: apps/fleet
+        run: npm install --no-audit --no-fund
+      - name: Type-check fleet portal
+        working-directory: apps/fleet
+        run: npm run typecheck
+      - name: Verify growth milestone wiring
+        run: node tests/growth-milestones-static-check.cjs
