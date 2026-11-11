@@ -18,24 +18,8 @@
   const subtitle = heading.querySelector('.subtle');
   heading.classList.add('premium-hero');
   if (app === 'customer') {
-    if (title) title.textContent = 'Move anything.\nWe’ll take it there.';
-    if (subtitle) subtitle.textContent = 'Reliable delivery, from your door to its destination.';
-    const cta = document.createElement('a');
-    cta.className = 'premium-main-cta';
-    cta.href = '#new-delivery';
-    cta.innerHTML = '<span><small>READY WHEN YOU ARE</small><strong>Book a delivery</strong></span><b aria-hidden="true">→</b>';
-    heading.append(cta);
-    const quick = document.createElement('section');
-    quick.className = 'premium-quick-actions';
-    quick.setAttribute('aria-label','Quick actions');
-    quick.innerHTML = '<a href="#new-delivery"><span class="quick-icon">＋</span><strong>New delivery</strong><small>Book a pickup</small></a><a href="?page=activity" data-page="activity"><span class="quick-icon">↗</span><strong>Track delivery</strong><small>View activity</small></a><a href="?page=wallet" data-page="wallet"><span class="quick-icon">R</span><strong>Wallet</strong><small>Balance & rewards</small></a><a href="?page=account" data-page="account"><span class="quick-icon">⌘</span><strong>Account</strong><small>Your details</small></a>';
-    heading.after(quick);
-    const booking = document.getElementById('new-delivery');
-    const orders = document.getElementById('bookings');
-    booking?.classList.add('premium-primary-section');
-    orders?.classList.add('premium-secondary-section');
-    // Keep the data-page links installed by customer-pages.js. Replacing this nav
-    // with standalone HTML links caused full page reloads and apparent sign-in resets.
+    if (title) title.textContent = 'Welcome to SwiftHaul.';
+    if (subtitle) subtitle.textContent = 'Your deliveries, payments and account — all in one place.';
   } else {
     if (title) title.textContent = 'Your day. Your deliveries.';
     if (subtitle) subtitle.textContent = 'Stay ready, manage dispatches and keep track of your earnings.';
