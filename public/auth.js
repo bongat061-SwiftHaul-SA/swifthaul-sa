@@ -283,7 +283,7 @@ async function init() {
   if (restoreTimer) clearTimeout(restoreTimer);
   if (restoreScreen) restoreScreen.hidden = true;
   // Avoid flashing the restore interstitial during normal, fast in-app returns.
-  restoreTimer = setTimeout(() => showSessionRestore(), 450);
+  restoreTimer = setTimeout(() => { if (workspace.hidden) showSessionRestore(); }, 450);
   try {
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error) throw error;
