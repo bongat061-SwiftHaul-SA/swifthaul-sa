@@ -56,6 +56,8 @@
     if (aside) aside.hidden = ![drivers,account].some(node => node && !node.hidden);
     if (heading) heading.textContent = page.title;
     if (description) description.textContent = page.description;
+    const navCurrent = nav?.closest('.workspace-navigation')?.querySelector('[data-nav-current]');
+    if (navCurrent) navCurrent.textContent = page.title.replace(/\.$/,'');
     nav?.querySelectorAll('a').forEach(link => {
       const selected = link.dataset.page === key;
       link.classList.toggle('is-active',selected);
