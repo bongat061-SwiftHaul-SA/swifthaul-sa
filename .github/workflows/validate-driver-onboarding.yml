@@ -1,4 +1,4 @@
-name: Validate South African Driver Onboarding
+name: Validate South African Driver Onboarding and Live Dashboard
 on:
   pull_request:
     paths:
@@ -8,21 +8,13 @@ on:
       - "apps/driver/public/section-pages.js"
       - "apps/driver/public/driver-earnings.js"
       - "apps/driver/public/index.html"
-      - "supabase/functions/driver-secure-documents/**"
-      - "supabase/functions/driver-earnings-dashboard/**"
-      - "supabase/migrations/20261111230000_driver_secure_storage_aes_gcm_and_access_audit.sql"
-      - "supabase/migrations/20261111232000_driver_trip_arrival_checkpoints.sql"
-      - "apps/driver/public/availability.js"
-      - "apps/driver/public/index.html"
-      - "apps/driver/public/section-pages.js"
       - "apps/driver/public/dark-premium.css"
       - "apps/company/public/driver-admin.js"
-      - "apps/company/public/driver-verification.css"
       - "apps/company/public/index.html"
-      - "apps/company/public/section-pages.js"
-      - "apps/company/public/admin/drivers/index.html"
       - "supabase/functions/driver-onboarding/**"
       - "supabase/functions/driver-admin/**"
+      - "supabase/functions/driver-secure-documents/**"
+      - "supabase/functions/driver-earnings-dashboard/**"
       - "supabase/functions/dispatch-offers/**"
       - "supabase/functions/dispatch-operations/**"
       - "supabase/migrations/20261111180000_south_african_driver_onboarding.sql"
@@ -31,6 +23,8 @@ on:
       - "supabase/migrations/20261111192000_enforce_driver_document_date_requirements.sql"
       - "supabase/migrations/20261111193000_require_current_driver_profile_licence.sql"
       - "supabase/migrations/20261111194000_encrypt_complete_driver_bank_details.sql"
+      - "supabase/migrations/20261111230000_driver_secure_storage_aes_gcm_and_access_audit.sql"
+      - "supabase/migrations/20261111232000_driver_trip_arrival_checkpoints.sql"
       - "tests/driver-onboarding-static-check.cjs"
   push:
     branches:
@@ -38,16 +32,17 @@ on:
     paths:
       - "apps/driver/public/driver-onboarding.js"
       - "apps/driver/public/availability.js"
-      - "apps/driver/public/index.html"
+      - "apps/driver/public/operations.js"
       - "apps/driver/public/section-pages.js"
+      - "apps/driver/public/driver-earnings.js"
+      - "apps/driver/public/index.html"
       - "apps/driver/public/dark-premium.css"
       - "apps/company/public/driver-admin.js"
-      - "apps/company/public/driver-verification.css"
       - "apps/company/public/index.html"
-      - "apps/company/public/section-pages.js"
-      - "apps/company/public/admin/drivers/index.html"
       - "supabase/functions/driver-onboarding/**"
       - "supabase/functions/driver-admin/**"
+      - "supabase/functions/driver-secure-documents/**"
+      - "supabase/functions/driver-earnings-dashboard/**"
       - "supabase/functions/dispatch-offers/**"
       - "supabase/functions/dispatch-operations/**"
       - "supabase/migrations/20261111180000_south_african_driver_onboarding.sql"
@@ -56,6 +51,8 @@ on:
       - "supabase/migrations/20261111192000_enforce_driver_document_date_requirements.sql"
       - "supabase/migrations/20261111193000_require_current_driver_profile_licence.sql"
       - "supabase/migrations/20261111194000_encrypt_complete_driver_bank_details.sql"
+      - "supabase/migrations/20261111230000_driver_secure_storage_aes_gcm_and_access_audit.sql"
+      - "supabase/migrations/20261111232000_driver_trip_arrival_checkpoints.sql"
       - "tests/driver-onboarding-static-check.cjs"
 permissions:
   contents: read
@@ -75,6 +72,5 @@ jobs:
           node --check apps/driver/public/section-pages.js
           node --check apps/driver/public/driver-earnings.js
           node --check apps/company/public/driver-admin.js
-          node --check apps/driver/public/availability.js
-      - name: Validate South African onboarding, verification and eligibility gates
+      - name: Validate secure storage, South African onboarding and live trip dashboard
         run: node tests/driver-onboarding-static-check.cjs
