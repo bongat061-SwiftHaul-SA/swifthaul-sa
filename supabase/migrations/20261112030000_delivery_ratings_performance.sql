@@ -107,3 +107,25 @@ begin
  update public.driver_profiles set average_rating=v_avg,total_ratings=v_count,on_time_percentage=v_ontime,completion_percentage=v_complete,performance_score=v_score,performance_tier=v_tier,updated_at=now() where user_id=p_driver_id;
  return jsonb_build_object('driver_id',p_driver_id,'average_rating',v_avg,'total_ratings',v_count,'on_time_percentage',v_ontime,'completion_percentage',v_complete,'proof_capture_percentage',v_pod,'performance_score',v_score,'performance_tier',v_tier,'trips_scored',v_trips,'completed_trips',v_completed);
 end $$;
+
+-- Exclude quality-alerted deliveries from valid OTP/POD-without-dispute scoring.
+create or replace function public.recalculate_driver_score(p_driver_id uuid)
+returns jsonb language plpgsql security invoker set search_path=public as $$
+declare v_avg numeric(3,2); v_count integer; v_ontime numeric(5,2); v_complete numeric(5,2); v_pod numeric(5,2); v_score integer; v_tier text; v_trips integer; v_completed integer;
+begin
+ with recent as (select b.* from public.customer_bookings b where b.driver_user_id=p_driver_id and b.accepted_at is not null order by b.accepted_at desc limit 50),
+ rating_stats as (select avg(r.stars)::numeric(3,2) avg_rating,count(*)::integer rating_count from public.delivery_ratings r where r.driver_id=p_driver_id and r.order_id in(select waybill from recent)),
+ trip_stats as (select count(*)::integer trip_count,count(*) filter(where status='delivered')::integer delivered_count,
+ count(*) filter(where status='delivered' and scheduled_at is not null and arrived_pickup_at is not null and arrived_pickup_at<=scheduled_at+interval '15 minutes')::integer ontime_count,
+ count(*) filter(where status='delivered' and scheduled_at is not null and arrived_pickup_at is not null)::integer scheduled_count,
+ count(*) filter(where status='delivered' and exists(select 1 from public.proof_of_delivery p where p.waybill=recent.waybill and p.driver_user_id=p_driver_id and p.recipient_pin_verified_at is not null)
+ and not exists(select 1 from public.quality_alerts q where q.order_id=recent.waybill and q.status<>'dismissed'))::integer pod_count from recent)
+ select coalesce(rs.avg_rating,5.00),coalesce(rs.rating_count,0),case when ts.scheduled_count=0 then 100 else round(100.0*ts.ontime_count/ts.scheduled_count,2) end,
+ case when ts.trip_count=0 then 100 else round(100.0*ts.delivered_count/ts.trip_count,2) end,
+ case when ts.delivered_count=0 then 100 else round(100.0*ts.pod_count/ts.delivered_count,2) end,ts.trip_count,ts.delivered_count
+ into v_avg,v_count,v_ontime,v_complete,v_pod,v_trips,v_completed from rating_stats rs cross join trip_stats ts;
+ v_score:=greatest(0,least(100,round((v_avg*20*0.40)+(v_ontime*0.25)+(v_complete*0.20)+(v_pod*0.15))::integer));
+ v_tier:=case when v_score>=90 then 'gold' when v_score>=75 then 'standard' when v_score>=60 then 'watchlist' when v_completed>=10 then 'review_required' else 'watchlist' end;
+ update public.driver_profiles set average_rating=v_avg,total_ratings=v_count,on_time_percentage=v_ontime,completion_percentage=v_complete,performance_score=v_score,performance_tier=v_tier,updated_at=now() where user_id=p_driver_id;
+ return jsonb_build_object('driver_id',p_driver_id,'average_rating',v_avg,'total_ratings',v_count,'on_time_percentage',v_ontime,'completion_percentage',v_complete,'proof_capture_percentage',v_pod,'performance_score',v_score,'performance_tier',v_tier,'trips_scored',v_trips,'completed_trips',v_completed);
+end $$;
