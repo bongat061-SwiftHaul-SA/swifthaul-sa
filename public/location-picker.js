@@ -175,7 +175,14 @@
   let routeLine = false;
   let mapLoaded = false;
   const routeData = {type:'Feature',properties:{},geometry:{type:'LineString',coordinates:[]}};
-  const mapStyle = 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
+  // Use a direct CARTO Voyager raster source: this avoids waiting on the
+  // remote vector-style JSON, sprite and glyph requests on slower Android links.
+  const rasterStyle = tiles => ({
+    version:8,
+    sources:{base:{type:'raster',tiles:[tiles],tileSize:256,attribution:'&copy; OpenStreetMap contributors &copy; CARTO'}},
+    layers:[{id:'base-raster',type:'raster',source:'base'}]
+  });
+  const mapStyle = rasterStyle('https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png');
   const cameraMove = (center, zoom=14) => { if(map) map.flyTo({center,zoom,duration:350}); };
   const clearRoute = () => {
     if(map && mapLoaded && map.getSource('customer-route')) map.getSource('customer-route').setData({type:'Feature',properties:{},geometry:{type:'LineString',coordinates:[]}});
@@ -198,30 +205,39 @@
   };
   function ensureMap() {
     if(map || !window.maplibregl) return;
-    map=new maplibregl.Map({container:'global-location-map',style:mapStyle,center:[28.195352552065742,-26.32516865200042],zoom:13.5,attributionControl:true,dragRotate:false,pitchWithRotate:false, maxPitch:0});
+    map=new maplibregl.Map({container:'global-location-map',style:mapStyle,center:[28.195352552065742,-26.32516865200042],zoom:13.5,attributionControl:true,dragRotate:false,pitchWithRotate:false,maxPitch:0});
     map.addControl(new maplibregl.NavigationControl({showCompass:false}),'top-right');
-    // If the detailed Voyager style stalls on a slow mobile connection, switch
-    // to a lightweight OpenStreetMap raster style instead of leaving a blank map.
-    let fallbackTimer = setTimeout(() => {
-      if (mapLoaded || !map) return;
-      map.setStyle({
-        version:8,
-        sources:{osm:{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,attribution:'&copy; OpenStreetMap contributors'}},
-        layers:[{id:'osm-raster',type:'raster',source:'osm'}]
-      });
-      $('loc-status').textContent='Loading the lightweight map view. Address search and exact pin placement remain available.';
-    },10000);
-    map.on('load',()=>{
-      clearTimeout(fallbackTimer);
-      mapLoaded=true;routeStyle();
+    let fallbackUsed=false;
+    let tileWatchdog;
+    const armWatchdog=()=>{
+      clearTimeout(tileWatchdog);
+      tileWatchdog=setTimeout(()=>{
+        if(!map || fallbackUsed) {
+          $('loc-status').textContent='The map tiles are taking too long to load. Address search and exact pin coordinates still work; try again when your connection is stable.';
+          return;
+        }
+        fallbackUsed=true;
+        mapLoaded=false;
+        $('loc-status').textContent='Switching to the lightweight OpenStreetMap map because the detailed map is slow…';
+        map.setStyle(rasterStyle('https://tile.openstreetmap.org/{z}/{x}/{y}.png'));
+        armWatchdog();
+      },10000);
+    };
+    map.on('style.load',()=>{
+      mapLoaded=true;
+      routeStyle();
       for(const key of ['pickup','dropoff']) if(state[key]) placeMarker(key,state[key].lat,state[key].lng);
       fitLocations();
       requestAnimationFrame(()=>map&&map.resize());
     });
+    map.on('idle',()=>clearTimeout(tileWatchdog));
+    map.on('error',event=>{
+      if(event?.error) $('loc-status').textContent='Some map tiles could not load. The address fields and exact pin coordinates remain available.';
+    });
+    armWatchdog();
     map.on('click',event=>{
       if(activeField){saveLocation(activeField,event.lngLat.lat,event.lngLat.lng,'Map pin adjusted. Finding the nearest mapped address…');reverseLabel(activeField,event.lngLat.lat,event.lngLat.lng);}
     });
-    map.on('error',()=>{$('loc-status').textContent='Map tiles could not be loaded. Check your connection; address fields and manual pin coordinates remain available.';});
     requestAnimationFrame(()=>map&&map.resize());
   }
   function placeMarker(key,lat,lng) {
