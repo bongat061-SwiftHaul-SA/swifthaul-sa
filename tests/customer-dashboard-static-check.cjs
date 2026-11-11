@@ -1,11 +1,16 @@
 const fs = require('node:fs');
 const read = path => fs.readFileSync(path, 'utf8');
 const html = read('public/customer.html');
+const index = read('public/index.html');
+const auth = read('public/auth.js');
 const pages = read('public/customer-pages.js');
 const shell = read('public/premium-shell.js');
 const css = read('public/customer-dashboard.css');
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
 
+assert(index.includes('customer-dashboard.css') && index.includes('customer-pages.js?v=20261111-dashboard3'), 'Customer default index entry must load the same refreshed dashboard assets.');
+assert(index.includes('booking-wizard.js?v=20261111-route-stage3'), 'Customer default index entry must retain the current booking wizard.');
+assert(auth.includes("new URL('customer.html', window.location.href)") && auth.includes('emailRedirectTo: customerReturnUrl()') && auth.includes('redirectTo: customerReturnUrl()'), 'Customer signup and password recovery emails must return to the current dashboard entry point.');
 assert(html.includes('customer-dashboard.css') && html.includes('customer-pages.js?v=20261111-dashboard3'), 'Customer HTML must load the refreshed dashboard assets.');
 assert(pages.includes('className = \'customer-home\'') && pages.includes('What can we move for you?'), 'Customer home dashboard must render its dedicated welcome panel.');
 assert(['home','book','activity','wallet','account'].every(key => pages.includes(key + ': { title:')), 'Customer dashboard must provide separate Home, Book, Deliveries, Wallet and Account pages.');
