@@ -5,6 +5,7 @@
   const heading = root.querySelector('.page-heading h1');
   const description = root.querySelector('.page-heading .subtle');
   const stats = root.querySelector('#earnings');
+  const homeHero = root.querySelector('.driver-home-hero');
   const grid = root.querySelector('.workspace-grid');
   const dispatches = root.querySelector('#dispatches');
   const historyPanel = document.createElement('section');
@@ -20,7 +21,8 @@
   const insuranceClaims = root.querySelector('#insurance-claims');
   const cash = root.querySelector('#cash-management');
   const pages = {
-    home: { title: 'Ready for the road.', description: 'Your driver home, with a quick view of your delivery activity.', show: ['stats'] },
+    home: { title: 'Ready for the road.', description: 'Your driver home, with a quick view of your delivery activity.', show: ['home-hero','stats'] },
+    dashboard: { title: 'Live trip dashboard.', description: 'Manage online availability, incoming requests, active trips and earnings in one place.', show: ['home-hero','stats','dispatches','availability','earnings','earnings-note'] },
     deliveries: { title: 'Your deliveries.', description: 'Review assigned work and follow each active route from one focused page.', show: ['dispatches'] },
     history: { title: 'Delivery history.', description: 'Review completed, failed and cancelled deliveries from your dispatch history.', show: ['history'] },
     availability: { title: 'Choose when to drive.', description: 'Manage your online status and delivery offer availability.', show: ['availability'] },
@@ -32,7 +34,7 @@
     account: { title: 'Your account.', description: 'Your driver profile and support details.', show: ['account'] },
     onboarding: { title: 'Driver onboarding.', description: 'Complete your South African identity, licence, vehicle, banking and verification steps.', show: ['onboarding'] }
   };
-  const pageNodes = { stats, dispatches, history: historyPanel, availability, payouts, cash, premium, account, onboarding, 'insurance-claims': insuranceClaims };
+  const pageNodes = { 'home-hero': homeHero, stats, dispatches, history: historyPanel, availability, payouts, cash, premium, account, onboarding, earnings: null, 'insurance-claims': insuranceClaims };
   const earningsPanel = document.createElement('section');
   earningsPanel.id = 'driver-earnings-dashboard';
   earningsPanel.className = 'panel driver-earnings-dashboard';
