@@ -17,4 +17,6 @@ assert.match(pages,/deletions: \{ title:/);
 assert.match(build,/Configure isolated staging backend for Company Admin preview APK/);
 assert.match(build,/matrix\\.label == 'Company-Admin'/);
 assert.match(build,/apps\\/company\\/public\\/supabase-config\\.js/);
+assert.match(build,/https:\/\/tagkbropgzthsbjlhyvz\\.supabase\\.co/);
+assert.match(build,/sb_publishable_QWOeGbSVs2nXECI-KsAmWQ_K_Rav892/);
 process.stdout.write('Company Admin deletion review and staging isolation checks passed.\\n');
