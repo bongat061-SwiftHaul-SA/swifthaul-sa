@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.49.1";
-import { adminClient, formatSAPhoneNumber, sendQueued, type NotificationEvent, type RecipientType } from "../_shared/notifications.ts";
+import { adminClient, formatSAPhoneNumber, sendQueued, type NotificationEvent, type RecipientType } from "./shared.ts";
 
 const headers = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info", "Access-Control-Allow-Methods": "POST, OPTIONS", "Content-Type": "application/json", "Cache-Control": "no-store" };
 const reply = (status: number, body: Record<string, unknown>) => new Response(JSON.stringify(body), { status, headers });
