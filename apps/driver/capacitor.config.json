@@ -1,0 +1,7 @@
+{
+  "appId": "za.co.swifthaul.driver",
+  "appName": "SwiftHaul Driver",
+  "webDir": "public",
+  "server": { "androidScheme": "https" },
+  "android": { "allowMixedContent": false }
+}

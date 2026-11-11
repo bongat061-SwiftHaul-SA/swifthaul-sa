@@ -48,9 +48,10 @@
       ensureHidden(prefix+'_'+suffix).value=String(value);
     }
     input.dataset.locationSelected='true';
+    input.dispatchEvent(new Event('change',{bubbles:true}));
+    window.swiftHaulShowAddressOnMap?.(input,lat,lng);
     const pinButton=input.nextElementSibling;
     if(pinButton&&pinButton.textContent.toLowerCase().includes('pin'))pinButton.textContent=code?'Pin selected · '+code:'Pin selected';
-    input.dispatchEvent(new Event('change',{bubbles:true}));
   }
   function attach(input,label){
     const wrap=input.parentElement;
@@ -103,7 +104,10 @@
       controller?.abort();controller=new AbortController();
       status.textContent='Finding matching addresses…';
       try{
-        const url='https://photon.komoot.io/api/?'+new URLSearchParams({q:query,limit:'6',lang:'en'});
+        const bias=window.swiftHaulGetMapCenter?.();
+        const params={q:query,limit:'8',lang:'en'};
+        if(bias&&Number.isFinite(bias.lat)&&Number.isFinite(bias.lng)){params.lat=String(bias.lat);params.lon=String(bias.lng);}
+        const url='https://photon.komoot.io/api/?'+new URLSearchParams(params);
         const response=await fetch(url,{signal:controller.signal,headers:{Accept:'application/json'}});
         if(!response.ok)throw new Error('Address search unavailable');
         const data=await response.json();
