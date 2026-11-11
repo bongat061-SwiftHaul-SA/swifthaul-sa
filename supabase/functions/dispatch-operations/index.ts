@@ -60,9 +60,14 @@ Deno.serve(async (req: Request) => {
       ...order, proof: proofMap.get(String(order.waybill)) ?? null
     }));
     const { data: driver } = isDriver
-      ? await admin.from("driver_profiles").select("verification_status,availability_status").eq("user_id", actorId).maybeSingle()
+      ? await admin.from("driver_profiles").select("verification_status,availability_status,allow_stacked_orders,vehicle_type").eq("user_id", actorId).maybeSingle()
       : { data: null };
-    return reply(200, { orders, driverProfile: driver });
+    const {data:routeStops}=isDriver
+      ? await admin.from("driver_route_stops").select("id,order_id,stop_type,sequence_order,address,lat,lng,status,completed_at").eq("driver_id",actorId).order("sequence_order")
+      : {data:[]};
+    const driverOrderCounts:Record<string,number>={};
+    if(!isDriver)for(const order of orders){const id=String(order.driver_user_id||"");if(id)driverOrderCounts[id]=(driverOrderCounts[id]||0)+1;}
+    return reply(200, { orders, driverProfile: driver, routeStops:routeStops??[], driverOrderCounts });
   }
 
   const raw = await req.text();
@@ -148,11 +153,13 @@ Deno.serve(async (req: Request) => {
   if(body.action==="arrive_pickup"){
     if(order.status!=="accepted")return reply(409,{error:"driver_must_accept_delivery_before_pickup_arrival"});
     if(!order.arrived_pickup_at){const at=new Date().toISOString();const {error}=await admin.from("customer_bookings").update({arrived_pickup_at:at}).eq("waybill",order.waybill);if(error)return reply(500,{error:"pickup_arrival_save_failed"});await admin.from("delivery_status_events").insert({waybill:order.waybill,actor_user_id:actorId,previous_status:order.status,new_status:order.status,notes:"Driver arrived at pickup"});}
+    await admin.from("driver_route_stops").update({status:"arrived"}).eq("order_id",order.waybill).eq("stop_type","pickup").eq("status","pending");
     return reply(200,{updated:true,checkpoint:"arrived_pickup"});
   }
   if(body.action==="arrive_dropoff"){
     if(order.status!=="in_transit")return reply(409,{error:"delivery_must_be_in_transit_before_dropoff_arrival"});
     if(!order.arrived_dropoff_at){const at=new Date().toISOString();const {error}=await admin.from("customer_bookings").update({arrived_dropoff_at:at}).eq("waybill",order.waybill);if(error)return reply(500,{error:"dropoff_arrival_save_failed"});await admin.from("delivery_status_events").insert({waybill:order.waybill,actor_user_id:actorId,previous_status:order.status,new_status:order.status,notes:"Driver arrived at drop-off"});}
+    await admin.from("driver_route_stops").update({status:"arrived"}).eq("order_id",order.waybill).eq("stop_type","dropoff").eq("status","pending");
     if(order.recipient_phone&&/^\\d{4}$/.test(String(order.pin||"")))await sendNotification({event_type:"delivery_otp",recipient_type:"recipient",recipient_phone:order.recipient_phone,payload_json:{otp:String(order.pin),waybill:order.waybill}});
     return reply(200,{updated:true,checkpoint:"arrived_dropoff"});
   }
@@ -170,6 +177,7 @@ Deno.serve(async (req: Request) => {
     if(body.action==="pickup"&&!order.arrived_pickup_at)return reply(409,{error:"confirm_arrived_at_pickup_first"});
     if (!transition.from.includes(order.status)) return reply(409, { error: "invalid_status_transition" });
     await setStatus(transition.to);
+    if(body.action==="pickup")await admin.from("driver_route_stops").update({status:"completed",completed_at:new Date().toISOString()}).eq("order_id",order.waybill).eq("driver_id",actorId).eq("stop_type","pickup");
     return reply(200, { updated: true, status: transition.to });
   }
   if (body.action === "fail") {
@@ -204,6 +212,7 @@ Deno.serve(async (req: Request) => {
       waybill: order.waybill, actor_user_id: actorId, previous_status: order.status,
       new_status: "delivered", notes: "Recipient PIN verified",
     });
+    await admin.from("driver_route_stops").update({status:"completed",completed_at:new Date().toISOString()}).eq("order_id",order.waybill).eq("driver_id",actorId).eq("stop_type","dropoff");
     return reply(200, { completed: true });
   }
   return reply(400, { error: "unknown_dispatch_action" });
