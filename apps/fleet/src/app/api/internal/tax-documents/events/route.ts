@@ -31,7 +31,8 @@ async function senderDocument(waybill:string,reference:string,forceInvoice=false
  const fullDetails=Boolean(b.billing_company_name&&b.billing_address);
  const fullRequired=total>5000;
  const registered=Boolean(company?.isVatRegistered);
- if(forceInvoice&&(!registered||!fullDetails))throw new Error("A full SARS tax invoice requires confirmed VAT registration and recipient company name and address.");\n const docType=forceInvoice?"sender_tax_invoice":registered&&(!fullRequired||fullDetails)?"sender_tax_invoice":"sender_receipt";
+ if(forceInvoice&&(!registered||!fullDetails))throw new Error("A full SARS tax invoice requires confirmed VAT registration and recipient company name and address.");
+ const docType=forceInvoice?"sender_tax_invoice":registered&&(!fullRequired||fullDetails)?"sender_tax_invoice":"sender_receipt";
  const rate=registered?Number(company?.vatRatePercent||15.5):0;
  const vat=rate?money(total*rate/(100+rate)):0,subtotal=money(total-vat);
  const {data:q}=b.quote_id?await dbs.from("tariff_quotes").select("fare_breakdown").eq("id",b.quote_id).maybeSingle():{data:null};
@@ -85,7 +86,8 @@ export async function POST(request:NextRequest){
  const raw=await request.text();
  if(!verify(raw,request.headers.get("x-tax-doc-signature")||"",secret))return NextResponse.json({error:"Invalid webhook signature."},{status:401});
  try{const body=JSON.parse(raw);let doc;
-  if(body.event==="charge.success"&&typeof body.waybill==="string"&&typeof body.reference==="string")doc=await senderDocument(body.waybill,body.reference);\n  else if(body.event==="sender.invoice.requested"&&typeof body.waybill==="string")doc=await senderDocument(body.waybill,body.waybill,true);
+  if(body.event==="charge.success"&&typeof body.waybill==="string"&&typeof body.reference==="string")doc=await senderDocument(body.waybill,body.reference);
+  else if(body.event==="sender.invoice.requested"&&typeof body.waybill==="string")doc=await senderDocument(body.waybill,body.waybill,true);
   else if(body.event==="transfer.success"&&typeof body.reference==="string")doc=await payoutDocument(body.reference);
   else return NextResponse.json({ignored:true});
   return NextResponse.json({ok:true,document_id:doc.id,document_number:doc.documentNumber});
