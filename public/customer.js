@@ -12,7 +12,18 @@ const calculateButton = document.getElementById('calculate-route');
 const localTime=value=>new Date(value).toLocaleString('en-ZA',{timeZone:'Africa/Johannesburg'})+' SAST';
 const km = value => (Number(value)/1000).toLocaleString('en-ZA',{maximumFractionDigits:6});
 function updateBookButton() {
-  document.getElementById('submit').disabled = !ready || bookingBusy || !currentQuote || new Date(currentQuote.expires_at).getTime() <= Date.now() || document.body.dataset.guestPreview === 'true';
+  const canSubmit = ready && !bookingBusy && !!currentQuote &&
+    new Date(currentQuote.expires_at).getTime() > Date.now() &&
+    document.body.dataset.guestPreview !== 'true';
+  const counterSelected = document.getElementById('make-counter-offer')?.checked === true &&
+    !document.getElementById('make-counter-offer')?.disabled &&
+    form.elements.payment_method.value === 'dispatch';
+  const normalButton = document.getElementById('submit');
+  const counterButton = document.getElementById('submit-counter-offer');
+  normalButton.hidden = counterSelected;
+  normalButton.disabled = !canSubmit || counterSelected;
+  counterButton.hidden = !counterSelected;
+  counterButton.disabled = !canSubmit || !form.elements.counter_offer.checkValidity();
 }
 function resetQuote() {
   quoteRequest?.abort();quoteRequest=null;currentQuote=null;
@@ -199,6 +210,12 @@ form.addEventListener('submit', async event => {
   const termsAcknowledgement=document.getElementById('booking-terms-accepted');
   if(!termsAcknowledgement?.checked){termsAcknowledgement?.focus();report('Please read and acknowledge the customer protection and handling terms before booking.',true);return;}
   const data = Object.fromEntries(new FormData(form));
+  const counterSelected=document.getElementById('make-counter-offer').checked;
+  if(counterSelected && (data.payment_method!=='dispatch' || !data.counter_offer ||
+      !Number.isFinite(Number(data.counter_offer)) || Number(data.counter_offer)<=0)) {
+    report('Choose Arrange payment with dispatch and enter a valid counteroffer amount.',true);
+    return;
+  }
   const assistance=assistanceQuote();
   if(assistance.requested && (!assistance.fee || acceptedQuote.vehicle==='bike')){report('Optional assistance requires a van or truck quote. Please update your vehicle/load or contact dispatch.',true);return;}
   if (['pickup', 'dropoff', 'recipient'].some(key => !data[key].trim())) { report('Enter pickup, drop-off and recipient details.', true); return; }
@@ -365,14 +382,17 @@ function updatePaymentOptions(){
   if(form.elements.payment_method.value==='wallet'&&!walletEligible)form.elements.payment_method.value='dispatch';
   const checkbox=document.getElementById('make-counter-offer');checkbox.disabled=!counter;
   if(!counter)checkbox.checked=false;
-  const show=counter&&checkbox.checked&&form.elements.payment_method.value!=='wallet';
+  if(checkbox.checked&&form.elements.payment_method.value!=='dispatch') checkbox.checked=false;
+  const show=counter&&checkbox.checked&&form.elements.payment_method.value==='dispatch';
   document.getElementById('counter-offer-field').hidden=!show;
   document.getElementById('counter-offer-note').hidden=!show;
   form.elements.counter_offer.disabled=!show;form.elements.counter_offer.required=show;
   if(!show)form.elements.counter_offer.value='';
+  updateBookButton();
   document.getElementById('payment-eligibility').textContent=!currentQuote?'Calculate a route to check cash, wallet and counteroffer eligibility.':walletEligible?'Wallet balance '+money(walletAvailableCents/100)+' is sufficient for this booking. Refund credits are used before promotional credits.': 'Wallet available '+money(walletAvailableCents/100)+'; '+money(walletRequired/100)+' required. '+(cash?'Cash or payment through dispatch is also available.':'Arrange payment through dispatch. Cash is unavailable for this distance.')+(counter?' Counteroffers are available only when paying by dispatch.':'');
 }
 document.getElementById('make-counter-offer').addEventListener('change',updatePaymentOptions);
+form.elements.counter_offer.addEventListener('input',updateBookButton);
 form.elements.payment_method.addEventListener('change',updatePaymentOptions);
 updatePaymentOptions();
 

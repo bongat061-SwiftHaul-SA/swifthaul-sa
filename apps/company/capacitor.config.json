@@ -1,0 +1,7 @@
+{
+  "appId": "za.co.swifthaul.company",
+  "appName": "SwiftHaul Company",
+  "webDir": "public",
+  "server": { "androidScheme": "https" },
+  "android": { "allowMixedContent": false }
+}
