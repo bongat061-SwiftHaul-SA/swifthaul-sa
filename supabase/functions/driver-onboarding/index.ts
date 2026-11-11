@@ -81,7 +81,7 @@ if(!["sa_citizen","foreign_national"].includes(identityType))return reply(400,{e
  if(text(form.get("background_consent"),5)!=="on")return reply(400,{error:"background_verification_consent_required"});
  const bank=text(form.get("bank_name"),40),holder=text(form.get("account_holder"),120),account=text(form.get("account_number"),30);
  if(!["FNB","Nedbank","Standard Bank","Absa","Capitec","TymeBank"].includes(bank)||!holder||!/^\d{6,20}$/.test(account))return reply(400,{error:"valid_sa_bank_details_required"});
- const files=[...requiredFiles,...(form.get("enatis_certificate") instanceof File?["enatis_certificate"]:[]),...(form.get("fleet_lease_agreement") instanceof File?["fleet_lease_agreement"]:[]),...(prdp?["prdp"]:[])],uploaded:string[]=[];
+ const files=[...requiredFiles,...(form.get("enatis_certificate") instanceof File&&(form.get("enatis_certificate") as File).size>0?["enatis_certificate"]:[]),...(form.get("fleet_lease_agreement") instanceof File&&(form.get("fleet_lease_agreement") as File).size>0?["fleet_lease_agreement"]:[]),...(prdp?["prdp"]:[])],uploaded:string[]=[];
  const expiryFor=(type:string):string|null=>({licence_front:licenceExpiry,licence_back:licenceExpiry,vehicle_licence_disc:discExpiry,vehicle_insurance:insuranceExpiry,prdp:prdpExpiry,passport:text(form.get("passport_expiry"),10)||null,work_permit:text(form.get("work_permit_expiry"),10)||null,enatis_certificate:text(form.get("registration_document_expiry"),10)||null,fleet_lease_agreement:text(form.get("registration_document_expiry"),10)||null}[type]??null);
  const issuedFor=(type:string):string|null=>type==="proof_of_address"?proofDate:null;
  try{
