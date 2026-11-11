@@ -10,7 +10,8 @@ const cors = {
 };
 const reply = (status: number, body: Record<string, unknown>) =>
   new Response(JSON.stringify(body), { status, headers: cors });
-const validText = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0 && v.length <= 500;\nconst validZaMobile = (v: unknown): v is string => typeof v === "string" && /^(?:\\+27|0)6[0-9]{8}$/.test(v.replace(/[\\s-]/g,""));
+const validText = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0 && v.length <= 500;
+const validZaMobile = (v: unknown): v is string => typeof v === "string" && /^(?:\+27|0)6[0-9]{8}$/.test(v.replace(/[\s-]/g,""));
 const baseFees = { bike: 40, van: 80, truck: 180 } as const;
 type Vehicle = keyof typeof baseFees;
 class InputError extends Error { status: number; constructor(message: string, status = 400) { super(message); this.status = status; } }
@@ -34,8 +35,8 @@ function calculateLoad(input: unknown) {
 function pin(value: unknown) {
   if (value == null) return null;
   const p = value as Record<string, unknown>;
-  if (typeof p.latitude !== "number" || !Number.isFinite(p.latitude) || Math.abs(p.latitude) > 90 ||
-      typeof p.longitude !== "number" || !Number.isFinite(p.longitude) || Math.abs(p.longitude) > 180)
+  if (typeof p.latitude !== "number" || !Number.isFinite(p.latitude) || p.latitude < -35.2 || p.latitude > -22.0 ||
+      typeof p.longitude !== "number" || !Number.isFinite(p.longitude) || p.longitude < 16.4 || p.longitude > 33.2)
     throw new InputError("Select a valid pickup or drop-off map pin.");
   return { latitude: p.latitude, longitude: p.longitude };
 }
@@ -187,7 +188,7 @@ Deno.serve(async (req: Request) => {
     return reply(400, { error: "calculate_a_quote_and_enter_recipient" });
   if (body.nedbank_cargo_insurance_interest !== undefined && typeof body.nedbank_cargo_insurance_interest !== "boolean") return reply(400, { error: "invalid_insurance_enquiry_selection" });
   const { data: existing } = await admin.from("customer_bookings")
-    .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,nedbank_cargo_insurance_interest")
+    .select("waybill,pin,tracking_code,recipient_phone,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,nedbank_cargo_insurance_interest")
     .eq("quote_id", body.quote_id).eq("owner_hash", owner).maybeSingle();
   if (existing) return reply(200, { order: existing });
   const { data: quote, error: quoteError } = await admin.from("delivery_quotes")
@@ -220,7 +221,7 @@ Deno.serve(async (req: Request) => {
     if (assistanceFeeCents !== expectedFee) return reply(400, { error: "assistance_must_be_free" });
   } else if ((body.assistance_minutes ?? 0) !== 0 || (body.assistance_fee_cents ?? 0) !== 0) return reply(400, { error: "unexpected_assistance_amount" });
   const method = body.payment_method ?? "dispatch";
-  if (method !== "cash" && method !== "dispatch" && method !== "eft") return reply(400, { error: "choose_eft_or_eligible_cash_payment" });
+  if (method !== "cash" && method !== "dispatch" && method !== "eft" && method !== "paystack") return reply(400, { error: "choose_eft_or_eligible_cash_payment" });
   if (method === "cash" && distance >= 12000) return reply(400, { error: "cash_available_only_below_12km" });
   let offer: number | null = null;
   let offerStatus = "none";
@@ -245,7 +246,7 @@ Deno.serve(async (req: Request) => {
   const pinCode = String(crypto.getRandomValues(new Uint32Array(1))[0] % 9000 + 1000);
   const insert = {
     waybill, owner_hash: owner, pin: pinCode, pickup: quote.pickup, dropoff: quote.dropoff,
-    recipient: body.recipient.trim(), recipient_phone: String(body.recipient_phone).replace(/[\\s-]/g,"").replace(/^0/,"+27"), vehicle: quote.vehicle, price: quote.price,
+    recipient: body.recipient.trim(), recipient_phone: String(body.recipient_phone).replace(/[\s-]/g,"").replace(/^0/,"+27"), vehicle: quote.vehicle, price: quote.price,
     distance_meters: distance, price_band: quote.price_band, quote_id: quote.id,
     load: quote.load, distance_fee: quote.distance_fee, scheduled_at: scheduled,
     return_address: returnAddress || null, return_at: returnAt, payment_method: method,
