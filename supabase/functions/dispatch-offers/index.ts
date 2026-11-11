@@ -37,11 +37,9 @@ Deno.serve(async req => {
       const b=offer.customer_bookings||{},pickup={lat:Number(b.pickup_latitude),lng:Number(b.pickup_longitude)},dropoff={lat:Number(b.dropoff_latitude),lng:Number(b.dropoff_longitude)};
       let detour:number|null=null;
       if(route.length&&Number.isFinite(pickup.lat)&&Number.isFinite(pickup.lng)&&Number.isFinite(dropoff.lat)&&Number.isFinite(dropoff.lng)){
-        let best=Number.POSITIVE_INFINITY;
-        for(let i=0;i<=route.length;i++)for(let j=i+1;j<=route.length+1;j++){
-          const points=[...route];points.splice(i,0,pickup);points.splice(j,0,dropoff);best=Math.min(best,routeLength(points)-baseline);
-        }
-        detour=Number.isFinite(best)?Math.max(0,Number(best.toFixed(2))):null;
+        const appended=[...route,pickup,dropoff];
+        const added=routeLength(appended)-baseline;
+        detour=Number.isFinite(added)?Math.max(0,Number(added.toFixed(2))):null;
       }
       return {...offer,add_on_order:offer.priority_tier==="add_on",net_payout_zar:Number((Number(b.price||0)*0.75).toFixed(2)),extra_detour_km:detour};
     });
