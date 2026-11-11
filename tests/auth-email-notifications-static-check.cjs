@@ -27,8 +27,8 @@ assert.match(customerWelcome, /admin_email_sent_at/, 'Customer admin notificatio
 assert.match(driverWelcome, /New SwiftHaul driver application/, 'new Driver registration alerts Company Admins');
 assert.match(driverWelcome, /SWIFTHAUL_SIGNUP_NOTIFY_EMAILS/, 'Driver signup recipients are configurable');
 assert.match(companyConfig, /isGitHubPagesStagingPreview/, 'Company Admin GitHub Pages preview is detected');
-assert.match(companyConfig, /tagkbropgzthsbjlhyvz\\.supabase\\.co/, 'Company Admin preview uses staging Supabase');
-assert.match(companyConfig, /jikstpnvsdjhcibtjilp\\.supabase\\.co/, 'Company Admin production host retains production Supabase');
+assert.match(companyConfig, /tagkbropgzthsbjlhyvz\.supabase\.co/, 'Company Admin preview uses staging Supabase');
+assert.match(companyConfig, /jikstpnvsdjhcibtjilp\.supabase\.co/, 'Company Admin production host retains production Supabase');
 assert.match(migration, /enable row level security/i, 'notification records are protected by RLS');
 assert.match(migration, /revoke all on public\.account_signin_notifications from anon,authenticated/i, 'notification records are not client-accessible');
 console.log('Auth email notification checks passed.');
