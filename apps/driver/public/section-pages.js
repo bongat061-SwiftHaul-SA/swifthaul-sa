@@ -24,7 +24,7 @@
     deliveries: { title: 'Your deliveries.', description: 'Review assigned work and follow each active route from one focused page.', show: ['dispatches'] },
     history: { title: 'Delivery history.', description: 'Review completed, failed and cancelled deliveries from your dispatch history.', show: ['history'] },
     availability: { title: 'Choose when to drive.', description: 'Manage your online status and delivery offer availability.', show: ['availability'] },
-    earnings: { title: 'Your earnings.', description: 'Track completed work and your driver earnings at a glance.', show: ['stats','earnings-note'] },
+    earnings: { title: 'Your earnings.', description: 'Track completed work, your 75% net share and EFT payout progress.', show: ['earnings','earnings-note'] },
     payouts: { title: 'Payouts.', description: 'Review your available balance, bank payout requests and payout history.', show: ['payouts'] },
     cash: { title: 'Cash & deposits.', description: 'Record customer cash held for SwiftHaul and reconcile your company deposits.', show: ['cash'] },
     membership: { title: 'Premium membership.', description: 'Manage membership, priority benefits and rewards.', show: ['premium'] },
@@ -33,6 +33,12 @@
     onboarding: { title: 'Driver onboarding.', description: 'Complete your South African identity, licence, vehicle, banking and verification steps.', show: ['onboarding'] }
   };
   const pageNodes = { stats, dispatches, history: historyPanel, availability, payouts, cash, premium, account, onboarding, 'insurance-claims': insuranceClaims };
+  const earningsPanel = document.createElement('section');
+  earningsPanel.id = 'driver-earnings-dashboard';
+  earningsPanel.className = 'panel driver-earnings-dashboard';
+  earningsPanel.innerHTML = '<div class="driver-earnings-summary"><article><span>TODAY\'S NET EARNINGS</span><strong id="driver-earnings-today">R0.00</strong></article><article><span>WEEKLY BALANCE</span><strong id="driver-earnings-week">R0.00</strong></article><article><span>EFT PAYOUT STATUS</span><strong id="driver-earnings-payout-status">Not requested</strong></article></div><div class="driver-earnings-section"><h2>Completed delivery breakdown</h2><p class="subtle">Each completed delivery is currently split 75% to the driver and 25% to SwiftHaul.</p><div id="driver-earnings-trip-list" class="operations-list"><p>Sign in to load your earnings.</p></div></div><div class="driver-earnings-section"><h2>Recent EFT payouts</h2><div id="driver-earnings-payout-list" class="operations-list"><p>No payout requests yet.</p></div></div>';
+  root.insertBefore(earningsPanel, grid.nextSibling);
+  pageNodes.earnings = earningsPanel;
   const earningsNote = document.createElement('section');
   earningsNote.className = 'panel driver-earnings-note';
   earningsNote.innerHTML = '<h2>How delivery earnings work</h2><p>For completed deliveries, the current standard split is 75% to the driver and 25% to the platform. Vehicle-specific rates may be introduced after operating costs are established.</p>';
