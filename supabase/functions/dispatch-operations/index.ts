@@ -27,6 +27,7 @@ Deno.serve(async (req: Request) => {
   if (authError || !authResult.user) return reply(401, { error: "invalid_or_expired_session" });
 
   const admin = createClient(url, service, { auth: { persistSession: false, autoRefreshToken: false } });
+  const sendNotification=async(payload:Record<string,unknown>)=>{try{const response=await fetch(url+"/functions/v1/notification-dispatch",{method:"POST",headers:{Authorization:"Bearer "+service,apikey:anon,"Content-Type":"application/json"},body:JSON.stringify({action:"send",...payload})});if(!response.ok)console.error("Notification dispatch failed",response.status,await response.text());}catch(error){console.error("Notification dispatch unavailable",String(error));}};
   const actorId = authResult.user.id;
   const { data: profile, error: profileError } = await admin
     .from("user_profiles").select("role,account_status").eq("id", actorId).maybeSingle();
@@ -38,7 +39,7 @@ Deno.serve(async (req: Request) => {
 
   if (req.method === "GET") {
     let query = admin.from("customer_bookings")
-      .select("waybill,pickup,dropoff,recipient,vehicle,price,payment_method,paid_at,completed_at,scheduled_at,return_address,status,driver_user_id,created_at,failure_reason,counter_offer,counter_offer_status,original_price,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash")
+      .select("waybill,pickup,dropoff,recipient,vehicle,price,payment_method,paid_at,completed_at,scheduled_at,return_address,status,driver_user_id,created_at,failure_reason,arrived_pickup_at,arrived_dropoff_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash")
       .order("created_at", { ascending: false }).limit(100);
     if (isDriver) query = query.eq("driver_user_id", actorId);
     const { data, error } = await query;
@@ -71,26 +72,10 @@ Deno.serve(async (req: Request) => {
   if (typeof body.waybill !== "string" || body.waybill.length > 100) return reply(400, { error: "invalid_waybill" });
 
   const { data: order, error: orderError } = await admin.from("customer_bookings")
-    .select("waybill,status,driver_user_id,pin,pin_attempts,pin_locked_until,completed_at,refunded_at,assistance_requested,assistance_status,counter_offer,counter_offer_status,price,original_price")
+    .select("waybill,owner_hash,recipient_phone,tracking_code,pickup,dropoff,recipient,status,driver_user_id,pin,pin_attempts,pin_locked_until,completed_at,refunded_at,arrived_pickup_at,arrived_dropoff_at,assistance_requested,assistance_status")
     .eq("waybill", body.waybill).maybeSingle();
   if (orderError) return reply(500, { error: "delivery_lookup_failed" });
   if (!order) return reply(404, { error: "delivery_not_found" });
-
-  if (isDispatcher && body.action === "counteroffer_decision") {
-    if (order.counter_offer_status !== "pending" || !Number.isFinite(Number(order.counter_offer)) || Number(order.counter_offer) <= 0)
-      return reply(409, { error: "no_pending_counteroffer" });
-    if (body.decision !== "accepted" && body.decision !== "declined")
-      return reply(400, { error: "choose_accept_or_decline" });
-    const update = body.decision === "accepted"
-      ? { counter_offer_status: "accepted", original_price: order.original_price ?? order.price, price: Number(order.counter_offer) }
-      : { counter_offer_status: "declined" };
-    const { data: changed, error } = await admin.from("customer_bookings")
-      .update(update).eq("waybill", order.waybill).eq("counter_offer_status", "pending")
-      .select("waybill,counter_offer,counter_offer_status,price,original_price").maybeSingle();
-    if (error) return reply(500, { error: "counteroffer_decision_save_failed" });
-    if (!changed) return reply(409, { error: "counteroffer_already_reviewed" });
-    return reply(200, { updated: true, ...changed });
-  }
 
   if (isDispatcher && body.action === "assistance_decision") {
     if (!order.assistance_requested || order.assistance_status !== "requested_pending_dispatch_confirmation")
@@ -123,16 +108,16 @@ Deno.serve(async (req: Request) => {
   };
 
   if (isDispatcher && body.action === "assign") {
-    if (order.counter_offer_status === "pending")
-      return reply(409, { error: "counteroffer_requires_dispatch_review_before_assignment" });
     if (["delivered", "failed", "cancelled"].includes(order.status) || order.refunded_at)
       return reply(409, { error: "delivery_is_closed" });
     if (typeof body.driver_id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.driver_id))
       return reply(400, { error: "enter_valid_driver_account_id" });
     const { data: driver, error } = await admin.from("driver_profiles")
-      .select("user_id,verification_status").eq("user_id", body.driver_id).maybeSingle();
+      .select("user_id,verification_status,can_go_online").eq("user_id", body.driver_id).maybeSingle();
     if (error) return reply(500, { error: "driver_lookup_failed" });
     if (!driver || driver.verification_status !== "approved") return reply(409, { error: "driver_not_approved" });
+    const {data:eligible,error:eligibilityError}=await admin.rpc("driver_can_accept_work",{p_driver_user_id:driver.user_id});
+    if(eligibilityError||eligible!==true) return reply(409,{error:"driver_onboarding_documents_or_background_clearance_incomplete"});
     const { error: updateError } = await admin.from("customer_bookings")
       .update({ driver_user_id: driver.user_id, assigned_driver: driver.user_id, status: "assigned" })
       .eq("waybill", order.waybill);
@@ -141,6 +126,17 @@ Deno.serve(async (req: Request) => {
       waybill: order.waybill, actor_user_id: actorId, previous_status: order.status,
       new_status: "assigned", notes: "Assigned by dispatch",
     });
+    const [{data:sender},{data:driverContact},{data:driverUser}]=await Promise.all([
+      admin.from("customer_profiles").select("phone").eq("owner_hash",order.owner_hash).maybeSingle(),
+      admin.from("driver_profiles").select("phone,vehicle_registration").eq("user_id",driver.user_id).maybeSingle(),
+      admin.from("user_profiles").select("full_name").eq("id",driver.user_id).maybeSingle()
+    ]);
+    const trackingCode=String(order.tracking_code||order.waybill||"");
+    const appUrl=(Deno.env.get("CUSTOMER_APP_URL")||"https://bongat061-swifthaul-sa.github.io/swifthaul-sa-preview").replace(/\/$/,"");
+    const trackingUrl=appUrl+"/track/"+encodeURIComponent(trackingCode);
+    const payload={driver_first_name:String(driverUser?.full_name||"Your driver").trim().split(/\s+/)[0],vehicle_registration:String(driverContact?.vehicle_registration||""),tracking_url:trackingUrl,pickup_area:String(order.pickup||""),dropoff_area:String(order.dropoff||"")};
+    if(sender?.phone&&order.recipient_phone)await sendNotification({event_type:"order_dispatched",recipients:[{recipient_type:"sender",recipient_phone:sender.phone},{recipient_type:"recipient",recipient_phone:order.recipient_phone}],payload_json:payload});
+    else console.error("Dispatch notification skipped: sender or recipient phone missing",order.waybill);
     return reply(200, { assigned: true });
   }
 
@@ -149,13 +145,29 @@ Deno.serve(async (req: Request) => {
   if (order.refunded_at || ["delivered", "failed", "cancelled"].includes(order.status))
     return reply(409, { error: "delivery_is_closed" });
 
+  if(body.action==="arrive_pickup"){
+    if(order.status!=="accepted")return reply(409,{error:"driver_must_accept_delivery_before_pickup_arrival"});
+    if(!order.arrived_pickup_at){const at=new Date().toISOString();const {error}=await admin.from("customer_bookings").update({arrived_pickup_at:at}).eq("waybill",order.waybill);if(error)return reply(500,{error:"pickup_arrival_save_failed"});await admin.from("delivery_status_events").insert({waybill:order.waybill,actor_user_id:actorId,previous_status:order.status,new_status:order.status,notes:"Driver arrived at pickup"});}
+    return reply(200,{updated:true,checkpoint:"arrived_pickup"});
+  }
+  if(body.action==="arrive_dropoff"){
+    if(order.status!=="in_transit")return reply(409,{error:"delivery_must_be_in_transit_before_dropoff_arrival"});
+    if(!order.arrived_dropoff_at){const at=new Date().toISOString();const {error}=await admin.from("customer_bookings").update({arrived_dropoff_at:at}).eq("waybill",order.waybill);if(error)return reply(500,{error:"dropoff_arrival_save_failed"});await admin.from("delivery_status_events").insert({waybill:order.waybill,actor_user_id:actorId,previous_status:order.status,new_status:order.status,notes:"Driver arrived at drop-off"});}
+    if(order.recipient_phone&&/^\\d{4}$/.test(String(order.pin||"")))await sendNotification({event_type:"delivery_otp",recipient_type:"recipient",recipient_phone:order.recipient_phone,payload_json:{otp:String(order.pin),waybill:order.waybill}});
+    return reply(200,{updated:true,checkpoint:"arrived_dropoff"});
+  }
   const transitions: Record<string, { from: string[]; to: string }> = {
     accept: { from: ["assigned"], to: "accepted" },
     pickup: { from: ["accepted"], to: "picked_up" },
     in_transit: { from: ["picked_up"], to: "in_transit" },
   };
   if (typeof body.action === "string" && transitions[body.action]) {
+    if(body.action==="accept"){
+      const {data:eligible,error:eligibilityError}=await admin.rpc("driver_can_accept_work",{p_driver_user_id:actorId});
+      if(eligibilityError||eligible!==true)return reply(403,{error:"driver_not_cleared_to_accept_trips"});
+    }
     const transition = transitions[body.action];
+    if(body.action==="pickup"&&!order.arrived_pickup_at)return reply(409,{error:"confirm_arrived_at_pickup_first"});
     if (!transition.from.includes(order.status)) return reply(409, { error: "invalid_status_transition" });
     await setStatus(transition.to);
     return reply(200, { updated: true, status: transition.to });
@@ -169,6 +181,7 @@ Deno.serve(async (req: Request) => {
   }
   if (body.action === "complete") {
     if (order.status !== "in_transit") return reply(409, { error: "delivery_must_be_in_transit" });
+    if(!order.arrived_dropoff_at)return reply(409,{error:"confirm_arrived_at_dropoff_first"});
     const { data: proof } = await admin.from("proof_of_delivery").select("id").eq("waybill", order.waybill).maybeSingle();
     if (!proof) return reply(409, { error: "upload_proof_of_delivery_first" });
     if (typeof body.pin !== "string" || !/^\d{4}$/.test(body.pin)) return reply(400, { error: "enter_recipient_four_digit_pin" });
