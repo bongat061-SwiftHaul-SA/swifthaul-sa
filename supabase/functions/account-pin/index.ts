@@ -33,7 +33,7 @@ Deno.serve(async (req: Request) => {
 
   const action = String(body.action ?? "");
   const appType = String(body.app_type ?? "");
-  if (!["customer", "driver"].includes(appType)) return respond(400, { error: "invalid_app_type" });
+  if (!["customer", "driver", "company"].includes(appType)) return respond(400, { error: "invalid_app_type" });
 
   const admin = createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
