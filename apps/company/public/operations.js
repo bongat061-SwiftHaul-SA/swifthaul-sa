@@ -7,9 +7,11 @@ if (app === 'driver' || app === 'company') {
   const refresh = document.createElement('button');
   refresh.type = 'button';
   refresh.textContent = 'Refresh deliveries';
+  const qualityPanel = document.createElement('section');
+  qualityPanel.className = 'admin-quality-panel';
   const list = document.createElement('div');
   list.className = 'operations-list';
-  panel.replaceChildren(heading, refresh, message, list);
+  panel.replaceChildren(heading, refresh, message, qualityPanel, list);
 
   let active = false;
   let requestNumber = 0;
@@ -39,6 +41,13 @@ if (app === 'driver' || app === 'company') {
     try {
       const data = await invoke('GET');
       if (current !== requestNumber) return;
+      qualityPanel.replaceChildren();
+      const qHead=document.createElement('h3');qHead.textContent='Quality & Ratings';
+      const qFilter=document.createElement('select');qFilter.setAttribute('aria-label','Filter quality alerts');qFilter.innerHTML='<option value="all">All quality alerts</option><option value="high">High priority</option><option value="critical">Critical only</option>';
+      const qList=document.createElement('div');qList.className='admin-quality-list';
+      const alerts=data.qualityAlerts||[],scores=new Map((data.driverScores||[]).map(x=>[x.user_id,x]));
+      const drawQuality=()=>{qList.replaceChildren();const filtered=alerts.filter(a=>qFilter.value==='all'||a.priority===qFilter.value);if(!filtered.length){const empty=document.createElement('p');empty.textContent='No quality alerts match this filter.';qList.append(empty);}for(const alert of filtered){const card=document.createElement('article');card.className='admin-quality-card';const score=scores.get(alert.driver_id)||{};const h=document.createElement('strong');h.textContent=alert.priority.toUpperCase()+' · '+alert.reason;const detail=document.createElement('p');detail.textContent='Order '+alert.order_id+' · Driver score '+(score.performance_score??'—')+'/100 · '+(score.performance_tier||'unrated');const tags=document.createElement('p');tags.textContent=(alert.tags||[]).join(' · ');card.append(h,detail,tags);qList.append(card);}};
+      qFilter.addEventListener('change',drawQuality);qualityPanel.append(qHead,qFilter,qList);drawQuality();
       list.replaceChildren();
       if (app === 'driver' && data.driverProfile?.verification_status !== 'approved') {
         const notice = document.createElement('p');
