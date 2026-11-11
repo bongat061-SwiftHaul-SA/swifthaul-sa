@@ -54,7 +54,8 @@
     }
     stats?.classList.add('premium-driver-stats');
     dispatch?.classList.add('premium-dispatch-card');
-    nav.innerHTML = '<a href="?page=home">Home</a><a href="?page=deliveries">Deliveries</a><a href="map.html">Map</a><a href="?page=earnings">Earnings</a><a href="?page=account">Account</a>';
+    // Preserve the data-page links wired by section-pages.js. Replacing them
+    // after listeners attach caused full navigations and apparent sign-in resets.
     const payout = document.getElementById('payouts');
     payout?.classList.add('premium-secondary-section');
     if (status) status.classList.add('premium-status-copy');
@@ -64,10 +65,12 @@
   const footer = workspace.querySelector('.footer');
   if (footer) footer.classList.add('premium-footer');
   const markActive = () => {
+    const currentPage = new URLSearchParams(location.search).get('page') || (app === 'customer' ? 'book' : 'home');
     const hash = location.hash || (app === 'customer' ? '#new-delivery' : '');
     nav.querySelectorAll('a').forEach(a => {
       const href = a.getAttribute('href');
-      a.classList.toggle('is-active', href === hash || (href === '?page=home' && !location.search));
+      const active = a.dataset.page ? a.dataset.page === currentPage : href === hash;
+      a.classList.toggle('is-active', active);
     });
   };
   markActive();
