@@ -2,7 +2,7 @@ const fs=require('node:fs');
 const js=fs.readFileSync('apps/driver/public/driver-onboarding.js','utf8');
 const edge=fs.readFileSync('supabase/functions/driver-onboarding/index.ts','utf8');
 const admin=fs.readFileSync('supabase/functions/driver-admin/index.ts','utf8');
-const dashboard=fs.readFileSync('apps/company/public/driver-admin.js','utf8');
+const dashboard=fs.readFileSync('apps/company/public/driver-admin.js','utf8');\nconst driverPages=fs.readFileSync('apps/driver/public/section-pages.js','utf8');\nconst adminRoute=fs.readFileSync('apps/company/public/admin/drivers/index.html','utf8');
 const schema=fs.readFileSync('supabase/migrations/20261111190000_driver_verification_expiry_and_pii_protection.sql','utf8');
 const workGuard=fs.readFileSync('supabase/migrations/20261111191000_driver_work_eligibility_guard.sql','utf8');
 const dateSchema=fs.readFileSync('supabase/migrations/20261111192000_enforce_driver_document_date_requirements.sql','utf8');
