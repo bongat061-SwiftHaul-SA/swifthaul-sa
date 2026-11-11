@@ -28,7 +28,7 @@ Deno.serve(async(req:Request)=>{
  const licenceCode=text(form.get("licence_code"),5),licenceExpiry=text(form.get("licence_expiry"),10),vehicleType=text(form.get("vehicle_type"),30);
  const plate=text(form.get("registration_plate"),20),year=Number(text(form.get("vehicle_year"),4));
  const idNumber=text(form.get("id_number"),13),dob=text(form.get("date_of_birth"),10),passport=text(form.get("passport_number"),30),trn=text(form.get("traffic_register_number"),30);
- const prdp=text(form.get("prdp_holder"),5)==="true",prdpCategory=text(form.get("prdp_category"),30),prdpExpiry=text(form.get("prdp_expiry"),10);
+ const prdp=text(form.get("prdp_holder"),5)==="true",gvm=Number(text(form.get("vehicle_gvm_kg"),8)),prdpCategory=text(form.get("prdp_category"),30),prdpExpiry=text(form.get("prdp_expiry"),10);
  const requiredFiles=identityType==="sa_citizen"?["id_front","id_back","profile_selfie"]:["passport","work_permit"];
  requiredFiles.push("licence_front","licence_back","vehicle_licence_disc","vehicle_insurance","proof_of_address");
  if(identityType==="sa_citizen"&&(!/^\d{13}$/.test(idNumber)||!luhn(idNumber)||!validDate(dob)))return reply(400,{error:"valid_luhn_sa_id_and_date_of_birth_required"});
@@ -36,9 +36,11 @@ Deno.serve(async(req:Request)=>{
  if(!/^\+27[0-9]{9}$/.test(phone.replace(/[\s-]/g,"").replace(/^0/,"+27"))&&!/^0[0-9]{9}$/.test(phone.replace(/[\s-]/g,"")))return reply(400,{error:"valid_sa_mobile_required"});
  if(!/^\S+@\S+\.\S+$/.test(email)||!["A1","A","B","EB","C1","C","EC1","EC"].includes(licenceCode)||!validDate(licenceExpiry)||Date.parse(licenceExpiry+"T00:00:00")<=Date.now())return reply(400,{error:"valid_email_licence_code_and_future_expiry_required"});
  if(!["motorbike","hatchback_sedan","bakkie_panel_van","truck"].includes(vehicleType)||!fullName||!plate||year<1980||year>new Date().getFullYear()+1)return reply(400,{error:"complete_vehicle_and_personal_details"});
- const heavy=["bakkie_panel_van","truck"].includes(vehicleType);
- if((heavy&&!prdp)|| (prdp&&(!["goods","passengers","dangerous_goods"].includes(prdpCategory)||!validDate(prdpExpiry)||Date.parse(prdpExpiry+"T00:00:00")<=Date.now())))return reply(400,{error:"valid_prdp_details_required"});
- const proofDate=text(form.get("proof_of_address_date"),10);
+ const heavy=vehicleType==="truck"||(vehicleType==="bakkie_panel_van"&&gvm>3500);
+ if((vehicleType==="bakkie_panel_van"&&(!Number.isFinite(gvm)||gvm<=0))||(heavy&&!prdp)|| (prdp&&(!["goods","passengers","dangerous_goods"].includes(prdpCategory)||!validDate(prdpExpiry)||Date.parse(prdpExpiry+"T00:00:00")<=Date.now())))return reply(400,{error:"valid_prdp_details_required"});
+ const proofDate=text(form.get("proof_of_address_date"),10),discExpiry=text(form.get("vehicle_disc_expiry"),10),insuranceExpiry=text(form.get("insurance_expiry"),10);
+ if(!validDate(discExpiry)||Date.parse(discExpiry+"T00:00:00")<=Date.now()||!validDate(insuranceExpiry)||Date.parse(insuranceExpiry+"T00:00:00")<=Date.now())return reply(400,{error:"vehicle_disc_and_insurance_must_be_current"});
+ if(!form.get("enatis_certificate")&&!form.get("fleet_lease_agreement"))return reply(400,{error:"enatis_or_fleet_lease_document_required"});
  if(!validDate(proofDate)||Date.now()-Date.parse(proofDate+"T00:00:00")>92*86400000||Date.parse(proofDate+"T00:00:00")>Date.now())return reply(400,{error:"proof_of_residence_must_be_under_three_months_old"});
  for(const t of requiredFiles){const f=form.get(t);if(!(f instanceof File)||f.size<1||f.size>10485760||!allowed.has(f.type))return reply(400,{error:"missing_or_invalid_document_"+t});}
  if(prdp){const f=form.get("prdp");if(!(f instanceof File)||f.size<1||f.size>10485760||!allowed.has(f.type))return reply(400,{error:"prdp_document_required"});}
@@ -58,7 +60,7 @@ Deno.serve(async(req:Request)=>{
   }
   const identity={full_name:fullName,phone,email,citizenship:identityType,id_number:identityType==="sa_citizen"?idNumber:null,date_of_birth:identityType==="sa_citizen"?dob:null,passport_number:identityType==="foreign_national"?passport:null,traffic_register_number:identityType==="foreign_national"?trn:null};
   const licence={code:licenceCode,expiry:licenceExpiry,prdp_holder:prdp,prdp_category:prdp?prdpCategory:null,prdp_expiry:prdp?prdpExpiry:null};
-  const vehicle={type:vehicleType,make:text(form.get("vehicle_make"),60),model:text(form.get("vehicle_model"),60),year,registration_plate:plate.toUpperCase(),vehicle_licence_disc_expiry:text(form.get("vehicle_disc_expiry"),10),insurance_expiry:text(form.get("insurance_expiry"),10)};
+  const vehicle={type:vehicleType,gross_vehicle_mass_kg:gvm,make:text(form.get("vehicle_make"),60),model:text(form.get("vehicle_model"),60),year,registration_plate:plate.toUpperCase(),vehicle_licence_disc_expiry:text(form.get("vehicle_disc_expiry"),10),insurance_expiry:text(form.get("insurance_expiry"),10)};
   const banking={bank_name:bank,account_holder:holder,account_number:account,universal_branch_code:text(form.get("branch_code"),10)};
   const {error:saveError}=await db.from("driver_onboarding_applications").upsert({driver_user_id:u.user.id,identity_type:identityType,identity_details:identity,licence_details:licence,vehicle_details:vehicle,banking_details:banking,verification_status:"pending",submitted_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:"driver_user_id"});
   if(saveError)throw new Error("application_save_failed");
