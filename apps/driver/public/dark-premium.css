@@ -358,3 +358,6 @@ body[data-app="driver"] #driver-account-status{color:#d4dbe5!important;font-size
 .driver-itinerary-stop button{justify-self:start}
 
 .driver-offer-countdown{color:#f1c987;font-size:.78rem;font-weight:700}
+
+
+.driver-performance-card{background:linear-gradient(145deg,#171d24,#101419);border:1px solid #39434e;border-radius:15px;padding:16px;margin:14px 0;color:#f5f7fa}.driver-performance-card h3{margin:0 0 10px}.driver-score-main{display:flex;align-items:center;gap:12px}.driver-score-main strong{font-size:32px;letter-spacing:-.04em}.driver-score-tier{border-radius:999px;padding:5px 10px;font-size:10px;font-weight:900;letter-spacing:.08em;border:1px solid #8d7844;color:#f3d58b}.driver-score-tier.tier-standard{border-color:#667482;color:#cbd6e0}.driver-score-tier.tier-watchlist,.driver-score-tier.tier-review_required{border-color:#a54c55;color:#ffabb2}.driver-score-tips{font-size:12px;color:#c0c9d2;margin-bottom:0}
