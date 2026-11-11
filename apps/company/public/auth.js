@@ -15,6 +15,14 @@ const submit = form.querySelector('[type=submit]');
 let mode = 'login';
 let currentUser = null;
 const supportsPin = app === 'company';
+const PIN_ACCOUNT_KEY = 'swifthaul.company.pin-account';
+function rememberPinAccount(email) {
+  if (typeof email !== 'string' || !email.includes('@')) return;
+  try { localStorage.setItem(PIN_ACCOUNT_KEY, email.trim().toLowerCase()); } catch (error) { console.warn('Could not remember Company PIN account on this device:', error); }
+}
+function rememberedPinAccount() {
+  try { return localStorage.getItem(PIN_ACCOUNT_KEY) || ''; } catch { return ''; }
+}
 const pinLabel = document.createElement('label'); pinLabel.textContent = '6-digit PIN'; pinLabel.hidden = true;
 const pinInput = document.createElement('input'); pinInput.name='loginPin'; pinInput.type='password'; pinInput.inputMode='numeric'; pinInput.pattern='[0-9]{6}'; pinInput.maxLength=6; pinInput.autocomplete='one-time-code'; pinInput.placeholder='Enter your 6-digit PIN'; pinLabel.append(pinInput); form.insertBefore(pinLabel, submit);
 const pinLoginButton=document.createElement('button'); pinLoginButton.type='button'; pinLoginButton.textContent='Use 6-digit PIN'; form.after(pinLoginButton);
@@ -38,8 +46,8 @@ function setMode(next) {
   document.getElementById('auth-title').textContent = titles[mode];
   form.elements.name.closest('label').hidden = !signup;
   form.elements.name.required = signup;
-  form.elements.email.closest('label').hidden = reset;
-  form.elements.email.required = !reset;
+  form.elements.email.closest('label').hidden = reset || pinLogin;
+  form.elements.email.required = !reset && !pinLogin;
   form.elements.password.closest('label').hidden = recovery || pinLogin;
   form.elements.password.required = !recovery && !pinLogin;
   pinLabel.hidden = !pinLogin; pinInput.required = pinLogin;
@@ -104,6 +112,7 @@ async function validateAccount(session) {
     throw new Error('Company access is invitation-only. Please contact your administrator.');
   }
   if (user.accountStatus !== 'active') throw new Error('Your account is not active. Please contact SwiftHaul support.');
+  if (app === 'company') rememberPinAccount(session?.user?.email || user.email);
   showWorkspace(user);
   await refreshPinPanel(session);
 }
@@ -128,8 +137,10 @@ form.addEventListener('submit', async event => {
     const email = form.elements.email.value.trim().toLowerCase();
     const password = form.elements.password.value;
     if(mode==='pin'){
+      const pinAccountEmail=rememberedPinAccount();
+      if(!pinAccountEmail){setMode('login');status.textContent='For the first sign-in on this device, use your email and password. Your verified account will then be remembered for PIN-only sign-in.';return;}
       if(!/^\d{6}$/.test(pinInput.value))throw new Error('Enter your six-digit PIN.');
-      const {data:pinData,error:pinError}=await supabase.functions.invoke('account-pin',{body:{action:'login',app_type:'company',email,pin:pinInput.value}});
+      const {data:pinData,error:pinError}=await supabase.functions.invoke('account-pin',{body:{action:'login',app_type:'company',email:pinAccountEmail,pin:pinInput.value}});
       if(pinError)throw new Error(pinData?.error||pinError.message||'PIN sign-in failed.');
       const {data:sessionData,error:sessionError}=await supabase.auth.setSession(pinData.session);
       if(sessionError)throw sessionError;pinInput.value='';await validateAccount(sessionData.session);return;
