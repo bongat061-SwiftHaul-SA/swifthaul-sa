@@ -49,6 +49,15 @@ const server = http.createServer((req,res)=>{
       assert.equal(await page.locator('#auth-screen').isVisible(),true,app.name+' should show the sign-in screen without an existing session');
       assert.equal(await page.locator('#auth-form input[name="email"]').count(),1,app.name+' email sign-in field');
       assert.equal(await page.locator('#auth-form input[name="password"]').count(),1,app.name+' password sign-in field');
+      const pinButton=page.getByRole('button',{name:/6-digit PIN/i});
+      assert.equal(await pinButton.count(),1,app.name+' quick PIN sign-in control');
+      await pinButton.click();
+      await page.locator('#auth-form input[name="loginPin"]').waitFor({state:'visible'});
+      assert.equal(await page.locator('#auth-form input[name="loginPin"]').getAttribute('pattern'),'[0-9]{6}',app.name+' six-digit PIN validation');
+      assert.equal(await page.locator('#auth-form input[name="email"]').isVisible(),false,app.name+' PIN sign-in must not ask for email');
+      assert.equal(await page.locator('#auth-form input[name="password"]').isVisible(),false,app.name+' PIN sign-in must not ask for password');
+      await page.getByRole('button',{name:/password instead/i}).click();
+      assert.equal(await page.locator('#auth-form input[name="email"]').isVisible(),true,app.name+' password sign-in can be restored');
       if(app.signup){
         await page.locator('[data-auth-mode="signup"]').click();
         await page.locator('#auth-form input[name="city"]').waitFor({state:'visible'});
@@ -59,7 +68,7 @@ const server = http.createServer((req,res)=>{
         assert.equal(await page.locator('#auth-form input[name="city"]').isVisible(),false);
       } else {
         assert.equal(await page.locator('body').getAttribute('data-app'),'company');
-        assert.equal(await page.getByRole('button',{name:/6-digit PIN/i}).count(),1,'Company Admin quick PIN control');
+        assert.equal(await page.locator('#auth-form input[name="email"]').isVisible(),true,'Company Admin password sign-in remains available');
       }
       await page.waitForTimeout(800);
       assert.deepEqual(badLocal,[],app.name+' should not have missing local assets');
