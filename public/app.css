@@ -169,3 +169,12 @@ body[data-app="customer"] .customer-terms-acknowledgement legend{padding:0 7px;f
 body[data-app="customer"] .customer-terms-acknowledgement>p{font-size:12px;line-height:1.65;color:#52645a}
 body[data-app="customer"] .customer-terms-acknowledgement label{display:flex;align-items:flex-start;gap:10px;font-size:12px;line-height:1.55;font-weight:700}
 body[data-app="customer"] .customer-terms-acknowledgement input[type="checkbox"]{width:19px;height:19px;min-width:19px;margin:1px 0 0;accent-color:#176b52}
+
+/* POPIA registration consent — mandatory service consent, separate optional marketing opt-in. */
+#auth-screen .popia-consent{display:grid;gap:14px;margin:18px 0 16px;padding:16px;border:1px solid rgba(130,145,165,.35);border-radius:14px;background:rgba(20,27,36,.96);color:inherit;font-size:13px;line-height:1.65}
+#auth-screen .popia-consent[hidden],#auth-screen #marketing-consent[hidden]{display:none!important}
+#auth-screen .popia-consent label{display:grid;grid-template-columns:20px minmax(0,1fr);align-items:start;gap:10px;margin:0;font-weight:400;line-height:1.65}
+#auth-screen .popia-consent input[type=checkbox]{width:18px;height:18px;margin:2px 0 0;accent-color:#dce2e9;flex:0 0 auto}
+#auth-screen .popia-consent a{font-weight:700;text-decoration:underline;text-underline-offset:3px}
+#auth-screen .popia-consent .consent-marketing{padding-top:13px;border-top:1px solid rgba(130,145,165,.28)}
+#auth-screen .auth-panel button.primary:disabled{opacity:.45;cursor:not-allowed;filter:saturate(.35)}
