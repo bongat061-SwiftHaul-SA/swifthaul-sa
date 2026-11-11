@@ -262,3 +262,33 @@ body[data-app] #workspace .operations-list .card>button:last-child{margin-right:
  body[data-app] #workspace .account button{padding:7px 9px!important}
  #auth-screen .auth-links{justify-content:center!important}
 }
+
+
+/* Focused page navigation and quiet session restoration. */
+.session-restore{min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:32px;text-align:center;background:#080a0e;color:#f4f6f8}
+.session-restore-mark{font-size:18px;font-weight:800;letter-spacing:.08em}
+.session-restore-mark span{color:#aeb8c6}
+.session-restore p{max-width:34rem;color:#a3adba}
+.session-restore-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+.session-restore-actions button{min-height:44px;padding:10px 16px;border:1px solid #303946;border-radius:12px;background:#151b23;color:#f4f6f8;font:inherit;font-weight:700}
+.session-restore-actions button:first-child{background:#f4f6f8;color:#080a0e;border-color:#f4f6f8}
+body[data-app] #workspace .workspace-navigation{position:sticky;top:8px;z-index:30;margin:0 0 20px;border:1px solid #303946;border-radius:16px;background:rgba(12,15,20,.96);backdrop-filter:blur(16px);box-shadow:0 12px 32px rgba(0,0,0,.22)}
+body[data-app] #workspace .workspace-navigation>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:54px;padding:12px 16px;cursor:pointer;color:#a3adba;font-size:12px;font-weight:700}
+body[data-app] #workspace .workspace-navigation>summary::-webkit-details-marker{display:none}
+body[data-app] #workspace .workspace-navigation>summary::after{content:"+";display:grid;place-items:center;width:28px;height:28px;border:1px solid #303946;border-radius:9px;color:#f4f6f8;font-size:18px}
+body[data-app] #workspace .workspace-navigation[open]>summary::after{content:"−"}
+body[data-app] #workspace .workspace-navigation>summary strong{margin-left:auto;color:#f4f6f8;font-size:13px}
+body[data-app] #workspace .workspace-navigation .section-links{position:static!important;display:grid!important;grid-template-columns:repeat(auto-fit,minmax(125px,1fr))!important;gap:8px!important;max-height:min(48svh,420px);overflow:auto;padding:0 12px 12px!important;margin:0!important;border:0!important;background:transparent!important;white-space:normal!important}
+body[data-app] #workspace .workspace-navigation .section-links a{display:flex!important;align-items:center;justify-content:center;min-height:42px;padding:10px 12px!important;border:1px solid #303946!important;border-radius:11px!important;background:#141a22!important;color:#c5cdd7!important;text-align:center;text-decoration:none;font-size:12px!important;font-weight:700}
+body[data-app] #workspace .workspace-navigation .section-links a.is-active,
+body[data-app] #workspace .workspace-navigation .section-links a[aria-current=page]{background:#f4f6f8!important;border-color:#f4f6f8!important;color:#080a0e!important}
+body[data-app] #workspace .workspace-navigation .section-links a:hover{border-color:#9ba7b5!important;color:#fff!important}
+@media(min-width:900px){
+ body[data-app] #workspace .workspace-navigation[open] .section-links{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+}
+@media(max-width:600px){
+ body[data-app] #workspace .workspace-navigation{top:4px;margin-bottom:14px}
+ body[data-app] #workspace .workspace-navigation>summary{min-height:50px;padding:10px 12px}
+ body[data-app] #workspace .workspace-navigation .section-links{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important}
+ body[data-app] #workspace .workspace-navigation .section-links a{min-height:44px;padding:9px!important;font-size:11px!important}
+}
