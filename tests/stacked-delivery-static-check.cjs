@@ -1,0 +1,26 @@
+const fs = require('node:fs');
+const assert = require('node:assert/strict');
+const migration = fs.readFileSync('supabase/migrations/20261112002000_stacked_driver_delivery_capacity.sql','utf8');
+const offers = fs.readFileSync('supabase/functions/dispatch-offers/index.ts','utf8');
+const operations = fs.readFileSync('supabase/functions/dispatch-operations/index.ts','utf8');
+const driverUi = fs.readFileSync('apps/driver/public/operations.js','utf8');
+const adminUi = fs.readFileSync('apps/company/public/operations.js','utf8');
+
+for (const type of ['motorbike','bakkie/panel van','truck']) assert.match(migration,new RegExp(type.replace(/[.*+?^\${}()|[\]\\]/g,'\\$&')));
+assert.match(migration,/allow_stacked_orders boolean not null default true/);
+assert.match(migration,/driver_route_stops/);
+assert.match(migration,/revoke all on public\.driver_route_stops from anon,authenticated/i);
+assert.match(migration,/accept_driver_delivery_offer/);
+assert.match(offers,/active_order_count_failed/);
+assert.match(offers,/withinCorridor/);
+assert.match(offers,/distanceKm/);
+assert.match(offers,/accept_driver_delivery_offer/);
+assert.match(driverUi,/Add-On Order/);
+assert.match(driverUi,/Multi-Stop Active Itinerary/);
+assert.match(driverUi,/Active Deliveries/);
+assert.match(driverUi,/set_stacked_orders/);
+assert.match(operations,/routeStops/);
+assert.match(operations,/driver_route_stops/);
+assert.match(adminUi,/driver-multi-order-badge/);
+assert.match(adminUi,/stacked deliveries/);
+console.log('Stacked delivery schema, capacity, dispatch, itinerary and Admin UI checks passed.');
