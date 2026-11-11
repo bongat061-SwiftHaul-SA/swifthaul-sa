@@ -69,6 +69,11 @@
   const mapStage = form.querySelector('#delivery-map-stage');
   if (mapStage) {
     move(mapStage,0);
+    // Keep the supporting collection details in the same first step as the
+    // pickup/drop-off map. The location picker moves only those two address
+    // fields into its map sheet; recipient and scheduling controls remain in
+    // the original form unless explicitly moved here.
+    [recipient,schedule,returnTrip].forEach(node=>move(node,0));
     // The parcel estimator is initially inserted into the map sheet by the
     // location picker; move only the parcel/quote controls into step two.
     [parcel,vehicle,vehicleNote,calculate,pricingNote,quote].forEach(node=>move(node,1));
