@@ -25,6 +25,11 @@ const server = http.createServer((req,res)=>{
   const browser=await chromium.launch({headless:true});
   const failures=[];
   try {
+    const landing=await browser.newPage();
+    const landingResponse=await landing.goto(base+'/',{waitUntil:'domcontentloaded'});
+    assert.equal(landingResponse.status(),200,'Platform landing page should load');
+    for (const href of ['./customer/customer.html','./driver/','./company/']) assert.equal(await landing.locator('a[href="'+href+'"]').count(),1,'Landing page link '+href);
+    await landing.close();
     for (const app of [
       {name:'Customer',path:'/customer/customer.html',id:'customer',signup:true},
       {name:'Driver',path:'/driver/',id:'driver',signup:true},
@@ -40,6 +45,7 @@ const server = http.createServer((req,res)=>{
       assert.equal(await page.locator('body').getAttribute('data-app'),app.id,app.name+' app identity');
       assert.ok((await page.title()).toLowerCase().includes(app.name==='Company Admin'?'company':app.name.toLowerCase()),app.name+' document title');
       assert.equal(await page.locator('#auth-form').count(),1,app.name+' sign-in form');
+      assert.equal(await page.locator('#workspace').count(),1,app.name+' workspace shell should be present');
       assert.equal(await page.locator('#auth-screen').isVisible(),true,app.name+' should show the sign-in screen without an existing session');
       assert.equal(await page.locator('#auth-form input[name="email"]').count(),1,app.name+' email sign-in field');
       assert.equal(await page.locator('#auth-form input[name="password"]').count(),1,app.name+' password sign-in field');
