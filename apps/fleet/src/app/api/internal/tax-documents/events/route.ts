@@ -69,7 +69,7 @@ async function payoutDocument(reference:string){
   const rate=company?.isVatRegistered?Number(company?.vatRatePercent||15.5):0;
   const commissionVat=rate?money(commission*rate/(100+rate)):0;
   const commissionEx=money(commission-commissionVat);
-  let doc=existing;
+  let doc=prior;
   if(!doc){[doc]=await db.insert(taxDocuments).values({documentNumber:"",sourceReference:"transfer:"+reference,documentType:"driver_remittance",driverId:p.driver_id,fleetId:contract?.fleet_id||null,totalInclVatZar:String(net),metadata:{settlement_reference:reference,gross_delivery_fares_zar:gross,platform_commission_zar:commission,platform_commission_excl_vat_zar:commissionEx,platform_commission_vat_zar:commissionVat,fleet_split_deduction_zar:fleetDeduction,net_eft_payout_zar:net,paid:true}}).onConflictDoNothing().returning();}
   if(!doc){const [d]=await db.select().from(taxDocuments).where(eq(taxDocuments.sourceReference,"transfer:"+reference)).limit(1);if(d?.storageKey)return d;throw new Error("Remittance document insert conflict.");}
   const data:TaxPdfData={title:"DRIVER REMITTANCE STATEMENT",documentNumber:doc.documentNumber,issuedAt:new Date().toISOString(),supplier:company,recipient:{name:profile?.full_name||"Driver"},order:{waybill:"Payout "+reference},lines:[{label:"Gross delivery fares",amount:gross},{label:"SwiftHaul platform commission · excl. VAT",amount:-commissionEx},{label:"VAT included in platform commission · "+rate+"%",amount:-commissionVat},{label:"Fleet split deduction",amount:-fleetDeduction}],subtotal:net,vat:0,vatRate:rate,total:net,metadata:{paid:true,note:"Paystack settlement reference: "+reference}};
@@ -77,8 +77,9 @@ async function payoutDocument(reference:string){
  }
  const {data:fleetPay,error:fleetError}=await dbs.from("fleet_payout_transfers").select("*").eq("reference",reference).maybeSingle();
  if(fleetError||!fleetPay)throw new Error("Completed driver or fleet payout reference was not found.");
- const [doc]=await db.insert(taxDocuments).values({documentNumber:"",sourceReference:"transfer:"+reference,documentType:"fleet_statement",fleetId:fleetPay.fleet_id||null,totalInclVatZar:String(Number(fleetPay.amount_cents||0)/100),metadata:{settlement_reference:reference,net_eft_payout_zar:Number(fleetPay.amount_cents||0)/100,paid:true}}).onConflictDoNothing().returning();
- if(!doc){const [d]=await db.select().from(taxDocuments).where(eq(taxDocuments.sourceReference,"transfer:"+reference)).limit(1);if(d)return d;throw new Error("Fleet statement insert conflict.");}
+ let doc=prior;
+ if(!doc){[doc]=await db.insert(taxDocuments).values({documentNumber:"",sourceReference:"transfer:"+reference,documentType:"fleet_statement",fleetId:fleetPay.fleet_id||null,totalInclVatZar:String(Number(fleetPay.amount_cents||0)/100),metadata:{settlement_reference:reference,net_eft_payout_zar:Number(fleetPay.amount_cents||0)/100,paid:true}}).onConflictDoNothing().returning();}
+ if(!doc){const [d]=await db.select().from(taxDocuments).where(eq(taxDocuments.sourceReference,"transfer:"+reference)).limit(1);if(d?.storageKey)return d;throw new Error("Fleet statement insert conflict.");}
  const data:TaxPdfData={title:"FLEET REMITTANCE STATEMENT",documentNumber:doc.documentNumber,issuedAt:new Date().toISOString(),supplier:company,recipient:{name:"SwiftHaul fleet partner"},order:{waybill:fleetPay.waybill},lines:[{label:"Fleet EFT payout",amount:Number(fleetPay.amount_cents||0)/100}],subtotal:Number(fleetPay.amount_cents||0)/100,vat:0,vatRate:Number(company?.vatRatePercent||15.5),total:Number(fleetPay.amount_cents||0)/100,metadata:{paid:true,note:"Paystack settlement reference: "+reference}};
  await savePdf(doc,data);return doc;
 }
