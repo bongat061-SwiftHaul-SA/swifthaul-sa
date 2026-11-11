@@ -33,6 +33,9 @@ on:
       - "apps/company/public/index.html"
       - "apps/company/public/section-pages.js"
       - "tests/account-deletion-admin-static-check.cjs"
+      - "tests/popia-consent-static-check.cjs"
+      - "public/privacy-policy.html"
+      - "apps/driver/public/privacy-policy.html"
       - "supabase/migrations/*account_self_service*"
       - "public/supabase-config.js"
       - "apps/driver/public/supabase-config.js"
@@ -83,3 +86,5 @@ jobs:
         run: node tests/account-self-service-static-check.cjs
       - name: Verify administrator deletion review
         run: node tests/account-deletion-admin-static-check.cjs
+      - name: Verify POPIA signup consent and separate marketing opt-in
+        run: node tests/popia-consent-static-check.cjs
