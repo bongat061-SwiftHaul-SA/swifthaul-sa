@@ -1,0 +1,94 @@
+/* SwiftHaul unified signed-in dark-premium workspace
+   Applied last in Customer, Driver and Company Admin to eliminate legacy light/green surfaces. */
+:root{
+  --sh-bg:#090b0f;--sh-panel:#12161d;--sh-panel-2:#191f28;--sh-border:#303946;
+  --sh-text:#f4f6f8;--sh-muted:#a3adba;--sh-white:#f7f8fa;--sh-ink:#101318;
+}
+html:has(body[data-app]){background:var(--sh-bg);color-scheme:dark}
+body[data-app="customer"],body[data-app="driver"],body[data-app="company"]{
+  background:var(--sh-bg)!important;color:var(--sh-text)!important;
+  font-family:Inter,"Plus Jakarta Sans",system-ui,sans-serif!important;
+}
+body[data-app] #workspace{background:var(--sh-bg)!important;color:var(--sh-text)!important;min-height:100dvh}
+body[data-app] #workspace>.topbar{
+  background:#0d1015!important;color:var(--sh-text)!important;border:0!important;
+  border-bottom:1px solid var(--sh-border)!important;box-shadow:none!important;
+}
+body[data-app] #workspace .page{color:var(--sh-text)!important}
+body[data-app] #workspace .page-heading h1,
+body[data-app] #workspace h1,body[data-app] #workspace h2,body[data-app] #workspace h3,
+body[data-app] #workspace h4,body[data-app] #workspace strong{color:var(--sh-text)!important}
+body[data-app] #workspace p,body[data-app] #workspace label,
+body[data-app] #workspace .subtle,body[data-app] #workspace small,
+body[data-app] #workspace .eyebrow{color:var(--sh-muted)!important}
+body[data-app] #workspace .panel,body[data-app] #workspace .stat,
+body[data-app] #workspace .empty,body[data-app] #workspace .help,
+body[data-app] #workspace .quote-result,body[data-app] #workspace .workspace-grid aside>section,
+body[data-app] #workspace .workspace-grid>.panel,body[data-app] #workspace .workspace-grid aside>.panel,
+body[data-app] #workspace .page>section.panel,body[data-app] #workspace .customer-settings,
+body[data-app] #workspace .driver-settings,body[data-app] #workspace .settings-card,
+body[data-app] #workspace .operations-card,body[data-app] #workspace .management-card{
+  background:var(--sh-panel)!important;color:var(--sh-text)!important;
+  border:1px solid var(--sh-border)!important;border-radius:17px!important;box-shadow:none!important;
+}
+body[data-app] #workspace .panel *,body[data-app] #workspace .stat *,
+body[data-app] #workspace .empty *,body[data-app] #workspace .help *{border-color:var(--sh-border)}
+body[data-app] #workspace .section-links{
+  background:#11151c!important;border:1px solid var(--sh-border)!important;
+  box-shadow:none!important;border-radius:16px!important;
+}
+body[data-app] #workspace .section-links a{
+  color:#b8c1cd!important;background:transparent!important;border-radius:10px!important;
+}
+body[data-app] #workspace .section-links a:hover,
+body[data-app] #workspace .section-links a:focus,
+body[data-app] #workspace .section-links a.is-active,
+body[data-app] #workspace .section-links a[aria-current="page"]{
+  background:#f0f2f5!important;color:#11151b!important;
+}
+body[data-app] #workspace button,body[data-app] #workspace .button,
+body[data-app] #workspace input[type=button],body[data-app] #workspace input[type=submit]{
+  min-height:42px!important;padding:10px 15px!important;border-radius:11px!important;
+  background:linear-gradient(180deg,#252d38,#1b222c)!important;color:#f3f5f8!important;
+  border:1px solid #465160!important;box-shadow:none!important;font-weight:750!important;
+}
+body[data-app] #workspace button.primary,body[data-app] #workspace .primary,
+body[data-app] #workspace button[type=submit],body[data-app] #workspace input[type=submit]{
+  background:linear-gradient(180deg,#f7f8fa,#dce1e8)!important;color:#101318!important;
+  border-color:#f7f8fa!important;
+}
+body[data-app] #workspace button:disabled,body[data-app] #workspace .button:disabled{
+  opacity:.45!important;cursor:not-allowed!important;
+}
+body[data-app] #workspace input:not([type=checkbox]):not([type=radio]):not([type=file]),
+body[data-app] #workspace select,body[data-app] #workspace textarea{
+  background:#0b0f15!important;color:#f3f5f8!important;border:1px solid #3a4554!important;
+  border-radius:11px!important;box-shadow:none!important;
+}
+body[data-app] #workspace input::placeholder,body[data-app] #workspace textarea::placeholder{color:#778392!important}
+body[data-app] #workspace input:focus,body[data-app] #workspace select:focus,
+body[data-app] #workspace textarea:focus{outline:2px solid #aeb8c6!important;outline-offset:2px!important}
+body[data-app] #workspace table{background:transparent!important;color:var(--sh-text)!important}
+body[data-app] #workspace table th{background:#1b222c!important;color:#cbd2dc!important;border-color:var(--sh-border)!important}
+body[data-app] #workspace table td{background:transparent!important;color:#e4e8ee!important;border-color:var(--sh-border)!important}
+body[data-app] #workspace .table-wrap{border-color:var(--sh-border)!important}
+body[data-app] #workspace hr{border-color:var(--sh-border)!important}
+body[data-app] #workspace .footer{background:#0d1015!important;color:#8d98a6!important;border-color:var(--sh-border)!important}
+body[data-app] #workspace .status-message,[role=status]{color:var(--sh-muted)}
+body[data-app] #workspace a:not(.section-links a){text-decoration-color:#667180}
+body[data-app] #workspace .modal,body[data-app] #workspace dialog,
+body[data-app] #workspace [role=dialog]{background:#12161d!important;color:var(--sh-text)!important;border:1px solid var(--sh-border)!important}
+body[data-app] #workspace .notice,body[data-app] #workspace .callout{background:#1a2029!important;color:#e5e9ef!important;border-color:var(--sh-border)!important}
+body[data-app] #workspace .stat strong{color:var(--sh-white)!important}
+body[data-app] #workspace .section-number{color:#9da7b5!important}
+@media(max-width:760px){
+ body[data-app] #workspace .page{padding-left:14px!important;padding-right:14px!important}
+ body[data-app] #workspace .section-links{background:#11151cf2!important}
+ body[data-app] #workspace .stats{gap:8px!important}
+ body[data-app] #workspace .stat{padding:13px 10px!important}
+ body[data-app] #workspace .table-wrap{max-width:100%;overflow-x:auto}
+ body[data-app] #workspace .panel,body[data-app] #workspace .page>section.panel{padding:16px!important}
+}
+@media(prefers-reduced-motion:reduce){body[data-app] #workspace *,body[data-app] #workspace *:before,body[data-app] #workspace *:after{animation:none!important;transition:none!important}}
+/* Keep map tiles and map labels in their own cartographic colour scheme. */
+body[data-app] #workspace .maplibregl-map,body[data-app] #workspace .leaflet-container{color:#20252c!important}
