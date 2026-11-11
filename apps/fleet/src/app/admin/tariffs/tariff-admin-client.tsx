@@ -6,7 +6,7 @@ type Vehicle = { id:string; vehicleType:string; baseFareZar:string; includedKm:s
 type Surge = { id:string; name:string; ruleType:string; daysOfWeek:number[]; startTimeSast:string|null; endTimeSast:string|null; multiplier:string; maxMultiplierCap:string; isActive:boolean };
 type Settings = { fuelSurchargePercent:string; maxGlobalSurgeCap:string; quoteValidityMinutes:number } | null;
 type Preview = Record<string, unknown>;
-const labels:Record<string,string>={motorbike:"Motorbike",hatchback_sedan:"Hatchback / Sedan",bakkie_van:"Bakkie / Van",truck:"Truck"};
+const labels:Record<string,string>={motorbike:"Motorbike",hatchback_sedan:"Hatchback / Sedan",bakkie:"Bakkie / Van",truck:"Truck"};
 const emptyRule={name:"",ruleType:"scheduled_peak",daysOfWeek:[1,2,3,4,5],startTimeSast:"07:00",endTimeSast:"09:00",multiplier:"1.25",maxMultiplierCap:"1.5",isActive:false};
 export default function TariffAdminClient(){
   const [token,setToken]=useState(""); const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [vehicles,setVehicles]=useState<Vehicle[]>([]); const [surges,setSurges]=useState<Surge[]>([]); const [settings,setSettings]=useState<Settings>(null); const [fuel,setFuel]=useState("0"); const [cap,setCap]=useState("1.5"); const [rule,setRule]=useState(emptyRule); const [distance,setDistance]=useState("18"); const [vehicle,setVehicle]=useState("motorbike"); const [stops,setStops]=useState("0"); const [preview,setPreview]=useState<Preview|null>(null); const [busy,setBusy]=useState(false); const [message,setMessage]=useState("");
