@@ -15,7 +15,7 @@ assert.match(shared,/^\s*export function formatSAPhoneNumber/m);
 assert.match(shared,/TWILIO_ACCOUNT_SID/);
 assert.match(shared,/WHATSAPP_TEMPLATE_/);
 assert.match(dispatch,/trusted_backend_call_required/);
-assert.match(dispatch,/delivery_otp.*recipient_type !== "recipient"/s);
+assert.match(dispatch,/delivery_otp.*recipientType !== "recipient"/s);
 assert.match(dispatch,/only_failed_notifications_can_be_resent/);
 assert.match(dispatch,/body.action === "process_queue"/);
 assert.match(dispatchOps,/event_type:"order_dispatched"/);
