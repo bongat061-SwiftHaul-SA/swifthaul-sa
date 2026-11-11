@@ -16,7 +16,7 @@ on:
       - "supabase/functions/dispatch-operations/**"
       - "supabase/migrations/20261111180000_south_african_driver_onboarding.sql"
       - "supabase/migrations/20261111190000_driver_verification_expiry_and_pii_protection.sql"
-      - "supabase/migrations/20261111191000_driver_work_eligibility_guard.sql"
+      - "supabase/migrations/20261111191000_driver_work_eligibility_guard.sql"\n      - "supabase/migrations/20261111192000_enforce_driver_document_date_requirements.sql"\n      - "supabase/migrations/20261111193000_require_current_driver_profile_licence.sql"\n      - "supabase/migrations/20261111194000_encrypt_complete_driver_bank_details.sql"
       - "tests/driver-onboarding-static-check.cjs"
   push:
     branches:
