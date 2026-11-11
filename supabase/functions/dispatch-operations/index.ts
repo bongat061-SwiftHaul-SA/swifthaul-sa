@@ -77,7 +77,7 @@ Deno.serve(async (req: Request) => {
   if (typeof body.waybill !== "string" || body.waybill.length > 100) return reply(400, { error: "invalid_waybill" });
 
   const { data: order, error: orderError } = await admin.from("customer_bookings")
-    .select("waybill,owner_hash,recipient_phone,tracking_code,pickup,dropoff,recipient,status,driver_user_id,pin,pin_attempts,pin_locked_until,completed_at,refunded_at,arrived_pickup_at,arrived_dropoff_at,assistance_requested,assistance_status")
+    .select("waybill,owner_hash,recipient_phone,tracking_code,pickup,dropoff,recipient,status,driver_user_id,pin,pin_attempts,pin_locked_until,completed_at,refunded_at,arrived_pickup_at,arrived_dropoff_at,assistance_requested,assistance_status,pickup_latitude,pickup_longitude,dropoff_latitude,dropoff_longitude")
     .eq("waybill", body.waybill).maybeSingle();
   if (orderError) return reply(500, { error: "delivery_lookup_failed" });
   if (!order) return reply(404, { error: "delivery_not_found" });
@@ -118,11 +118,16 @@ Deno.serve(async (req: Request) => {
     if (typeof body.driver_id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.driver_id))
       return reply(400, { error: "enter_valid_driver_account_id" });
     const { data: driver, error } = await admin.from("driver_profiles")
-      .select("user_id,verification_status,can_go_online").eq("user_id", body.driver_id).maybeSingle();
+      .select("user_id,verification_status,can_go_online,vehicle_type,allow_stacked_orders").eq("user_id", body.driver_id).maybeSingle();
     if (error) return reply(500, { error: "driver_lookup_failed" });
     if (!driver || driver.verification_status !== "approved") return reply(409, { error: "driver_not_approved" });
     const {data:eligible,error:eligibilityError}=await admin.rpc("driver_can_accept_work",{p_driver_user_id:driver.user_id});
     if(eligibilityError||eligible!==true) return reply(409,{error:"driver_onboarding_documents_or_background_clearance_incomplete"});
+    const {data:activeCount}=await admin.rpc("driver_active_order_count",{p_driver_id:driver.user_id});
+    const vehicleKey=/motor/i.test(driver.vehicle_type||"")?"motorbike":/bakkie|van|panel/i.test(driver.vehicle_type||"")?"bakkie/panel van":/truck|ton/i.test(driver.vehicle_type||"")?"truck":"hatchback/sedan";
+    const {data:vehicleClass}=await admin.from("vehicle_classes").select("max_concurrent_orders").eq("vehicle_type",vehicleKey).maybeSingle();
+    if(Number(activeCount||0)>=Number(vehicleClass?.max_concurrent_orders||1))return reply(409,{error:"driver_capacity_reached"});
+    if(Number(activeCount||0)>0&&!driver.allow_stacked_orders)return reply(409,{error:"stacked_orders_disabled"});
     const { error: updateError } = await admin.from("customer_bookings")
       .update({ driver_user_id: driver.user_id, assigned_driver: driver.user_id, status: "assigned" })
       .eq("waybill", order.waybill);
@@ -131,6 +136,12 @@ Deno.serve(async (req: Request) => {
       waybill: order.waybill, actor_user_id: actorId, previous_status: order.status,
       new_status: "assigned", notes: "Assigned by dispatch",
     });
+    const {data:lastStop}=await admin.from("driver_route_stops").select("sequence_order").eq("driver_id",driver.user_id).neq("status","completed").order("sequence_order",{ascending:false}).limit(1).maybeSingle();
+    const nextSequence=Number(lastStop?.sequence_order||0)+1;
+    await admin.from("driver_route_stops").upsert([
+      {driver_id:driver.user_id,order_id:order.waybill,stop_type:"pickup",sequence_order:nextSequence,address:order.pickup||"",lat:order.pickup_latitude,lng:order.pickup_longitude},
+      {driver_id:driver.user_id,order_id:order.waybill,stop_type:"dropoff",sequence_order:nextSequence+1,address:order.dropoff||"",lat:order.dropoff_latitude,lng:order.dropoff_longitude}
+    ],{onConflict:"order_id,stop_type"});
     const [{data:sender},{data:driverContact},{data:driverUser}]=await Promise.all([
       admin.from("customer_profiles").select("phone").eq("owner_hash",order.owner_hash).maybeSingle(),
       admin.from("driver_profiles").select("phone,vehicle_registration").eq("user_id",driver.user_id).maybeSingle(),
