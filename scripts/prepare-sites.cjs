@@ -16,9 +16,12 @@ for (const app of ['customer', 'driver', 'company']) {
     if (app === 'company') session = session.replace('  return Response.json({user:', "  if (!user.roles?.includes('admin')) return Response.json({error:'Company administrator access required.'},{status:403,headers});\n  return Response.json({user:");
     fs.writeFileSync(path.join(functions, 'session.mts'), session);
     fs.copyFileSync(path.join(root, 'netlify/functions/identity.mts'), path.join(functions, 'identity.mts'));
-    const features = path.join(base, '.netlify', 'features');
-    fs.mkdirSync(features, {recursive:true});
-    fs.copyFileSync(path.join(root, '.netlify/features/netlify-identity'), path.join(features, 'netlify-identity'));
+    const sharedIdentityFeature = path.join(root, '.netlify/features/netlify-identity');
+    if (fs.existsSync(sharedIdentityFeature)) {
+      const features = path.join(base, '.netlify', 'features');
+      fs.mkdirSync(features, {recursive:true});
+      fs.copyFileSync(sharedIdentityFeature, path.join(features, 'netlify-identity'));
+    }
   }
 }
 console.log('Shared assets and account validation copied to all three sites.');
