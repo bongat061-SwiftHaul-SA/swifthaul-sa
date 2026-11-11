@@ -21,7 +21,7 @@ export async function GET(req:NextRequest){
   for(const d of docs){if(!d.storageKey)continue;const {data,error}=await svc.storage.from("swift-haul-tax-documents").download(d.storageKey);if(!error&&data)files[d.documentNumber+".pdf"]=new Uint8Array(await data.arrayBuffer());}
   const csvHeader=["document_number","document_type","order_id","driver_id","fleet_id","subtotal_excl_vat_zar","vat_amount_zar","total_incl_vat_zar","issued_at","storage_key"];
   const q=(v:unknown)=>'"'+String(v??"").replace(/"/g,'""')+'"';
-  const csv=[csvHeader.join(","),...docs.map(d=>[d.documentNumber,d.documentType,d.orderId,d.driverId,d.fleetId,d.subtotalExclVatZar,d.vatAmountZar,d.totalInclVatZar,d.issuedAt.toISOString(),d.storageKey].map(q).join(","))].join("\\r\\n");
+  const csv=[csvHeader.join(","),...docs.map(d=>[d.documentNumber,d.documentType,d.orderId,d.driverId,d.fleetId,d.subtotalExclVatZar,d.vatAmountZar,d.totalInclVatZar,d.issuedAt.toISOString(),d.storageKey].map(q).join(","))].join("\r\n");
   files["tax-ledger-"+month+".csv"]=strToU8(csv);
   const zipped=zipSync(files,{level:6});
   return new NextResponse(zipped,{headers:{"Content-Type":"application/zip","Content-Disposition":'attachment; filename="swifthaul-tax-ledger-'+month+'.zip"'}});
