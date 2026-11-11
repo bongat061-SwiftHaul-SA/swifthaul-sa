@@ -10,7 +10,8 @@ on:
       - "public/customer.js"
       - "public/booking-wizard.js"
       - "public/booking-wizard.css"
-      - "public/customer-pages.js"\n      - "public/customer-dashboard.css"
+      - "public/customer-pages.js"
+      - "public/customer-dashboard.css"
       - "public/premium-shell.js"
       - "tests/booking-wizard-static-check.cjs"
       - "tests/customer-dashboard-static-check.cjs"
@@ -35,13 +36,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Check customer map scripts
+      - name: Check customer map and workspace scripts
         run: |
           node --input-type=module --check < public/location-picker.js
           node --input-type=module --check < public/address-autocomplete.js
           node --input-type=module --check < public/customer.js
           node --check public/booking-wizard.js
-          node --check public/customer-pages.js\n          node --check public/premium-shell.js
+          node --check public/customer-pages.js
           node --check public/premium-shell.js
       - name: Verify booking wizard and in-app navigation
         run: node tests/booking-wizard-static-check.cjs
