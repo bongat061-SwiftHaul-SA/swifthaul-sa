@@ -6,10 +6,35 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
 });
 window.swiftHaulSupabase = supabase;
 const authScreen = document.getElementById('auth-screen');
+const restoreScreen = document.getElementById('session-restore');
 const workspace = document.getElementById('workspace');
 const form = document.getElementById('auth-form');
 const status = document.getElementById('auth-status');
 const submit = form.querySelector('[type=submit]');
+function showSignIn(message = '') {
+  if (restoreScreen) restoreScreen.hidden = true;
+  authScreen.hidden = false;
+  workspace.hidden = true;
+  document.body.dataset.authState = 'anonymous';
+  if (message) status.textContent = message;
+}
+function showSessionRestore(message = 'Restoring your secure session…') {
+  authScreen.hidden = true;
+  workspace.hidden = true;
+  if (restoreScreen) {
+    restoreScreen.hidden = false;
+    const note = restoreScreen.querySelector('[data-session-message]');
+    if (note) note.textContent = message;
+    const retry = restoreScreen.querySelector('[data-session-retry]');
+    if (retry) retry.hidden = false;
+    const signIn = restoreScreen.querySelector('[data-session-signin]');
+    if (signIn) signIn.hidden = false;
+  }
+  document.body.dataset.authState = 'checking';
+}
+restoreScreen?.querySelector('[data-session-retry]')?.addEventListener('click', () => init());
+restoreScreen?.querySelector('[data-session-signin]')?.addEventListener('click', () => showSignIn());
+
 let mode = 'login', currentUser = null;
 const CUSTOMER_DEVICE_EMAIL_KEY = 'swifthaul.customer.pin-account';
 function rememberCustomerEmail(email) {
@@ -143,6 +168,8 @@ async function validateAccount(session) {
   document.getElementById('guest-banner').hidden = true;
   document.getElementById('sign-out').hidden = false;
   document.querySelectorAll('[data-account-label]').forEach(el => { el.textContent = 'Signed in as'; });
+  if (restoreScreen) restoreScreen.hidden = true;
+  document.body.dataset.authState = 'authenticated';
   authScreen.hidden = true; workspace.hidden = false;
   document.dispatchEvent(new CustomEvent('account-ready', { detail: user }));
   await refreshPinPanel(session);
@@ -220,26 +247,27 @@ document.getElementById('sign-out').addEventListener('click', async () => {
   currentUser = null; location.replace(location.pathname);
 });
 supabase.auth.onAuthStateChange((event, session) => {
-  if (event === 'PASSWORD_RECOVERY') { setMode('reset'); authScreen.hidden = false; workspace.hidden = true; return; }
+  if (event === 'PASSWORD_RECOVERY') { setMode('reset'); if (restoreScreen) restoreScreen.hidden = true; document.body.dataset.authState = 'anonymous'; authScreen.hidden = false; workspace.hidden = true; return; }
   if (event === 'SIGNED_OUT') {
     currentUser = null;
     if (document.body.dataset.guestPreview !== 'true') {
-      workspace.hidden = true; authScreen.hidden = false; document.dispatchEvent(new Event('account-cleared'));
+      workspace.hidden = true; if (restoreScreen) restoreScreen.hidden = true; document.body.dataset.authState = 'anonymous'; authScreen.hidden = false; document.dispatchEvent(new Event('account-cleared'));
     }
   }
   if (event === 'TOKEN_REFRESHED' && session && currentUser)
-    validateAccount(session).catch(() => { workspace.hidden = true; authScreen.hidden = false; document.dispatchEvent(new Event('account-cleared')); });
+    validateAccount(session).catch(error => console.warn('Customer session refresh validation will retry on the next page load:', error));
 });
 async function init() {
   setMode('login');
-  try { const { data: { session }, error } = await supabase.auth.getSession(); if (error) throw error; if (session) {
-    await validateAccount(session);
-  } }
-  catch (error) { status.textContent = error?.message || 'Sign-in is unavailable. Please try again.'; }
+  showSessionRestore();
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error) throw error;
+    if (session) { await validateAccount(session); return; }
+    showSignIn();
+  } catch (error) {
+    showSessionRestore(error?.message || 'We could not verify your saved session. Try again, or return to sign in.');
+  }
 }
 init();
-document.addEventListener('visibilitychange', async () => {
-  if (document.visibilityState !== 'visible' || workspace.hidden || document.body.dataset.guestPreview === 'true') return;
-  try { await openWorkspace(); } catch { workspace.hidden = true; authScreen.hidden = false; }
-});
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
