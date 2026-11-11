@@ -34,11 +34,9 @@ Deno.serve(async(req:Request)=>{
   const ref=String(event.data?.reference||"");const code=String(event.data?.transfer_code||"");
   if(!ref)return response(400,"Missing transfer reference");
   const status=event.event==="transfer.success"?"success":"failed";
-  const {data:p,error}=await db.from("driver_payouts").select("id,status").eq("reference",ref).maybeSingle();
-  if(error)return response(503,"Payout lookup failed");if(!p)return response(404,"Payout reference not found");
-  if(p.status==="success"||p.status==="failed")return response(200,"OK");
-  const {error:ue}=await db.from("driver_payouts").update({status, paystack_transfer_code:code||null, failure_reason:status==="failed"?String(event.data?.reason||event.data?.message||"Transfer failed").slice(0,500):null,updated_at:new Date().toISOString(),completed_at:status==="success"?new Date().toISOString():null}).eq("id",p.id).in("status",["pending","processing"]);
-  if(ue)return response(503,"Payout update failed");
+  const {data:applied,error}=await db.rpc("apply_paystack_payout_event",{p_reference:ref,p_status:status,p_transfer_code:code||null,p_failure_reason:String(event.data?.reason||event.data?.message||"Transfer failed")});
+  if(error){console.error("Paystack payout webhook update failed",error.message);return response(503,"Payout update failed");}
+  if(applied!==true)return response(404,"Payout reference not found");
   return response(200,"OK");
  }
  return response(200,"Event ignored");
