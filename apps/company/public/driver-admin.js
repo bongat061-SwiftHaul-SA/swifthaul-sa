@@ -1,88 +1,52 @@
-const panel=document.getElementById('drivers');
-if(panel){
-  const note=document.createElement('p');
-  note.textContent='Review driver applications and verification documents.';
-  const refresh=document.createElement('button');
-  refresh.type='button';refresh.textContent='Refresh driver applications';
-  const status=document.createElement('p');status.setAttribute('role','status');
-  const list=document.createElement('div');list.className='operations-list';
-  panel.append(note,refresh,status,list);
-  let active=false,epoch=0,isAdmin=false;
-  async function call(method,body){
-    const client=window.swiftHaulSupabase;
-    if(!client)throw new Error('Secure account connection is unavailable.');
-    const {data,error}=await client.functions.invoke('driver-admin',{method,...(body?{body}:{})});
-    if(error)throw new Error(data?.error||error.message||'Driver review request failed.');
-    if(data?.error)throw new Error(data.error);
-    return data;
-  }
-  async function load(){
-    if(!active||!isAdmin)return;
-    const current=++epoch;status.textContent='Loading driver applications…';
-    try{
-      const data=await call('GET');
-      if(current!==epoch)return;
-      list.replaceChildren();
-      if(!data.drivers?.length){status.textContent='No driver applications yet.';return;}
-      for(const driver of data.drivers)render(driver);
-      status.textContent='';
-    }catch(error){if(current===epoch)status.textContent=error.message;}
-  }
-  async function review(driver,action,button){
-    if(action==='approve'){
-      const required=['id_document','proof_of_address','bank_confirmation','drivers_licence','vehicle_document'];
-      const missing=required.filter(type=>!(driver.documents||[]).some(doc=>doc.document_type===type&&doc.review_status==='accepted'));
-      if(missing.length){status.textContent='Approval blocked. Accept these documents first: '+missing.map(type=>type.replaceAll('_',' ')).join(', ')+'.';return;}
-    }
-    button.disabled=true;
-    try{await call('POST',{user_id:driver.user_id,action});await load();status.textContent='Driver status updated.';}
-    catch(error){status.textContent=error.message;}
-    finally{button.disabled=false;}
-  }
-  async function reviewDocument(driver,doc,reviewStatus,button){
-    button.disabled=true;
-    try{
-      await call('POST',{action:'review_document',user_id:driver.user_id,document_id:doc.id,review_status:reviewStatus});
-      await load();status.textContent='Document review saved.';
-    }catch(error){status.textContent=error.message;}
-    finally{button.disabled=false;}
-  }
-  function render(driver){
-    const card=document.createElement('article');card.className='order';
-    const title=document.createElement('h3');title.textContent=driver.user_profiles?.full_name||'Driver applicant';
-    const details=document.createElement('p');
-    details.textContent=[driver.phone,driver.license_number?'Licence '+driver.license_number:'Licence missing',driver.license_expiry?'Expires '+driver.license_expiry:'Expiry missing',String(driver.vehicle_type||'Vehicle missing').toUpperCase(),driver.vehicle_registration||'Registration missing'].join(' · ');
-    const state=document.createElement('p');state.textContent='Verification: '+driver.verification_status;
-    card.append(title,details,state);
-    const docsTitle=document.createElement('strong');docsTitle.textContent='Verification documents';
-    card.append(docsTitle);
-    const docs=driver.documents||[];
-    if(!docs.length){const missing=document.createElement('p');missing.textContent='No documents uploaded yet.';card.append(missing);}
-    for(const doc of docs){
-      const row=document.createElement('p');
-      row.textContent=doc.document_type.replaceAll('_',' ')+' · '+doc.review_status+' · '+doc.original_name+' ';
-      if(doc.signed_url){const link=document.createElement('a');link.href=doc.signed_url;link.target='_blank';link.rel='noopener noreferrer';link.textContent='View securely';row.append(link);}
-      card.append(row);
-      if(doc.review_status!=='accepted'){
-        const accept=document.createElement('button');accept.type='button';accept.textContent='Accept document';
-        accept.addEventListener('click',()=>reviewDocument(driver,doc,'accepted',accept));card.append(accept);
-      }
-      if(doc.review_status!=='rejected'){
-        const reject=document.createElement('button');reject.type='button';reject.textContent='Reject document';
-        reject.addEventListener('click',()=>reviewDocument(driver,doc,'rejected',reject));card.append(reject);
-      }
-    }
-    const button=(label,action)=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.addEventListener('click',()=>review(driver,action,b));card.append(b);};
-    if(driver.verification_status!=='approved')button('Approve driver','approve');
-    if(driver.verification_status!=='rejected')button('Reject application','reject');
-    if(driver.verification_status==='approved')button('Suspend driver','suspend');
-    list.append(card);
-  }
-  refresh.addEventListener('click',load);
-  document.addEventListener('account-ready',event=>{
-    active=true;isAdmin=event.detail.role==='admin';
-    if(!isAdmin){status.textContent='Only company administrators can approve driver applications.';return;}
-    load();
-  });
-  document.addEventListener('account-cleared',()=>{active=false;isAdmin=false;epoch++;list.replaceChildren();status.textContent='';});
-}
+(()=>{
+ const panel=document.getElementById("drivers");if(!panel)return;
+ panel.classList.add("driver-verification-panel");
+ let active=false,isAdmin=false,epoch=0,drivers=[],selected=null,filter="pending";
+ const status=document.createElement("p");status.className="dv-status";status.setAttribute("role","status");status.setAttribute("aria-live","polite");
+ const shell=document.createElement("div");shell.className="dv-shell";
+ shell.innerHTML='<div class="dv-toolbar"><div class="dv-tabs" role="tablist" aria-label="Driver verification filters"></div><label class="dv-search"><span>Search driver, ID or number plate</span><input type="search" id="dv-search" placeholder="Name, SA ID, passport or plate"></label><button type="button" class="dv-refresh">Refresh</button></div><div class="dv-layout"><section class="dv-queue"><div class="dv-queue-heading"><h3>Verification queue</h3><span class="dv-count"></span></div><div class="dv-driver-list"></div></section><section class="dv-workspace"><div class="dv-empty">Select a driver application to review identity, compliance and uploaded documents.</div><div class="dv-detail" hidden></div></section></div>';
+ panel.querySelector(".empty")?.remove();panel.append(status,shell);
+ const tabs=shell.querySelector(".dv-tabs"),search=shell.querySelector("#dv-search"),queue=shell.querySelector(".dv-driver-list"),workspace=shell.querySelector(".dv-workspace"),empty=workspace.querySelector(".dv-empty"),detail=workspace.querySelector(".dv-detail");
+ const call=async(method,body)=>{const client=window.swiftHaulSupabase;if(!client)throw new Error("Secure admin connection unavailable.");const {data,error}=await client.functions.invoke("driver-admin",{method,...(body?{body}:{})});if(error)throw new Error(data?.error||error.message||"Driver verification request failed.");if(data?.error)throw new Error(data.error);return data;};
+ const txt=(v)=>v==null||v===""?"—":String(v);
+ const date=(v)=>v?new Date(v+"T00:00:00").toLocaleDateString("en-ZA",{day:"2-digit",month:"short",year:"numeric"}):"—";
+ const luhn=v=>{if(!/^\d{13}$/.test(v))return false;let sum=0,alt=false;for(let i=v.length-1;i>=0;i--){let n=Number(v[i]);if(alt){n*=2;if(n>9)n-=9;}sum+=n;alt=!alt;}return sum%10===0;};
+ const dobFromId=v=>{if(!/^\d{13}$/.test(v))return null;const yy=+v.slice(0,2),mm=+v.slice(2,4),dd=+v.slice(4,6),now=new Date(),century=yy<=Number(String(now.getFullYear()).slice(-2))?2000:1900,d=new Date(century+yy,mm-1,dd);return d.getFullYear()===century+yy&&d.getMonth()===mm-1&&d.getDate()===dd?d:null;};
+ const ageAt=d=>{const n=new Date();return n.getFullYear()-d.getFullYear()-((n.getMonth()<d.getMonth()||(n.getMonth()===d.getMonth()&&n.getDate()<d.getDate()))?1:0);};
+ const node=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;};
+ const button=(label,cls,fn)=>{const b=node("button",cls,label);b.type="button";b.addEventListener("click",fn);return b;};
+ const docsOf=d=>d.documents||[];
+ const appOf=d=>d.application||{};
+ const idOf=d=>appOf(d).identity_details||{};
+ const isApprovedDoc=d=>{const today=new Date().toISOString().slice(0,10),expiryRequired=["licence_front","licence_back","vehicle_licence_disc","vehicle_insurance","passport","work_permit","enatis_certificate","fleet_lease_agreement","prdp"].includes(d.document_type);return d.verification_status==="approved"&&(!expiryRequired||(!!d.expiry_date&&d.expiry_date>=today))&&(!d.expiry_date||d.expiry_date>=today)&&(d.document_type!=="proof_of_address"||!!d.issued_at&&d.issued_at>=new Date(Date.now()-92*86400000).toISOString().slice(0,10)&&d.issued_at<=today);};
+ const requiredTypes=d=>appOf(d).identity_type==="sa_citizen"?["id_front","id_back","profile_selfie","licence_front","licence_back","vehicle_licence_disc","vehicle_insurance","proof_of_address"]:["passport","work_permit","licence_front","licence_back","vehicle_licence_disc","vehicle_insurance","proof_of_address"];
+ const canActivate=d=>{const docs=docsOf(d),missing=requiredTypes(d).filter(t=>!docs.some(x=>x.document_type===t&&isApprovedDoc(x)));if(!docs.some(x=>["enatis_certificate","fleet_lease_agreement","vehicle_document"].includes(x.document_type)&&isApprovedDoc(x)))missing.push("registration");if(appOf(d).licence_details?.prdp_holder&&!docs.some(x=>x.document_type==="prdp"&&isApprovedDoc(x)))missing.push("PrDP");return missing.length===0&&d.criminal_background_clearance===true&&d.license_expiry>=new Date().toISOString().slice(0,10);};
+ const searchText=d=>[d.user_profiles?.full_name,d.phone,d.vehicle_registration,idOf(d).id_number,idOf(d).passport_number,idOf(d).traffic_register_number].join(" ").toLowerCase();
+ const matchesFilter=d=>{const docs=docsOf(d);if(filter==="pending")return d.can_go_online!==true&&d.verification_status!=="rejected"&&d.onboarding_status!=="suspended";if(filter==="expiring")return docs.some(x=>x.expiry_date&&x.expiry_date>=new Date().toISOString().slice(0,10)&&x.expiry_date<=new Date(Date.now()+30*86400000).toISOString().slice(0,10));if(filter==="rejected")return d.verification_status==="rejected"||docs.some(x=>x.verification_status==="rejected");if(filter==="approved")return d.onboarding_status==="approved"&&d.can_go_online===true;return true;};
+ const labels=[["pending","Pending Review"],["expiring","Expiring Soon"],["rejected","Rejected"],["approved","Approved"]];
+ function renderTabs(){tabs.replaceChildren();for(const [key,label] of labels){const count=drivers.filter(d=>{const old=filter;filter=key;const yes=matchesFilter(d);filter=old;return yes;}).length;const b=button(label+" · "+count,"dv-tab"+(filter===key?" active":""),()=>{filter=key;selected=null;render();});b.setAttribute("role","tab");b.setAttribute("aria-selected",String(filter===key));tabs.append(b);}}
+ function renderQueue(){queue.replaceChildren();const q=search.value.trim().toLowerCase();const list=drivers.filter(matchesFilter).filter(d=>!q||searchText(d).includes(q));shell.querySelector(".dv-count").textContent=list.length+" drivers";if(!list.length){queue.append(node("p","dv-no-results","No drivers in this filter."));return;}for(const d of list){const card=button("","dv-driver-card"+(selected?.user_id===d.user_id?" selected":""),()=>{selected=d;renderDetail();renderQueue();});const name=node("strong","",d.user_profiles?.full_name||"Driver applicant");const meta=node("span","",[(d.vehicle_registration||"No plate"),(d.application?.identity_type||"Identity pending").replaceAll("_"," "),d.onboarding_status||d.verification_status].join(" · "));const badge=node("small","dv-badge "+(d.onboarding_status==="approved"?"good":d.verification_status==="rejected"?"bad":"pending"),d.onboarding_status==="approved"?"Approved":d.verification_status==="rejected"?"Rejected":d.can_go_online?"Cleared":"Pending Review");card.append(name,meta,badge);queue.append(card);}}
+ function info(label,value){const wrap=node("div","dv-info");wrap.append(node("span","",label),node("strong","",txt(value)));return wrap;}
+ function showModal(title,bodyNode){const overlay=node("div","dv-modal-backdrop");const dialog=node("section","dv-modal");dialog.setAttribute("role","dialog");dialog.setAttribute("aria-modal","true");dialog.append(node("h3","",title),bodyNode,button("Close","dv-secondary",()=>overlay.remove()));overlay.append(dialog);overlay.addEventListener("click",e=>{if(e.target===overlay)overlay.remove();});document.body.append(overlay);}
+ function preview(doc){const body=node("div","dv-preview-body");if((doc.content_type||"").startsWith("image/")){const img=node("img","dv-zoom-image");img.src=doc.signed_url;img.alt=doc.document_type.replaceAll("_"," ");img.addEventListener("click",()=>img.classList.toggle("zoomed"));body.append(img,node("p","dv-muted","Tap the image to zoom in or out."));}else{const frame=node("iframe","dv-pdf-preview");frame.src=doc.signed_url;frame.title=doc.document_type+" preview";body.append(frame);}showModal(doc.document_type.replaceAll("_"," "),body);}
+ function rejectDoc(driver,doc){const form=node("div","dv-reject-form");const select=node("select","");[["","Choose a reason…"],["blurry","Image is blurry or unreadable"],["expired","Document is expired"],["mismatch","Details do not match the application"],["incomplete","Document is incomplete or missing a side"],["invalid","Document is invalid or unsupported"],["other","Other"]].forEach(([v,t])=>select.append(new Option(t,v)));const area=node("textarea","");area.placeholder="Explain what the driver must correct…";area.rows=4;const submit=button("Reject document","dv-danger",async()=>{const reason=[select.value==="other"?"":select.options[select.selectedIndex]?.text,area.value.trim()].filter(Boolean).join(": ");if(!select.value||reason.length<3){form.querySelector(".dv-error").textContent="Choose a reason and add clear instructions.";return;}submit.disabled=true;try{await call("POST",{action:"review_document",user_id:driver.user_id,document_id:doc.id,review_status:"rejected",rejection_reason:reason});form.closest(".dv-modal-backdrop").remove();await load();status.textContent="Document rejected. An in-app re-upload notification has been queued for the driver.";}catch(e){form.querySelector(".dv-error").textContent=e.message;submit.disabled=false;}});form.append(node("label","dv-label","Rejection reason"),select,node("label","dv-label","Additional instructions"),area,node("p","dv-error",""),submit);showModal("Reject "+doc.document_type.replaceAll("_"," "),form);}
+ async function reviewDoc(driver,doc){try{await call("POST",{action:"review_document",user_id:driver.user_id,document_id:doc.id,review_status:"approved"});await load();status.textContent="Document approved."; }catch(e){status.textContent=e.message;}}
+ async function backgroundChange(driver,checked,control){control.disabled=true;try{await call("POST",{action:"set_background_clearance",user_id:driver.user_id,cleared:checked});await load();status.textContent=checked?"Background clearance recorded.":"Background clearance removed.";}catch(e){status.textContent=e.message;control.checked=!checked;}finally{control.disabled=false;}}
+ async function activate(driver,control){control.disabled=true;try{await call("POST",{action:"activate",user_id:driver.user_id});await load();status.textContent="Driver account activated. The driver can now go online.";}catch(e){status.textContent=e.message+(e.missing_documents?": "+e.missing_documents.join(", "):"");control.disabled=false;}}
+ function renderDetail(){detail.replaceChildren();if(!selected){detail.hidden=true;empty.hidden=false;return;}const d=selected,app=appOf(d),identity=idOf(d),lic=app.licence_details||{},vehicle=app.vehicle_details||{},bank=app.banking_details||{};detail.hidden=false;empty.hidden=true;
+ const head=node("div","dv-detail-head");const title=node("div","");title.append(node("p","dv-eyebrow","DRIVER VERIFICATION WORKSPACE"),node("h3","",d.user_profiles?.full_name||"Driver applicant"),node("p","dv-muted",d.vehicle_registration||"Registration not supplied"));head.append(title,node("span","dv-badge "+(d.onboarding_status==="approved"?"good":"pending"),d.onboarding_status||"pending_review"));detail.append(head);
+ const grid=node("div","dv-split");
+ const left=node("section","dv-panel");left.append(node("h4","","Applicant & compliance details"));
+ const idNo=identity.id_number||identity.passport_number||"";const dob=identity.date_of_birth|| (identity.id_number?(()=>{const v=dobFromId(identity.id_number);return v?v.toISOString().slice(0,10):"";})():"");const age=dob?ageAt(new Date(dob+"T00:00:00")):null;
+ left.append(info("Applicant type",app.identity_type||d.identity_type),info("Cellphone",identity.phone||d.phone),info("Email",identity.email),info("Date of birth",date(dob)),info("ID / Passport",idNo?((identity.id_number?"•••••••":"")+idNo.slice(-4)): "Not supplied"),info("Traffic Register Number",identity.traffic_register_number),info("SA licence code",lic.code),info("Licence expiry",date(lic.expiry||d.license_expiry)),info("PrDP",lic.prdp_holder?(lic.prdp_category+" · "+date(lic.prdp_expiry)):"Not declared"),info("Vehicle",[vehicle.make,vehicle.model,vehicle.year,vehicle.type,vehicle.registration_plate,vehicle.gross_vehicle_mass_kg?vehicle.gross_vehicle_mass_kg+" kg":""].filter(Boolean).join(" · ")),info("Bank",bank.bank_name),info("Account holder",bank.account_holder),info("Account number",bank.account_number?"••••"+bank.account_number.slice(-4):"Not supplied"),info("Universal branch code",bank.universal_branch_code));
+ const checks=node("div","dv-checks");const luhnOk=identity.id_number?luhn(identity.id_number):null;const idBadge=node("span","dv-check "+(luhnOk===null?"neutral":luhnOk?"good":"bad"),"SA ID Luhn: "+(luhnOk===null?"N/A":luhnOk?"PASS":"FAIL"));const ageOk=age===null?null:age>=18;const ageBadge=node("span","dv-check "+(ageOk===null?"neutral":ageOk?"good":"bad"),"Age 18+: "+(ageOk===null?"UNKNOWN":ageOk?"PASS":"FAIL"));checks.append(idBadge,ageBadge);left.append(checks);
+ const bg=node("label","dv-background");const cb=node("input","");cb.type="checkbox";cb.checked=!!d.criminal_background_clearance;cb.addEventListener("change",()=>backgroundChange(d,cb.checked,cb));bg.append(cb,node("span","","Criminal background clearance verified by administrator"));left.append(bg,node("p","dv-muted","Only record clearance after the required external check has been completed and evidence reviewed."));
+ const right=node("section","dv-panel");right.append(node("h4","","Uploaded documents"));const docs=docsOf(d);if(!docs.length)right.append(node("p","dv-muted","No documents uploaded."));for(const doc of docs){const card=node("article","dv-doc");const top=node("div","dv-doc-top");top.append(node("strong","",doc.document_type.replaceAll("_"," ")),node("span","dv-doc-state "+(doc.verification_status==="approved"?"good":doc.verification_status==="rejected"||doc.verification_status==="expired"?"bad":"pending"),doc.verification_status||doc.review_status));card.append(top,node("p","dv-muted",doc.original_name+" · Expiry: "+date(doc.expiry_date)));if(doc.rejection_reason)card.append(node("p","dv-reason","Reason: "+doc.rejection_reason));const actions=node("div","dv-doc-actions");actions.append(button("Preview","dv-secondary",()=>preview(doc)));if(doc.verification_status!=="approved")actions.append(button("Approve","dv-primary",()=>reviewDoc(d,doc)));if(doc.verification_status!=="rejected")actions.append(button("Reject","dv-danger",()=>rejectDoc(d,doc)));card.append(actions);right.append(card);}
+ const actions=node("div","dv-activate-row");const missing=requiredTypes(d).filter(t=>!docs.some(x=>x.document_type===t&&isApprovedDoc(x)));if(!docs.some(x=>["enatis_certificate","fleet_lease_agreement","vehicle_document"].includes(x.document_type)&&isApprovedDoc(x)))missing.push("registration document");if(lic.prdp_holder&&!docs.some(x=>x.document_type==="prdp"&&isApprovedDoc(x)))missing.push("PrDP");if(!d.criminal_background_clearance)missing.push("criminal background clearance");const activateBtn=button("Activate Driver Account","dv-primary",()=>activate(d,activateBtn));activateBtn.disabled=!canActivate(d);actions.append(activateBtn);if(missing.length)actions.append(node("p","dv-muted","Activation locked: "+missing.join(", ")));else actions.append(node("p","dv-success","All required documents and clearance checks are approved."));grid.append(left,right);detail.append(grid,actions);
+ }
+ function render(){renderTabs();renderQueue();renderDetail();}
+ async function load(){if(!active||!isAdmin)return;const current=++epoch;status.textContent="Loading verification queue…";try{const data=await call("GET");if(current!==epoch)return;drivers=data.drivers||[];if(selected)selected=drivers.find(x=>x.user_id===selected.user_id)||null;status.textContent="";render();}catch(e){if(current===epoch)status.textContent=e.message;}}
+ shell.querySelector(".dv-refresh").addEventListener("click",load);search.addEventListener("input",renderQueue);
+ document.addEventListener("account-ready",event=>{active=true;isAdmin=event.detail.role==="admin";if(!isAdmin){status.textContent="Only company administrators can approve driver applications.";return;}load();});
+ document.addEventListener("account-cleared",()=>{active=false;isAdmin=false;epoch++;drivers=[];selected=null;queue.replaceChildren();detail.replaceChildren();status.textContent="";});
+})();

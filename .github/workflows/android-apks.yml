@@ -5,6 +5,8 @@ on:
     branches:
       - main
       - feature/android-apk-packaging
+      - feature/uber-style-parcel-map-staging
+      - feature/dark-premium-customer-driver-staging
   pull_request:
     paths:
       - "public/**"
@@ -45,7 +47,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -57,13 +59,39 @@ jobs:
         working-directory: ${{ matrix.path }}
         run: npm install --no-audit --no-fund
 
-      # The live customer website is public/customer.html. The root
-      # public/index.html is a legacy entry point retained for compatibility.
-      # Capacitor requires index.html at webDir root, so package the live page
-      # as the APK entry point before syncing Android assets.
+      # Package the current customer website, not the legacy root entry point.
       - name: Use current customer website as APK entry point
         if: matrix.label == 'Customer'
         run: cp public/customer.html public/index.html
+
+      # PR/feature APKs must target the isolated staging backend. Main-branch
+      # release APKs retain the production configuration.
+      - name: Configure isolated staging backend for Customer preview APK
+        if: matrix.label == 'Customer' && (github.event_name == 'pull_request' || github.ref != 'refs/heads/main')
+        run: |
+          cat > public/supabase-config.js <<'EOF'
+          // Isolated staging configuration for non-production preview APKs.
+          export const SUPABASE_URL = 'https://tagkbropgzthsbjlhyvz.supabase.co';
+          export const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_QWOeGbSVs2nXECI-KsAmWQ_K_Rav892';
+          EOF
+
+      - name: Configure isolated staging backend for Driver preview APK
+        if: matrix.label == 'Driver' && (github.event_name == 'pull_request' || github.ref != 'refs/heads/main')
+        run: |
+          cat > apps/driver/public/supabase-config.js <<'EOF'
+          // Isolated staging configuration for non-production preview APKs.
+          export const SUPABASE_URL = 'https://tagkbropgzthsbjlhyvz.supabase.co';
+          export const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_QWOeGbSVs2nXECI-KsAmWQ_K_Rav892';
+          EOF
+
+      - name: Configure isolated staging backend for Company Admin preview APK
+        if: matrix.label == 'Company-Admin' && (github.event_name == 'pull_request' || github.ref != 'refs/heads/main')
+        run: |
+          cat > apps/company/public/supabase-config.js <<'EOF'
+          // Isolated staging configuration for non-production preview APKs.
+          export const SUPABASE_URL = 'https://tagkbropgzthsbjlhyvz.supabase.co';
+          export const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_QWOeGbSVs2nXECI-KsAmWQ_K_Rav892';
+          EOF
 
       - name: Generate Android project and sync app assets
         working-directory: ${{ matrix.path }}

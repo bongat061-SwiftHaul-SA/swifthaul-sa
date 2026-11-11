@@ -5,6 +5,7 @@
   const heading = root.querySelector('.page-heading h1');
   const description = root.querySelector('.page-heading .subtle');
   const stats = root.querySelector('#earnings');
+  const homeHero = root.querySelector('.driver-home-hero');
   const grid = root.querySelector('.workspace-grid');
   const dispatches = root.querySelector('#dispatches');
   const historyPanel = document.createElement('section');
@@ -13,24 +14,34 @@
   historyPanel.innerHTML = '<h2>Delivery history</h2><p class="subtle">Completed, failed and cancelled deliveries are listed here after your account loads its dispatch records.</p><div id="driver-delivery-history-list" class="operations-list"><p>No completed deliveries yet.</p></div>';
   grid?.insertAdjacentElement('afterend', historyPanel);
   const account = root.querySelector('#account-details');
+  const onboarding = root.querySelector('#driver-onboarding-root');
   const availability = root.querySelector('#availability');
+  if (homeHero && availability) homeHero.insertAdjacentElement('afterend', availability);
   const payouts = root.querySelector('#payouts');
   const premium = root.querySelector('#premium');
   const insuranceClaims = root.querySelector('#insurance-claims');
   const cash = root.querySelector('#cash-management');
   const pages = {
-    home: { title: 'Ready for the road.', description: 'Your driver home, with a quick view of your delivery activity.', show: ['stats'] },
+    home: { title: 'Ready for the road.', description: 'Your driver home, with a quick view of your delivery activity.', show: ['home-hero','stats'] },
+    dashboard: { title: 'Live trip dashboard.', description: 'Manage online availability, incoming requests, active trips and earnings in one place.', show: ['home-hero','stats','dispatches','availability','earnings','earnings-note'] },
     deliveries: { title: 'Your deliveries.', description: 'Review assigned work and follow each active route from one focused page.', show: ['dispatches'] },
     history: { title: 'Delivery history.', description: 'Review completed, failed and cancelled deliveries from your dispatch history.', show: ['history'] },
     availability: { title: 'Choose when to drive.', description: 'Manage your online status and delivery offer availability.', show: ['availability'] },
-    earnings: { title: 'Your earnings.', description: 'Track completed work and your driver earnings at a glance.', show: ['stats','earnings-note'] },
+    earnings: { title: 'Your earnings.', description: 'Track completed work, your 75% net share and EFT payout progress.', show: ['earnings','earnings-note'] },
     payouts: { title: 'Payouts.', description: 'Review your available balance, bank payout requests and payout history.', show: ['payouts'] },
     cash: { title: 'Cash & deposits.', description: 'Record customer cash held for SwiftHaul and reconcile your company deposits.', show: ['cash'] },
     membership: { title: 'Premium membership.', description: 'Manage membership, priority benefits and rewards.', show: ['premium'] },
     'insurance-claims': { title: 'Insurance claims.', description: 'Submit and track accident claims linked to your active assigned dispatches.', show: ['insurance-claims'] },
-    account: { title: 'Your account.', description: 'Your driver profile and support details.', show: ['account'] }
+    account: { title: 'Your account.', description: 'Your driver profile and support details.', show: ['account'] },
+    onboarding: { title: 'Driver onboarding.', description: 'Complete your South African identity, licence, vehicle, banking and verification steps.', show: ['onboarding'] }
   };
-  const pageNodes = { stats, dispatches, history: historyPanel, availability, payouts, cash, premium, account, 'insurance-claims': insuranceClaims };
+  const pageNodes = { 'home-hero': homeHero, stats, dispatches, history: historyPanel, availability, payouts, cash, premium, account, onboarding, earnings: null, 'insurance-claims': insuranceClaims };
+  const earningsPanel = document.createElement('section');
+  earningsPanel.id = 'driver-earnings-dashboard';
+  earningsPanel.className = 'panel driver-earnings-dashboard';
+  earningsPanel.innerHTML = '<div class="driver-earnings-summary"><article><span>TODAY\'S NET EARNINGS</span><strong id="driver-earnings-today">R0.00</strong></article><article><span>WEEKLY BALANCE</span><strong id="driver-earnings-week">R0.00</strong></article><article><span>EFT PAYOUT STATUS</span><strong id="driver-earnings-payout-status">Not requested</strong></article></div><div class="driver-earnings-section"><h2>Completed delivery breakdown</h2><p class="subtle">Each completed delivery is currently split 75% to the driver and 25% to SwiftHaul.</p><div id="driver-earnings-trip-list" class="operations-list"><p>Sign in to load your earnings.</p></div></div><div class="driver-earnings-section"><h2>Recent EFT payouts</h2><div id="driver-earnings-payout-list" class="operations-list"><p>No payout requests yet.</p></div></div>';
+  root.insertBefore(earningsPanel, grid.nextSibling);
+  pageNodes.earnings = earningsPanel;
   const earningsNote = document.createElement('section');
   earningsNote.className = 'panel driver-earnings-note';
   earningsNote.innerHTML = '<h2>How delivery earnings work</h2><p>For completed deliveries, the current standard split is 75% to the driver and 25% to the platform. Vehicle-specific rates may be introduced after operating costs are established.</p>';
@@ -45,6 +56,8 @@
     }
     if (heading) heading.textContent = page.title;
     if (description) description.textContent = page.description;
+    const navCurrent = nav?.closest('.workspace-navigation')?.querySelector('[data-nav-current]');
+    if (navCurrent) navCurrent.textContent = page.title.replace(/\.$/,'');
     nav?.querySelectorAll('a').forEach(link => {
       const selected = link.dataset.page === key;
       link.classList.toggle('is-active', selected);
@@ -52,9 +65,10 @@
     });
     document.title = 'SwiftHaul SA · Driver · ' + page.title.replace(/\.$/,'');
     if (updateUrl) history.pushState({ page:key }, '', '?page=' + encodeURIComponent(key));
+    nav?.closest('details')?.removeAttribute('open');
     window.scrollTo({ top:0, behavior:'instant' });
   }
-  nav?.querySelectorAll('a').forEach(link => {
+  root.querySelectorAll('a[data-page]').forEach(link => {
     link.addEventListener('click', event => {
       event.preventDefault();
       render(link.dataset.page || 'home', true);

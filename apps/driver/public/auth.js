@@ -8,15 +8,78 @@ window.swiftHaulSupabase = supabase;
 
 const app = document.body.dataset.app;
 const authScreen = document.getElementById('auth-screen');
+const restoreScreen = document.getElementById('session-restore');
 const workspace = document.getElementById('workspace');
 const form = document.getElementById('auth-form');
 const status = document.getElementById('auth-status');
 const submit = form.querySelector('[type=submit]');
+function showSignIn(message = '') {
+  if (restoreScreen) restoreScreen.hidden = true;
+  authScreen.hidden = false;
+  workspace.hidden = true;
+  document.body.dataset.authState = 'anonymous';
+  if (message) status.textContent = message;
+}
+function showSessionRestore(message = 'Restoring your secure session…', allowRecoveryActions = false) {
+  authScreen.hidden = true;
+  workspace.hidden = true;
+  if (restoreScreen) {
+    restoreScreen.hidden = false;
+    const note = restoreScreen.querySelector('[data-session-message]');
+    if (note) note.textContent = message;
+    const retry = restoreScreen.querySelector('[data-session-retry]');
+    if (retry) retry.hidden = !allowRecoveryActions;
+    const signIn = restoreScreen.querySelector('[data-session-signin]');
+    if (signIn) signIn.hidden = !allowRecoveryActions;
+  }
+  document.body.dataset.authState = 'checking';
+}
+restoreScreen?.querySelector('[data-session-retry]')?.addEventListener('click', () => init());
+restoreScreen?.querySelector('[data-session-signin]')?.addEventListener('click', () => showSignIn());
+
 let mode = 'login';
+const serviceConsent = form.elements.acceptTerms;
+const marketingConsent = form.elements.acceptMarketing;
+function syncSignupConsent() {
+  const signup = mode === 'signup';
+  submit.disabled = signup && !serviceConsent.checked;
+}
+serviceConsent.addEventListener('change', syncSignupConsent);
+
 let currentUser = null;
+const supportsPin = app === 'driver';
+const PIN_ACCOUNT_KEY = 'swifthaul.driver.pin-account';
+function rememberPinAccount(email) {
+  if (typeof email !== 'string' || !email.includes('@')) return;
+  try { localStorage.setItem(PIN_ACCOUNT_KEY, email.trim().toLowerCase()); } catch (error) { console.warn('Could not remember Driver PIN account on this device:', error); }
+}
+function rememberedPinAccount() {
+  try { return localStorage.getItem(PIN_ACCOUNT_KEY) || ''; } catch { return ''; }
+}
+const pinLabel = document.createElement('label');
+pinLabel.textContent = '6-digit PIN';
+pinLabel.hidden = true;
+const pinInput = document.createElement('input');
+pinInput.name = 'loginPin';
+pinInput.type = 'password';
+pinInput.inputMode = 'numeric';
+pinInput.pattern = '[0-9]{6}';
+pinInput.maxLength = 6;
+pinInput.autocomplete = 'one-time-code';
+pinInput.placeholder = 'Enter your 6-digit PIN';
+pinLabel.append(pinInput);
+form.insertBefore(pinLabel, document.getElementById('terms-acceptance'));
+const pinLoginButton = document.createElement('button');
+pinLoginButton.type = 'button';
+pinLoginButton.textContent = 'Use 6-digit PIN';
+pinLoginButton.hidden = !supportsPin;
+form.after(pinLoginButton);
+pinLoginButton.addEventListener('click', () => setMode(mode === 'pin' ? 'login' : 'pin'));
+let pinPanel = null;
 
 const titles = {
   login: 'Welcome back.',
+  pin: 'Sign in with your six-digit PIN.',
   signup: 'Join the SwiftHaul driver network.',
   recovery: 'Forgot your password?',
   reset: 'Choose a new password.'
@@ -27,6 +90,7 @@ function setMode(next) {
   const signup = mode === 'signup';
   const recovery = mode === 'recovery';
   const reset = mode === 'reset';
+  const pinLogin = mode === 'pin';
   document.getElementById('auth-title').textContent = titles[mode];
   form.elements.name.closest('label').hidden = !signup;
   form.elements.name.required = signup;
@@ -37,16 +101,24 @@ function setMode(next) {
       control.required = signup;
     }
   }
-  form.elements.email.closest('label').hidden = reset;
-  form.elements.email.required = !reset;
-  form.elements.password.closest('label').hidden = recovery;
-  form.elements.password.required = !recovery;
+  form.elements.email.closest('label').hidden = reset || pinLogin;
+  form.elements.email.required = !reset && !pinLogin;
+  form.elements.password.closest('label').hidden = recovery || pinLogin;
+  form.elements.password.required = !recovery && !pinLogin;
+  pinLabel.hidden = !pinLogin;
+  pinInput.required = pinLogin;
+  pinLoginButton.hidden = !supportsPin || !['login','pin'].includes(mode);
+  pinLoginButton.textContent = pinLogin ? 'Use password instead' : 'Use 6-digit PIN';
   form.elements.password.minLength = mode === 'login' ? 1 : 10;
   form.elements.password.autocomplete = mode === 'login' ? 'current-password' : 'new-password';
   document.getElementById('terms-acceptance').hidden = !signup;
   form.elements.acceptTerms.required = signup;
   form.elements.acceptTerms.checked = false;
-  submit.textContent = ({login:'Sign in',signup:'Create driver account',recovery:'Send reset link',reset:'Save new password'})[mode];
+  if (marketingConsent) marketingConsent.checked = false;
+  const marketingLabel = document.getElementById('marketing-consent');
+  if (marketingLabel) marketingLabel.hidden = !signup;
+  syncSignupConsent();
+  submit.textContent = ({login:'Sign in',pin:'Sign in with PIN',signup:'Create driver account',recovery:'Send reset link',reset:'Save new password'})[mode];
   status.textContent = '';
 }
 
@@ -84,9 +156,66 @@ function showWorkspace(user) {
     const online = document.getElementById('driver-online-toggle');
     if (online && verification !== 'approved') { online.checked = false; online.disabled = true; }
   }
+  if (restoreScreen) restoreScreen.hidden = true;
+  document.body.dataset.authState = 'authenticated';
   authScreen.hidden = true;
   workspace.hidden = false;
   document.dispatchEvent(new CustomEvent('account-ready', { detail: user }));
+}
+
+
+async function refreshPinPanel(session) {
+  if (!supportsPin || !session?.access_token) return;
+  const { data, error } = await supabase.functions.invoke('account-pin', {
+    body: { action: 'status', app_type: 'driver' },
+    headers: { Authorization: 'Bearer ' + session.access_token }
+  });
+  if (error) { console.warn('Driver PIN status unavailable:', error.message); return; }
+  if (!pinPanel) {
+    pinPanel = document.createElement('section');
+    pinPanel.id = 'account-pin-security';
+    pinPanel.className = 'panel';
+    pinPanel.innerHTML = '<h2>Quick sign-in</h2><p data-pin-state>Check your PIN status.</p><button type="button" data-pin-edit>Set up 6-digit PIN</button><form data-pin-form hidden><label>Create 6-digit PIN<input name="pin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="new-password" required></label><label>Confirm 6-digit PIN<input name="confirm_pin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="new-password" required></label><label>Confirm account password<input name="password" type="password" autocomplete="current-password" required></label><button class="primary" type="submit">Save PIN</button><p data-pin-message role="status"></p></form>';
+    const accountSettings = workspace.querySelector('#driver-account-settings');
+    if (accountSettings) accountSettings.append(pinPanel);
+    else { const account = workspace.querySelector('#account-details'); if (account) account.append(pinPanel); else workspace.querySelector('main.page')?.prepend(pinPanel); }
+    const edit = pinPanel.querySelector('[data-pin-edit]');
+    const setup = pinPanel.querySelector('[data-pin-form]');
+    edit.addEventListener('click', () => { setup.hidden = !setup.hidden; });
+    setup.addEventListener('submit', async event => {
+      event.preventDefault();
+      const pin = setup.elements.pin.value;
+      if (!/^[0-9]{6}$/.test(pin) || pin !== setup.elements.confirm_pin.value) {
+        pinPanel.querySelector('[data-pin-message]').textContent = 'Enter the same six-digit PIN in both fields.';
+        return;
+      }
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) { pinPanel.querySelector('[data-pin-message]').textContent = 'Please sign in again to update your PIN.'; return; }
+      const { data: saved, error: saveError } = await supabase.functions.invoke('account-pin', {
+        body: { action: 'set', app_type: 'driver', pin, password: setup.elements.password.value },
+        headers: { Authorization: 'Bearer ' + sessionData.session.access_token }
+      });
+      if (saveError) { pinPanel.querySelector('[data-pin-message]').textContent = saved?.error || saveError.message; return; }
+      setup.reset();
+      setup.hidden = true;
+      await refreshPinPanel(sessionData.session);
+    });
+  }
+  pinPanel.querySelector('[data-pin-state]').textContent = data?.has_pin
+    ? 'A quick sign-in PIN is enabled for this Driver account. You can change it here.'
+    : 'Create your own six-digit PIN to sign in faster next time. Password sign-in remains available.';
+  pinPanel.querySelector('[data-pin-edit]').textContent = data?.has_pin ? 'Change PIN' : 'Create 6-digit PIN';
+}
+
+async function sendSignInNotification(session) {
+  if (!session?.access_token) return;
+  try {
+    const { data, error } = await supabase.functions.invoke('account-signin-notify', {
+      body: {}, headers: { Authorization: 'Bearer ' + session.access_token }
+    });
+    if (error) console.warn('Sign-in security email could not be sent:', error.message);
+    else if (data?.email_sent !== true) console.warn('Sign-in security email pending:', data?.reason || 'email provider unavailable');
+  } catch (error) { console.warn('Sign-in security email pending:', error?.message || error); }
 }
 
 async function validateAccount(session) {
@@ -105,6 +234,7 @@ async function validateAccount(session) {
     throw new Error('Company access is invitation-only. Please contact your administrator.');
   }
   if (user.accountStatus !== 'active') throw new Error('Your account is not active. Please contact SwiftHaul support.');
+  if (app === 'driver') rememberPinAccount(session?.user?.email || user.email);
   if (app === 'driver' && session?.access_token) {
     // Only run after an authenticated session exists and account-me validates the driver.
     // With email confirmation enabled, this first runs on sign-in after confirmation.
@@ -117,6 +247,7 @@ async function validateAccount(session) {
     else if (notificationResult?.success !== true) console.warn('Driver onboarding notifications were not completed.');
   }
   showWorkspace(user);
+  await refreshPinPanel(session);
 }
 
 async function openWorkspace() {
@@ -129,7 +260,7 @@ async function openWorkspace() {
 form.addEventListener('submit', async event => {
   event.preventDefault();
   if (mode === 'signup' && !form.elements.acceptTerms.checked) {
-    status.textContent = 'Read and accept the terms and conditions to continue.';
+    status.textContent = 'Please accept the Privacy Policy and Terms of Service to create your account.';
     form.elements.acceptTerms.reportValidity();
     return;
   }
@@ -138,6 +269,25 @@ form.addEventListener('submit', async event => {
   try {
     const email = form.elements.email.value.trim().toLowerCase();
     const password = form.elements.password.value;
+    if (mode === 'pin') {
+      const pinAccountEmail = rememberedPinAccount();
+      if (!pinAccountEmail) {
+        setMode('login');
+        status.textContent = 'For the first sign-in on this device, use your email and password. Your verified account will then be remembered for PIN-only sign-in.';
+        return;
+      }
+      if (!/^[0-9]{6}$/.test(pinInput.value)) throw new Error('Enter your six-digit PIN.');
+      const { data: pinData, error: pinError } = await supabase.functions.invoke('account-pin', {
+        body: { action: 'login', app_type: 'driver', email: pinAccountEmail, pin: pinInput.value }
+      });
+      if (pinError) throw new Error(pinData?.error || pinError.message || 'PIN sign-in failed.');
+      const { data: sessionData, error: sessionError } = await supabase.auth.setSession(pinData.session);
+      if (sessionError) throw sessionError;
+      pinInput.value = '';
+      await validateAccount(sessionData.session);
+      await sendSignInNotification(sessionData.session);
+      return;
+    }
     if (mode === 'recovery') {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: window.location.href.split('#')[0]
@@ -173,7 +323,12 @@ form.addEventListener('submit', async event => {
             vehicle_type: form.elements.vehicleType.value,
             vehicle_registration: form.elements.vehicleRegistration.value.trim().toUpperCase(),
             terms_accepted: true,
-            terms_version: '2026-10-30-wallet'
+            terms_version: '2026-11-11-popia-consent-v1',
+            privacy_consent: true,
+            privacy_policy_version: '2026-11-11-v1',
+            privacy_consent_at: new Date().toISOString(),
+            marketing_consent: Boolean(marketingConsent?.checked),
+            marketing_consent_at: marketingConsent?.checked ? new Date().toISOString() : null
           }
         }
       });
@@ -191,10 +346,11 @@ form.addEventListener('submit', async event => {
     if (error) throw error;
     form.elements.password.value = '';
     await validateAccount(data.session);
+    await sendSignInNotification(data.session);
   } catch (error) {
     status.textContent = error?.message || 'Unable to connect. Please try again.';
   } finally {
-    submit.disabled = false;
+    submit.disabled = mode === 'signup' && !serviceConsent.checked;
   }
 });
 
@@ -205,67 +361,6 @@ document.querySelectorAll('[data-auth-mode]').forEach(el => {
     setMode(requested);
   });
 });
-document.querySelectorAll('[data-social-provider]').forEach(button => button.addEventListener('click', async () => {
-  const provider = button.dataset.socialProvider;
-  if (!['google', 'apple'].includes(provider)) return;
-  if (mode !== 'login' && mode !== 'signup') {
-    status.textContent = 'Return to Sign in or Create account to use Google or Apple.';
-    return;
-  }
-  const intent = { app: 'driver', mode };
-  if (mode === 'signup') {
-    const fields = ['name', 'phone', 'licenseNumber', 'licenseExpiry', 'vehicleType', 'vehicleRegistration'];
-    for (const name of fields) {
-      const field = form.elements[name];
-      if (!field.value.trim() || !field.checkValidity()) {
-        status.textContent = 'Complete all required driver details before continuing.';
-        field.reportValidity();
-        return;
-      }
-    }
-    if (!form.elements.acceptTerms.checked) {
-      status.textContent = 'Read and accept the terms and conditions to continue.';
-      form.elements.acceptTerms.reportValidity();
-      return;
-    }
-    const expiry = form.elements.licenseExpiry.value;
-    const todayParts = new Intl.DateTimeFormat('en-CA', {
-      timeZone: 'Africa/Johannesburg', year: 'numeric', month: '2-digit', day: '2-digit'
-    }).formatToParts(new Date());
-    const today = todayParts.find(part => part.type === 'year').value + '-' +
-      todayParts.find(part => part.type === 'month').value + '-' +
-      todayParts.find(part => part.type === 'day').value;
-    if (expiry <= today) {
-      status.textContent = 'Enter a valid licence expiry date in the future.';
-      return;
-    }
-    intent.profile = {
-      full_name: form.elements.name.value.trim(),
-      phone: form.elements.phone.value.trim(),
-      license_number: form.elements.licenseNumber.value.trim(),
-      license_expiry: expiry,
-      vehicle_type: form.elements.vehicleType.value,
-      vehicle_registration: form.elements.vehicleRegistration.value.trim().toUpperCase(),
-      terms_accepted: true,
-      terms_version: '2026-10-30-wallet'
-    };
-  }
-  button.disabled = true;
-  status.textContent = 'Connecting to ' + (provider === 'google' ? 'Google' : 'Apple') + '…';
-  sessionStorage.setItem('swifthaul-social-intent', JSON.stringify(intent));
-  try {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo: location.origin + location.pathname }
-    });
-    if (error) throw error;
-  } catch (error) {
-    sessionStorage.removeItem('swifthaul-social-intent');
-    status.textContent = error?.message || 'Social sign-in could not be started.';
-    button.disabled = false;
-  }
-}));
-
 document.getElementById('sign-out').addEventListener('click', async () => {
   const { error } = await supabase.auth.signOut();
   if (error) {
@@ -279,6 +374,8 @@ document.getElementById('sign-out').addEventListener('click', async () => {
 supabase.auth.onAuthStateChange((event, session) => {
   if (event === 'PASSWORD_RECOVERY') {
     setMode('reset');
+    if (restoreScreen) restoreScreen.hidden = true;
+    document.body.dataset.authState = 'anonymous';
     authScreen.hidden = false;
     workspace.hidden = true;
     return;
@@ -287,58 +384,34 @@ supabase.auth.onAuthStateChange((event, session) => {
     currentUser = null;
     if (document.body.dataset.guestPreview !== 'true') {
       workspace.hidden = true;
+      if (restoreScreen) restoreScreen.hidden = true;
+      document.body.dataset.authState = 'anonymous';
       authScreen.hidden = false;
       document.dispatchEvent(new Event('account-cleared'));
     }
   }
   if (event === 'TOKEN_REFRESHED' && session && currentUser) {
-    validateAccount(session).catch(() => {
-      workspace.hidden = true;
-      authScreen.hidden = false;
-      document.dispatchEvent(new Event('account-cleared'));
-    });
+    validateAccount(session).catch(error => console.warn('Account revalidation deferred; current workspace remains open:', error));
   }
 });
 
+let restoreTimer = null;
 async function init() {
   setMode('login');
+  if (restoreTimer) clearTimeout(restoreTimer);
+  if (restoreScreen) restoreScreen.hidden = true;
+  restoreTimer = setTimeout(() => { if (workspace.hidden) showSessionRestore(); }, 450);
   try {
     const { data: { session }, error } = await supabase.auth.getSession();
     if (error) throw error;
-    if (session) {
-      const intentRaw = sessionStorage.getItem('swifthaul-social-intent');
-      if (intentRaw) {
-        const intent = JSON.parse(intentRaw);
-        if (intent.app === 'driver' && intent.mode === 'signup') {
-          const { data: onboardData, error: onboardError } = await supabase.functions.invoke('social-onboard', {
-            body: { ...intent.profile, app_type: 'driver' },
-            headers: { Authorization: 'Bearer ' + session.access_token }
-          });
-          if (onboardError) throw new Error(onboardData?.error || onboardError.message || 'Driver profile setup failed.');
-        }
-        sessionStorage.removeItem('swifthaul-social-intent');
-      }
-      await validateAccount(session);
-    } else {
-      sessionStorage.removeItem('swifthaul-social-intent');
-      authScreen.hidden = false;
-    }
+    if (session) await validateAccount(session);
+    else showSignIn();
   } catch (error) {
-    authScreen.hidden = false;
-    status.textContent = error?.message || 'Sign-in is unavailable. Please try again.';
+    showSessionRestore(error?.message || 'We could not verify your saved session. Try again, or return to sign in.', true);
+  } finally {
+    if (restoreTimer) clearTimeout(restoreTimer);
+    restoreTimer = null;
   }
 }
-
 init();
-
-document.addEventListener('visibilitychange', async () => {
-  if (document.visibilityState !== 'visible' || workspace.hidden || document.body.dataset.guestPreview === 'true') return;
-  try { await openWorkspace(); }
-  catch {
-    workspace.hidden = true;
-    authScreen.hidden = false;
-    document.dispatchEvent(new Event('account-cleared'));
-  }
-});
-
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});

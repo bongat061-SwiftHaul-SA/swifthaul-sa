@@ -34,27 +34,28 @@ Deno.serve(async (req: Request) => {
   if (req.method === "POST") {
     if (profile.role !== "driver") return reply(403, { error: "driver_account_required" });
     const { data: driverProfile, error: driverProfileError } = await admin.from("driver_profiles")
-      .select("verification_status,is_online").eq("user_id", actorId).maybeSingle();
+      .select("verification_status,is_online,can_go_online").eq("user_id", actorId).maybeSingle();
     if (driverProfileError) return reply(500, { error: "driver_profile_lookup_failed" });
-    if (!driverProfile || driverProfile.verification_status !== "approved")
-      return reply(403, { error: "approved_driver_required" });
+    if (!driverProfile) return reply(403, { error: "driver_profile_required" });
     const raw = await req.text();
     if (raw.length > 2048) return reply(413, { error: "request_too_large" });
     let body: Record<string, unknown>;
     try { body = JSON.parse(raw); } catch { return reply(400, { error: "invalid_json" }); }
+    if(body.sharing!==false&&(driverProfile.verification_status!=="approved"||driverProfile.can_go_online!==true||driverProfile.is_online!==true))return reply(403,{error:"driver_not_eligible_or_online_for_live_location"});
     if (typeof body.waybill !== "string" || !body.waybill.trim() || body.waybill.length > 100)
       return reply(400, { error: "invalid_waybill" });
     const { data: booking, error: bookingError } = await admin.from("customer_bookings")
-      .select("waybill,status,driver_user_id,refunded_at").eq("waybill", body.waybill).maybeSingle();
+      .select("waybill,status,driver_user_id,refunded_at,tracking_code,paid_at").eq("waybill", body.waybill).maybeSingle();
     if (bookingError) return reply(500, { error: "delivery_lookup_failed" });
     if (!booking || booking.driver_user_id !== actorId) return reply(404, { error: "delivery_not_found" });
-    if (booking.refunded_at || !activeStatuses.includes(booking.status))
+    if (booking.refunded_at || !booking.paid_at || !activeStatuses.includes(booking.status))
       return reply(409, { error: "delivery_not_active" });
 
     if (body.sharing === false) {
       const { error } = await admin.from("driver_live_locations").delete()
         .eq("waybill", booking.waybill).eq("driver_user_id", actorId);
       if (error) return reply(500, { error: "location_sharing_stop_failed" });
+      await admin.from("public_tracking_locations").delete().eq("waybill",booking.waybill);
       return reply(200, { sharing: false });
     }
     const lat = body.latitude, lng = body.longitude, accuracy = body.accuracy_m;
@@ -73,6 +74,7 @@ Deno.serve(async (req: Request) => {
       accuracy_m: accuracy ?? null, updated_at: updatedAt,
     }, { onConflict: "waybill" });
     if (error) return reply(500, { error: "location_update_failed" });
+    if(booking.tracking_code){const {error:publicError}=await admin.from("public_tracking_locations").upsert({tracking_code:booking.tracking_code,waybill:booking.waybill,latitude:lat,longitude:lng,updated_at:updatedAt},{onConflict:"tracking_code"});if(publicError)return reply(500,{error:"public_tracking_update_failed"});}
     const { data: insurancePolicy, error: insurancePolicyError } = await admin.from("driver_insurance_policies")
       .select("id").eq("driver_user_id", actorId).eq("status", "active")
       .lte("coverage_starts_at", updatedAt).gt("coverage_ends_at", updatedAt).maybeSingle();

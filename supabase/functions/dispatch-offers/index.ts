@@ -25,19 +25,21 @@ Deno.serve(async req => {
 
   if(req.method==="GET") {
     if(!driver) return reply(403,{error:"driver_account_required"});
-    const {data:profile}=await db.from("driver_profiles").select("is_online,online_updated_at,verification_status").eq("user_id",actor).maybeSingle();
-    const {data:offers,error}=await db.from("driver_delivery_offers").select("id,waybill,priority_tier,distance_meters,offered_at,expires_at,status,customer_bookings(pickup,dropoff,vehicle,price,pickup_plus_code,dropoff_plus_code)").eq("driver_user_id",actor).eq("status","offered").gt("expires_at",new Date().toISOString()).order("offered_at",{ascending:false});
+    const {data:profile}=await db.from("driver_profiles").select("is_online,online_updated_at,verification_status,onboarding_status,can_go_online").eq("user_id",actor).maybeSingle();
+    const {data:offers,error}=await db.from("driver_delivery_offers").select("id,waybill,priority_tier,distance_meters,offered_at,expires_at,status,customer_bookings(pickup,dropoff,vehicle,price,distance_meters,pickup_plus_code,dropoff_plus_code)").eq("driver_user_id",actor).eq("status","offered").gt("expires_at",new Date().toISOString()).order("offered_at",{ascending:false});
     if(error) return reply(500,{error:"offer_list_failed"});
-    return reply(200,{driver:profile,offers:offers??[]});
+    return reply(200,{driver:profile,offers:(offers??[]).map((o:any)=>({...o,distance_meters:o.distance_meters??o.customer_bookings?.distance_meters??null,gross_zar:Number(o.customer_bookings?.price??0),net_payout_zar:Math.round(Number(o.customer_bookings?.price??0)*75)/100}))});
   }
 
   let body:Record<string,unknown>;
   try { body=await req.json(); } catch { return reply(400,{error:"invalid_json"}); }
   if(body.action==="set_online") {
     if(!driver||typeof body.online!=="boolean") return reply(400,{error:"invalid_online_preference"});
-    const {data:profile}=await db.from("driver_profiles").select("verification_status").eq("user_id",actor).maybeSingle();
-    if(!profile||profile.verification_status!=="approved") return reply(403,{error:"approved_driver_required"});
-    const {error}=await db.from("driver_profiles").update({is_online:body.online,online_updated_at:new Date().toISOString()}).eq("user_id",actor);
+    if(body.online){
+      const {data:eligible,error:eligibilityError}=await db.rpc("driver_can_accept_work",{p_driver_user_id:actor});
+      if(eligibilityError||eligible!==true) return reply(403,{error:"driver_onboarding_documents_or_background_clearance_incomplete"});
+    }
+    const {error}=await db.from("driver_profiles").update({is_online:body.online,online_updated_at:new Date().toISOString(),availability_status:body.online?"available":"offline"}).eq("user_id",actor);
     if(error) return reply(500,{error:"online_status_update_failed"});
     return reply(200,{is_online:body.online});
   }
@@ -50,6 +52,8 @@ Deno.serve(async req => {
       await db.from("driver_delivery_offers").update({status:"declined",responded_at:new Date().toISOString()}).eq("id",offer.id).eq("status","offered");
       return reply(200,{declined:true});
     }
+    const {data:eligible,error:eligibilityError}=await db.rpc("driver_can_accept_work",{p_driver_user_id:actor});
+    if(eligibilityError||eligible!==true) return reply(403,{error:"driver_not_cleared_to_accept_trips"});
     const {data:booking,error:be}=await db.from("customer_bookings").select("waybill,status,driver_user_id,refunded_at").eq("waybill",offer.waybill).maybeSingle();
     if(be||!booking||booking.status!=="pending"||booking.driver_user_id||booking.refunded_at) return reply(409,{error:"delivery_no_longer_available"});
     const {data:updated,error:ue}=await db.from("customer_bookings").update({driver_user_id:actor,assigned_driver:actor,status:"assigned"}).eq("waybill",offer.waybill).eq("status","pending").is("driver_user_id",null).select("waybill").maybeSingle();
@@ -69,7 +73,7 @@ Deno.serve(async req => {
     const {data:sent}=await db.from("driver_delivery_offers").select("driver_user_id,status").eq("waybill",booking.waybill);
     if((sent??[]).some(x=>x.status==="accepted")) return reply(409,{error:"delivery_offer_already_accepted"});
     const excluded=new Set((sent??[]).map(x=>x.driver_user_id));
-    const {data:drivers,error:de}=await db.from("driver_profiles").select("user_id,vehicle_type,is_online,verification_status").eq("is_online",true).eq("verification_status","approved");
+    const {data:drivers,error:de}=await db.from("driver_profiles").select("user_id,vehicle_type,is_online,verification_status").eq("is_online",true).eq("verification_status","approved").eq("can_go_online",true);
     if(de) return reply(500,{error:"driver_candidate_lookup_failed"});
     const eligible=(drivers??[]).filter(d=>!excluded.has(d.user_id)&&(!booking.vehicle||String(d.vehicle_type).toLowerCase()===String(booking.vehicle).toLowerCase()));
     if(!eligible.length) return reply(404,{error:"no_eligible_online_drivers"});
@@ -85,7 +89,7 @@ Deno.serve(async req => {
       return {...x,rotation:last.get(candidate.user_id)??0};
     }).sort((a,b)=>Number(b.premium)-Number(a.premium)||a.rotation-b.rotation);
     const chosen=ranked[0];
-    const expires=new Date(Date.now()+60_000).toISOString();
+    const expires=new Date(Date.now()+30_000).toISOString();
     const {data:offer,error:oe}=await db.from("driver_delivery_offers").insert({waybill:booking.waybill,driver_user_id:chosen.d.user_id,priority_tier:chosen.premium?"premium":"standard",expires_at:expires}).select("id,driver_user_id,priority_tier,expires_at").single();
     if(oe) return reply(500,{error:"offer_create_failed"});
     return reply(200,{offer,rotation:"least-recently-offered",priority:"active premium drivers before standard drivers"});

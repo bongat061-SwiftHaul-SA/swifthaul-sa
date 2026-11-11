@@ -71,48 +71,37 @@
     '@media(max-width:650px){#delivery-map-stage{height:78svh;min-height:650px;margin:-22px -18px 22px;border-radius:0 0 20px 20px}.swift-location-sheet{left:10px;right:10px;bottom:10px;max-height:58%;padding:15px 16px;border-radius:21px}.swift-sheet-head{gap:8px}.swift-sheet-head h3{font-size:15px}.swift-route-steps{gap:5px;padding:7px 8px;font-size:8px}.swift-location-fields{gap:6px}.swift-location-fields input{height:40px;min-height:40px}.swift-sheet-tools{gap:6px}.swift-sheet-tools button{padding:7px 9px;font-size:9px}.swift-pin-meta{margin-top:7px}.swift-sheet-quote #quote-result{font-size:10px}}',
   ].join('\n');
   style.textContent += [
-    '#delivery-map-stage{height:clamp(650px,84vh,900px)!important;min-height:650px!important;margin:0!important;border-radius:20px!important}',
-    '.swift-location-sheet{left:clamp(12px,2vw,24px)!important;right:clamp(12px,2vw,24px)!important;bottom:clamp(12px,2vw,24px)!important;max-height:76%!important;overflow-y:auto!important;padding:18px!important;border-radius:22px!important}',
-    '.swift-sheet-head{margin-bottom:12px!important}',
-    '.swift-sheet-head h3{font-size:17px!important;font-weight:850!important;letter-spacing:-.5px!important}',
-    '.swift-location-fields{grid-template-columns:1fr!important;gap:7px!important}',
-    '.swift-location-fields .field{padding-left:20px!important}',
-    '.swift-location-fields input{min-height:42px!important;height:42px!important;margin-top:4px!important;padding:10px 12px!important}',
-    '.swift-location-fields .field label{font-size:9px!important;letter-spacing:.65px!important;text-transform:uppercase!important}',
-    '.swift-location-fields .field:before{top:15px!important}',
-    '.swift-pin-button{margin-top:3px!important;padding:5px 8px!important;font-size:9px!important}',
-    '.swift-location-sheet .parcel-fields{margin:10px 0!important;padding:12px!important;border:1px solid #e8edea!important;border-radius:14px!important;background:#fbfcfb!important}',
-    '.swift-location-sheet .parcel-fields legend{margin-bottom:7px!important}',
-    '.swift-location-sheet .parcel-fields>p.subtle{display:none!important}',
-    '.swift-location-sheet .load-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:7px!important}',
-    '.swift-location-sheet .load-grid label{font-size:9px!important;min-width:0!important}',
-    '.swift-location-sheet #cargo-estimator{margin:9px 0 12px!important;padding:13px!important;border:1px solid #e4ebe6!important;border-radius:15px!important;background:#f3f7f4!important}',
-    '.swift-location-sheet #cargo-estimator h3{font-size:13px!important;margin:0 0 5px!important}',
-    '.swift-location-sheet #cargo-estimator p{font-size:10px!important;line-height:1.45!important;margin:6px 0!important}',
-    '.swift-location-sheet #cargo-estimator textarea,.swift-location-sheet #cargo-estimator input[type=file]{font-size:11px!important;border-radius:10px!important}',
-    '.swift-location-sheet #cargo-estimator .cargo-actions button{min-height:38px!important;padding:9px 12px!important;font-size:10px!important;border-radius:10px!important}',
-    '.swift-location-sheet #cargo-estimator .cargo-range{font-size:14px!important}',
-    '.swift-location-sheet .load-grid input{min-height:39px!important;height:39px!important;padding:8px!important;font-size:11px!important}',
-    '.swift-location-sheet #load-summary{margin:7px 0 0!important;font-size:10px!important;min-height:0!important}',
-    '.swift-more-options{margin:9px 0!important;border:1px solid #e7ece8!important;border-radius:13px!important;background:#fff!important}',
-    '.swift-more-options>summary{padding:12px 13px!important;color:#34443d!important;font-size:11px!important;font-weight:800!important;cursor:pointer!important;list-style:none!important}',
-    '.swift-more-options>summary::-webkit-details-marker{display:none!important}',
-    '.swift-more-options>summary:after{content:"＋";float:right;color:#176b52!important}',
-    '.swift-more-options[open]>summary:after{content:"−"}',
-    '.swift-more-content{padding:0 12px 10px!important}',
-    '.swift-more-content fieldset{margin:10px 0!important;padding:11px!important}',
-    '.swift-more-content .subtle{font-size:10px!important}',
-    '.swift-sheet-quote{margin-top:10px!important}',
-    '.swift-sheet-quote #quote-status{margin:7px 0!important;min-height:0!important;font-size:10px!important}',
-    '.swift-sheet-quote #calculate-route{width:100%!important;min-height:46px!important;border-radius:12px!important;background:#142d23!important;border-color:#142d23!important;font-weight:800!important}',
-    '.swift-sheet-quote #quote-result{margin:10px 0!important;padding:12px!important;border:1px solid #e5eee8!important;border-radius:14px!important;background:#f7faf8!important}',
-    '.swift-sheet-quote #quote-result>p.subtle:nth-of-type(n+2){display:none!important}',
-    '.swift-sheet-quote #quote-map{height:150px!important;border-radius:12px!important}',
-    '.swift-sheet-quote .quote-totals strong{font-size:21px!important}',
-    '.swift-booking-actions{position:sticky!important;bottom:-18px!important;z-index:5!important;margin:12px -18px -18px!important;padding:12px 18px 14px!important;background:#fff!important;border-top:1px solid #e8edea!important;box-shadow:0 -8px 20px #fff!important}',
-    '.swift-booking-actions #submit{width:100%!important;min-height:52px!important;border-radius:13px!important;background:#142d23!important;border-color:#142d23!important}',
-    '.swift-booking-actions #message{margin:6px 0 0!important;font-size:10px!important}',
-    '@media(max-width:650px){#delivery-map-stage{height:88svh!important;min-height:660px!important;margin:0!important;border-radius:18px!important}.swift-location-sheet{left:9px!important;right:9px!important;bottom:9px!important;max-height:77%!important;padding:13px!important;border-radius:19px!important}.swift-sheet-head h3{font-size:15px!important}.swift-location-fields{gap:5px!important}.swift-location-fields input{min-height:39px!important;height:39px!important}.swift-location-sheet .load-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}.swift-location-sheet .load-grid input{min-height:37px!important;height:37px!important}.swift-booking-actions{bottom:-13px!important;margin:10px -13px -13px!important;padding:10px 13px 12px!important}.swift-sheet-quote #quote-map{height:125px!important}}'
+    '#delivery-map-stage{height:520px!important;min-height:440px!important;max-height:62vh!important;margin:0 0 22px!important;border:1px solid #dfe7e1!important;border-radius:18px!important;background:#e9eef0!important;box-shadow:0 8px 26px #14231e12!important}',
+    '#global-location-map{background:#e9eef0!important}',
+    '#global-location-map .maplibregl-canvas{outline:0!important}',
+    '#global-location-map .maplibregl-ctrl-top-right{top:12px!important;right:12px!important}',
+    '#global-location-map .maplibregl-ctrl-group{border:0!important;border-radius:12px!important;overflow:hidden!important;box-shadow:0 3px 12px #15231e25!important}',
+    '#global-location-map .maplibregl-ctrl-group button{width:38px!important;height:38px!important}',
+    '.swift-location-sheet{left:12px!important;right:12px!important;bottom:12px!important;max-height:72%!important;overflow-y:auto!important;padding:15px 16px 14px!important;border:1px solid #e5ebe7!important;border-radius:18px!important;box-shadow:0 10px 32px #12251d28!important;background:#fff!important}',
+    '.swift-sheet-head{margin-bottom:10px!important;align-items:center!important}',
+    '.swift-sheet-head h3{font-size:16px!important;letter-spacing:-.35px!important;color:#17241f!important}',
+    '.swift-sheet-head p{font-size:10px!important;color:#78847e!important}',
+    '.swift-route-steps{background:#f2f5f3!important;border-radius:999px!important;padding:6px 9px!important;font-size:8px!important}',
+    '.swift-location-fields{display:grid!important;grid-template-columns:1fr!important;gap:6px!important}',
+    '.swift-location-fields .field{padding-left:19px!important}',
+    '.swift-location-fields .field:before{left:2px!important;top:15px!important;width:8px!important;height:8px!important}',
+    '.swift-location-fields input{height:40px!important;min-height:40px!important;border:1px solid #e5eae7!important;border-radius:10px!important;background:#f8faf9!important;font-size:12px!important}',
+    '.swift-pin-button{margin-top:2px!important;padding:4px 7px!important;font-size:9px!important}',
+    '.swift-sheet-tools{margin-top:7px!important;gap:6px!important}',
+    '.swift-sheet-tools button{min-height:32px!important;border-radius:9px!important;font-size:9px!important}',
+    '.swift-pin-meta{display:flex!important;flex-wrap:wrap!important;gap:5px 8px!important;margin-top:7px!important;padding:7px 9px!important;border-radius:9px!important;background:#f5f7f6!important}',
+    '.swift-pin-meta strong{font-size:9px!important}',
+    '#loc-status{font-size:9px!important;line-height:1.4!important;margin-top:5px!important}',
+    '.swift-location-sheet .parcel-fields{margin:8px 0!important;padding:10px!important;border-radius:11px!important}',
+    '.swift-more-options{margin:7px 0!important;border-radius:10px!important}',
+    '.swift-more-options>summary{padding:9px 11px!important;font-size:10px!important}',
+    '.swift-sheet-quote{margin-top:8px!important}',
+    '.swift-sheet-quote #calculate-route{min-height:42px!important;border-radius:10px!important;font-size:11px!important;font-weight:850!important;background:#142d23!important}',
+    '.swift-sheet-quote #quote-result{padding:10px!important;border-radius:11px!important;background:#f6f8f7!important}',
+    '.swift-sheet-quote #quote-map{height:140px!important;border-radius:10px!important}',
+    '.swift-booking-actions{position:sticky!important;bottom:-14px!important;z-index:5!important;margin:9px -16px -14px!important;padding:9px 16px 11px!important;background:#fff!important;border-top:1px solid #e9eeeb!important;box-shadow:0 -7px 16px #fff!important}',
+    '.swift-booking-actions #submit{min-height:46px!important;border-radius:11px!important;background:#142d23!important;font-size:12px!important}',
+    '@media(max-width:650px){#delivery-map-stage{height:430px!important;min-height:390px!important;max-height:58svh!important;margin:0 -4px 16px!important;border-radius:15px!important}.swift-location-sheet{left:8px!important;right:8px!important;bottom:8px!important;max-height:76%!important;padding:11px 12px 10px!important;border-radius:15px!important}.swift-sheet-head h3{font-size:14px!important}.swift-sheet-head p{font-size:9px!important}.swift-route-steps{gap:5px!important;padding:5px 7px!important;font-size:7px!important}.swift-location-fields{gap:4px!important}.swift-location-fields input{height:37px!important;min-height:37px!important;font-size:11px!important}.swift-sheet-tools{gap:5px!important}.swift-sheet-tools button{min-height:29px!important;padding:5px 7px!important;font-size:8px!important}.swift-pin-meta{font-size:8px!important}.swift-sheet-quote #quote-map{height:110px!important}.swift-booking-actions{margin:8px -12px -10px!important;padding:8px 12px 10px!important}}'
   ].join('\n');
   document.head.append(style);
 
@@ -129,8 +118,10 @@
     '<div class="swift-route-steps" aria-label="Pickup to drop-off"><span class="step-dot"></span><span>Pickup</span><span class="step-line"></span><span class="step-dot drop"></span><span>Drop-off</span></div></div>' +
     '<div class="swift-location-fields"></div>' +
     '<div class="swift-sheet-tools"><button type="button" id="loc-current" class="swift-current">◎ Use my location</button><button type="button" id="loc-open">Re-centre map</button><a href="https://www.openstreetmap.org/?mlat=-26.32517&amp;mlon=28.19535#map=14/-26.32517/28.19535&amp;layers=T" target="_blank" rel="noopener noreferrer" style="font-size:10px;color:#21664e;font-weight:700">Open transport map ↗</a></div>' +
-    '<div class="swift-pin-meta"><span>Selected pin</span><strong id="loc-coordinates">Choose pickup or drop-off</strong></div>' +
-    '<p id="loc-status" role="status" aria-live="polite">Select a South African address suggestion or tap the map. Confirm each pin at the exact gate or entrance before calculating.</p>' +
+    '<div class="swift-pin-meta"><span>Pin coordinates</span><strong id="loc-coordinates">Choose pickup or drop-off</strong><span>Plus Code</span><strong id="loc-plus-code">Not set</strong></div>' +
+    '<p id="loc-status" role="status" aria-live="polite">Search an address or tap the map. Confirm both pins at the exact gate or entrance.</p>' +
+    '<p class="swift-geocoder-credit">Address data © OpenStreetMap contributors · Nominatim</p>' +
+    '<button type="button" id="loc-continue-booking" class="swift-continue-booking" hidden>Continue to Book a delivery →</button>' +
     '<div class="swift-sheet-quote"></div></section>';
   form.insertBefore(stage, pickupWrap);
   const fields = stage.querySelector('.swift-location-fields');
@@ -186,15 +177,14 @@
   let routeLine = false;
   let mapLoaded = false;
   const routeData = {type:'Feature',properties:{},geometry:{type:'LineString',coordinates:[]}};
-  const mapStyle = {
+  // Use a direct CARTO Voyager raster source: this avoids waiting on the
+  // remote vector-style JSON, sprite and glyph requests on slower Android links.
+  const rasterStyle = tiles => ({
     version:8,
-    sources:{carto:{type:'raster',tiles:[
-      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-      'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
-    ],tileSize:256,attribution:'&copy; OpenStreetMap contributors'}},
-    layers:[{id:'carto-voyager',type:'raster',source:'carto'}]
-  };
+    sources:{base:{type:'raster',tiles:[tiles],tileSize:256,attribution:'&copy; OpenStreetMap contributors &copy; CARTO'}},
+    layers:[{id:'base-raster',type:'raster',source:'base'}]
+  });
+  const mapStyle = rasterStyle('https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png');
   const cameraMove = (center, zoom=14) => { if(map) map.flyTo({center,zoom,duration:350}); };
   const clearRoute = () => {
     if(map && mapLoaded && map.getSource('customer-route')) map.getSource('customer-route').setData({type:'Feature',properties:{},geometry:{type:'LineString',coordinates:[]}});
@@ -217,17 +207,39 @@
   };
   function ensureMap() {
     if(map || !window.maplibregl) return;
-    map=new maplibregl.Map({container:'global-location-map',style:mapStyle,center:[28.195352552065742,-26.32516865200042],zoom:14,attributionControl:true});
+    map=new maplibregl.Map({container:'global-location-map',style:mapStyle,center:[28.195352552065742,-26.32516865200042],zoom:13.5,attributionControl:true,dragRotate:false,pitchWithRotate:false,maxPitch:0});
     map.addControl(new maplibregl.NavigationControl({showCompass:false}),'top-right');
-    map.on('load',()=>{
-      mapLoaded=true;routeStyle();
+    let fallbackUsed=false;
+    let tileWatchdog;
+    const armWatchdog=()=>{
+      clearTimeout(tileWatchdog);
+      tileWatchdog=setTimeout(()=>{
+        if(!map || fallbackUsed) {
+          $('loc-status').textContent='The map tiles are taking too long to load. Address search and exact pin coordinates still work; try again when your connection is stable.';
+          return;
+        }
+        fallbackUsed=true;
+        mapLoaded=false;
+        $('loc-status').textContent='Switching to the lightweight OpenStreetMap map because the detailed map is slow…';
+        map.setStyle(rasterStyle('https://tile.openstreetmap.org/{z}/{x}/{y}.png'));
+        armWatchdog();
+      },10000);
+    };
+    map.on('style.load',()=>{
+      mapLoaded=true;
+      routeStyle();
       for(const key of ['pickup','dropoff']) if(state[key]) placeMarker(key,state[key].lat,state[key].lng);
       fitLocations();
+      requestAnimationFrame(()=>map&&map.resize());
     });
+    map.on('idle',()=>clearTimeout(tileWatchdog));
+    map.on('error',event=>{
+      if(event?.error) $('loc-status').textContent='Some map tiles could not load. The address fields and exact pin coordinates remain available.';
+    });
+    armWatchdog();
     map.on('click',event=>{
       if(activeField){saveLocation(activeField,event.lngLat.lat,event.lngLat.lng,'Map pin adjusted. Finding the nearest mapped address…');reverseLabel(activeField,event.lngLat.lat,event.lngLat.lng);}
     });
-    map.on('error',()=>{$('loc-status').textContent='Map tiles could not be loaded. Check your connection; address fields and manual pin coordinates remain available.';});
     requestAnimationFrame(()=>map&&map.resize());
   }
   function placeMarker(key,lat,lng) {
@@ -247,7 +259,7 @@
     if(!map) return;
     const points=['pickup','dropoff'].filter(key=>state[key]).map(key=>[state[key].lng,state[key].lat]);
     if(points.length===2) {
-      map.fitBounds([[Math.min(points[0][0],points[1][0]),Math.min(points[0][1],points[1][1])],[Math.max(points[0][0],points[1][0]),Math.max(points[0][1],points[1][1])]],{padding:{top:60,bottom:300,left:45,right:45},maxZoom:15,duration:350});
+      map.fitBounds([[Math.min(points[0][0],points[1][0]),Math.min(points[0][1],points[1][1])],[Math.max(points[0][0],points[1][0]),Math.max(points[0][1],points[1][1])]],{padding:{top:38,bottom:230,left:38,right:38},maxZoom:17,duration:350});
       routeData.geometry.coordinates=points;routeLine=true;routeStyle();
       if(mapLoaded&&map.getSource('customer-route'))map.getSource('customer-route').setData(routeData);
     } else if(points.length===1) {
@@ -262,10 +274,26 @@
     if(mapLoaded){routeStyle();map.getSource('customer-route').setData(routeData);}
     const coords=routeData.geometry.coordinates;
     const lngs=coords.map(p=>p[0]),lats=coords.map(p=>p[1]);
-    map.fitBounds([[Math.min(...lngs),Math.min(...lats)],[Math.max(...lngs),Math.max(...lats)]],{padding:{top:55,bottom:300,left:45,right:45},maxZoom:15,duration:450});
+    map.fitBounds([[Math.min(...lngs),Math.min(...lats)],[Math.max(...lngs),Math.max(...lats)]],{padding:{top:38,bottom:230,left:38,right:38},maxZoom:17,duration:450});
     $('loc-status').textContent='Road route loaded. Adjust either pin if the pickup or drop-off entrance is incorrect.';
     return true;
   };
+
+  function updateContinueButton() {
+    const button = $('loc-continue-booking');
+    if (!button) return;
+    const pickupCode = hiddenField('pickup_plus_code').value;
+    const dropoffCode = hiddenField('dropoff_plus_code').value;
+    button.hidden = !(state.pickup && state.dropoff && pickupCode && dropoffCode);
+  }
+  $('loc-continue-booking')?.addEventListener('click', () => {
+    updateContinueButton();
+    if ($('loc-continue-booking').hidden) {
+      $('loc-status').textContent = 'Choose and confirm both pickup and drop-off pins before continuing.';
+      return;
+    }
+    document.dispatchEvent(new CustomEvent('swift-haul:locations-confirmed'));
+  });
 
   function saveLocation(input, lat, lng, message) {
     if(!Number.isFinite(lat)||!Number.isFinite(lng)) return;
@@ -277,24 +305,60 @@
     if(pinButton){pinButton.setAttribute('aria-pressed','true');pinButton.textContent='✓ Pin confirmed';}
     activeField=input;
     $('loc-coordinates').textContent=lat.toFixed(6)+', '+lng.toFixed(6);
+    $('loc-plus-code').textContent=plusCode||'Unavailable';
     $('loc-status').textContent=message||(key==='pickup'?'Pickup pin saved.':'Drop-off pin saved.');
     if(map){placeMarker(key,lat,lng);fitLocations();}
+    updateContinueButton();
   }
 
+  const reverseLookupSequence = new WeakMap();
+  function distanceMetres(lat1,lon1,lat2,lon2){
+    const rad=value=>value*Math.PI/180;
+    const dLat=rad(lat2-lat1),dLon=rad(lon2-lon1);
+    const a=Math.sin(dLat/2)**2+Math.cos(rad(lat1))*Math.cos(rad(lat2))*Math.sin(dLon/2)**2;
+    return 6371000*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+  }
   async function reverseLabel(input,lat,lng){
     const original=input.value.trim();
+    const requestId=(reverseLookupSequence.get(input)||0)+1;
+    reverseLookupSequence.set(input,requestId);
     try{
-      const url='https://photon.komoot.io/reverse/?'+new URLSearchParams({lat:String(lat),lon:String(lng),lang:'en'});
-      const response=await fetch(url,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(7000)});
-      if(!response.ok)return;
-      const feature=(await response.json()).features?.[0],p=feature?.properties||{};
-      const street=[p.housenumber,p.street].filter(Boolean).join(' ');
-      const label=[street||p.name,p.suburb||p.district,p.city||p.town||p.village,p.state,p.postcode].filter(Boolean).join(', ');
-      if(!label||input.value.trim()!==original)return;
-      input.dataset.justSelected='true';input.value=label;input.dispatchEvent(new Event('input',{bubbles:true}));
-      saveLocation(input,lat,lng,'Exact map pin saved. Address text shows the nearest mapped address; verify the gate or entrance visually.');
-    }catch{}
+      const url='https://nominatim.openstreetmap.org/reverse?'+new URLSearchParams({format:'jsonv2',addressdetails:'1',lat:String(lat),lon:String(lng),zoom:'18','accept-language':'en'});
+      const response=await (window.swiftHaulNominatimFetch ? window.swiftHaulNominatimFetch(url,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(9000)}) : fetch(url,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(9000)}));
+      if(!response.ok)throw new Error('Nominatim reverse lookup unavailable');
+      const result=await response.json(),p=result?.address||{};
+      const coords=[Number(result?.lon),Number(result?.lat)];
+      if(reverseLookupSequence.get(input)!==requestId||input.value.trim()!==original)return;
+      if(!Array.isArray(coords)||coords.length<2||!Number.isFinite(Number(coords[0]))||!Number.isFinite(Number(coords[1]))){
+        $('loc-status').textContent='No reliable street address was found. Your exact pin and Plus Code are saved; please enter a street address or nearby landmark if known.';
+        return;
+      }
+      const distance=Math.round(distanceMetres(lat,lng,Number(coords[1]),Number(coords[0])));
+      const street=[p.house_number,p.road||p.pedestrian||p.footway].filter(Boolean).join(' ');
+      const locality=[p.neighbourhood,p.suburb,p.city_district,p.city||p.town||p.village,p.county,p.state,p.postcode].filter(Boolean);
+      const label=[street||result?.name||result?.display_name,...locality].filter(Boolean).join(', ');
+      if(!label||distance>250){
+        $('loc-status').textContent=distance>250
+          ? 'Nearest mapped feature is '+distance+' m from this pin. It is not safe to treat it as this property address. Your exact pin and Plus Code are saved.'
+          : 'No reliable street address was found. Your exact pin and Plus Code are saved; enter a street address or nearby landmark if known.';
+        return;
+      }
+      if(distance>35){
+        $('loc-status').textContent='Nearest mapped address: '+label+' ('+distance+' m away). This is only a nearby match, not a verified property address. Keep or edit the typed address and confirm the exact entrance using the pin.';
+        return;
+      }
+      input.dataset.justSelected='true';
+      input.value=label;
+      input.dispatchEvent(new Event('input',{bubbles:true}));
+      queueMicrotask(()=>{input.dataset.justSelected='false';});
+      saveLocation(input,lat,lng,'Close mapped address match ('+distance+' m). The pin coordinates remain the delivery location; verify the gate or entrance.');
+    }catch{
+      if(reverseLookupSequence.get(input)===requestId&&input.value.trim()===original){
+        $('loc-status').textContent='Address lookup is unavailable. Your exact pin and Plus Code are saved; please enter a street address or landmark if known.';
+      }
+    }
   }
+  window.swiftHaulGetMapCenter = () => map ? map.getCenter() : null;
   window.swiftHaulShowAddressOnMap = (input, lat, lng) => {
     activeField = input;
     ensureMap();
@@ -312,6 +376,7 @@
       const previous = state[key];
       if (previous?.marker) previous.marker.remove();
       delete state[key];
+      updateContinueButton();
       clearRoute();
       const remaining = state.pickup || state.dropoff;
       if (remaining && map) cameraMove([remaining.lng,remaining.lat],15);
@@ -351,13 +416,33 @@
     }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 });
   });
 
+  const workspace = document.getElementById('workspace');
+  let mapSizeObserver = null;
+  function resizeVisibleMap() {
+    if (!workspace || workspace.hidden) return;
+    ensureMap();
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (!map || workspace.hidden) return;
+      map.resize();
+      fitLocations();
+    }));
+  }
+  if (workspace && 'ResizeObserver' in window) {
+    mapSizeObserver = new ResizeObserver(() => {
+      if (!workspace.hidden && map) map.resize();
+    });
+    mapSizeObserver.observe(stage);
+  }
   const revealObserver = new MutationObserver(() => {
-    if (!document.getElementById('workspace')?.hidden) {
-      ensureMap();
-      setTimeout(() => map && map.resize(), 180);
+    if (!workspace?.hidden) {
+      resizeVisibleMap();
       revealObserver.disconnect();
     }
   });
-  revealObserver.observe(document.getElementById('workspace'), { attributes: true, attributeFilter: ['hidden'] });
-  if (!document.getElementById('workspace')?.hidden) { ensureMap(); setTimeout(() => map && map.resize(), 180); }
+  if (workspace) revealObserver.observe(workspace, { attributes: true, attributeFilter: ['hidden'] });
+  if (workspace && !workspace.hidden) resizeVisibleMap();
+  window.addEventListener('pageshow', resizeVisibleMap);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') resizeVisibleMap();
+  });
 })();

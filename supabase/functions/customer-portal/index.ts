@@ -11,6 +11,7 @@ const cors = {
 const reply = (status: number, body: Record<string, unknown>) =>
   new Response(JSON.stringify(body), { status, headers: cors });
 const validText = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0 && v.length <= 500;
+const validZaMobile = (v: unknown): v is string => typeof v === "string" && /^(?:\+27|0)[6-8][0-9]{8}$/.test(v.replace(/[\s-]/g,""));
 const baseFees = { bike: 40, van: 80, truck: 180 } as const;
 type Vehicle = keyof typeof baseFees;
 class InputError extends Error { status: number; constructor(message: string, status = 400) { super(message); this.status = status; } }
@@ -34,8 +35,8 @@ function calculateLoad(input: unknown) {
 function pin(value: unknown) {
   if (value == null) return null;
   const p = value as Record<string, unknown>;
-  if (typeof p.latitude !== "number" || !Number.isFinite(p.latitude) || Math.abs(p.latitude) > 90 ||
-      typeof p.longitude !== "number" || !Number.isFinite(p.longitude) || Math.abs(p.longitude) > 180)
+  if (typeof p.latitude !== "number" || !Number.isFinite(p.latitude) || p.latitude < -35.2 || p.latitude > -22.0 ||
+      typeof p.longitude !== "number" || !Number.isFinite(p.longitude) || p.longitude < 16.4 || p.longitude > 33.2)
     throw new InputError("Select a valid pickup or drop-off map pin.");
   return { latitude: p.latitude, longitude: p.longitude };
 }
@@ -69,8 +70,8 @@ function parseLocation(body: Record<string, unknown>, prefix: "pickup" | "dropof
   const hasHash = hash !== undefined && hash !== null && hash !== "";
   if (!hasLat && !hasLng && !hasCode && !hasHash)
     return { latitude: null, longitude: null, plus_code: null, geohash: null };
-  if (!hasLat || !hasLng || typeof lat !== "number" || !Number.isFinite(lat) || Math.abs(lat) > 90 ||
-      typeof lng !== "number" || !Number.isFinite(lng) || Math.abs(lng) > 180)
+  if (!hasLat || !hasLng || typeof lat !== "number" || !Number.isFinite(lat) || lat < -35.2 || lat > -22.0 ||
+      typeof lng !== "number" || !Number.isFinite(lng) || lng < 16.4 || lng > 33.2)
     throw new InputError("Choose a valid map pin with both latitude and longitude.");
   // Plus Codes and Geohashes are optional legacy metadata; coordinates are the canonical pin.
   if ((hasCode && (typeof code !== "string" || code.length < 4 || code.length > 16 || !code.includes("+"))) ||
@@ -109,7 +110,7 @@ Deno.serve(async (req: Request) => {
 
   if (req.method === "GET") {
     const { data, error } = await admin.from("customer_bookings")
-      .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,wallet_refund_used,wallet_promo_used,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,nedbank_cargo_insurance_interest,status")
+      .select("waybill,pin,tracking_code,recipient_phone,parcel_notes,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,wallet_refund_used,wallet_promo_used,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,nedbank_cargo_insurance_interest,status")
       .eq("owner_hash", owner).order("created_at", { ascending: false }).limit(100);
     if (error) return reply(500, { error: "booking_list_failed" });
     const { data: wallet, error: walletError } = await admin.from("wallet_accounts")
@@ -124,7 +125,7 @@ Deno.serve(async (req: Request) => {
     if (eftError) return reply(500, { error: "eft_payment_list_failed" });
     if (walletError) return reply(500, { error: "wallet_balance_lookup_failed" });
     const walletAvailable = wallet ? Number(wallet.refund_cents) + Math.max(0, Number(wallet.promo_cents) - Number(wallet.promo_debt_cents)) : 0;
-    return reply(200, { orders: data ?? [], refundRequests: refundRequests ?? [], eftPayments: eftPayments ?? [], canImport: false, wallet: {
+    return reply(200, { orders: (data ?? []).map((o:any)=>({...o,pin:o.paid_at?o.pin:null})), refundRequests: refundRequests ?? [], eftPayments: eftPayments ?? [], canImport: false, wallet: {
       refund_cents: wallet ? Number(wallet.refund_cents) : 0,
       promo_cents: wallet ? Number(wallet.promo_cents) : 0,
       promo_debt_cents: wallet ? Number(wallet.promo_debt_cents) : 0,
@@ -183,13 +184,13 @@ Deno.serve(async (req: Request) => {
 
   if (body.action !== "book" || typeof body.quote_id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.quote_id) ||
       body.terms_accepted !== true || body.terms_version !== "2026-11-10-protection-terms-only" ||
-      typeof body.recipient !== "string" || !body.recipient.trim() || body.recipient.length > 500)
+      typeof body.recipient !== "string" || !body.recipient.trim() || body.recipient.length > 120 || !validZaMobile(body.recipient_phone) || (body.parcel_notes!==undefined&&(typeof body.parcel_notes!=="string"||body.parcel_notes.length>500)))
     return reply(400, { error: "calculate_a_quote_and_enter_recipient" });
   if (body.nedbank_cargo_insurance_interest !== undefined && typeof body.nedbank_cargo_insurance_interest !== "boolean") return reply(400, { error: "invalid_insurance_enquiry_selection" });
   const { data: existing } = await admin.from("customer_bookings")
-    .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,nedbank_cargo_insurance_interest")
+    .select("waybill,pin,tracking_code,recipient_phone,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,nedbank_cargo_insurance_interest")
     .eq("quote_id", body.quote_id).eq("owner_hash", owner).maybeSingle();
-  if (existing) return reply(200, { order: existing });
+  if (existing) return reply(200, { order: {...existing,pin:existing.paid_at?existing.pin:null} });
   const { data: quote, error: quoteError } = await admin.from("delivery_quotes")
     .select("id,pickup,dropoff,vehicle,distance_meters,price_band,price,load,distance_fee,expires_at")
     .eq("id", body.quote_id).eq("owner_hash", owner).maybeSingle();
@@ -220,7 +221,7 @@ Deno.serve(async (req: Request) => {
     if (assistanceFeeCents !== expectedFee) return reply(400, { error: "assistance_must_be_free" });
   } else if ((body.assistance_minutes ?? 0) !== 0 || (body.assistance_fee_cents ?? 0) !== 0) return reply(400, { error: "unexpected_assistance_amount" });
   const method = body.payment_method ?? "dispatch";
-  if (method !== "cash" && method !== "dispatch" && method !== "eft") return reply(400, { error: "choose_eft_or_eligible_cash_payment" });
+  if (method !== "cash" && method !== "dispatch" && method !== "eft" && method !== "card") return reply(400, { error: "choose_eft_or_eligible_cash_payment" });
   if (method === "cash" && distance >= 12000) return reply(400, { error: "cash_available_only_below_12km" });
   let offer: number | null = null;
   let offerStatus = "none";
@@ -245,7 +246,7 @@ Deno.serve(async (req: Request) => {
   const pinCode = String(crypto.getRandomValues(new Uint32Array(1))[0] % 9000 + 1000);
   const insert = {
     waybill, owner_hash: owner, pin: pinCode, pickup: quote.pickup, dropoff: quote.dropoff,
-    recipient: body.recipient.trim(), vehicle: quote.vehicle, price: quote.price,
+    recipient: body.recipient.trim(), parcel_notes: typeof body.parcel_notes==="string"?body.parcel_notes.trim():"", recipient_phone: String(body.recipient_phone).replace(/[\s-]/g,"").replace(/^0/,"+27"), vehicle: quote.vehicle, price: quote.price,
     distance_meters: distance, price_band: quote.price_band, quote_id: quote.id,
     load: quote.load, distance_fee: quote.distance_fee, scheduled_at: scheduled,
     return_address: returnAddress || null, return_at: returnAt, payment_method: method,
@@ -293,11 +294,11 @@ Deno.serve(async (req: Request) => {
   const { data: order, error: insertError } = await admin.from("customer_bookings").insert(insert).select("*").single();
   if (insertError) {
     const { data: retry } = await admin.from("customer_bookings")
-      .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,nedbank_cargo_insurance_interest")
+      .select("waybill,pin,tracking_code,recipient_phone,parcel_notes,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,nedbank_cargo_insurance_interest")
       .eq("quote_id", body.quote_id).eq("owner_hash", owner).maybeSingle();
-    if (retry) return reply(200, { order: retry });
+    if (retry) return reply(200, { order: {...retry,pin:retry.paid_at?retry.pin:null} });
     console.error("Customer booking insert failed", insertError.message);
     return reply(503, { error: "booking_save_failed" });
   }
-  return reply(201, { order });
+  return reply(201, { order: {...order,pin:order.paid_at?order.pin:null} });
 });

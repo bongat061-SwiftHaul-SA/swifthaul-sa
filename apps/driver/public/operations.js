@@ -279,7 +279,7 @@ if (app === 'driver' || app === 'company') {
       const trackingHead = document.createElement('div');
       trackingHead.className = 'tracking-head';
       const trackingTitle = document.createElement('h4');
-      trackingTitle.textContent = 'Your delivery';
+      trackingTitle.textContent = order.status === 'accepted' ? 'Head to pickup' : 'Continue to drop-off';
       const trackingState = document.createElement('span');
       trackingState.className = 'tracking-state';
       trackingState.textContent = 'GPS not started';
@@ -416,13 +416,13 @@ if (app === 'driver' || app === 'company') {
           node.style.cssText = 'width:18px;height:18px;border:4px solid #fff;border-radius:50%;background:' + color + ';box-shadow:0 1px 8px #0005';
           return new maplibregl.Marker({ element: node }).setLngLat([point[1],point[0]]).setPopup(new maplibregl.Popup({ offset: 12 }).setText(title)).addTo(map);
         };
-        if (validPoint(pickup)) marker([pickup.lat,pickup.lng], '#176b52', 'Pickup');
-        if (validPoint(dropoff)) marker([dropoff.lat,dropoff.lng], '#e39b35', 'Drop-off');
+        if (validPoint(pickup)) marker([pickup.lat,pickup.lng], '#e9edf2', 'Pickup');
+        if (validPoint(dropoff)) marker([dropoff.lat,dropoff.lng], '#9eb6d4', 'Drop-off');
         map.on('load', () => {
           mapLoaded = true;
           map.addSource('driver-route', { type: 'geojson', data: routeFeature });
           map.addLayer({ id: 'driver-route-casing', type: 'line', source: 'driver-route', paint: { 'line-color': '#fff', 'line-width': 12, 'line-opacity': .95, 'line-cap': 'round', 'line-join': 'round' } });
-          map.addLayer({ id: 'driver-route-line', type: 'line', source: 'driver-route', paint: { 'line-color': '#176b52', 'line-width': 6, 'line-opacity': .98, 'line-cap': 'round', 'line-join': 'round' } });
+          map.addLayer({ id: 'driver-route-line', type: 'line', source: 'driver-route', paint: { 'line-color': '#9eb6d4', 'line-width': 6, 'line-opacity': .98, 'line-cap': 'round', 'line-join': 'round' } });
           fitRoute();
           if (points.length === 2) updateRoute(order.status === 'in_transit' && currentDriverPoint ? currentDriverPoint : [pickup.lat,pickup.lng]);
           if (currentDriverPosition) showPosition(currentDriverPosition);
@@ -549,8 +549,10 @@ if (app === 'driver' || app === 'company') {
         card.append(recipient);
       }
       if (order.status === 'assigned') makeButton(card, 'Accept delivery', { waybill: order.waybill, action: 'accept' });
-      if (order.status === 'accepted') makeButton(card, 'Confirm pickup', { waybill: order.waybill, action: 'pickup' });
+      if (order.status === 'accepted' && !order.arrived_pickup_at) makeButton(card, 'Arrived at pickup', { waybill: order.waybill, action: 'arrive_pickup' });
+      if (order.status === 'accepted' && order.arrived_pickup_at) makeButton(card, 'Confirm pickup', { waybill: order.waybill, action: 'pickup' });
       if (order.status === 'picked_up') makeButton(card, 'Start delivery', { waybill: order.waybill, action: 'in_transit' });
+      if (order.status === 'in_transit' && !order.arrived_dropoff_at) makeButton(card, 'Arrived at drop-off', { waybill: order.waybill, action: 'arrive_dropoff' });
       if (order.status === 'in_transit') {
         if (order.proof) {
           const proofNote = document.createElement('p');

@@ -1,0 +1,83 @@
+name: Validate South African Driver Onboarding and Live Dashboard
+on:
+  pull_request:
+    paths:
+      - "apps/driver/public/driver-onboarding.js"
+      - "apps/driver/public/availability.js"
+      - "apps/driver/public/live-location.js"
+      - "apps/driver/public/operations.js"
+      - "apps/driver/public/section-pages.js"
+      - "apps/driver/public/driver-earnings.js"
+      - "apps/driver/public/payouts.js"
+      - "apps/driver/public/index.html"
+      - "apps/driver/public/dark-premium.css"
+      - "apps/company/public/driver-admin.js"
+      - "apps/company/public/index.html"
+      - "supabase/functions/driver-onboarding/**"
+      - "supabase/functions/driver-admin/**"
+      - "supabase/functions/driver-secure-documents/**"
+      - "supabase/functions/driver-earnings-dashboard/**"
+      - "supabase/functions/driver-payouts/**"
+      - "supabase/functions/dispatch-offers/**"
+      - "supabase/functions/dispatch-operations/**"
+      - "supabase/functions/driver-location/**"
+      - "supabase/migrations/20261111180000_south_african_driver_onboarding.sql"
+      - "supabase/migrations/20261111190000_driver_verification_expiry_and_pii_protection.sql"
+      - "supabase/migrations/20261111191000_driver_work_eligibility_guard.sql"
+      - "supabase/migrations/20261111192000_enforce_driver_document_date_requirements.sql"
+      - "supabase/migrations/20261111193000_require_current_driver_profile_licence.sql"
+      - "supabase/migrations/20261111194000_encrypt_complete_driver_bank_details.sql"
+      - "supabase/migrations/20261111230000_driver_secure_storage_aes_gcm_and_access_audit.sql"
+      - "supabase/migrations/20261111232000_driver_trip_arrival_checkpoints.sql"
+      - "supabase/migrations/20261111234000_secure_driver_payout_bank_details.sql"
+      - "tests/driver-onboarding-static-check.cjs"
+  push:
+    branches:
+      - release/dark-premium-mainline-candidate
+    paths:
+      - "apps/driver/public/driver-onboarding.js"
+      - "apps/driver/public/availability.js"
+      - "apps/driver/public/operations.js"
+      - "apps/driver/public/section-pages.js"
+      - "apps/driver/public/driver-earnings.js"
+      - "apps/driver/public/index.html"
+      - "apps/driver/public/dark-premium.css"
+      - "apps/company/public/driver-admin.js"
+      - "apps/company/public/index.html"
+      - "supabase/functions/driver-onboarding/**"
+      - "supabase/functions/driver-admin/**"
+      - "supabase/functions/driver-secure-documents/**"
+      - "supabase/functions/driver-earnings-dashboard/**"
+      - "supabase/functions/dispatch-offers/**"
+      - "supabase/functions/dispatch-operations/**"
+      - "supabase/migrations/20261111180000_south_african_driver_onboarding.sql"
+      - "supabase/migrations/20261111190000_driver_verification_expiry_and_pii_protection.sql"
+      - "supabase/migrations/20261111191000_driver_work_eligibility_guard.sql"
+      - "supabase/migrations/20261111192000_enforce_driver_document_date_requirements.sql"
+      - "supabase/migrations/20261111193000_require_current_driver_profile_licence.sql"
+      - "supabase/migrations/20261111194000_encrypt_complete_driver_bank_details.sql"
+      - "supabase/migrations/20261111230000_driver_secure_storage_aes_gcm_and_access_audit.sql"
+      - "supabase/migrations/20261111232000_driver_trip_arrival_checkpoints.sql"
+      - "tests/driver-onboarding-static-check.cjs"
+permissions:
+  contents: read
+jobs:
+  driver-onboarding:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check Driver and Company Admin JavaScript syntax
+        run: |
+          node --check apps/driver/public/driver-onboarding.js
+          node --check apps/driver/public/availability.js
+          node --check apps/driver/public/live-location.js
+          node --check apps/driver/public/operations.js
+          node --check apps/driver/public/section-pages.js
+          node --check apps/driver/public/driver-earnings.js
+          node --check apps/driver/public/payouts.js
+          node --check apps/company/public/driver-admin.js
+      - name: Validate secure storage, South African onboarding and live trip dashboard
+        run: node tests/driver-onboarding-static-check.cjs
