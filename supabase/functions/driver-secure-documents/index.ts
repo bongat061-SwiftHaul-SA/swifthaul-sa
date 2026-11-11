@@ -29,6 +29,8 @@ Deno.serve(async(req:Request)=>{
   if(docError){await db.storage.from("driver-application-documents").remove([t.object_path]);return reply(500,{error:"document_record_create_failed"});}
   await db.from("driver_verification_audit").insert({driver_user_id:t.driver_user_id,document_id:doc.id,event_type:"secure_document_uploaded",details:{document_type:t.document_type}});
   await db.from("driver_profiles").update({onboarding_status:"pending_review",verification_status:"pending",can_go_online:false,is_online:false,availability_status:"offline"}).eq("user_id",t.driver_user_id);
+  await db.from("driver_onboarding_applications").update({verification_status:"pending",updated_at:new Date().toISOString()}).eq("driver_user_id",t.driver_user_id);
+  await db.from("driver_onboarding_notifications").insert({driver_user_id:t.driver_user_id,document_id:doc.id,notification_type:"replacement_submitted",title:"Replacement document received",message:"Your replacement "+t.document_type.replaceAll("_"," ")+" has been submitted for review."});
   return reply(201,{uploaded:true,document_id:doc.id,verification_status:"pending"});
  }
  const bearer=(req.headers.get("Authorization")||"").match(/^Bearer\s+(.+)$/i)?.[1];
