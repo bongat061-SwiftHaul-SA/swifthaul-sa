@@ -130,7 +130,10 @@ Deno.serve(async(req:Request)=>{
      for(let page=1;page<=5&&!bankCode;page++){
       const br=await fetch("https://api.paystack.co/bank?currency=ZAR&perPage=100&page="+page,{headers:{Authorization:"Bearer "+paystackSecret},signal:AbortSignal.timeout(10000)});
       const bd=await br.json().catch(()=>null);if(!br.ok||bd?.status!==true)break;
-      const match=(bd.data||[]).find((item:any)=>item.active!==false&&String(item.name||"").toLowerCase().replace(/[^a-z]/g,"")===bankName.toLowerCase().replace(/[^a-z]/g,""));
+      const normalizedBank=bankName.toLowerCase().replace(/[^a-z]/g,"");
+      const aliases:Record<string,string[]>={"fnb":["fnb","firstnationalbank"],"nedbank":["nedbank"],"standardbank":["standardbank"],"absa":["absa"],"capitec":["capitec"],"tymebank":["tymebank"]};
+      const bankAliases=aliases[normalizedBank]||[normalizedBank];
+      const match=(bd.data||[]).find((item:any)=>{const n=String(item.name||"").toLowerCase().replace(/[^a-z]/g,"");return item.active!==false&&bankAliases.some(a=>n===a||n.startsWith(a)||a.startsWith(n));});
       if(match)bankCode=String(match.code);
       if(!(bd.data||[]).length)break;
      }
