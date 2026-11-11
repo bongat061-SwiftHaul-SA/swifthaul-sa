@@ -141,7 +141,7 @@ function addOrder(order, prepend = false) {
     });
     actions.append(eft);
   }
-  if(!order.paid_at&&!order.refunded_at&&order.payment_method==="paystack"){
+  if(!order.paid_at&&!order.refunded_at&&order.payment_method==="card"){
     const payButton=document.createElement("button");payButton.type="button";payButton.className="primary";payButton.textContent="Pay securely with Paystack";
     payButton.addEventListener("click",async()=>{payButton.disabled=true;try{await startPaystackCheckout(order.waybill);}catch(error){report(error.message||"Unable to open Paystack checkout.",true);payButton.disabled=false;}});
     card.append(payButton);
@@ -252,7 +252,7 @@ form.addEventListener('submit', async event => {
     if (epoch !== accountEpoch) return;
     if (!result.order) throw new Error('Unable to save your booking. Please try again.');
     container.querySelector('.empty')?.remove(); addOrder(result.order, true);
-    if(data.payment_method==='paystack'){report('Booking saved. Opening secure Paystack checkout…');await startPaystackCheckout(result.order.waybill);return;}
+    if(data.payment_method==='card'){report('Booking saved. Opening secure Paystack checkout…');await startPaystackCheckout(result.order.waybill);return;}
     report('Booking created. Choose your available payment option below. WhatsApp sharing is a separate action.');
     resetQuote();
   } catch (error) {
