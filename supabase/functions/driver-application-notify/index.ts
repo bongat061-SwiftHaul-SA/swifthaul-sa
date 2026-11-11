@@ -29,7 +29,7 @@ Deno.serve(async(req:Request)=>{
  const {data:row,error:notificationError}=await admin.from("driver_application_notifications").select("*").eq("driver_user_id",a.user.id).maybeSingle();
  if(notificationError){console.error("Driver notification status lookup failed",notificationError.message);return reply(500,{error:"notification_status_unavailable"});}
  const now=new Date().toISOString();let welcome=!!row?.welcome_email_sent_at,adminEmail=!!row?.admin_email_sent_at,wa=!!row?.admin_whatsapp_sent_at;
- const key=Deno.env.get("RESEND_API_KEY"),from=Deno.env.get("DRIVER_EMAIL_FROM")||"SwiftHaul SA <onboarding@resend.dev>",email=a.user.email||"";
+ const key=Deno.env.get("RESEND_API_KEY"),from=Deno.env.get("DRIVER_EMAIL_FROM")||Deno.env.get("AUTH_EMAIL_FROM")||"SwiftHaul SA <onboarding@resend.dev>",email=a.user.email||"";
  const appUrl=Deno.env.get("DRIVER_APP_URL")||"https://bongat061-swifthaul-sa.github.io/swifthaul-sa-preview/apps/driver/public/";
  const name=clean(p.full_name||a.user.user_metadata?.full_name,120);
  const details=[["Name",name],["Email",email],["Phone",clean(d.phone,30)],["Licence",clean(d.license_number,80)],["Licence expiry",clean(d.license_expiry,20)],["Vehicle",clean(d.vehicle_type,30)],["Registration",clean(d.vehicle_registration,30)],["Documents",docSummary]];
