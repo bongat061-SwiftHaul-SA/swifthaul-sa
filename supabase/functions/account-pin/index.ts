@@ -125,7 +125,19 @@ Deno.serve(async (req: Request) => {
 
   if (action === "set") {
     const pin = String(body.pin ?? "");
+    const password = String(body.password ?? "");
     if (!/^\d{6}$/.test(pin)) return respond(400, { error: "PIN must contain exactly six digits." });
+    if (!password || password.length > 200 || !authData.user.email) {
+      return respond(400, { error: "Confirm your account password before setting or changing your PIN." });
+    }
+    // Require a fresh password check so a stolen long-lived session cannot silently replace the PIN.
+    const { data: reauthData, error: reauthError } = await authClient.auth.signInWithPassword({
+      email: authData.user.email,
+      password,
+    });
+    if (reauthError || reauthData.user?.id !== authData.user.id) {
+      return respond(401, { error: "Password confirmation failed. Your PIN was not changed." });
+    }
     const { error } = await admin.rpc("set_account_login_pin", {
       p_user_id: authData.user.id,
       p_app_type: appType,
