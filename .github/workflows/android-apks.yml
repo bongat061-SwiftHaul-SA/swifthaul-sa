@@ -63,6 +63,26 @@ jobs:
         if: matrix.label == 'Customer'
         run: cp public/customer.html public/index.html
 
+      # PR/feature APKs must target the isolated staging backend. Main-branch
+      # release APKs retain the production configuration. Company Admin is unchanged.
+      - name: Configure isolated staging backend for Customer preview APK
+        if: matrix.label == 'Customer' && (github.event_name == 'pull_request' || github.ref != 'refs/heads/main')
+        run: |
+          cat > public/supabase-config.js <<'EOF'
+          // Isolated staging configuration for non-production preview APKs.
+          export const SUPABASE_URL = 'https://tagkbropgzthsbjlhyvz.supabase.co';
+          export const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_QWOeGbSVs2nXECI-KsAmWQ_K_Rav892';
+          EOF
+
+      - name: Configure isolated staging backend for Driver preview APK
+        if: matrix.label == 'Driver' && (github.event_name == 'pull_request' || github.ref != 'refs/heads/main')
+        run: |
+          cat > apps/driver/public/supabase-config.js <<'EOF'
+          // Isolated staging configuration for non-production preview APKs.
+          export const SUPABASE_URL = 'https://tagkbropgzthsbjlhyvz.supabase.co';
+          export const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_QWOeGbSVs2nXECI-KsAmWQ_K_Rav892';
+          EOF
+
       - name: Generate Android project and sync app assets
         working-directory: ${{ matrix.path }}
         run: |
