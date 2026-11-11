@@ -1,0 +1,74 @@
+name: Build separate SwiftHaul browser previews
+# Rebuild previews from the exact current staging commit for review.
+
+on:
+  push:
+    branches:
+      - feature/dark-premium-customer-driver-staging
+    paths:
+      - 'public/**'
+      - 'apps/driver/public/**'
+      - 'apps/company/public/**'
+      - 'shared/**'
+      - 'scripts/prepare-sites.cjs'
+      - 'scripts/build-pages.cjs'
+      - '.github/workflows/staging-browser-previews.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-platform-previews:
+    name: Build Customer, Driver and Company Admin previews
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out staging branch
+        uses: actions/checkout@v4
+
+      - name: Build three independent static site bundles
+        run: node scripts/build-pages.cjs
+
+      - name: Verify each platform entry point
+        run: |
+          test -f dist/customer/customer.html
+          test -f dist/driver/index.html
+          test -f dist/company/index.html
+          test -f dist/index.html
+          echo "Customer, Driver and Company Admin bundles are present."
+
+      - name: Upload Customer browser preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: SwiftHaul-Customer-Browser-Preview
+          path: dist/customer/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload Driver browser preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: SwiftHaul-Driver-Browser-Preview
+          path: dist/driver/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload Company Admin browser preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: SwiftHaul-Company-Admin-Browser-Preview
+          path: dist/company/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload combined preview landing page and shared runtime assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: SwiftHaul-Three-Platform-Preview-Shell
+          path: |
+            dist/index.html
+            dist/.nojekyll
+            dist/public/
+            dist/live-location-view.js
+          if-no-files-found: warn
+          retention-days: 14

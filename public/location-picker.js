@@ -119,7 +119,9 @@
     '<div class="swift-location-fields"></div>' +
     '<div class="swift-sheet-tools"><button type="button" id="loc-current" class="swift-current">◎ Use my location</button><button type="button" id="loc-open">Re-centre map</button><a href="https://www.openstreetmap.org/?mlat=-26.32517&amp;mlon=28.19535#map=14/-26.32517/28.19535&amp;layers=T" target="_blank" rel="noopener noreferrer" style="font-size:10px;color:#21664e;font-weight:700">Open transport map ↗</a></div>' +
     '<div class="swift-pin-meta"><span>Pin coordinates</span><strong id="loc-coordinates">Choose pickup or drop-off</strong><span>Plus Code</span><strong id="loc-plus-code">Not set</strong></div>' +
-    '<p id="loc-status" role="status" aria-live="polite">Select a South African address suggestion or tap the map. Confirm each pin at the exact gate or entrance before calculating.</p>' +
+    '<p id="loc-status" role="status" aria-live="polite">Search an address or tap the map. Confirm both pins at the exact gate or entrance.</p>' +
+    '<p class="swift-geocoder-credit">Address data © OpenStreetMap contributors · Nominatim</p>' +
+    '<button type="button" id="loc-continue-booking" class="swift-continue-booking" hidden>Continue to Book a delivery →</button>' +
     '<div class="swift-sheet-quote"></div></section>';
   form.insertBefore(stage, pickupWrap);
   const fields = stage.querySelector('.swift-location-fields');
@@ -277,6 +279,22 @@
     return true;
   };
 
+  function updateContinueButton() {
+    const button = $('loc-continue-booking');
+    if (!button) return;
+    const pickupCode = hiddenField('pickup_plus_code').value;
+    const dropoffCode = hiddenField('dropoff_plus_code').value;
+    button.hidden = !(state.pickup && state.dropoff && pickupCode && dropoffCode);
+  }
+  $('loc-continue-booking')?.addEventListener('click', () => {
+    updateContinueButton();
+    if ($('loc-continue-booking').hidden) {
+      $('loc-status').textContent = 'Choose and confirm both pickup and drop-off pins before continuing.';
+      return;
+    }
+    document.dispatchEvent(new CustomEvent('swift-haul:locations-confirmed'));
+  });
+
   function saveLocation(input, lat, lng, message) {
     if(!Number.isFinite(lat)||!Number.isFinite(lng)) return;
     const key=input.name==='pickup'?'pickup':'dropoff';
@@ -290,6 +308,7 @@
     $('loc-plus-code').textContent=plusCode||'Unavailable';
     $('loc-status').textContent=message||(key==='pickup'?'Pickup pin saved.':'Drop-off pin saved.');
     if(map){placeMarker(key,lat,lng);fitLocations();}
+    updateContinueButton();
   }
 
   const reverseLookupSequence = new WeakMap();
@@ -304,20 +323,20 @@
     const requestId=(reverseLookupSequence.get(input)||0)+1;
     reverseLookupSequence.set(input,requestId);
     try{
-      const url='https://photon.komoot.io/reverse/?'+new URLSearchParams({lat:String(lat),lon:String(lng),lang:'en'});
-      const response=await fetch(url,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(9000)});
-      if(!response.ok)throw new Error('Address lookup unavailable');
-      const feature=(await response.json()).features?.[0],p=feature?.properties||{};
-      const coords=feature?.geometry?.coordinates;
+      const url='https://nominatim.openstreetmap.org/reverse?'+new URLSearchParams({format:'jsonv2',addressdetails:'1',lat:String(lat),lon:String(lng),zoom:'18','accept-language':'en'});
+      const response=await (window.swiftHaulNominatimFetch ? window.swiftHaulNominatimFetch(url,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(9000)}) : fetch(url,{headers:{Accept:'application/json'},signal:AbortSignal.timeout(9000)}));
+      if(!response.ok)throw new Error('Nominatim reverse lookup unavailable');
+      const result=await response.json(),p=result?.address||{};
+      const coords=[Number(result?.lon),Number(result?.lat)];
       if(reverseLookupSequence.get(input)!==requestId||input.value.trim()!==original)return;
       if(!Array.isArray(coords)||coords.length<2||!Number.isFinite(Number(coords[0]))||!Number.isFinite(Number(coords[1]))){
         $('loc-status').textContent='No reliable street address was found. Your exact pin and Plus Code are saved; please enter a street address or nearby landmark if known.';
         return;
       }
       const distance=Math.round(distanceMetres(lat,lng,Number(coords[1]),Number(coords[0])));
-      const street=[p.housenumber,p.street].filter(Boolean).join(' ');
-      const locality=[p.suburb,p.district,p.city||p.town||p.village,p.state,p.postcode].filter(Boolean);
-      const label=[street||p.name,...locality].filter(Boolean).join(', ');
+      const street=[p.house_number,p.road||p.pedestrian||p.footway].filter(Boolean).join(' ');
+      const locality=[p.neighbourhood,p.suburb,p.city_district,p.city||p.town||p.village,p.county,p.state,p.postcode].filter(Boolean);
+      const label=[street||result?.name||result?.display_name,...locality].filter(Boolean).join(', ');
       if(!label||distance>250){
         $('loc-status').textContent=distance>250
           ? 'Nearest mapped feature is '+distance+' m from this pin. It is not safe to treat it as this property address. Your exact pin and Plus Code are saved.'
@@ -357,6 +376,7 @@
       const previous = state[key];
       if (previous?.marker) previous.marker.remove();
       delete state[key];
+      updateContinueButton();
       clearRoute();
       const remaining = state.pickup || state.dropoff;
       if (remaining && map) cameraMove([remaining.lng,remaining.lat],15);
@@ -396,13 +416,33 @@
     }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 });
   });
 
+  const workspace = document.getElementById('workspace');
+  let mapSizeObserver = null;
+  function resizeVisibleMap() {
+    if (!workspace || workspace.hidden) return;
+    ensureMap();
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (!map || workspace.hidden) return;
+      map.resize();
+      fitLocations();
+    }));
+  }
+  if (workspace && 'ResizeObserver' in window) {
+    mapSizeObserver = new ResizeObserver(() => {
+      if (!workspace.hidden && map) map.resize();
+    });
+    mapSizeObserver.observe(stage);
+  }
   const revealObserver = new MutationObserver(() => {
-    if (!document.getElementById('workspace')?.hidden) {
-      ensureMap();
-      setTimeout(() => map && map.resize(), 180);
+    if (!workspace?.hidden) {
+      resizeVisibleMap();
       revealObserver.disconnect();
     }
   });
-  revealObserver.observe(document.getElementById('workspace'), { attributes: true, attributeFilter: ['hidden'] });
-  if (!document.getElementById('workspace')?.hidden) { ensureMap(); setTimeout(() => map && map.resize(), 180); }
+  if (workspace) revealObserver.observe(workspace, { attributes: true, attributeFilter: ['hidden'] });
+  if (workspace && !workspace.hidden) resizeVisibleMap();
+  window.addEventListener('pageshow', resizeVisibleMap);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') resizeVisibleMap();
+  });
 })();

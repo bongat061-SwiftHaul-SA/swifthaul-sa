@@ -44,9 +44,10 @@
     reports: { title:'Monthly reports.', description:'Export a dated CSV snapshot of the current administrator financial summary.', show:['reports'] },
     insurance: { title:'Driver insurance management.', description:'Verify Premium eligibility and manage insurer-issued driver policies.', show:['insurance'] },
     'insurance-claims': { title:'Insurance claims review.', description:'Review dispatch-bound GPS evidence, route compliance and insurer decisions.', show:['insurance-claims'] },
+    deletions: { title:'Account deletion requests.', description:'Review customer and driver account closure requests while protecting active deliveries and financial records.', show:['deletions'] },
     account: { title:'Company account.', description:'Company administrator profile and support information.', show:['account'] }
   };
-  const nodes = { stats, dispatches, drivers, account, refunds, payouts, offers, finance, reports, insurance, "insurance-claims": root.querySelector("#insurance-claims-admin"), "cash-reconciliation": root.querySelector("#cash-reconciliation") };
+  const nodes = { stats, dispatches, drivers, account, refunds, payouts, offers, finance, reports, insurance, "insurance-claims": root.querySelector("#insurance-claims-admin"), deletions: root.querySelector("#account-deletions"), "cash-reconciliation": root.querySelector("#cash-reconciliation") };
   function render(key, updateUrl) {
     const page = pages[key] || pages.overview;
     Object.entries(nodes).forEach(([name,node]) => { if(node) node.hidden = !page.show.includes(name); });
@@ -55,6 +56,8 @@
     if (aside) aside.hidden = ![drivers,account].some(node => node && !node.hidden);
     if (heading) heading.textContent = page.title;
     if (description) description.textContent = page.description;
+    const navCurrent = nav?.closest('.workspace-navigation')?.querySelector('[data-nav-current]');
+    if (navCurrent) navCurrent.textContent = page.title.replace(/\.$/,'');
     nav?.querySelectorAll('a').forEach(link => {
       const selected = link.dataset.page === key;
       link.classList.toggle('is-active',selected);
@@ -62,6 +65,7 @@
     });
     document.title = 'SwiftHaul SA · Company · ' + page.title.replace(/\.$/,'');
     if(updateUrl) history.pushState({page:key},'', '?page='+encodeURIComponent(key));
+    nav?.closest('details')?.removeAttribute('open');
     window.scrollTo({top:0,behavior:'instant'});
   }
   nav?.querySelectorAll('a').forEach(link => link.addEventListener('click',event => {

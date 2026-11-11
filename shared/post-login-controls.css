@@ -1,0 +1,118 @@
+/* SwiftHaul post-login control polish — shared Customer, Driver and Company workspace */
+body[data-app="customer"] #workspace,
+body[data-app="driver"] #workspace,
+body[data-app="company"] #workspace{
+  --control-bg:#202733;--control-bg-hover:#2b3542;--control-border:#465160;
+  --control-text:#f4f6f9;--control-muted:#b8c2ce;--control-primary:#f0f3f6;
+  --control-primary-text:#10151b;
+}
+body[data-app="customer"] #workspace button,
+body[data-app="driver"] #workspace button,
+body[data-app="company"] #workspace button,
+body[data-app="customer"] #workspace .button,
+body[data-app="driver"] #workspace .button,
+body[data-app="company"] #workspace .button{
+  min-height:42px;padding:10px 16px;border:1px solid var(--control-border);
+  border-radius:12px;background:linear-gradient(180deg,#252e3a,#1b222c);
+  color:var(--control-text);font:700 12px/1.35 'Plus Jakarta Sans',sans-serif;
+  letter-spacing:.01em;box-shadow:0 3px 10px #0002;
+  transition:background .16s ease,border-color .16s ease,transform .16s ease,box-shadow .16s ease;
+  white-space:normal;max-width:100%;
+}
+body[data-app="customer"] #workspace button:hover:not(:disabled),
+body[data-app="driver"] #workspace button:hover:not(:disabled),
+body[data-app="company"] #workspace button:hover:not(:disabled){
+  background:linear-gradient(180deg,#354151,#26303d);border-color:#788596;
+  transform:translateY(-1px);box-shadow:0 7px 18px #0004;
+}
+body[data-app="customer"] #workspace button:active:not(:disabled),
+body[data-app="driver"] #workspace button:active:not(:disabled),
+body[data-app="company"] #workspace button:active:not(:disabled){transform:translateY(0);box-shadow:none}
+body[data-app="customer"] #workspace button:focus-visible,
+body[data-app="driver"] #workspace button:focus-visible,
+body[data-app="company"] #workspace button:focus-visible{
+  outline:3px solid #cbd5e1;outline-offset:3px;
+}
+body[data-app="customer"] #workspace button.primary,
+body[data-app="driver"] #workspace button.primary,
+body[data-app="company"] #workspace button.primary,
+body[data-app="customer"] #workspace button[type="submit"],
+body[data-app="driver"] #workspace button[type="submit"],
+body[data-app="company"] #workspace button[type="submit"]{
+  background:linear-gradient(180deg,#fff,#dce2e9);color:var(--control-primary-text);
+  border-color:#fff;font-weight:850;box-shadow:0 7px 20px #fff1;
+}
+body[data-app="customer"] #workspace button.primary:hover:not(:disabled),
+body[data-app="driver"] #workspace button.primary:hover:not(:disabled),
+body[data-app="company"] #workspace button.primary:hover:not(:disabled),
+body[data-app="customer"] #workspace button[type="submit"]:hover:not(:disabled),
+body[data-app="driver"] #workspace button[type="submit"]:hover:not(:disabled),
+body[data-app="company"] #workspace button[type="submit"]:hover:not(:disabled){
+  background:linear-gradient(180deg,#e8edf2,#cbd3dd);border-color:#e8edf2;
+}
+body[data-app="customer"] #workspace button:disabled,
+body[data-app="driver"] #workspace button:disabled,
+body[data-app="company"] #workspace button:disabled{
+  opacity:.46;cursor:not-allowed;transform:none;box-shadow:none;filter:saturate(.55);
+}
+body[data-app="customer"] #workspace button.quiet,
+body[data-app="driver"] #workspace button.quiet,
+body[data-app="company"] #workspace button.quiet,
+body[data-app="customer"] #workspace button[data-auth-mode],
+body[data-app="driver"] #workspace button[data-auth-mode],
+body[data-app="company"] #workspace button[data-auth-mode]{
+  background:transparent;box-shadow:none;
+}
+body[data-app="customer"] #workspace .section-links a,
+body[data-app="driver"] #workspace .section-links a,
+body[data-app="company"] #workspace .section-links a{
+  display:inline-flex;align-items:center;justify-content:center;min-height:38px;
+  padding:9px 13px;border:1px solid transparent;border-radius:999px;
+  color:#cbd3de;font-size:11px;font-weight:750;line-height:1.2;text-decoration:none;
+  transition:background .16s ease,color .16s ease,border-color .16s ease;
+}
+body[data-app="customer"] #workspace .section-links a:hover,
+body[data-app="driver"] #workspace .section-links a:hover,
+body[data-app="company"] #workspace .section-links a:hover{
+  background:#252e39;border-color:#465160;color:#fff;
+}
+body[data-app="customer"] #workspace .section-links a[aria-current="page"],
+body[data-app="customer"] #workspace .section-links a.is-active,
+body[data-app="driver"] #workspace .section-links a[aria-current="page"],
+body[data-app="driver"] #workspace .section-links a.is-active,
+body[data-app="company"] #workspace .section-links a[aria-current="page"],
+body[data-app="company"] #workspace .section-links a.is-active{
+  background:#edf1f5;color:#11161d;border-color:#fff;
+}
+body[data-app="customer"] #workspace .order-actions,
+body[data-app="driver"] #workspace .order-actions,
+body[data-app="company"] #workspace .order-actions,
+body[data-app="customer"] #workspace .operations-list .actions,
+body[data-app="driver"] #workspace .operations-list .actions,
+body[data-app="company"] #workspace .operations-list .actions{
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+}
+body[data-app="customer"] #workspace .order-actions button,
+body[data-app="driver"] #workspace .order-actions button,
+body[data-app="company"] #workspace .order-actions button,
+body[data-app="customer"] #workspace .operations-list button,
+body[data-app="driver"] #workspace .operations-list button,
+body[data-app="company"] #workspace .operations-list button{min-width:104px}
+body[data-app="customer"] #workspace input:not([type="checkbox"]):not([type="radio"]),
+body[data-app="driver"] #workspace input:not([type="checkbox"]):not([type="radio"]),
+body[data-app="company"] #workspace input:not([type="checkbox"]):not([type="radio"]),
+body[data-app="customer"] #workspace select,body[data-app="driver"] #workspace select,body[data-app="company"] #workspace select,
+body[data-app="customer"] #workspace textarea,body[data-app="driver"] #workspace textarea{
+  min-height:44px;border-radius:12px;padding:11px 13px;
+}
+body[data-app="customer"] #workspace .table-wrap,
+body[data-app="driver"] #workspace .table-wrap,
+body[data-app="company"] #workspace .table-wrap{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+@media(max-width:600px){
+ body[data-app="customer"] #workspace button,body[data-app="driver"] #workspace button,body[data-app="company"] #workspace button{min-height:40px;padding:9px 12px;font-size:11px}
+ body[data-app="customer"] #workspace .section-links,body[data-app="driver"] #workspace .section-links,body[data-app="company"] #workspace .section-links{gap:6px}
+ body[data-app="customer"] #workspace .order-actions button,body[data-app="driver"] #workspace .order-actions button,body[data-app="company"] #workspace .order-actions button{flex:1 1 130px}
+}
+@media(prefers-reduced-motion:reduce){
+ body[data-app="customer"] #workspace *,body[data-app="driver"] #workspace *,body[data-app="company"] #workspace *{transition:none!important}
+}
