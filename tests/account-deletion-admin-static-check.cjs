@@ -3,6 +3,7 @@ const edge=fs.readFileSync('supabase/functions/account-deletion-admin/index.ts',
 const ui=fs.readFileSync('apps/company/public/account-deletions.js','utf8');
 const html=fs.readFileSync('apps/company/public/index.html','utf8');
 const pages=fs.readFileSync('apps/company/public/section-pages.js','utf8');
+const build=fs.readFileSync('.github/workflows/android-apks.yml','utf8');
 assert.match(edge,/auth\.auth\.getUser\(token\)/);
 assert.match(edge,/actor\.role !== "admin"/);
 assert.match(edge,/account_deletion_requests/);
@@ -13,4 +14,7 @@ assert.match(ui,/Approval only authorizes the controlled closure process/);
 assert.match(html,/account-deletions\.js/);
 assert.match(html,/data-page="deletions"/);
 assert.match(pages,/deletions: \{ title:/);
-process.stdout.write('Company Admin deletion review checks passed.\n');
+assert.match(build,/Configure isolated staging backend for Company Admin preview APK/);
+assert.match(build,/matrix\\.label == 'Company-Admin'/);
+assert.match(build,/apps\\/company\\/public\\/supabase-config\\.js/);
+process.stdout.write('Company Admin deletion review and staging isolation checks passed.\\n');
