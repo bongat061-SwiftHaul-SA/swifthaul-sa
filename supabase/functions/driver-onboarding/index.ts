@@ -112,7 +112,8 @@ if(!["sa_citizen","foreign_national"].includes(identityType))return reply(400,{e
   const idCipher=identityType==="sa_citizen"?await db.rpc("encrypt_driver_pii",{p_plaintext:idNumber}):{data:null,error:null};
   const passportCipher=identityType==="foreign_national"?await db.rpc("encrypt_driver_pii",{p_plaintext:passport}):{data:null,error:null};
   const accountCipher=await db.rpc("encrypt_driver_pii",{p_plaintext:account});
-  if(idCipher.error||passportCipher.error||accountCipher.error)throw new Error("secure_profile_pii_encryption_failed");
+  const bankDetailsCipher=await db.rpc("encrypt_driver_pii",{p_plaintext:JSON.stringify(banking)});
+  if(idCipher.error||passportCipher.error||accountCipher.error||bankDetailsCipher.error)throw new Error("secure_profile_pii_encryption_failed");
   const {error:profileSaveError}=await db.from("driver_profiles").update({
    verification_status:"pending",onboarding_status:"pending_review",can_go_online:false,is_online:false,availability_status:"offline",
    phone,license_expiry:licenceExpiry,
@@ -121,7 +122,7 @@ if(!["sa_citizen","foreign_national"].includes(identityType))return reply(400,{e
    passport_number_encrypted:passportCipher.data||null,identity_last4:identityType==="sa_citizen"?idNumber.slice(-4):passport.slice(-4),
    licence_code:licenceCode,prdp_holder:prdp,prdp_category:prdp?prdpCategory:null,prdp_expiry:prdp?prdpExpiry:null,
    vehicle_make:vehicle.make,vehicle_model:vehicle.model,vehicle_year:year,vehicle_gvm_kg:gvm||null,
-   bank_name:bank,bank_account_holder:holder,bank_account_encrypted:accountCipher.data,universal_branch_code:universalCodes[bank]
+   bank_name:null,bank_account_holder:null,bank_account_encrypted:accountCipher.data,bank_details_encrypted:bankDetailsCipher.data,universal_branch_code:null
   }).eq("user_id",u.user.id);
   if(profileSaveError)throw new Error("driver_profile_onboarding_update_failed");
   await db.from("driver_verification_audit").insert({driver_user_id:u.user.id,event_type:"onboarding_submitted",details:{identity_type:identityType,document_count:files.length}});
