@@ -3,7 +3,7 @@ on:
   pull_request:
     paths:
       - "apps/driver/public/driver-onboarding.js"
-      - "apps/driver/public/availability.js"
+      - "apps/driver/public/availability.js"\n      - "apps/driver/public/live-location.js"
       - "apps/driver/public/operations.js"
       - "apps/driver/public/section-pages.js"
       - "apps/driver/public/driver-earnings.js"
@@ -18,7 +18,7 @@ on:
       - "supabase/functions/driver-earnings-dashboard/**"
       - "supabase/functions/driver-payouts/**"
       - "supabase/functions/dispatch-offers/**"
-      - "supabase/functions/dispatch-operations/**"
+      - "supabase/functions/dispatch-operations/**"\n      - "supabase/functions/driver-location/**"
       - "supabase/migrations/20261111180000_south_african_driver_onboarding.sql"
       - "supabase/migrations/20261111190000_driver_verification_expiry_and_pii_protection.sql"
       - "supabase/migrations/20261111191000_driver_work_eligibility_guard.sql"
@@ -70,7 +70,7 @@ jobs:
       - name: Check Driver and Company Admin JavaScript syntax
         run: |
           node --check apps/driver/public/driver-onboarding.js
-          node --check apps/driver/public/availability.js
+          node --check apps/driver/public/availability.js\n          node --check apps/driver/public/live-location.js
           node --check apps/driver/public/operations.js
           node --check apps/driver/public/section-pages.js
           node --check apps/driver/public/driver-earnings.js
