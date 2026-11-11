@@ -19,8 +19,21 @@
 
   const alphabet='0123456789bcdefghjkmnpqrstuvwxyz';
   const resultCache=new Map();
-  let lastRequestAt=0;
-  let requestQueue=Promise.resolve();
+  if(!window.swiftHaulNominatimFetch){
+    let queue=Promise.resolve(),lastRequestAt=0;
+    window.swiftHaulNominatimFetch=(url,options={})=>{
+      const task=queue.then(async()=>{
+        if(options.signal?.aborted)throw new DOMException('Search cancelled','AbortError');
+        const wait=Math.max(0,1100-(Date.now()-lastRequestAt));
+        if(wait)await new Promise(resolve=>setTimeout(resolve,wait));
+        if(options.signal?.aborted)throw new DOMException('Search cancelled','AbortError');
+        lastRequestAt=Date.now();
+        return fetch(url,options);
+      });
+      queue=task.catch(()=>{});
+      return task;
+    };
+  }
   function geohash(lat,lng,precision=9){
     let latR=[-90,90],lngR=[-180,180],even=true,bits=0,ch=0,out='';
     while(out.length<precision){const range=even?lngR:latR,mid=(range[0]+range[1])/2;ch<<=1;if((even?lng:lat)>=mid){ch|=1;range[0]=mid}else range[1]=mid;even=!even;if(++bits===5){out+=alphabet[ch];bits=0;ch=0;}}
@@ -127,20 +140,12 @@
       try{
         let results=resultCache.get(cacheKey);
         if(!results){
-          const run=requestQueue.then(async()=>{
-            const wait=Math.max(0,1100-(Date.now()-lastRequestAt));
-            if(wait)await new Promise(resolve=>setTimeout(resolve,wait));
-            if(controller.signal.aborted)throw new DOMException('Search cancelled','AbortError');
-            lastRequestAt=Date.now();
-            const params=new URLSearchParams({q:query,format:'jsonv2',addressdetails:'1',limit:'8','accept-language':'en'});
-            const response=await fetch('https://nominatim.openstreetmap.org/search?'+params.toString(),{
-              signal:controller.signal,headers:{Accept:'application/json'}
-            });
-            if(!response.ok)throw new Error('Nominatim address search unavailable ('+response.status+').');
-            return response.json();
+          const params=new URLSearchParams({q:query,format:'jsonv2',addressdetails:'1',limit:'8','accept-language':'en'});
+          const response=await window.swiftHaulNominatimFetch('https://nominatim.openstreetmap.org/search?'+params.toString(),{
+            signal:controller.signal,headers:{Accept:'application/json'}
           });
-          requestQueue=run.catch(()=>{});
-          results=await run;
+          if(!response.ok)throw new Error('Nominatim address search unavailable ('+response.status+').');
+          results=await response.json();
           resultCache.set(cacheKey,results);
           if(resultCache.size>80)resultCache.delete(resultCache.keys().next().value);
         }
