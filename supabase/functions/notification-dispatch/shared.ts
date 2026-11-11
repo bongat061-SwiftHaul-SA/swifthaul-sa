@@ -47,7 +47,8 @@ async function sendSms(phone: string, text: string) {
   const token = Deno.env.get("TWILIO_AUTH_TOKEN");
   const from = Deno.env.get("TWILIO_SMS_FROM");
   if (!sid || !token || !from) throw new Error("sms_fallback_provider_not_configured");
-  const callback = Deno.env.get("TWILIO_STATUS_CALLBACK_URL");\n  const form = new URLSearchParams({ To: phone, From: from, Body: text.slice(0, 1500), ...(callback ? { StatusCallback: callback } : {}) });
+  const callback = Deno.env.get("TWILIO_STATUS_CALLBACK_URL");
+  const form = new URLSearchParams({ To: phone, From: from, Body: text.slice(0, 1500), ...(callback ? { StatusCallback: callback } : {}) });
   const response = await fetch("https://api.twilio.com/2010-04-01/Accounts/" + sid + "/Messages.json", {
     method: "POST",
     headers: { Authorization: "Basic " + btoa(sid + ":" + token), "Content-Type": "application/x-www-form-urlencoded" },
