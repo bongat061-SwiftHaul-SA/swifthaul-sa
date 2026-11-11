@@ -47,6 +47,8 @@ if(!["sa_citizen","foreign_national"].includes(identityType))return reply(400,{e
  if(!validDate(discExpiry)||Date.parse(discExpiry+"T00:00:00")<=Date.now()||!validDate(insuranceExpiry)||Date.parse(insuranceExpiry+"T00:00:00")<=Date.now())return reply(400,{error:"vehicle_disc_and_insurance_must_be_current"});
  if(!form.get("enatis_certificate")&&!form.get("fleet_lease_agreement"))return reply(400,{error:"enatis_or_fleet_lease_document_required"});
  if(!validDate(proofDate)||Date.now()-Date.parse(proofDate+"T00:00:00")>92*86400000||Date.parse(proofDate+"T00:00:00")>Date.now())return reply(400,{error:"proof_of_residence_must_be_under_three_months_old"});
+ if(identityType==="foreign_national"&&(!validDate(text(form.get("passport_expiry"),10))||Date.parse(text(form.get("passport_expiry"),10)+"T00:00:00")<=Date.now()||!validDate(text(form.get("work_permit_expiry"),10))||Date.parse(text(form.get("work_permit_expiry"),10)+"T00:00:00")<=Date.now()))return reply(400,{error:"passport_and_work_permit_must_be_current"});
+ if(!validDate(text(form.get("registration_document_expiry"),10))||Date.parse(text(form.get("registration_document_expiry"),10)+"T00:00:00")<=Date.now())return reply(400,{error:"registration_document_must_be_current"});
  for(const t of requiredFiles){const f=form.get(t);if(!(f instanceof File)||f.size<1||f.size>10485760||!allowed.has(f.type))return reply(400,{error:"missing_or_invalid_document_"+t});}
  if(prdp){const f=form.get("prdp");if(!(f instanceof File)||f.size<1||f.size>10485760||!allowed.has(f.type))return reply(400,{error:"prdp_document_required"});}
  const bank=text(form.get("bank_name"),40),holder=text(form.get("account_holder"),120),account=text(form.get("account_number"),30);
