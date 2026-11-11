@@ -34,6 +34,11 @@ on:
       - "public/supabase-config.js"
       - "apps/driver/public/supabase-config.js"
       - "supabase/functions/account-pin/**"
+      - "supabase/functions/account-signin-notify/**"
+      - "supabase/functions/customer-welcome-notify/**"
+      - "supabase/functions/driver-application-notify/**"
+      - "supabase/migrations/*account_signin_notifications*" 
+      - "tests/auth-email-notifications-static-check.cjs"
       - "supabase/migrations/*login_pins*"
       - "tests/account-pin-static-check.cjs"
       - "tests/account-self-service-static-check.cjs"
@@ -63,6 +68,8 @@ jobs:
           node --check apps/company/public/account-deletions.js
       - name: Verify unified dark-premium interface across apps
         run: node tests/unified-dark-theme-static-check.cjs
+      - name: Verify account email notification wiring
+        run: node tests/auth-email-notifications-static-check.cjs
       - name: Verify secure PIN wiring
         run: node tests/account-pin-static-check.cjs
       - name: Verify account self-service flows
