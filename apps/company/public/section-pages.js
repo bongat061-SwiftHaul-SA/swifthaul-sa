@@ -14,7 +14,6 @@
   const offers = root.querySelector('#offer-dispatch');
   const finance = root.querySelector('#financial-dashboard');
   const insurance = root.querySelector('#insurance-management');
-  const customerInsurance = root.querySelector('#customer-cargo-insurance-admin');
   const reports = document.createElement('section');
   reports.id = 'monthly-reports';
   reports.className = 'panel';
@@ -40,16 +39,15 @@
     refunds: { title:'Cancellations & refunds.', description:'Review customer cancellation requests and refund records.', show:['refunds'] },
     payouts: { title:'Driver payouts.', description:'Review payout requests and record completed manual EFT payments.', show:['payouts'] },
     'cash-reconciliation': { title:'Cash reconciliation.', description:'Verify driver cash deposits against company bank records and clear cash-held liabilities.', show:['cash-reconciliation'] },
-    'eft-payments': { title:'Customer EFT verification.', description:'Match customer bank transfers to bank statements before marking bookings paid.', show:['eft-payments'] },
     offers: { title:'Delivery offer dispatch.', description:'Manage premium-first offers for eligible unassigned deliveries.', show:['offers'] },
     finance: { title:'Financial dashboard.', description:'Review reconciled platform, driver, payment and payout figures.', show:['finance'] },
     reports: { title:'Monthly reports.', description:'Export a dated CSV snapshot of the current administrator financial summary.', show:['reports'] },
     insurance: { title:'Driver insurance management.', description:'Verify Premium eligibility and manage insurer-issued driver policies.', show:['insurance'] },
-    'customer-insurance': { title:'Customer parcel insurance enquiries.', description:'Review customers who requested follow-up about possible Nedbank goods-in-transit cover. Enquiries are not insurance policies.', show:['customer-insurance'] },
     'insurance-claims': { title:'Insurance claims review.', description:'Review dispatch-bound GPS evidence, route compliance and insurer decisions.', show:['insurance-claims'] },
+    deletions: { title:'Account deletion requests.', description:'Review customer and driver account closure requests while protecting active deliveries and financial records.', show:['deletions'] },
     account: { title:'Company account.', description:'Company administrator profile and support information.', show:['account'] }
   };
-  const nodes = { stats, dispatches, drivers, account, refunds, payouts, offers, finance, reports, insurance, "insurance-claims": root.querySelector("#insurance-claims-admin"), "customer-insurance": customerInsurance, "cash-reconciliation": root.querySelector("#cash-reconciliation"), "eft-payments": root.querySelector("#customer-eft-payments") };
+  const nodes = { stats, dispatches, drivers, account, refunds, payouts, offers, finance, reports, insurance, "insurance-claims": root.querySelector("#insurance-claims-admin"), deletions: root.querySelector("#account-deletions"), "cash-reconciliation": root.querySelector("#cash-reconciliation") };
   function render(key, updateUrl) {
     const page = pages[key] || pages.overview;
     Object.entries(nodes).forEach(([name,node]) => { if(node) node.hidden = !page.show.includes(name); });
@@ -58,6 +56,8 @@
     if (aside) aside.hidden = ![drivers,account].some(node => node && !node.hidden);
     if (heading) heading.textContent = page.title;
     if (description) description.textContent = page.description;
+    const navCurrent = nav?.closest('.workspace-navigation')?.querySelector('[data-nav-current]');
+    if (navCurrent) navCurrent.textContent = page.title.replace(/\.$/,'');
     nav?.querySelectorAll('a').forEach(link => {
       const selected = link.dataset.page === key;
       link.classList.toggle('is-active',selected);
@@ -65,6 +65,7 @@
     });
     document.title = 'SwiftHaul SA · Company · ' + page.title.replace(/\.$/,'');
     if(updateUrl) history.pushState({page:key},'', '?page='+encodeURIComponent(key));
+    nav?.closest('details')?.removeAttribute('open');
     window.scrollTo({top:0,behavior:'instant'});
   }
   nav?.querySelectorAll('a').forEach(link => link.addEventListener('click',event => {
