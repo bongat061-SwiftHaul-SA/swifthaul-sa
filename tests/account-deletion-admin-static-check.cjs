@@ -1,0 +1,16 @@
+const fs=require('node:fs');const assert=require('node:assert/strict');
+const edge=fs.readFileSync('supabase/functions/account-deletion-admin/index.ts','utf8');
+const ui=fs.readFileSync('apps/company/public/account-deletions.js','utf8');
+const html=fs.readFileSync('apps/company/public/index.html','utf8');
+const pages=fs.readFileSync('apps/company/public/section-pages.js','utf8');
+assert.match(edge,/auth\.auth\.getUser\(token\)/);
+assert.match(edge,/actor\.role !== "admin"/);
+assert.match(edge,/account_deletion_requests/);
+assert.match(edge,/start_review: "reviewing", approve: "approved", reject: "rejected"/);
+assert.match(edge,/The account has not been deleted/);
+assert.match(ui,/account-deletion-admin/);
+assert.match(ui,/Approval only authorizes the controlled closure process/);
+assert.match(html,/account-deletions\.js/);
+assert.match(html,/data-page="deletions"/);
+assert.match(pages,/deletions: \{ title:/);
+process.stdout.write('Company Admin deletion review checks passed.\n');
