@@ -1,10 +1,11 @@
 name: Build separate SwiftHaul browser previews
-# Rebuild previews from the exact current staging commit for review.
+# Build browser preview artifacts from the staging or release-candidate commit for review.
 
 on:
   push:
     branches:
       - feature/dark-premium-customer-driver-staging
+      - release/dark-premium-mainline-candidate
     paths:
       - 'public/**'
       - 'apps/driver/public/**'
