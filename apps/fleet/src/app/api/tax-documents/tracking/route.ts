@@ -1,7 +1,7 @@
 import {NextRequest,NextResponse} from "next/server";
 import {createHmac} from "node:crypto";
 import {createClient} from "@supabase/supabase-js";
-import {desc,eq} from "drizzle-orm";
+import {and,desc,eq} from "drizzle-orm";
 import {db} from "@/db/client";
 import {taxDocuments} from "@/db/schema";
 export const runtime="nodejs";export const dynamic="force-dynamic";
@@ -15,6 +15,9 @@ export async function GET(req:NextRequest){
 export async function POST(req:NextRequest){
  try{const body=await req.json();const code=String(body.tracking_code||"").trim(),name=String(body.billing_company_name||"").trim(),vat=String(body.billing_vat_number||"").replace(/\\D/g,""),address=String(body.billing_address||"").trim();if(!code||!name||!address|| (vat&& !/^\\d{10}$/.test(vat)))return NextResponse.json({error:"Provide a tracking code, company name and billing address. VAT number must contain 10 digits when supplied."},{status:400});
  const svc=admin();const {data:b,error}=await svc.from("customer_bookings").select("waybill,paid_at,price").eq("tracking_code",code).maybeSingle();if(error||!b||!b.paid_at)return NextResponse.json({error:"Only paid deliveries can request a tax invoice."},{status:404});if(Number(b.price||0)<=5000)return NextResponse.json({error:"A full tax invoice is only required for supplies exceeding R5,000. Download the receipt or request an invoice through support."},{status:409});
+ const [issued]=await db.select().from(taxDocuments).where(and(eq(taxDocuments.orderId,b.waybill),eq(taxDocuments.documentType,"sender_tax_invoice"))).orderBy(desc(taxDocuments.issuedAt)).limit(1);
+ if(issued?.storageKey)return NextResponse.json({ok:true,document_id:issued.id,document_number:issued.documentNumber,already_issued:true});
+ if(issued&&!issued.storageKey)return NextResponse.json({error:"Your full tax invoice is already being prepared. Please try again shortly."},{status:409});
  const {error:updateError}=await svc.from("customer_bookings").update({billing_company_name:name,billing_vat_number:vat||null,billing_address:address}).eq("waybill",b.waybill);if(updateError)return NextResponse.json({error:"Billing details could not be saved."},{status:500});
  const secret=process.env.TAX_DOCUMENT_WEBHOOK_SECRET;if(!secret)return NextResponse.json({error:"Invoice generation is not configured on this server."},{status:503});
  const payload=JSON.stringify({event:"sender.invoice.requested",waybill:b.waybill});const signature=createHmac("sha256",secret).update(payload).digest("hex");const origin=new URL(req.url).origin;
