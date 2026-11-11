@@ -30,7 +30,7 @@ jobs:
       - run: npm install --ignore-scripts --no-audit --no-fund
       - run: node --check public/customer.js
       - run: node --check public/address-autocomplete.js
-      - run: node --check apps/driver/public/payouts.js
+      - run: node --check apps/driver/public/payouts.js\n      - run: node --check apps/driver/public/driver-earnings.js
       - run: node --input-type=module --check < public/tracking.js
       - run: node tests/paystack-tracking-static-check.cjs
       - run: node scripts/build-pages.cjs
