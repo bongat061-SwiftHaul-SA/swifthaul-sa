@@ -11,6 +11,16 @@ const form = document.getElementById('auth-form');
 const status = document.getElementById('auth-status');
 const submit = form.querySelector('[type=submit]');
 let mode = 'login', currentUser = null;
+const CUSTOMER_DEVICE_EMAIL_KEY = 'swifthaul.customer.pin-account';
+function rememberCustomerEmail(email) {
+  if (typeof email !== 'string' || !email.includes('@')) return;
+  try { localStorage.setItem(CUSTOMER_DEVICE_EMAIL_KEY, email.trim().toLowerCase()); }
+  catch (error) { console.warn('This device could not remember the Customer PIN account:', error); }
+}
+function rememberedCustomerEmail() {
+  try { return localStorage.getItem(CUSTOMER_DEVICE_EMAIL_KEY) || ''; }
+  catch { return ''; }
+}
 const pinLabel = document.createElement('label');
 pinLabel.textContent = '6-digit PIN';
 pinLabel.hidden = true;
@@ -45,8 +55,8 @@ function setMode(next) {
   document.getElementById('auth-title').textContent = titles[mode];
   form.elements.name.closest('label').hidden = !signup;
   form.elements.name.required = signup;
-  form.elements.email.closest('label').hidden = reset;
-  form.elements.email.required = !reset;
+  form.elements.email.closest('label').hidden = reset || pinLogin;
+  form.elements.email.required = !reset && !pinLogin;
   form.elements.password.closest('label').hidden = recovery || pinLogin;
   form.elements.password.required = !recovery && !pinLogin;
   pinLabel.hidden = !pinLogin;
@@ -116,6 +126,8 @@ async function validateAccount(session) {
   if (!user || user.role !== 'customer') throw new Error('This account is not registered as a customer.');
   if (user.accountStatus !== 'active') throw new Error('Your customer account is not active. Contact SwiftHaul support.');
   currentUser = user;
+  // Remember the verified account on this device so PIN sign-in needs no email field.
+  rememberCustomerEmail(session?.user?.email || user.email);
   // Send customer welcome email only after authenticated session and customer role validation.
   // This also covers first sign-in after email confirmation and social signup completion.
   if (session?.access_token) {
@@ -150,8 +162,18 @@ form.addEventListener('submit', async event => {
   try {
     const email = form.elements.email.value.trim().toLowerCase(), password = form.elements.password.value;
     if (mode === 'pin') {
+      const pinAccountEmail = rememberedCustomerEmail();
+      if (!pinAccountEmail) {
+        status.textContent = 'For your first sign-in on this device, use your email and password. Then create your six-digit PIN.';
+        setMode('login');
+        return;
+      }
+      if (!/^[0-9]{6}$/.test(pinInput.value)) {
+        status.textContent = 'Enter your six-digit PIN.';
+        return;
+      }
       const { data: pinData, error: pinError } = await supabase.functions.invoke('account-pin', {
-        body: { action: 'login', app_type: 'customer', email, pin: pinInput.value }
+        body: { action: 'login', app_type: 'customer', email: pinAccountEmail, pin: pinInput.value }
       });
       if (pinError) throw new Error(pinData?.error || pinError.message || 'PIN sign-in failed.');
       const { data: sessionData, error: sessionError } = await supabase.auth.setSession(pinData.session);
