@@ -397,3 +397,14 @@ body[data-app="driver"] #driver-account-status{color:#d4dbe5!important;font-size
 .onboarding-actions button:disabled{opacity:.45;cursor:not-allowed}
 #onboarding-message{min-height:22px;color:#c5d0dd;font-size:12px;line-height:1.6}
 @media(max-width:640px){.driver-onboarding{padding:16px!important}.onboarding-steps{grid-template-columns:repeat(2,minmax(0,1fr))}.onboarding-grid{grid-template-columns:1fr}.onboarding-actions{position:sticky;bottom:0;padding:10px 0;background:#111720;z-index:2}.onboarding-actions button{flex:1;padding:9px 10px}}
+
+.onboarding-followup{display:grid;gap:14px;margin:16px 0}
+.onboarding-notifications,.onboarding-reuploads{padding:14px;border:1px solid #394657;border-radius:14px;background:#151e2a}
+.onboarding-notifications h3,.onboarding-reuploads h3{margin:0 0 10px;color:#f3f6fa;font-size:14px}
+.onboarding-notice,.onboarding-reupload{display:grid;gap:7px;padding:11px 0;border-top:1px solid #2f3b4b}
+.onboarding-notice strong,.onboarding-reupload strong{color:#edf3fa;font-size:12px;text-transform:capitalize}
+.onboarding-notice p{margin:0;color:#b7c3d1;font-size:11px;line-height:1.6}
+.onboarding-reupload input{width:100%;min-height:40px;margin:0;padding:8px 10px;border:1px solid #3a4655;border-radius:10px;background:#0c121a;color:#eef3f8;font-size:11px}
+.onboarding-reupload label{color:#c5d0dd;font-size:11px}
+.onboarding-reupload button{justify-self:start;min-height:38px;padding:9px 14px;border:1px solid #e9edf2;border-radius:10px;background:#e9edf2;color:#10151d;font-size:11px;font-weight:800}
+.onboarding-reupload button:disabled{opacity:.55}
