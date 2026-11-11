@@ -13,7 +13,7 @@ Deno.serve(async(req:Request)=>{
  const tracking=String(req.method==="GET"?params.get("tracking_code")||"":body.tracking_code||"").trim().slice(0,100);
  if(!tracking)return reply(400,{error:"tracking_code_required"});
  const db=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});
- const {data:order,error}=await db.from("customer_bookings").select("waybill,tracking_code,status,driver_user_id,completed_at,driver_profiles:driver_user_id(user_id)").eq("tracking_code",tracking).maybeSingle();
+ const {data:order,error}=await db.from("customer_bookings").select("waybill,tracking_code,status,driver_user_id,completed_at").eq("tracking_code",tracking).maybeSingle();
  if(error||!order)return reply(404,{error:"tracking_code_invalid"});
  if(order.status!=="delivered")return reply(409,{error:"rating_available_after_delivery"});
  const {data:vehicle}=await db.from("fleet_vehicles").select("fleet_id").eq("assigned_driver_id",order.driver_user_id).eq("is_active",true).maybeSingle();
