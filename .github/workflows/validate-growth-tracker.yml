@@ -8,6 +8,10 @@ on:
       - "apps/fleet/src/db/schema.ts"
       - "supabase/migrations/*customer_driver_growth_milestones*"
       - "tests/growth-milestones-static-check.cjs"
+      - "public/auth.js"
+      - "public/customer.html"
+      - "apps/driver/public/auth.js"
+      - "apps/driver/public/index.html"
       - ".github/workflows/validate-growth-tracker.yml"
   push:
     branches:
