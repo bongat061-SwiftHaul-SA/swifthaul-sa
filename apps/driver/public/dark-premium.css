@@ -340,3 +340,19 @@ body[data-app="driver"] .driver-account-settings .delete-profile{border-bottom:0
 body[data-app="driver"] .driver-account-settings .delete-profile button{background:#291b20!important;border-color:#75424b!important;color:#ffdce1!important}
 body[data-app="driver"] #driver-account-status{color:#d4dbe5!important;font-size:12px!important;line-height:1.6!important}
 @media(max-width:700px){body[data-app="driver"] #account-details .driver-account-settings{padding:14px!important}body[data-app="driver"] .driver-profile-photo{grid-template-columns:1fr!important}}
+
+
+/* Multi-delivery dispatch workspace */
+.driver-stacked-offers,.driver-multi-itinerary{display:grid;gap:12px;margin:14px 0;padding:16px;border:1px solid rgba(190,202,220,.16);border-radius:18px;background:linear-gradient(145deg,rgba(28,33,42,.96),rgba(12,15,20,.98));color:#f4f6fa}
+.driver-stacked-offers h3,.driver-multi-itinerary h3{margin:0;font-size:1rem;font-weight:750}
+.driver-offer-card,.driver-itinerary-stop{padding:14px;border:1px solid rgba(190,202,220,.13);border-radius:14px;background:rgba(255,255,255,.035)}
+.driver-offer-payout{font-weight:800;color:#dce6f4}
+.driver-offer-actions{display:flex;gap:10px;flex-wrap:wrap}
+.driver-offer-actions button,.driver-itinerary-stop button{min-height:40px;border-radius:10px}
+.driver-itinerary-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.driver-active-order-counter{padding:6px 10px;border-radius:999px;background:rgba(145,169,203,.16);font-size:.78rem;font-weight:750}
+.driver-stacked-preference{display:flex;align-items:center;gap:9px;color:#c9d1dd;font-size:.86rem}
+.driver-itinerary-stops{display:grid;gap:10px;margin:0;padding-left:24px}
+.driver-itinerary-stop{display:grid;gap:6px;color:#e8edf5}
+.driver-itinerary-stop span,.driver-itinerary-stop small{color:#aab5c4}
+.driver-itinerary-stop button{justify-self:start}
