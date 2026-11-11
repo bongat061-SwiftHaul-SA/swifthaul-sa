@@ -7,7 +7,7 @@ const migration = fs.readFileSync('supabase/migrations/20261111103000_add_custom
 
 assert.match(migration, /private\.account_login_pins/);
 assert.match(migration, /extensions\.crypt\(p_pin,extensions\.gen_salt\('bf',12\)\)/);
-assert.match(migration, /failed_attempts >= 5/);
+assert.match(migration, /v_attempts>=5/);
 assert.match(migration, /interval '15 minutes'/);
 assert.match(migration, /revoke all on function public\.verify_account_login_pin[\s\S]*from public,anon,authenticated/i);
 assert.match(migration, /grant execute on function public\.verify_account_login_pin[\s\S]*to service_role/i);
