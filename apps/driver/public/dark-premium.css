@@ -356,3 +356,5 @@ body[data-app="driver"] #driver-account-status{color:#d4dbe5!important;font-size
 .driver-itinerary-stop{display:grid;gap:6px;color:#e8edf5}
 .driver-itinerary-stop span,.driver-itinerary-stop small{color:#aab5c4}
 .driver-itinerary-stop button{justify-self:start}
+
+.driver-offer-countdown{color:#f1c987;font-size:.78rem;font-weight:700}
