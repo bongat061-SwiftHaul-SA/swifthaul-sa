@@ -42,7 +42,7 @@ export async function GET(req:NextRequest){
   let cBase=customers-[...byDay.values()].reduce((s,x)=>s+x.customers,0),dBase=drivers-[...byDay.values()].reduce((s,x)=>s+x.drivers,0),cumulativeC=cBase,cumulativeD=dBase;
   const next=(category:string)=>milestones.find(m=>m.category===category&&!m.isUnlocked)?.targetCount||500;
   const nextC=next("customers"),nextD=next("drivers");
-  const chart=[...byDay.entries()].map(([date,v],i)=>{cumulativeC+=v.customers;cumulativeD+=v.drivers;return {date,customersDaily:v.customers,driversDaily:v.drivers,customersCumulative:cumulativeC,driversCumulative:cumulativeD,expectedCustomers:Math.round(cBase+(Math.max(0,nextC-cBase)*(i+1)/30)),expectedDrivers:Math.round(dBase+(Math.max(0,nextD-dBase)*(i+1)/30))};});
+  const chart=[...byDay.entries()].map(([date,v],i)=>{cumulativeC+=v.customers;cumulativeD+=v.drivers;return {date,customersDaily:v.customers,driversDaily:v.drivers,customersCumulative:cumulativeC,driversCumulative:cumulativeD,expectedCustomers:Math.round(cBase+(Math.max(0,nextC-cBase)*(i+1)/30)),expectedDrivers:Math.round(dBase+(Math.max(0,nextD-dBase)*(i+1)/30)),expectedCustomersDaily:Math.max(0,(nextC-cBase)/30),expectedDriversDaily:Math.max(0,(nextD-dBase)/30)};});
   const last7Start=startSast(dayKey(addDays(now,-6)));const last7=chartRows.filter(x=>x.createdAt>=last7Start).length,rate=Math.round(last7/7*100)/100;
   const nextCombined=milestones.find(m=>m.category==="combined_users"&&!m.isUnlocked)?.targetCount||500;
   const daysTo=rate>0?Math.ceil(Math.max(0,nextCombined-combined)/rate):null;
