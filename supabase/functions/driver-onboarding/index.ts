@@ -54,7 +54,7 @@ Deno.serve(async(req:Request)=>{
  const licenceCode=text(form.get("licence_code"),5),licenceExpiry=text(form.get("licence_expiry"),10),vehicleType=text(form.get("vehicle_type"),30);
  const plate=text(form.get("registration_plate"),20),year=Number(text(form.get("vehicle_year"),4));
  const idNumber=text(form.get("id_number"),13),dob=text(form.get("date_of_birth"),10),passport=text(form.get("passport_number"),30),trn=text(form.get("traffic_register_number"),30);
- const prdp=text(form.get("prdp_holder"),5)==="true",gvm=Number(text(form.get("vehicle_gvm_kg"),8)),prdpCategory=text(form.get("prdp_category"),30),prdpExpiry=text(form.get("prdp_expiry"),10);
+ const prdp=["on","true"].includes(text(form.get("prdp_holder"),5)),gvm=Number(text(form.get("vehicle_gvm_kg"),8)),prdpCategory=text(form.get("prdp_category"),30),prdpExpiry=text(form.get("prdp_expiry"),10);
  const requiredFiles=identityType==="sa_citizen"?["id_front","id_back","profile_selfie"]:["passport","work_permit"];
  requiredFiles.push("licence_front","licence_back","vehicle_licence_disc","vehicle_insurance","proof_of_address");
 if(!["sa_citizen","foreign_national"].includes(identityType))return reply(400,{error:"valid_identity_type_required"});
