@@ -14,9 +14,16 @@ const status = document.getElementById('auth-status');
 const submit = form.querySelector('[type=submit]');
 let mode = 'login';
 let currentUser = null;
+const supportsPin = app === 'company';
+const pinLabel = document.createElement('label'); pinLabel.textContent = '6-digit PIN'; pinLabel.hidden = true;
+const pinInput = document.createElement('input'); pinInput.name='loginPin'; pinInput.type='password'; pinInput.inputMode='numeric'; pinInput.pattern='[0-9]{6}'; pinInput.maxLength=6; pinInput.autocomplete='one-time-code'; pinInput.placeholder='Enter your 6-digit PIN'; pinLabel.append(pinInput); form.insertBefore(pinLabel, submit);
+const pinLoginButton=document.createElement('button'); pinLoginButton.type='button'; pinLoginButton.textContent='Use 6-digit PIN'; form.after(pinLoginButton);
+pinLoginButton.addEventListener('click',()=>setMode(mode==='pin'?'login':'pin'));
+let pinPanel=null;
 
 const titles = {
   login: 'Welcome back.',
+  pin: 'Sign in with your six-digit PIN.',
   signup: 'Join the SwiftHaul driver network.',
   recovery: 'Forgot your password?',
   reset: 'Choose a new password.'
@@ -27,19 +34,23 @@ function setMode(next) {
   const signup = mode === 'signup';
   const recovery = mode === 'recovery';
   const reset = mode === 'reset';
+  const pinLogin = mode === 'pin';
   document.getElementById('auth-title').textContent = titles[mode];
   form.elements.name.closest('label').hidden = !signup;
   form.elements.name.required = signup;
   form.elements.email.closest('label').hidden = reset;
   form.elements.email.required = !reset;
-  form.elements.password.closest('label').hidden = recovery;
-  form.elements.password.required = !recovery;
+  form.elements.password.closest('label').hidden = recovery || pinLogin;
+  form.elements.password.required = !recovery && !pinLogin;
+  pinLabel.hidden = !pinLogin; pinInput.required = pinLogin;
+  pinLoginButton.hidden = !['login','pin'].includes(mode);
+  pinLoginButton.textContent = pinLogin ? 'Use password instead' : 'Use 6-digit PIN';
   form.elements.password.minLength = mode === 'login' ? 1 : 10;
   form.elements.password.autocomplete = mode === 'login' ? 'current-password' : 'new-password';
   document.getElementById('terms-acceptance').hidden = !signup;
   form.elements.acceptTerms.required = signup;
   form.elements.acceptTerms.checked = false;
-  submit.textContent = ({login:'Sign in',signup:'Create driver account',recovery:'Send reset link',reset:'Save new password'})[mode];
+  submit.textContent = ({login:'Sign in with password',pin:'Sign in with PIN',signup:'Create driver account',recovery:'Send reset link',reset:'Save new password'})[mode];
   status.textContent = '';
 }
 
@@ -54,6 +65,28 @@ function showWorkspace(user) {
   authScreen.hidden = true;
   workspace.hidden = false;
   document.dispatchEvent(new CustomEvent('account-ready', { detail: user }));
+}
+
+async function refreshPinPanel(session) {
+  if (!supportsPin || !session?.access_token) return;
+  const { data, error } = await supabase.functions.invoke('account-pin', {body:{action:'status',app_type:'company'},headers:{Authorization:'Bearer '+session.access_token}});
+  if(error){console.warn('Company PIN status unavailable:',error.message);return;}
+  if(!pinPanel){
+    pinPanel=document.createElement('section');pinPanel.id='account-pin-security';pinPanel.className='panel';
+    pinPanel.innerHTML='<h2>Quick sign-in security</h2><p data-pin-state></p><button type="button" data-pin-edit>Create 6-digit PIN</button><form data-pin-form hidden><label>Create 6-digit PIN<input name="pin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="new-password" required></label><label>Confirm 6-digit PIN<input name="confirm_pin" type="password" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="new-password" required></label><label>Confirm account password<input name="password" type="password" autocomplete="current-password" required></label><button class="primary" type="submit">Save PIN</button><p data-pin-message role="status"></p></form>';
+    workspace.querySelector('#account-details')?.append(pinPanel);
+    pinPanel.querySelector('[data-pin-edit]').addEventListener('click',()=>{const form=pinPanel.querySelector('[data-pin-form]');form.hidden=!form.hidden;});
+    pinPanel.querySelector('[data-pin-form]').addEventListener('submit',async event=>{
+      event.preventDefault();const setup=event.currentTarget,pin=setup.elements.pin.value,message=pinPanel.querySelector('[data-pin-message]');
+      if(!/^\\d{6}$/.test(pin)||pin!==setup.elements.confirm_pin.value){message.textContent='Enter the same six-digit PIN in both fields.';return;}
+      const {data:current}=await supabase.auth.getSession();if(!current.session){message.textContent='Please sign in again before changing your PIN.';return;}
+      const {data:saved,error:saveError}=await supabase.functions.invoke('account-pin',{body:{action:'set',app_type:'company',pin,password:setup.elements.password.value},headers:{Authorization:'Bearer '+current.session.access_token}});
+      if(saveError){message.textContent=saved?.error||saveError.message;return;}
+      setup.reset();setup.hidden=true;message.textContent='Your six-digit PIN has been saved securely.';await refreshPinPanel(current.session);
+    });
+  }
+  pinPanel.querySelector('[data-pin-state]').textContent=data?.has_pin?'A six-digit PIN is enabled for this Company account. You can change it here.':'Create your own six-digit PIN for quicker sign-in. Password sign-in remains available.';
+  pinPanel.querySelector('[data-pin-edit]').textContent=data?.has_pin?'Change PIN':'Create 6-digit PIN';
 }
 
 async function validateAccount(session) {
@@ -72,6 +105,7 @@ async function validateAccount(session) {
   }
   if (user.accountStatus !== 'active') throw new Error('Your account is not active. Please contact SwiftHaul support.');
   showWorkspace(user);
+  await refreshPinPanel(session);
 }
 
 async function openWorkspace() {
@@ -93,6 +127,13 @@ form.addEventListener('submit', async event => {
   try {
     const email = form.elements.email.value.trim().toLowerCase();
     const password = form.elements.password.value;
+    if(mode==='pin'){
+      if(!/^\\d{6}$/.test(pinInput.value))throw new Error('Enter your six-digit PIN.');
+      const {data:pinData,error:pinError}=await supabase.functions.invoke('account-pin',{body:{action:'login',app_type:'company',email,pin:pinInput.value}});
+      if(pinError)throw new Error(pinData?.error||pinError.message||'PIN sign-in failed.');
+      const {data:sessionData,error:sessionError}=await supabase.auth.setSession(pinData.session);
+      if(sessionError)throw sessionError;pinInput.value='';await validateAccount(sessionData.session);return;
+    }
     if (mode === 'recovery') {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: window.location.href.split('#')[0]
@@ -152,28 +193,6 @@ document.querySelectorAll('[data-auth-mode]').forEach(el => {
     setMode(requested);
   });
 });
-document.querySelectorAll('[data-social-provider]').forEach(button => button.addEventListener('click', async () => {
-  const provider = button.dataset.socialProvider;
-  if (!['google', 'apple'].includes(provider)) return;
-  if (mode !== 'login') {
-    status.textContent = 'Return to Sign in to use Google or Apple.';
-    return;
-  }
-  button.disabled = true;
-  status.textContent = 'Connecting to ' + (provider === 'google' ? 'Google' : 'Apple') + '…';
-  sessionStorage.setItem('swifthaul-social-intent', JSON.stringify({ app: 'company', mode: 'login' }));
-  try {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo: location.origin + location.pathname }
-    });
-    if (error) throw error;
-  } catch (error) {
-    sessionStorage.removeItem('swifthaul-social-intent');
-    status.textContent = error?.message || 'Social sign-in could not be started.';
-    button.disabled = false;
-  }
-}));
 
 document.getElementById('sign-out').addEventListener('click', async () => {
   const { error } = await supabase.auth.signOut();
