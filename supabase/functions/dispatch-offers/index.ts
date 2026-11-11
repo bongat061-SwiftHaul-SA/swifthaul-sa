@@ -26,7 +26,7 @@ Deno.serve(async req => {
   if(req.method==="GET") {
     if(!driver) return reply(403,{error:"driver_account_required"});
     const {data:profile}=await db.from("driver_profiles").select("is_online,online_updated_at,verification_status,allow_stacked_orders,vehicle_type").eq("user_id",actor).maybeSingle();
-    const {data:offers,error}=await db.from("driver_delivery_offers").select("id,waybill,priority_tier,distance_meters,offered_at,expires_at,status,customer_bookings(pickup,dropoff,vehicle,price,pickup_latitude,pickup_longitude,dropoff_latitude,dropoff_longitude,pickup_plus_code,dropoff_plus_code)").eq("driver_user_id",actor).eq("status","offered").gt("expires_at",new Date().toISOString()).order("offered_at",{ascending:false});
+    const {data:offers,error}=await db.from("driver_delivery_offers").select("id,waybill,priority_tier,priority_window_ends_at,distance_meters,offered_at,expires_at,status,customer_bookings(pickup,dropoff,vehicle,price,pickup_latitude,pickup_longitude,dropoff_latitude,dropoff_longitude,pickup_plus_code,dropoff_plus_code)").eq("driver_user_id",actor).eq("status","offered").gt("expires_at",new Date().toISOString()).order("offered_at",{ascending:false});
     if(error) return reply(500,{error:"offer_list_failed"});
     const {data:stops}=await db.from("driver_route_stops").select("lat,lng,sequence_order").eq("driver_id",actor).neq("status","completed").order("sequence_order");
     const distanceKm=(a:any,b:any)=>{const r=Math.PI/180,dl=(b.lat-a.lat)*r,dg=(b.lng-a.lng)*r,x=Math.sin(dl/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dg/2)**2;return 6371*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));};
@@ -86,7 +86,7 @@ Deno.serve(async req => {
     const {data:sent}=await db.from("driver_delivery_offers").select("driver_user_id,status").eq("waybill",booking.waybill);
     if((sent??[]).some(x=>x.status==="accepted")) return reply(409,{error:"delivery_offer_already_accepted"});
     const excluded=new Set((sent??[]).map(x=>x.driver_user_id));
-    const {data:drivers,error:de}=await db.from("driver_profiles").select("user_id,vehicle_type,is_online,verification_status,allow_stacked_orders").eq("is_online",true).eq("verification_status","approved");
+    const {data:drivers,error:de}=await db.from("driver_profiles").select("user_id,vehicle_type,is_online,verification_status,allow_stacked_orders,performance_tier").eq("is_online",true).eq("verification_status","approved");
     if(de) return reply(500,{error:"driver_candidate_lookup_failed"});
     const vehicleType=(value:string)=>{const v=value.toLowerCase();if(v.includes("motor"))return "motorbike";if(v.includes("bakkie")||v.includes("van")||v.includes("panel"))return "bakkie/panel van";if(v.includes("truck")||v.includes("ton"))return "truck";return "hatchback/sedan";};
     const {data:classes}=await db.from("vehicle_classes").select("vehicle_type,max_concurrent_orders");
@@ -117,17 +117,17 @@ Deno.serve(async req => {
     const {data:history}=await db.from("driver_delivery_offers").select("driver_user_id,offered_at").in("driver_user_id",ids).order("offered_at",{ascending:false}).limit(500);
     const last=new Map<string,number>();
     for(const h of history??[]) if(!last.has(h.driver_user_id)) last.set(h.driver_user_id,new Date(h.offered_at).getTime());
-    const ranked=eligible.map(d=>({d,premium:premium.has(d.user_id),meters:booking.pickup_latitude!=null&&booking.pickup_longitude!=null?Number.POSITIVE_INFINITY:undefined})).map(x=>{
+    const ranked=eligible.map(d=>({d,premium:premium.has(d.user_id),gold:d.performance_tier==="gold",meters:booking.pickup_latitude!=null&&booking.pickup_longitude!=null?Number.POSITIVE_INFINITY:undefined})).map(x=>{
       const candidate=(drivers??[]).find(d=>d.user_id===x.d.user_id)!;
       return {...x,rotation:last.get(candidate.user_id)??0};
-    }).sort((a,b)=>Number(b.premium)-Number(a.premium)||a.rotation-b.rotation);
+    }).sort((a,b)=>Number(b.gold)-Number(a.gold)||Number(b.premium)-Number(a.premium)||a.rotation-b.rotation);
     const chosen=ranked[0];
-    const expires=new Date(Date.now()+30_000).toISOString();
+    const expires=new Date(Date.now()+30_000).toISOString();\n    const priorityWindowEndsAt=chosen.gold?new Date(Date.now()+10_000).toISOString():null;
     const activeCount=(activeByDriver.get(chosen.d.user_id)||[]).length;
-    const {data:offer,error:oe}=await db.from("driver_delivery_offers").insert({waybill:booking.waybill,driver_user_id:chosen.d.user_id,priority_tier:activeCount>0?"add_on":chosen.premium?"premium":"standard",expires_at:expires}).select("id,driver_user_id,priority_tier,expires_at").single();
+    const {data:offer,error:oe}=await db.from("driver_delivery_offers").insert({waybill:booking.waybill,driver_user_id:chosen.d.user_id,priority_tier:activeCount>0?"add_on":chosen.gold?"gold":chosen.premium?"premium":"standard",priority_window_ends_at:priorityWindowEndsAt,expires_at:expires}).select("id,driver_user_id,priority_tier,expires_at").single();
     if(oe) return reply(500,{error:"offer_create_failed"});
     const payout=Number(booking.price||0)*0.75;
-    return reply(200,{offer,add_on:activeCount>0,net_payout_zar:Number(payout.toFixed(2)),active_order_count:activeCount,capacity:capacity.get(vehicleType(String(chosen.d.vehicle_type||"")))||1,rotation:"least-recently-offered",priority:"active premium drivers before standard drivers"});
+    return reply(200,{offer,add_on:activeCount>0,net_payout_zar:Number(payout.toFixed(2)),active_order_count:activeCount,capacity:capacity.get(vehicleType(String(chosen.d.vehicle_type||"")))||1,rotation:"least-recently-offered",priority:chosen.gold?"Gold performance priority · 10-second exclusive window":chosen.premium?"Active premium drivers before standard drivers":"Standard dispatch order",priority_window_ends_at:priorityWindowEndsAt});
   }
   return reply(400,{error:"unknown_action"});
 });
