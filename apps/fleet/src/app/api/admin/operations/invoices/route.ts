@@ -12,7 +12,7 @@ export async function GET(req:NextRequest){
  const from=month?new Date(month+"-01T00:00:00Z"):new Date(new Date().getUTCFullYear(),new Date().getUTCMonth(),1);
  const to=new Date(Date.UTC(from.getUTCFullYear(),from.getUTCMonth()+1,1));
  const docs=await db.select().from(taxDocuments).where(and(gte(taxDocuments.issuedAt,from),lt(taxDocuments.issuedAt,to))).orderBy(desc(taxDocuments.issuedAt)).limit(5000);
- const outputVat=docs.filter(d=>d.documentType==="sender_tax_invoice").reduce((sum,d)=>sum+Number(d.vatAmountZar||0),0);
+ const outputVat=docs.filter(d=>d.documentType==="sender_tax_invoice"||(d.documentType==="sender_receipt"&&Boolean((d.metadata as any)?.vat_registered))).reduce((sum,d)=>sum+Number(d.vatAmountZar||0),0);
  if(req.nextUrl.searchParams.get("format")==="zip"){
   const url=process.env.SUPABASE_URL||process.env.NEXT_PUBLIC_SUPABASE_URL||"",key=process.env.SUPABASE_SERVICE_ROLE_KEY||"";
   if(!key)return NextResponse.json({error:"Private document storage is not configured."},{status:503});
