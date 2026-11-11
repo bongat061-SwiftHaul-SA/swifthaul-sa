@@ -64,9 +64,14 @@ Deno.serve(async(req:Request)=>{
   if(!["approved","rejected"].includes(state))return reply(400,{error:"invalid_document_verification_status"});
   const reason=typeof body.rejection_reason==="string"?body.rejection_reason.trim().slice(0,500):"";
   if(state==="rejected"&&reason.length<3)return reply(400,{error:"rejection_reason_required"});
-  const {data:doc,error:lookupError}=await admin.from("driver_documents").select("id,driver_user_id,document_type").eq("id",body.document_id).maybeSingle();
+  const {data:doc,error:lookupError}=await admin.from("driver_documents").select("id,driver_user_id,document_type,expiry_date,issued_at").eq("id",body.document_id).maybeSingle();
   if(lookupError)return reply(500,{error:"document_lookup_failed"});
   if(!doc||doc.driver_user_id!==body.user_id)return reply(404,{error:"driver_document_not_found"});
+  if(state==="approved"){
+   const expiryRequired=["licence_front","licence_back","vehicle_licence_disc","vehicle_insurance","passport","work_permit","enatis_certificate","fleet_lease_agreement","prdp"].includes(doc.document_type);
+   if(expiryRequired&&(!doc.expiry_date||doc.expiry_date<today()))return reply(409,{error:"current_document_expiry_required"});
+   if(doc.document_type==="proof_of_address"&&(!doc.issued_at||doc.issued_at<new Date(Date.now()-92*86400000).toISOString().slice(0,10)||doc.issued_at>today()))return reply(409,{error:"proof_of_residence_must_be_under_three_months_old"});
+  }
   const {data:updated,error}=await admin.from("driver_documents").update({
    verification_status:state,review_status:state==="approved"?"accepted":"rejected",rejection_reason:state==="rejected"?reason:null,
    review_note:state==="rejected"?reason:null,reviewed_by:actorId,reviewed_at:new Date().toISOString()
