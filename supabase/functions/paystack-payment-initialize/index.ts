@@ -11,7 +11,8 @@ Deno.serve(async(req:Request)=>{
  if(!secret)return reply(503,{error:"paystack_secret_not_configured"});
  const auth=createClient(url,anon,{auth:{persistSession:false,autoRefreshToken:false}}),{data:u,error:ue}=await auth.auth.getUser(token);
  if(ue||!u.user)return reply(401,{error:"invalid_session"});
- const db=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});\n const digest=new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode("identity:"+u.user.id)));const ownerHash=Array.from(digest,b=>b.toString(16).padStart(2,"0")).join("");
+ const db=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});
+ const digest=new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode("identity:"+u.user.id)));const ownerHash=Array.from(digest,b=>b.toString(16).padStart(2,"0")).join("");
  const {data:profile,error:pe}=await db.from("user_profiles").select("role,account_status").eq("id",u.user.id).maybeSingle();
  if(pe||!profile)return reply(403,{error:"active_customer_account_required"});
  if(profile.role!=="customer"||profile.account_status!=="active")return reply(403,{error:"active_customer_account_required"});
