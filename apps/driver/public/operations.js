@@ -395,6 +395,7 @@ if (app === 'driver' || app === 'company') {
     card.className = 'order';
   card.dataset.deliveryStatus = order.status || '';
     card.dataset.waybill = order.waybill;
+    card.dataset.trackingCode = order.tracking_code || '';
     const title = document.createElement('h3');
     title.textContent = order.waybill;
     const route = document.createElement('p');
