@@ -41,7 +41,6 @@ create table if not exists public.tax_documents (
 create index if not exists tax_documents_order_idx on public.tax_documents(order_id,issued_at desc);
 create index if not exists tax_documents_driver_idx on public.tax_documents(driver_id,issued_at desc);
 create index if not exists tax_documents_fleet_idx on public.tax_documents(fleet_id,issued_at desc);
-create unique index if not exists tax_documents_source_reference_unique on public.tax_documents(source_reference) where source_reference is not null;
 alter table public.tax_documents enable row level security;
 revoke all on public.tax_documents from anon,authenticated;
 grant all on public.tax_documents to service_role;
