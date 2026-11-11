@@ -1,4 +1,5 @@
 name: Build separate SwiftHaul browser previews
+# Rebuild previews from the exact current staging commit for review.
 
 on:
   push:
