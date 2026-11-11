@@ -5,7 +5,7 @@ import { vehicleTariffs, surgeRules, tariffSettings, tariffQuotes } from "@/db/s
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-type VehicleType = "motorbike" | "hatchback_sedan" | "bakkie_van" | "truck";
+type VehicleType = "motorbike" | "hatchback_sedan" | "bakkie" | "truck";
 const money = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
 const validTypes: VehicleType[] = ["motorbike","hatchback_sedan","bakkie_van","truck"];
 
