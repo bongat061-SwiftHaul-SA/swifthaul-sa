@@ -11,7 +11,7 @@ const cors = {
 const reply = (status: number, body: Record<string, unknown>) =>
   new Response(JSON.stringify(body), { status, headers: cors });
 const validText = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0 && v.length <= 500;
-const validZaMobile = (v: unknown): v is string => typeof v === "string" && /^(?:\+27|0)6[0-9]{8}$/.test(v.replace(/[\s-]/g,""));
+const validZaMobile = (v: unknown): v is string => typeof v === "string" && /^(?:\+27|0)[6-8][0-9]{8}$/.test(v.replace(/[\s-]/g,""));
 const baseFees = { bike: 40, van: 80, truck: 180 } as const;
 type Vehicle = keyof typeof baseFees;
 class InputError extends Error { status: number; constructor(message: string, status = 400) { super(message); this.status = status; } }
@@ -110,7 +110,7 @@ Deno.serve(async (req: Request) => {
 
   if (req.method === "GET") {
     const { data, error } = await admin.from("customer_bookings")
-      .select("waybill,pin,tracking_code,recipient_phone,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,wallet_refund_used,wallet_promo_used,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,nedbank_cargo_insurance_interest,status")
+      .select("waybill,pin,tracking_code,recipient_phone,parcel_notes,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,wallet_refund_used,wallet_promo_used,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,nedbank_cargo_insurance_interest,status")
       .eq("owner_hash", owner).order("created_at", { ascending: false }).limit(100);
     if (error) return reply(500, { error: "booking_list_failed" });
     const { data: wallet, error: walletError } = await admin.from("wallet_accounts")
@@ -184,13 +184,13 @@ Deno.serve(async (req: Request) => {
 
   if (body.action !== "book" || typeof body.quote_id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.quote_id) ||
       body.terms_accepted !== true || body.terms_version !== "2026-11-10-protection-terms-only" ||
-      typeof body.recipient !== "string" || !body.recipient.trim() || body.recipient.length > 500 || !validZaMobile(body.recipient_phone))
+      typeof body.recipient !== "string" || !body.recipient.trim() || body.recipient.length > 120 || !validZaMobile(body.recipient_phone) || (body.parcel_notes!==undefined&&(typeof body.parcel_notes!=="string"||body.parcel_notes.length>500)))
     return reply(400, { error: "calculate_a_quote_and_enter_recipient" });
   if (body.nedbank_cargo_insurance_interest !== undefined && typeof body.nedbank_cargo_insurance_interest !== "boolean") return reply(400, { error: "invalid_insurance_enquiry_selection" });
   const { data: existing } = await admin.from("customer_bookings")
     .select("waybill,pin,tracking_code,recipient_phone,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,nedbank_cargo_insurance_interest")
     .eq("quote_id", body.quote_id).eq("owner_hash", owner).maybeSingle();
-  if (existing) return reply(200, { order: existing });
+  if (existing) return reply(200, { order: {...existing,pin:existing.paid_at?existing.pin:null} });
   const { data: quote, error: quoteError } = await admin.from("delivery_quotes")
     .select("id,pickup,dropoff,vehicle,distance_meters,price_band,price,load,distance_fee,expires_at")
     .eq("id", body.quote_id).eq("owner_hash", owner).maybeSingle();
@@ -246,7 +246,7 @@ Deno.serve(async (req: Request) => {
   const pinCode = String(crypto.getRandomValues(new Uint32Array(1))[0] % 9000 + 1000);
   const insert = {
     waybill, owner_hash: owner, pin: pinCode, pickup: quote.pickup, dropoff: quote.dropoff,
-    recipient: body.recipient.trim(), recipient_phone: String(body.recipient_phone).replace(/[\s-]/g,"").replace(/^0/,"+27"), vehicle: quote.vehicle, price: quote.price,
+    recipient: body.recipient.trim(), parcel_notes: typeof body.parcel_notes==="string"?body.parcel_notes.trim():"", recipient_phone: String(body.recipient_phone).replace(/[\s-]/g,"").replace(/^0/,"+27"), vehicle: quote.vehicle, price: quote.price,
     distance_meters: distance, price_band: quote.price_band, quote_id: quote.id,
     load: quote.load, distance_fee: quote.distance_fee, scheduled_at: scheduled,
     return_address: returnAddress || null, return_at: returnAt, payment_method: method,
@@ -294,9 +294,9 @@ Deno.serve(async (req: Request) => {
   const { data: order, error: insertError } = await admin.from("customer_bookings").insert(insert).select("*").single();
   if (insertError) {
     const { data: retry } = await admin.from("customer_bookings")
-      .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,nedbank_cargo_insurance_interest")
+      .select("waybill,pin,tracking_code,recipient_phone,parcel_notes,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,nedbank_cargo_insurance_interest")
       .eq("quote_id", body.quote_id).eq("owner_hash", owner).maybeSingle();
-    if (retry) return reply(200, { order: retry });
+    if (retry) return reply(200, { order: {...retry,pin:retry.paid_at?retry.pin:null} });
     console.error("Customer booking insert failed", insertError.message);
     return reply(503, { error: "booking_save_failed" });
   }
