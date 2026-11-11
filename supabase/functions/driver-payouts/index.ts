@@ -29,14 +29,27 @@ Deno.serve(async(req:Request)=>{
   const raw=await req.text();if(raw.length>4096)return reply(413,{error:"request_too_large"});
   let b:Record<string,unknown>;try{b=JSON.parse(raw)}catch{return reply(400,{error:"invalid_json"})}
   if(b.action!=="request"||typeof b.amount_cents!=="number"||!Number.isSafeInteger(b.amount_cents))return reply(400,{error:"invalid_payout_request"});
-  const {data,error}=await db.rpc("request_driver_payout",{p_driver_id:id,p_amount_cents:b.amount_cents,p_bank_name:b.bank_name,p_account_holder:b.account_holder,p_account_number:b.account_number,p_account_type:b.account_type,p_branch_code:b.branch_code||null});
-  if(error){const m=error.message||"";if(/Insufficient|Invalid payout/i.test(m))return reply(400,{error:"invalid_amount_or_bank_details"});if(/open payout/i.test(m))return reply(409,{error:"open_payout_already_exists"});if(/Approved active driver/i.test(m))return reply(403,{error:"driver_not_approved"});return reply(500,{error:"payout_request_failed"})}
-  return reply(201,data);
+  const {data:bankProfile,error:bankError}=await db.from("driver_profiles").select("bank_details_encrypted,account_number_aesgcm").eq("user_id",id).maybeSingle();
+  if(bankError||!bankProfile?.bank_details_encrypted||!bankProfile?.account_number_aesgcm)return reply(409,{error:"verified_bank_account_required"});
+  const {data:bankJson,error:decryptError}=await db.rpc("decrypt_driver_pii",{p_ciphertext:bankProfile.bank_details_encrypted});
+  if(decryptError||typeof bankJson!=="string")return reply(500,{error:"verified_bank_details_unavailable"});
+  let bank:Record<string,unknown>;try{bank=JSON.parse(bankJson)}catch{return reply(500,{error:"verified_bank_details_invalid"})}
+  const cipher=String(bankProfile.account_number_aesgcm),parts=cipher.split(":");
+  if(parts.length!==3||parts[0]!=="v1")return reply(500,{error:"verified_account_encryption_invalid"});
+  const fromB64=(v:string)=>Uint8Array.from(atob(v),x=>x.charCodeAt(0));
+  const {data:keyText,error:keyError}=await db.rpc("get_driver_pii_aes256_gcm_key");
+  if(keyError||typeof keyText!=="string")return reply(500,{error:"verified_account_key_unavailable"});
+  const key=await crypto.subtle.importKey("raw",fromB64(keyText),{name:"AES-GCM"},false,["decrypt"]);
+  const plain=await crypto.subtle.decrypt({name:"AES-GCM",iv:fromB64(parts[1]),tagLength:128},key,fromB64(parts[2]));
+  const accountNumber=new TextDecoder().decode(plain);
+  const {data,error}=await db.rpc("request_driver_payout_secure",{p_driver_id:id,p_amount_cents:b.amount_cents,p_bank_name:bank.bank_name,p_account_holder:bank.account_holder,p_account_number_ciphertext:cipher,p_account_number_last4:accountNumber.slice(-4),p_account_type:bank.account_type,p_branch_code:bank.universal_branch_code||null});
+  if(error){const m=error.message||"";if(/Insufficient|Invalid verified payout/i.test(m))return reply(400,{error:"invalid_amount_or_verified_bank_details"});if(/open payout/i.test(m))return reply(409,{error:"open_payout_already_exists"});if(/Approved active driver/i.test(m))return reply(403,{error:"driver_not_approved"});return reply(500,{error:"payout_request_failed"})}
+  return reply(201,{...data,bank_name:bank.bank_name,account_number_masked:"••••"+accountNumber.slice(-4)});
  }
  if(req.method==="GET"){
-  const {data,error}=await db.from("driver_payout_requests").select("id,driver_user_id,amount_cents,bank_name,account_holder,account_number,account_type,branch_code,status,admin_reference,created_at,reviewed_at,paid_at").order("created_at",{ascending:false}).limit(200);
+  const {data,error}=await db.from("driver_payout_requests").select("id,driver_user_id,amount_cents,bank_name,account_holder,account_number,account_number_last4,account_type,branch_code,status,admin_reference,created_at,reviewed_at,paid_at").order("created_at",{ascending:false}).limit(200);
   if(error)return reply(500,{error:"payout_list_failed"});
-  return reply(200,{requests:(data??[]).map(x=>({...x,account_number_masked:"•".repeat(Math.max(0,x.account_number.length-4))+x.account_number.slice(-4),account_number:undefined}))});
+  return reply(200,{requests:(data??[]).map(x=>({...x,account_number_masked:"••••"+(x.account_number_last4||String(x.account_number||"").slice(-4)),account_number:undefined,account_number_last4:undefined}))});
  }
  const raw=await req.text();if(raw.length>4096)return reply(413,{error:"request_too_large"});
  let b:Record<string,unknown>;try{b=JSON.parse(raw)}catch{return reply(400,{error:"invalid_json"})}
