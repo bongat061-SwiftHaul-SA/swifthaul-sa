@@ -62,6 +62,7 @@ Deno.serve(async (req: Request) => {
     if (!events.includes(event)) return reply(400,{error:"invalid_notification_event"});
     if (!(event==="order_dispatched" && Array.isArray(body.recipients)) && !["sender","recipient","driver"].includes(recipientType)) return reply(400,{error:"invalid_notification_event"});
     if (event === "delivery_otp" && recipientType !== "recipient") return reply(400,{error:"delivery_otp_must_target_recipient"});
+    const payload = body.payload_json && typeof body.payload_json === "object" && !Array.isArray(body.payload_json) ? body.payload_json : {};
     if(event==="order_dispatched"&&Array.isArray(body.recipients)){
       const recipients=body.recipients.filter((r:any)=>r&&["sender","recipient"].includes(r.recipient_type));
       if(recipients.length!==2||!recipients.some((r:any)=>r.recipient_type==="sender")||!recipients.some((r:any)=>r.recipient_type==="recipient"))return reply(400,{error:"sender_and_recipient_required"});
@@ -78,7 +79,6 @@ Deno.serve(async (req: Request) => {
     }
     let phone: string;
     try { phone = formatSAPhoneNumber(clean(body.recipient_phone,40)); } catch { return reply(400,{error:"invalid_sa_phone_number"}); }
-    const payload = body.payload_json && typeof body.payload_json === "object" && !Array.isArray(body.payload_json) ? body.payload_json : {};
     if (event === "delivery_otp" && !/^\d{4}$/.test(String(payload.otp || ""))) return reply(400,{error:"valid_four_digit_otp_required"});
     const { data: row, error } = await db.from("notification_logs").insert({
       recipient_phone:phone,recipient_type:recipientType,channel:"whatsapp",event_type:event,payload_json:payload,status:"queued"
