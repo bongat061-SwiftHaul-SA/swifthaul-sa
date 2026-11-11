@@ -34,6 +34,8 @@ on:
       - "apps/company/public/section-pages.js"
       - "tests/account-deletion-admin-static-check.cjs"
       - "tests/popia-consent-static-check.cjs"
+      - "public/popia-consent.js"
+      - "apps/driver/public/popia-consent.js"
       - "public/privacy-policy.html"
       - "apps/driver/public/privacy-policy.html"
       - "supabase/migrations/*account_self_service*"
@@ -74,6 +76,8 @@ jobs:
           node --check apps/driver/public/account-settings.js
           node --check public/settings.js
           node --check apps/company/public/account-deletions.js
+          node --check public/popia-consent.js
+          node --check apps/driver/public/popia-consent.js
       - name: Verify booking wizard and in-app navigation
         run: node tests/booking-wizard-static-check.cjs
       - name: Verify unified dark-premium interface across apps
