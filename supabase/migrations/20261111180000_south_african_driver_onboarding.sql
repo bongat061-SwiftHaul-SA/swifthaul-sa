@@ -29,7 +29,5 @@ insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
 values('driver-application-documents','driver-application-documents',false,10485760,array['application/pdf','image/jpeg','image/png','image/webp'])
 on conflict(id) do update set public=false,file_size_limit=10485760,allowed_mime_types=excluded.allowed_mime_types;
 
--- The driver remains offline and pending until an authorised administrator approves the application.
-update public.driver_profiles d set verification_status='pending',is_online=false,availability_status='offline'
-where exists(select 1 from public.user_profiles u where u.id=d.user_id and u.role='driver')
-and not exists(select 1 from public.driver_onboarding_applications a where a.driver_user_id=d.user_id and a.verification_status='approved');
+-- New driver profiles are created with verification_status='pending' by the auth trigger.
+-- Existing approved drivers are deliberately left unchanged by this migration.
