@@ -61,6 +61,20 @@ Deno.serve(async (req: Request) => {
     const recipientType = clean(body.recipient_type,20) as RecipientType;
     if (!events.includes(event) || !["sender","recipient","driver"].includes(recipientType)) return reply(400,{error:"invalid_notification_event"});
     if (event === "delivery_otp" && recipientType !== "recipient") return reply(400,{error:"delivery_otp_must_target_recipient"});
+    if(event==="order_dispatched"&&Array.isArray(body.recipients)){
+      const recipients=body.recipients.filter((r:any)=>r&&["sender","recipient"].includes(r.recipient_type));
+      if(recipients.length!==2||!recipients.some((r:any)=>r.recipient_type==="sender")||!recipients.some((r:any)=>r.recipient_type==="recipient"))return reply(400,{error:"sender_and_recipient_required"});
+      const results=[];
+      for(const recipient of recipients){
+        let phone:string;try{phone=formatSAPhoneNumber(clean(recipient.recipient_phone,40));}catch{return reply(400,{error:"invalid_sa_phone_number"});}
+        const {data:row,error}=await db.from("notification_logs").insert({recipient_phone:phone,recipient_type:recipient.recipient_type,channel:"whatsapp",event_type:event,payload_json:payload,status:"queued"}).select("*").single();
+        if(error||!row)return reply(500,{error:"notification_queue_failed"});
+        await sendQueued(db,row);
+        const {data:result}=await db.from("notification_logs").select("id,status,channel,fallback_triggered,last_error").eq("id",row.id).single();
+        results.push(result);
+      }
+      return reply(200,{success:true,notifications:results});
+    }
     let phone: string;
     try { phone = formatSAPhoneNumber(clean(body.recipient_phone,40)); } catch { return reply(400,{error:"invalid_sa_phone_number"}); }
     const payload = body.payload_json && typeof body.payload_json === "object" && !Array.isArray(body.payload_json) ? body.payload_json : {};
