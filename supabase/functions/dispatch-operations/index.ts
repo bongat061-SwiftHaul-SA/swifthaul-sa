@@ -38,7 +38,7 @@ Deno.serve(async (req: Request) => {
 
   if (req.method === "GET") {
     let query = admin.from("customer_bookings")
-      .select("waybill,pickup,dropoff,recipient,vehicle,price,payment_method,paid_at,completed_at,scheduled_at,return_address,status,driver_user_id,created_at,failure_reason,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash")
+      .select("waybill,pickup,dropoff,recipient,vehicle,price,payment_method,paid_at,completed_at,scheduled_at,return_address,status,driver_user_id,created_at,failure_reason,arrived_pickup_at,arrived_dropoff_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash")
       .order("created_at", { ascending: false }).limit(100);
     if (isDriver) query = query.eq("driver_user_id", actorId);
     const { data, error } = await query;
@@ -71,7 +71,7 @@ Deno.serve(async (req: Request) => {
   if (typeof body.waybill !== "string" || body.waybill.length > 100) return reply(400, { error: "invalid_waybill" });
 
   const { data: order, error: orderError } = await admin.from("customer_bookings")
-    .select("waybill,status,driver_user_id,pin,pin_attempts,pin_locked_until,completed_at,refunded_at,assistance_requested,assistance_status")
+    .select("waybill,status,driver_user_id,pin,pin_attempts,pin_locked_until,completed_at,refunded_at,arrived_pickup_at,arrived_dropoff_at,assistance_requested,assistance_status")
     .eq("waybill", body.waybill).maybeSingle();
   if (orderError) return reply(500, { error: "delivery_lookup_failed" });
   if (!order) return reply(404, { error: "delivery_not_found" });
@@ -133,6 +133,16 @@ Deno.serve(async (req: Request) => {
   if (order.refunded_at || ["delivered", "failed", "cancelled"].includes(order.status))
     return reply(409, { error: "delivery_is_closed" });
 
+  if(body.action==="arrive_pickup"){
+    if(order.status!=="accepted")return reply(409,{error:"driver_must_accept_delivery_before_pickup_arrival"});
+    if(!order.arrived_pickup_at){const at=new Date().toISOString();const {error}=await admin.from("customer_bookings").update({arrived_pickup_at:at}).eq("waybill",order.waybill);if(error)return reply(500,{error:"pickup_arrival_save_failed"});await admin.from("delivery_status_events").insert({waybill:order.waybill,actor_user_id:actorId,previous_status:order.status,new_status:order.status,notes:"Driver arrived at pickup"});}
+    return reply(200,{updated:true,checkpoint:"arrived_pickup"});
+  }
+  if(body.action==="arrive_dropoff"){
+    if(order.status!=="in_transit")return reply(409,{error:"delivery_must_be_in_transit_before_dropoff_arrival"});
+    if(!order.arrived_dropoff_at){const at=new Date().toISOString();const {error}=await admin.from("customer_bookings").update({arrived_dropoff_at:at}).eq("waybill",order.waybill);if(error)return reply(500,{error:"dropoff_arrival_save_failed"});await admin.from("delivery_status_events").insert({waybill:order.waybill,actor_user_id:actorId,previous_status:order.status,new_status:order.status,notes:"Driver arrived at drop-off"});}
+    return reply(200,{updated:true,checkpoint:"arrived_dropoff"});
+  }
   const transitions: Record<string, { from: string[]; to: string }> = {
     accept: { from: ["assigned"], to: "accepted" },
     pickup: { from: ["accepted"], to: "picked_up" },
@@ -144,6 +154,7 @@ Deno.serve(async (req: Request) => {
       if(eligibilityError||eligible!==true)return reply(403,{error:"driver_not_cleared_to_accept_trips"});
     }
     const transition = transitions[body.action];
+    if(body.action==="pickup"&&!order.arrived_pickup_at)return reply(409,{error:"confirm_arrived_at_pickup_first"});
     if (!transition.from.includes(order.status)) return reply(409, { error: "invalid_status_transition" });
     await setStatus(transition.to);
     return reply(200, { updated: true, status: transition.to });
@@ -157,6 +168,7 @@ Deno.serve(async (req: Request) => {
   }
   if (body.action === "complete") {
     if (order.status !== "in_transit") return reply(409, { error: "delivery_must_be_in_transit" });
+    if(!order.arrived_dropoff_at)return reply(409,{error:"confirm_arrived_at_dropoff_first"});
     const { data: proof } = await admin.from("proof_of_delivery").select("id").eq("waybill", order.waybill).maybeSingle();
     if (!proof) return reply(409, { error: "upload_proof_of_delivery_first" });
     if (typeof body.pin !== "string" || !/^\d{4}$/.test(body.pin)) return reply(400, { error: "enter_recipient_four_digit_pin" });
