@@ -19,6 +19,7 @@ if (app === 'driver' || app === 'company') {
 
   let active = false;
   let requestNumber = 0;
+  let offerCountdowns = [];
   const activeTrackingCleanups = new Set();
   const money = value => 'R' + Number(value || 0).toFixed(2);
   const statusLabel = value => ({
@@ -41,6 +42,8 @@ if (app === 'driver' || app === 'company') {
 
   async function loadIncomingOffers(currentOrders = []) {
     if (app !== 'driver') return;
+    for (const timer of offerCountdowns) clearInterval(timer);
+    offerCountdowns = [];
     offerPanel.replaceChildren();
     try {
       const client = window.swiftHaulSupabase;
@@ -63,6 +66,18 @@ if (app === 'driver' || app === 'company') {
         payout.textContent = (offer.add_on_order ? 'Add-On Order · ' : 'Net payout · ') + money(offer.net_payout_zar);
         const route = document.createElement('p');
         route.textContent = (booking.pickup || 'Pickup') + ' → ' + (booking.dropoff || 'Drop-off');
+        const countdown = document.createElement('small');
+        countdown.className = 'driver-offer-countdown';
+        const updateCountdown = () => {
+          const remaining = Math.max(0, Math.ceil((new Date(offer.expires_at).getTime() - Date.now()) / 1000));
+          countdown.textContent = remaining ? 'Offer expires in ' + remaining + 's' : 'Offer expired';
+          if (!remaining) {
+            for (const button of actions.querySelectorAll('button')) button.disabled = true;
+          }
+        };
+        updateCountdown();
+        const timer = setInterval(updateCountdown, 250);
+        offerCountdowns.push(timer);
         const detail = document.createElement('p');
         detail.textContent = offer.add_on_order
           ? (offer.extra_detour_km == null ? 'Matches your active route corridor' : '+' + Number(offer.extra_detour_km).toFixed(1) + ' km estimated detour') + ' · Combined route net ' + money(currentNet + Number(offer.net_payout_zar || 0))
@@ -86,7 +101,7 @@ if (app === 'driver' || app === 'company') {
           });
           actions.append(button);
         }
-        card.append(title,payout,route,detail,actions);
+        card.append(title,payout,route,countdown,detail,actions);
         offerPanel.append(card);
       }
     } catch (error) {
