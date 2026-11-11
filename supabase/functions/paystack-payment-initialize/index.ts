@@ -17,9 +17,9 @@ Deno.serve(async(req:Request)=>{
  if(profile.role!=="customer"||profile.account_status!=="active")return reply(403,{error:"active_customer_account_required"});
  let body:Record<string,unknown>;try{body=await req.json()}catch{return reply(400,{error:"invalid_json"})}
  if(typeof body.waybill!=="string"||body.waybill.length>100)return reply(400,{error:"booking_reference_required"});
- const {data:b,error:be}=await db.from("customer_bookings").select("waybill,owner_hash,price,paid_at,refunded_at,status,counter_offer_status").eq("waybill",body.waybill).eq("owner_hash",u.user.id).maybeSingle();
+ const {data:b,error:be}=await db.from("customer_bookings").select("waybill,owner_hash,price,paid_at,refunded_at,status,counter_offer_status,payment_method").eq("waybill",body.waybill).eq("owner_hash",u.user.id).maybeSingle();
  if(be||!b)return reply(404,{error:"booking_not_found"});
- if(b.paid_at||b.refunded_at||["cancelled","delivered"].includes(b.status)||b.counter_offer_status==="pending")return reply(409,{error:"booking_not_payable"});
+ if(b.payment_method!=="card"||b.paid_at||b.refunded_at||["cancelled","delivered"].includes(b.status)||b.counter_offer_status==="pending")return reply(409,{error:"booking_not_payable"});
  const amountCents=Math.round(Number(b.price)*100);
  if(!Number.isSafeInteger(amountCents)||amountCents<100||amountCents>100000000)return reply(422,{error:"invalid_booking_amount"});
  const mode=Deno.env.get("PAYSTACK_MODE")==="live"?"live":"sandbox";
