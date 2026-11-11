@@ -66,7 +66,7 @@ Deno.serve(async (req: Request) => {
       ? await admin.from("driver_route_stops").select("id,order_id,stop_type,sequence_order,address,lat,lng,status,completed_at").eq("driver_id",actorId).order("sequence_order")
       : {data:[]};
     const driverOrderCounts:Record<string,number>={};
-    if(!isDriver)for(const order of orders){const id=String(order.driver_user_id||"");if(id)driverOrderCounts[id]=(driverOrderCounts[id]||0)+1;}
+    if(!isDriver)for(const order of orders){if(!["assigned","accepted","picked_up","in_transit"].includes(String(order.status)))continue;const id=String(order.driver_user_id||"");if(id)driverOrderCounts[id]=(driverOrderCounts[id]||0)+1;}
     return reply(200, { orders, driverProfile: driver, routeStops:routeStops??[], driverOrderCounts });
   }
 
