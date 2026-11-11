@@ -5,6 +5,14 @@ on:
       - "supabase/functions/_shared/notifications.ts"
       - "supabase/functions/notification-dispatch/**"
       - "supabase/functions/messaging-webhook/**"
+      - "supabase/functions/dispatch-offers/**"
+      - "supabase/functions/dispatch-operations/**"
+      - "supabase/migrations/*stacked_driver_delivery_capacity*"
+      - "apps/driver/public/operations.js"
+      - "apps/company/public/operations.js"
+      - "apps/driver/public/dark-premium.css"
+      - "apps/company/public/unified-workspace-dark.css"
+      - "tests/stacked-delivery-static-check.cjs"
       - "supabase/migrations/*unified_sms_whatsapp_notification_queue*"
       - "apps/company/public/notification-admin.*"
       - "apps/company/public/index.html"
@@ -41,7 +49,12 @@ jobs:
         run: |
           deno check --node-modules-dir=auto supabase/functions/notification-dispatch/index.ts
           deno check --node-modules-dir=auto supabase/functions/messaging-webhook/index.ts
-      - name: Check Company Admin interface syntax
-        run: node --check apps/company/public/notification-admin.js
+          deno check --node-modules-dir=auto supabase/functions/dispatch-offers/index.ts
+          deno check --node-modules-dir=auto supabase/functions/dispatch-operations/index.ts
+      - name: Check dashboard interface syntax
+        run: |
+          node --check apps/company/public/notification-admin.js
+          node --check apps/company/public/operations.js
+          node --check apps/driver/public/operations.js
       - name: Verify notification security and admin audit wiring
         run: node tests/notification-service-static-check.cjs
