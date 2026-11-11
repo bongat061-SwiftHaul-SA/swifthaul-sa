@@ -7,10 +7,16 @@ on:
       - "apps/driver/public/index.html"
       - "apps/driver/public/dark-premium.css"
       - "apps/company/public/driver-admin.js"
+      - "apps/company/public/driver-verification.css"
+      - "apps/company/public/index.html"
+      - "apps/company/public/section-pages.js"
       - "supabase/functions/driver-onboarding/**"
       - "supabase/functions/driver-admin/**"
       - "supabase/functions/dispatch-offers/**"
+      - "supabase/functions/dispatch-operations/**"
       - "supabase/migrations/20261111180000_south_african_driver_onboarding.sql"
+      - "supabase/migrations/20261111190000_driver_verification_expiry_and_pii_protection.sql"
+      - "supabase/migrations/20261111191000_driver_work_eligibility_guard.sql"
       - "tests/driver-onboarding-static-check.cjs"
   push:
     branches:
@@ -18,9 +24,15 @@ on:
     paths:
       - "apps/driver/public/driver-onboarding.js"
       - "apps/company/public/driver-admin.js"
+      - "apps/company/public/driver-verification.css"
+      - "apps/company/public/index.html"
       - "supabase/functions/driver-onboarding/**"
       - "supabase/functions/driver-admin/**"
+      - "supabase/functions/dispatch-offers/**"
+      - "supabase/functions/dispatch-operations/**"
       - "supabase/migrations/20261111180000_south_african_driver_onboarding.sql"
+      - "supabase/migrations/20261111190000_driver_verification_expiry_and_pii_protection.sql"
+      - "supabase/migrations/20261111191000_driver_work_eligibility_guard.sql"
       - "tests/driver-onboarding-static-check.cjs"
 permissions:
   contents: read
@@ -37,5 +49,5 @@ jobs:
           node --check apps/driver/public/driver-onboarding.js
           node --check apps/company/public/driver-admin.js
           node --check apps/driver/public/availability.js
-      - name: Validate South African onboarding and approval gates
+      - name: Validate South African onboarding, verification and eligibility gates
         run: node tests/driver-onboarding-static-check.cjs
