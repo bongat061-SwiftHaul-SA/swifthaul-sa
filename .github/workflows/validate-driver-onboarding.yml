@@ -7,6 +7,7 @@ on:
       - "apps/driver/public/operations.js"
       - "apps/driver/public/section-pages.js"
       - "apps/driver/public/driver-earnings.js"
+      - "apps/driver/public/payouts.js"
       - "apps/driver/public/index.html"
       - "apps/driver/public/dark-premium.css"
       - "apps/company/public/driver-admin.js"
@@ -15,6 +16,7 @@ on:
       - "supabase/functions/driver-admin/**"
       - "supabase/functions/driver-secure-documents/**"
       - "supabase/functions/driver-earnings-dashboard/**"
+      - "supabase/functions/driver-payouts/**"
       - "supabase/functions/dispatch-offers/**"
       - "supabase/functions/dispatch-operations/**"
       - "supabase/migrations/20261111180000_south_african_driver_onboarding.sql"
@@ -25,6 +27,7 @@ on:
       - "supabase/migrations/20261111194000_encrypt_complete_driver_bank_details.sql"
       - "supabase/migrations/20261111230000_driver_secure_storage_aes_gcm_and_access_audit.sql"
       - "supabase/migrations/20261111232000_driver_trip_arrival_checkpoints.sql"
+      - "supabase/migrations/20261111234000_secure_driver_payout_bank_details.sql"
       - "tests/driver-onboarding-static-check.cjs"
   push:
     branches:
@@ -71,6 +74,7 @@ jobs:
           node --check apps/driver/public/operations.js
           node --check apps/driver/public/section-pages.js
           node --check apps/driver/public/driver-earnings.js
+          node --check apps/driver/public/payouts.js
           node --check apps/company/public/driver-admin.js
       - name: Validate secure storage, South African onboarding and live trip dashboard
         run: node tests/driver-onboarding-static-check.cjs
