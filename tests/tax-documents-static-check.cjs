@@ -6,11 +6,13 @@ const event=read("apps/fleet/src/app/api/internal/tax-documents/events/route.ts"
 const webhook=read("supabase/functions/paystack-webhook/index.ts");
 const tracking=read("public/track-page.js");
 const admin=read("apps/fleet/src/app/admin/tariffs/tariff-admin-client.tsx");
+const quote=read("apps/fleet/src/app/api/quotes/calculate/route.ts");
+const simulator=read("apps/fleet/src/app/api/admin/tariffs/simulate/route.ts");
 const ledger=read("apps/fleet/src/app/api/admin/operations/invoices/route.ts");
 const checks=[
  ["tax document Drizzle table",schema.includes('pgTable("tax_documents"')],
  ["company VAT profile fields",schema.includes('vatRatePercent')&&schema.includes('cipcRegNumber')&&schema.includes('registeredAddress')],
- ["unsupported Hatchback/Sedan removed",!schema.includes("hatchback_sedan")&&!admin.includes("hatchback_sedan")],
+ ["unsupported Hatchback/Sedan removed",!schema.includes("hatchback_sedan")&&!admin.includes("hatchback_sedan")&&!quote.includes("hatchback_sedan")&&!simulator.includes("hatchback_sedan")],
  ["South African VAT rate default 15.5%",migration.includes("default 15.50")],
  ["private tax storage bucket",migration.includes("values ('swift-haul-tax-documents','swift-haul-tax-documents',false")],
  ["sequential tax document number trigger",migration.includes("assign_tax_document_number")],
