@@ -29,7 +29,7 @@ Deno.serve(async(req:Request)=>{
   if(error)return reply(500,{error:"driver_list_failed"});
   const ids=(drivers??[]).map((d:any)=>d.user_id);
   const {data:docs,error:docsError}=ids.length?await admin.from("driver_documents")
-   .select("id,driver_user_id,document_type,original_name,review_status,verification_status,expiry_date,issued_at,rejection_reason,review_note,reviewed_by,reviewed_at,created_at,storage_path")
+   .select("id,driver_user_id,document_type,original_name,review_status,verification_status,expiry_date,issued_at,rejection_reason,review_note,reviewed_by,reviewed_at,created_at,storage_path,content_type")
    .in("driver_user_id",ids).order("created_at",{ascending:false}):{data:[],error:null};
   if(docsError)return reply(500,{error:"driver_documents_lookup_failed"});
   const grouped:Record<string,unknown[]>={};
