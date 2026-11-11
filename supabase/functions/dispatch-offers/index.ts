@@ -25,10 +25,27 @@ Deno.serve(async req => {
 
   if(req.method==="GET") {
     if(!driver) return reply(403,{error:"driver_account_required"});
-    const {data:profile}=await db.from("driver_profiles").select("is_online,online_updated_at,verification_status").eq("user_id",actor).maybeSingle();
-    const {data:offers,error}=await db.from("driver_delivery_offers").select("id,waybill,priority_tier,distance_meters,offered_at,expires_at,status,customer_bookings(pickup,dropoff,vehicle,price,pickup_plus_code,dropoff_plus_code)").eq("driver_user_id",actor).eq("status","offered").gt("expires_at",new Date().toISOString()).order("offered_at",{ascending:false});
+    const {data:profile}=await db.from("driver_profiles").select("is_online,online_updated_at,verification_status,allow_stacked_orders,vehicle_type").eq("user_id",actor).maybeSingle();
+    const {data:offers,error}=await db.from("driver_delivery_offers").select("id,waybill,priority_tier,distance_meters,offered_at,expires_at,status,customer_bookings(pickup,dropoff,vehicle,price,pickup_latitude,pickup_longitude,dropoff_latitude,dropoff_longitude,pickup_plus_code,dropoff_plus_code)").eq("driver_user_id",actor).eq("status","offered").gt("expires_at",new Date().toISOString()).order("offered_at",{ascending:false});
     if(error) return reply(500,{error:"offer_list_failed"});
-    return reply(200,{driver:profile,offers:offers??[]});
+    const {data:stops}=await db.from("driver_route_stops").select("lat,lng,sequence_order").eq("driver_id",actor).neq("status","completed").order("sequence_order");
+    const distanceKm=(a:any,b:any)=>{const r=Math.PI/180,dl=(b.lat-a.lat)*r,dg=(b.lng-a.lng)*r,x=Math.sin(dl/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dg/2)**2;return 6371*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));};
+    const route=(stops??[]).filter((x:any)=>x.lat!=null&&x.lng!=null).map((x:any)=>({lat:Number(x.lat),lng:Number(x.lng)}));
+    const routeLength=(points:any[])=>points.slice(1).reduce((sum:any,p:any,i:number)=>sum+distanceKm(points[i],p),0);
+    const baseline=routeLength(route);
+    const enriched=(offers??[]).map((offer:any)=>{
+      const b=offer.customer_bookings||{},pickup={lat:Number(b.pickup_latitude),lng:Number(b.pickup_longitude)},dropoff={lat:Number(b.dropoff_latitude),lng:Number(b.dropoff_longitude)};
+      let detour:number|null=null;
+      if(route.length&&Number.isFinite(pickup.lat)&&Number.isFinite(pickup.lng)&&Number.isFinite(dropoff.lat)&&Number.isFinite(dropoff.lng)){
+        let best=Number.POSITIVE_INFINITY;
+        for(let i=0;i<=route.length;i++)for(let j=i+1;j<=route.length+1;j++){
+          const points=[...route];points.splice(i,0,pickup);points.splice(j,0,dropoff);best=Math.min(best,routeLength(points)-baseline);
+        }
+        detour=Number.isFinite(best)?Math.max(0,Number(best.toFixed(2))):null;
+      }
+      return {...offer,add_on_order:offer.priority_tier==="add_on",net_payout_zar:Number((Number(b.price||0)*0.75).toFixed(2)),extra_detour_km:detour};
+    });
+    return reply(200,{driver:profile,offers:enriched,active_stop_count:route.length});
   }
 
   let body:Record<string,unknown>;
