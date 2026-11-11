@@ -29,7 +29,7 @@ export async function GET(req:NextRequest){
    db.select({n:sql<number>`count(*)::int`}).from(userProfiles).where(and(inArray(userProfiles.role,[...roles]),gte(userProfiles.createdAt,monthStart))),
    db.select().from(growthMilestones).orderBy(growthMilestones.category,growthMilestones.targetCount),
    db.select({id:userProfiles.id,fullName:userProfiles.fullName,role:userProfiles.role,city:userProfiles.city,province:userProfiles.province,accountStatus:userProfiles.accountStatus,createdAt:userProfiles.createdAt,verificationStatus:driverProfiles.verificationStatus,onboardingStatus:driverProfiles.onboardingStatus}).from(userProfiles).leftJoin(driverProfiles,eq(userProfiles.id,driverProfiles.userId)).where(inArray(userProfiles.role,["customer","driver"])).orderBy(desc(userProfiles.createdAt)).limit(100),
-   db.select({role:userProfiles.role,createdAt:userProfiles.createdAt}).from(userProfiles).where(and(inArray(userProfiles.role,["customer","driver"]),gte(userProfiles.createdAt,startSast(dayKey(addDays(now,-29))))))
+   db.select({role:userProfiles.role,createdAt:userProfiles.createdAt}).from(userProfiles).where(and(inArray(userProfiles.role,[...roles]),gte(userProfiles.createdAt,startSast(dayKey(addDays(now,-29))))))
   ]);
   const count=(role:string)=>Number(allCounts.find(x=>x.role===role)?.n||0);
   const customers=count("customer"),drivers=count("driver"),fleetOwners=count("fleet_owner"),combined=customers+drivers+fleetOwners;
@@ -43,7 +43,7 @@ export async function GET(req:NextRequest){
   const next=(category:string,current:number)=>milestones.find(m=>m.category===category&&!m.isUnlocked)?.targetCount||500;
   const nextC=next("customers",customers),nextD=next("drivers",drivers);
   const chart=[...byDay.entries()].map(([date,v],i)=>{cumulativeC+=v.customers;cumulativeD+=v.drivers;return {date,customersDaily:v.customers,driversDaily:v.drivers,customersCumulative:cumulativeC,driversCumulative:cumulativeD,expectedCustomers:Math.round(cBase+(Math.max(0,nextC-cBase)*(i+1)/30)),expectedDrivers:Math.round(dBase+(Math.max(0,nextD-dBase)*(i+1)/30))};});
-  const last7=chart.slice(-7).reduce((s,x)=>s+x.customersDaily+x.driversDaily,0),rate=Math.round(last7/7*100)/100;
+  const last7Start=startSast(dayKey(addDays(now,-6)));const last7=chartRows.filter(x=>x.createdAt>=last7Start).length,rate=Math.round(last7/7*100)/100;
   const nextCombined=milestones.find(m=>m.category==="combined_users"&&!m.isUnlocked)?.targetCount||500;
   const daysTo=rate>0?Math.ceil(Math.max(0,nextCombined-combined)/rate):null;
   const seq={customer:customers,driver:drivers};const roleRecent={customer:recent.filter(x=>x.role==="customer").sort((a,b)=>a.createdAt.getTime()-b.createdAt.getTime()),driver:recent.filter(x=>x.role==="driver").sort((a,b)=>a.createdAt.getTime()-b.createdAt.getTime())};const recentRows=recent.map(row=>{const role=row.role as "customer"|"driver";const rank=roleRecent[role].findIndex(x=>x.id===row.id)+1;const number=seq[role]-roleRecent[role].length+rank;return {...row,userNumber:number,onboardingStatus:role==="customer"?row.accountStatus:(row.verificationStatus||row.onboardingStatus||"pending")};});
