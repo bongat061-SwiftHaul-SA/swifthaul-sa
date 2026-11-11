@@ -70,3 +70,34 @@ body[data-app="customer"] #booking-form .booking-step .field:has(#custDropoff):b
  body[data-app="customer"] #booking-form .booking-wizard-controls{position:sticky;bottom:8px;z-index:8;padding:9px;background:#10151df2;border:1px solid #35404e;border-radius:16px;backdrop-filter:blur(12px)}
  body[data-app="customer"] #booking-form .booking-next{flex:1}
 }
+
+/* Keep the interactive route map as a compact, usable preview in wizard step one. */
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage{
+  height:390px!important;min-height:360px!important;max-height:440px!important;
+  margin:0 0 4px!important;border-radius:18px!important;overflow:hidden!important;
+  border:1px solid #35404e!important;background:#151c26!important;
+}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-location-sheet{
+  left:10px!important;right:10px!important;bottom:10px!important;
+  max-height:76%!important;padding:13px!important;border-radius:16px!important;
+  background:#111923f2!important;border-color:#3b4655!important;color:#f4f6f9!important;
+}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-sheet-head h3,
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-pin-meta strong{color:#f4f6f9!important}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-sheet-head p,
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage #loc-status,
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-pin-meta{color:#aeb8c6!important}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-location-fields input{
+  background:#0b1017!important;border-color:#3a4554!important;color:#f7f9fc!important;
+}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-pin-meta{
+  background:#202a36!important;border-radius:10px!important;
+}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-pin-button,
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-sheet-tools button{
+  background:#202a36!important;border-color:#465364!important;color:#e9edf2!important;
+}
+@media(max-width:600px){
+ body[data-app="customer"] #booking-form .booking-step #delivery-map-stage{height:430px!important;min-height:410px!important;max-height:460px!important}
+ body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-location-sheet{max-height:78%!important;padding:11px!important}
+}
