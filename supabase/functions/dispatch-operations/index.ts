@@ -60,7 +60,7 @@ Deno.serve(async (req: Request) => {
       ...order, proof: proofMap.get(String(order.waybill)) ?? null
     }));
     const { data: driver } = isDriver
-      ? await admin.from("driver_profiles").select("verification_status,availability_status,allow_stacked_orders,vehicle_type").eq("user_id", actorId).maybeSingle()
+      ? await admin.from("driver_profiles").select("verification_status,availability_status,allow_stacked_orders,vehicle_type,average_rating,total_ratings,on_time_percentage,completion_percentage,performance_score,performance_tier").eq("user_id", actorId).maybeSingle()
       : { data: null };
     const activeWaybills=(orders as Array<Record<string,unknown>>).filter(order=>["assigned","accepted","picked_up","in_transit"].includes(String(order.status))).map(order=>String(order.waybill));
     const {data:routeStops}=isDriver&&activeWaybills.length
@@ -72,7 +72,10 @@ Deno.serve(async (req: Request) => {
     const {data:fleetRouteStops}=!isDriver&&fleetDriverIds.length
       ? await admin.from("driver_route_stops").select("driver_id,order_id,stop_type,sequence_order,address,status").in("driver_id",fleetDriverIds).neq("status","completed").order("sequence_order")
       : {data:[]};
-    return reply(200, { orders, driverProfile: driver, routeStops:routeStops??[], driverOrderCounts, fleetRouteStops:fleetRouteStops??[] });
+    const driverIdsForQuality=[...new Set((orders as Array<Record<string,unknown>>).map(o=>String(o.driver_user_id||"")).filter(Boolean))];
+    const {data:qualityAlerts}=!isDriver&&waybills.length?await admin.from("quality_alerts").select("id,order_id,driver_id,priority,reason,tags,status,created_at").in("order_id",waybills).neq("status","dismissed").order("created_at",{ascending:false}).limit(50):{data:[]};
+    const {data:driverScores}=!isDriver&&driverIdsForQuality.length?await admin.from("driver_profiles").select("user_id,average_rating,total_ratings,on_time_percentage,completion_percentage,performance_score,performance_tier").in("user_id",driverIdsForQuality):{data:[]};
+    return reply(200, { orders, driverProfile: driver, routeStops:routeStops??[], driverOrderCounts, fleetRouteStops:fleetRouteStops??[], qualityAlerts:qualityAlerts??[], driverScores:driverScores??[] });
   }
 
   const raw = await req.text();
