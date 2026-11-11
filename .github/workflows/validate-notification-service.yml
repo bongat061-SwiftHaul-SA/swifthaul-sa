@@ -10,6 +10,17 @@ on:
       - "supabase/functions/driver-sos/**"
       - "supabase/functions/sos-operations/**"
       - "supabase/functions/order-chat/**"
+      - "supabase/functions/driver-settings/**"
+      - "supabase/migrations/*order_chat_and_driver_sos*"
+      - "apps/driver/public/sos.js"
+      - "apps/company/public/sos-admin.js"
+      - "public/order-chat.js"
+      - "public/track.html"
+      - "public/track-page.js"
+      - "tests/chat-sos-static-check.cjs"
+      - "supabase/functions/driver-sos/**"
+      - "supabase/functions/sos-operations/**"
+      - "supabase/functions/order-chat/**"
       - "supabase/migrations/*order_chat_and_driver_sos*"
       - "apps/driver/public/sos.js"
       - "apps/company/public/sos-admin.js"
@@ -36,6 +47,17 @@ on:
       - "supabase/functions/messaging-webhook/**"
       - "supabase/functions/dispatch-offers/**"
       - "supabase/functions/dispatch-operations/**"
+      - "supabase/functions/driver-sos/**"
+      - "supabase/functions/sos-operations/**"
+      - "supabase/functions/order-chat/**"
+      - "supabase/functions/driver-settings/**"
+      - "supabase/migrations/*order_chat_and_driver_sos*"
+      - "apps/driver/public/sos.js"
+      - "apps/company/public/sos-admin.js"
+      - "public/order-chat.js"
+      - "public/track.html"
+      - "public/track-page.js"
+      - "tests/chat-sos-static-check.cjs"
       - "supabase/migrations/*stacked_driver_delivery_capacity*"
       - "apps/driver/public/operations.js"
       - "apps/company/public/operations.js"
@@ -67,6 +89,10 @@ jobs:
           deno check --node-modules-dir=auto supabase/functions/messaging-webhook/index.ts
           deno check --node-modules-dir=auto supabase/functions/dispatch-offers/index.ts
           deno check --node-modules-dir=auto supabase/functions/dispatch-operations/index.ts
+          deno check --node-modules-dir=auto supabase/functions/driver-sos/index.ts
+          deno check --node-modules-dir=auto supabase/functions/sos-operations/index.ts
+          deno check --node-modules-dir=auto supabase/functions/order-chat/index.ts
+          deno check --node-modules-dir=auto supabase/functions/driver-settings/index.ts
           deno check --node-modules-dir=auto supabase/functions/driver-sos/index.ts
           deno check --node-modules-dir=auto supabase/functions/sos-operations/index.ts
           deno check --node-modules-dir=auto supabase/functions/order-chat/index.ts
