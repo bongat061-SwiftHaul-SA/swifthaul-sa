@@ -15,6 +15,9 @@ const pageFiles = [
 
 for (const [name, path] of authFiles) {
   const auth = read(path);
+  assert.match(auth, /function showSessionRestore\(message = 'Restoring your secure session…', allowRecoveryActions = false\)/, name + ' must reserve recovery buttons for actual session restore failures.');
+  assert.match(auth, /setTimeout\(\(\) => showSessionRestore\(\), 450\)/, name + ' must delay the restore screen to avoid a flash on fast page loads.');
+  assert.match(auth, /finally\s*\{[\s\S]*?clearTimeout\(restoreTimer\)/, name + ' must cancel the delayed restore screen after session initialization.');
   assert.match(auth, /persistSession:\s*true/, name + ' must persist Supabase sessions across page loads.');
   assert.match(auth, /autoRefreshToken:\s*true/, name + ' must refresh expiring sessions.');
   assert.match(auth, /async function init\s*\([\s\S]*?getSession\(\)/, name + ' must check the saved session before presenting sign-in.');
