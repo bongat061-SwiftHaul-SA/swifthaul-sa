@@ -24,6 +24,7 @@ returns trigger language plpgsql security definer set search_path=''
 as $$
 declare v_customers integer; v_drivers integer; v_combined integer;
 begin
+ perform pg_advisory_xact_lock(20261112,401);
  if new.role not in ('customer','driver','fleet_owner') then return new; end if;
  if tg_op='UPDATE' and old.role is not distinct from new.role then return new; end if;
  select count(*)::integer into v_customers from public.user_profiles where role='customer';
