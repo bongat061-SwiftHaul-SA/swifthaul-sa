@@ -1,0 +1,36 @@
+name: Validate Paystack Booking and Tracking
+on:
+  push:
+    branches: [release/dark-premium-mainline-candidate]
+    paths:
+      - "public/**"
+      - "apps/driver/public/**"
+      - "supabase/functions/**"
+      - "supabase/migrations/**"
+      - "tests/paystack-tracking-static-check.cjs"
+      - "scripts/build-pages.cjs"
+      - ".github/workflows/validate-paystack-booking-tracking.yml"
+  pull_request:
+    paths:
+      - "public/**"
+      - "apps/driver/public/**"
+      - "supabase/functions/**"
+      - "supabase/migrations/**"
+      - "tests/paystack-tracking-static-check.cjs"
+      - "scripts/build-pages.cjs"
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node --check public/customer.js
+      - run: node --check public/address-autocomplete.js
+      - run: node --check apps/driver/public/payouts.js
+      - run: node --input-type=module --check < public/tracking.js
+      - run: node tests/paystack-tracking-static-check.cjs
+      - run: node scripts/build-pages.cjs
