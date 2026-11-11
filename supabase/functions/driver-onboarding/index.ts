@@ -52,6 +52,8 @@ if(!["sa_citizen","foreign_national"].includes(identityType))return reply(400,{e
  const bank=text(form.get("bank_name"),40),holder=text(form.get("account_holder"),120),account=text(form.get("account_number"),30);
  if(!["FNB","Nedbank","Standard Bank","Absa","Capitec","TymeBank"].includes(bank)||!holder||!/^\d{6,20}$/.test(account))return reply(400,{error:"valid_sa_bank_details_required"});
  const files=[...requiredFiles,...(form.get("enatis_certificate") instanceof File?["enatis_certificate"]:[]),...(form.get("fleet_lease_agreement") instanceof File?["fleet_lease_agreement"]:[]),...(prdp?["prdp"]:[])],uploaded:string[]=[];
+ const expiryFor=(type:string):string|null=>({licence_front:licenceExpiry,licence_back:licenceExpiry,vehicle_licence_disc:discExpiry,vehicle_insurance:insuranceExpiry,prdp:prdpExpiry,passport:text(form.get("passport_expiry"),10)||null,work_permit:text(form.get("work_permit_expiry"),10)||null,enatis_certificate:text(form.get("registration_document_expiry"),10)||null,fleet_lease_agreement:text(form.get("registration_document_expiry"),10)||null}[type]??null);
+ const issuedFor=(type:string):string|null=>type==="proof_of_address"?proofDate:null;
  try{
   for(const type of files){
    const file=form.get(type) as File;
@@ -60,7 +62,8 @@ if(!["sa_citizen","foreign_national"].includes(identityType))return reply(400,{e
    const {error}=await db.storage.from("driver-application-documents").upload(path,new Uint8Array(await file.arrayBuffer()),{contentType:file.type,upsert:false});
    if(error)throw new Error("document_upload_failed");
    uploaded.push(path);
-   const {error:recordError}=await db.from("driver_documents").insert({driver_user_id:u.user.id,document_type:type,storage_path:path,original_name:safe,content_type:file.type,file_size_bytes:file.size});
+   const expiry=expiryFor(type);if(expiry&&(!validDate(expiry)||Date.parse(expiry+"T00:00:00")<=Date.now()))throw new Error("document_expiry_must_be_in_future_"+type);
+   const {error:recordError}=await db.from("driver_documents").insert({driver_user_id:u.user.id,document_type:type,storage_path:path,file_url:path,original_name:safe,content_type:file.type,file_size_bytes:file.size,expiry_date:expiry,issued_at:issuedFor(type),verification_status:"pending",review_status:"pending"});
    if(recordError)throw new Error("document_record_failed");
   }
   const identity={full_name:fullName,phone,email,citizenship:identityType,id_number:identityType==="sa_citizen"?idNumber:null,date_of_birth:dob,passport_number:identityType==="foreign_national"?passport:null,traffic_register_number:identityType==="foreign_national"?trn:null};
@@ -69,9 +72,30 @@ if(!["sa_citizen","foreign_national"].includes(identityType))return reply(400,{e
   const universalCodes:Record<string,string>={"FNB":"250655","Nedbank":"198765","Standard Bank":"051001","Absa":"632005","Capitec":"470010","TymeBank":"678910"};
  if(text(form.get("branch_code"),10)!==universalCodes[bank])return reply(400,{error:"bank_universal_branch_code_mismatch"});
  const banking={bank_name:bank,account_holder:holder,account_number:account,universal_branch_code:universalCodes[bank]};
-  const {error:saveError}=await db.from("driver_onboarding_applications").upsert({driver_user_id:u.user.id,identity_type:identityType,identity_details:identity,licence_details:licence,vehicle_details:vehicle,banking_details:banking,verification_status:"pending",submitted_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:"driver_user_id"});
+  const [{data:identityCipher,error:identityEncryptError},{data:bankCipher,error:bankEncryptError}]=await Promise.all([
+   db.rpc("encrypt_driver_pii",{p_plaintext:JSON.stringify(identity)}),
+   db.rpc("encrypt_driver_pii",{p_plaintext:JSON.stringify(banking)})
+  ]);
+  if(identityEncryptError||bankEncryptError||!identityCipher||!bankCipher)throw new Error("secure_pii_encryption_unavailable");
+  const {error:saveError}=await db.from("driver_onboarding_applications").upsert({driver_user_id:u.user.id,identity_type:identityType,identity_details:{},identity_details_encrypted:identityCipher,licence_details:licence,vehicle_details:vehicle,banking_details:{},banking_details_encrypted:bankCipher,verification_status:"pending",submitted_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:"driver_user_id"});
   if(saveError)throw new Error("application_save_failed");
-  await db.from("driver_profiles").update({verification_status:"pending",is_online:false,availability_status:"offline",phone,license_expiry:licenceExpiry,vehicle_type:vehicleType==="motorbike"?"bike":vehicleType==="truck"?"truck":vehicleType==="hatchback_sedan"?"car":"van",vehicle_registration:plate.toUpperCase()}).eq("user_id",u.user.id);
+  const idCipher=identityType==="sa_citizen"?await db.rpc("encrypt_driver_pii",{p_plaintext:idNumber}):{data:null,error:null};
+  const passportCipher=identityType==="foreign_national"?await db.rpc("encrypt_driver_pii",{p_plaintext:passport}):{data:null,error:null};
+  const accountCipher=await db.rpc("encrypt_driver_pii",{p_plaintext:account});
+  if(idCipher.error||passportCipher.error||accountCipher.error)throw new Error("secure_profile_pii_encryption_failed");
+  const {error:profileSaveError}=await db.from("driver_profiles").update({
+   verification_status:"pending",onboarding_status:"pending_review",can_go_online:false,is_online:false,availability_status:"offline",
+   phone,license_expiry:licenceExpiry,license_number:text(form.get("license_number"),40)||"PENDING",
+   vehicle_type:vehicleType==="motorbike"?"bike":vehicleType==="truck"?"truck":vehicleType==="hatchback_sedan"?"car":"van",
+   vehicle_registration:plate.toUpperCase(),identity_type:identityType,identity_number_encrypted:idCipher.data||null,
+   passport_number_encrypted:passportCipher.data||null,identity_last4:identityType==="sa_citizen"?idNumber.slice(-4):passport.slice(-4),
+   licence_code:licenceCode,prdp_holder:prdp,prdp_category:prdp?prdpCategory:null,prdp_expiry:prdp?prdpExpiry:null,
+   vehicle_make:vehicle.make,vehicle_model:vehicle.model,vehicle_year:year,vehicle_gvm_kg:gvm||null,
+   bank_name:bank,bank_account_holder:holder,bank_account_encrypted:accountCipher.data,universal_branch_code:universalCodes[bank]
+  }).eq("user_id",u.user.id);
+  if(profileSaveError)throw new Error("driver_profile_onboarding_update_failed");
+  await db.from("driver_verification_audit").insert({driver_user_id:u.user.id,event_type:"onboarding_submitted",details:{identity_type:identityType,document_count:files.length}});
+  await db.from("driver_onboarding_notifications").insert({driver_user_id:u.user.id,notification_type:"application_submitted",title:"Application received",message:"Your driver onboarding application is pending document and background verification."});
   return reply(201,{submitted:true,status:"pending",message:"Application submitted. You cannot go online until SwiftHaul approves your documents."});
  }catch(e){
   if(uploaded.length)await db.storage.from("driver-application-documents").remove(uploaded);
