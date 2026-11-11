@@ -5,6 +5,9 @@ const admin=fs.readFileSync('supabase/functions/driver-admin/index.ts','utf8');
 const dashboard=fs.readFileSync('apps/company/public/driver-admin.js','utf8');
 const schema=fs.readFileSync('supabase/migrations/20261111190000_driver_verification_expiry_and_pii_protection.sql','utf8');
 const workGuard=fs.readFileSync('supabase/migrations/20261111191000_driver_work_eligibility_guard.sql','utf8');
+const dateSchema=fs.readFileSync('supabase/migrations/20261111192000_enforce_driver_document_date_requirements.sql','utf8');
+const licenceSchema=fs.readFileSync('supabase/migrations/20261111193000_require_current_driver_profile_licence.sql','utf8');
+const bankSchema=fs.readFileSync('supabase/migrations/20261111194000_encrypt_complete_driver_bank_details.sql','utf8');
 const offers=fs.readFileSync('supabase/functions/dispatch-offers/index.ts','utf8');
 const dispatch=fs.readFileSync('supabase/functions/dispatch-operations/index.ts','utf8');
 const checks=[
@@ -17,7 +20,7 @@ const checks=[
  ['vehicle, eNaTIS, insurance and residence expiry checks',/registration_document_expiry/.test(js)&&/vehicle_disc_expiry/.test(edge)&&/proof_of_address/.test(edge)],
  ['bank details encrypted and universal branch codes',/bankCodes/.test(js)&&/encrypt_driver_pii/.test(edge)&&/bank_account_encrypted/.test(edge)],
  ['ID, passport and banking PII encrypted at rest',/identity_details_encrypted/.test(schema)&&/banking_details_encrypted/.test(schema)&&/pgp_sym_encrypt/.test(schema)],
- ['driver profile eligibility and document review schema',/onboarding_status/.test(schema)&&/can_go_online/.test(schema)&&/expiry_date/.test(schema)&&/rejection_reason/.test(schema)],
+ ['driver profile eligibility and document review schema',/onboarding_status/.test(schema)&&/can_go_online/.test(schema)&&/expiry_date/.test(schema)&&/rejection_reason/.test(schema)],\n ['encrypted banking profile and dated document requirements',/bank_details_encrypted/.test(bankSchema)&&/issued_at/.test(dateSchema)&&/expiry_date is not null/.test(dateSchema)&&/license_expiry>=v_today/.test(licenceSchema)],
  ['daily 06:00 SAST expiry cron and warning audit',/driver-document-expiry-0600-sast/.test(schema)&&/0 4 \* \* \*/.test(schema)&&/expiry_30_day/.test(schema)&&/expiry_7_day/.test(schema)&&/document_expired/.test(schema)],
  ['admin dashboard has review filters and split workspace',/Pending Review/.test(dashboard)&&/Expiring Soon/.test(dashboard)&&/Rejected/.test(dashboard)&&/Approved/.test(dashboard)&&/dv-split/.test(dashboard)],
  ['admin workspace verifies ID and age',/SA ID Luhn/.test(dashboard)&&/Age 18\+/.test(dashboard)],
