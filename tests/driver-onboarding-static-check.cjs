@@ -11,6 +11,13 @@ const dateSchema=fs.readFileSync('supabase/migrations/20261111192000_enforce_dri
 const licenceSchema=fs.readFileSync('supabase/migrations/20261111193000_require_current_driver_profile_licence.sql','utf8');
 const bankSchema=fs.readFileSync('supabase/migrations/20261111194000_encrypt_complete_driver_bank_details.sql','utf8');
 const offers=fs.readFileSync('supabase/functions/dispatch-offers/index.ts','utf8');
+const secureDocs=fs.readFileSync('supabase/functions/driver-secure-documents/index.ts','utf8');
+const earnings=fs.readFileSync('supabase/functions/driver-earnings-dashboard/index.ts','utf8');
+const availability=fs.readFileSync('apps/driver/public/availability.js','utf8');
+const operations=fs.readFileSync('apps/driver/public/operations.js','utf8');
+const earningsUi=fs.readFileSync('apps/driver/public/driver-earnings.js','utf8');
+const storageSchema=fs.readFileSync('supabase/migrations/20261111230000_driver_secure_storage_aes_gcm_and_access_audit.sql','utf8');
+const tripSchema=fs.readFileSync('supabase/migrations/20261111232000_driver_trip_arrival_checkpoints.sql','utf8');
 const dispatch=fs.readFileSync('supabase/functions/dispatch-operations/index.ts','utf8');
 const checks=[
  ['four-step South African onboarding',/Personal & identity verification[\s\S]*Licence & PrDP[\s\S]*Vehicle & documents[\s\S]*Banking & checks/.test(js)],
@@ -32,7 +39,15 @@ const checks=[
  ['admin document previews and required rejection reason',/signed_url/.test(dashboard)&&/dv-zoom-image/.test(dashboard)&&/rejection_reason/.test(dashboard)],
  ['driver activation requires background clearance and approved documents',/criminal_background_clearance/.test(admin)&&/required_documents_not_approved/.test(admin)&&/action==="activate"/.test(admin)],
  ['central work eligibility guard is service-role only',/driver_can_accept_work/.test(workGuard)&&/revoke all on function public\.driver_can_accept_work/.test(workGuard)],
- ['go-online and offer acceptance enforce eligibility',/driver_can_accept_work/.test(offers)&&/driver_can_accept_work/.test(dispatch)]
+ ['go-online and offer acceptance enforce eligibility',/driver_can_accept_work/.test(offers)&&/driver_can_accept_work/.test(dispatch)],
+ ['AES-256-GCM ID, passport and account encryption with duplicate ID hash',/AES-GCM/.test(edge)&&/sa_id_number_aesgcm/.test(edge)&&/passport_number_aesgcm/.test(edge)&&/account_number_aesgcm/.test(edge)&&/sa_id_hash/.test(edge)&&/create unique index.*sa_id_hash/.test(storageSchema)],
+ ['private driver document bucket and short-lived one-use upload tickets',/driver-application-documents','driver-application-documents',false/.test(storageSchema)&&/driver_upload_tickets/.test(storageSchema)&&/Date.now\(\)\+5\*60\*1000/.test(secureDocs)&&/upload_ticket_expired_or_used/.test(secureDocs)],
+ ['ten-minute admin read URLs are audited',/createSignedUrl\(doc.storage_path,600\)/.test(secureDocs)&&/document_access_logs/.test(secureDocs)&&/admin_id/.test(storageSchema)&&/createSignedUrl\(doc.storage_path,600\)/.test(admin)],
+ ['30-second dispatch offers show driver net payout and distance',/Date.now\(\)\+30_000/.test(offers)&&/net_payout_zar/.test(offers)&&/30 SEC/.test(availability)&&/net payout/i.test(availability)],
+ ['go-online UI blocks uncleared drivers and links to onboarding',/can_go_online/.test(availability)&&/Review onboarding documents/.test(availability)],
+ ['active trip has pickup and drop-off arrival checkpoints',/arrive_pickup/.test(dispatch)&&/arrive_dropoff/.test(dispatch)&&/arrived_pickup_at/.test(tripSchema)&&/Arrived at pickup/.test(operations)&&/Arrived at drop-off/.test(operations)],
+ ['driver dashboard and earnings tab render daily, weekly, trip and EFT data',/dashboard: \{ title: 'Live trip dashboard'/.test(driverPages)&&/earnings: \{ title: 'Your earnings'/.test(driverPages)&&/today_net_cents/.test(earnings)&&/weekly_net_cents/.test(earnings)&&/Gross fare/.test(earningsUi)&&/payout_status/.test(earnings)],
+ ['dashboard route and earnings script are wired',/page=dashboard/.test(fs.readFileSync('apps/driver/public/index.html','utf8'))&&/driver-earnings.js/.test(fs.readFileSync('apps/driver/public/index.html','utf8'))]
 ];
 let failed=false;
 for(const [name,ok] of checks){console.log((ok?'PASS':'FAIL')+' '+name);if(!ok)failed=true;}
