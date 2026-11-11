@@ -67,7 +67,11 @@ Deno.serve(async (req: Request) => {
       : {data:[]};
     const driverOrderCounts:Record<string,number>={};
     if(!isDriver)for(const order of orders){if(!["assigned","accepted","picked_up","in_transit"].includes(String(order.status)))continue;const id=String(order.driver_user_id||"");if(id)driverOrderCounts[id]=(driverOrderCounts[id]||0)+1;}
-    return reply(200, { orders, driverProfile: driver, routeStops:routeStops??[], driverOrderCounts });
+    const fleetDriverIds=Object.keys(driverOrderCounts);
+    const {data:fleetRouteStops}=!isDriver&&fleetDriverIds.length
+      ? await admin.from("driver_route_stops").select("driver_id,order_id,stop_type,sequence_order,address,status").in("driver_id",fleetDriverIds).neq("status","completed").order("sequence_order")
+      : {data:[]};
+    return reply(200, { orders, driverProfile: driver, routeStops:routeStops??[], driverOrderCounts, fleetRouteStops:fleetRouteStops??[] });
   }
 
   const raw = await req.text();
