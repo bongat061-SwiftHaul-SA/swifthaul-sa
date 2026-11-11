@@ -8,6 +8,9 @@ on:
       - "apps/company/public/auth.js"
       - "public/index.html"
       - "public/customer.html"
+      - "public/customer-pages.js"
+      - "public/settings.html"
+      - "apps/driver/public/section-pages.js"
       - "public/wallet.html"
       - "apps/driver/public/index.html"
       - "apps/company/public/index.html"
@@ -52,6 +55,9 @@ jobs:
           node --input-type=module --check < public/auth.js
           node --input-type=module --check < apps/driver/public/auth.js
           node --input-type=module --check < apps/company/public/auth.js
+          node --check public/customer-pages.js
+          node --check apps/driver/public/section-pages.js
+          node --check apps/company/public/section-pages.js
           node --check apps/driver/public/account-settings.js
           node --check public/settings.js
           node --check apps/company/public/account-deletions.js
