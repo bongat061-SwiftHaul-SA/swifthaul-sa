@@ -24,7 +24,7 @@ Deno.serve(async(req:Request)=>{
  const terminalAt=booking.status==="delivered"?booking.completed_at:booking.status==="cancelled"?booking.cancelled_at:null;
  const archiveAt=terminalAt?new Date(new Date(terminalAt).getTime()+15*60*1000):null;
  const readOnly=!!archiveAt&&Date.now()>=archiveAt.getTime();
- if(req.method==="GET"){
+ if(req.method==="GET"||body.action==="list"){
   const {data,error}=await db.from("order_messages").select("id,order_id,sender_role,sender_id,message_text,attachment_url,is_read,created_at").eq("order_id",waybill).order("created_at",{ascending:true}).limit(100);
   if(error)return reply(500,{error:"chat_history_unavailable"});
   return reply(200,{success:true,messages:data||[],read_only:readOnly,archive_at:archiveAt?.toISOString()||null,server_time:new Date().toISOString()});
