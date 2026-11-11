@@ -20,8 +20,10 @@ Deno.serve(async(req:Request)=>{
   if(!p||p.account_status!=="active"||!["driver","admin"].includes(p.role))return reply(403,{error:"payout_access_required"});role=p.role;
  }
  if(req.method==="GET"){
-  if(!actorId)return reply(403,{error:"authenticated_driver_required"});
-  const {data,error}=await db.from("driver_payouts").select("id,amount_zar,reference,status,paystack_transfer_code,created_at,completed_at,failure_reason").eq("driver_id",actorId).order("created_at",{ascending:false}).limit(50);
+  if(!actorId)return reply(403,{error:"authenticated_user_required"});
+  let query=db.from("driver_payouts").select("id,driver_id,amount_zar,reference,status,paystack_transfer_code,created_at,completed_at,failure_reason").order("created_at",{ascending:false}).limit(role==="admin"?500:50);
+  if(role==="driver")query=query.eq("driver_id",actorId);
+  const {data,error}=await query;
   if(error)return reply(500,{error:"payout_history_failed"});return reply(200,{payouts:data||[]});
  }
  let body:Record<string,unknown>={};try{body=await req.json()}catch{return reply(400,{error:"invalid_json"})}
