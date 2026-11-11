@@ -4,6 +4,13 @@ const assert = require('node:assert/strict');
 const customer = fs.readFileSync('public/customer.html', 'utf8');
 const customerRoot = fs.readFileSync('public/index.html', 'utf8');
 const customerWallet = fs.readFileSync('public/wallet.html', 'utf8');
+const customerSettings = fs.readFileSync('public/settings.html', 'utf8');
+const customerPages = fs.readFileSync('public/customer-pages.js', 'utf8');
+const customerAuth = fs.readFileSync('public/auth.js', 'utf8');
+const driverAuth = fs.readFileSync('apps/driver/public/auth.js', 'utf8');
+const companyAuth = fs.readFileSync('apps/company/public/auth.js', 'utf8');
+const driverPages = fs.readFileSync('apps/driver/public/section-pages.js', 'utf8');
+const companyPages = fs.readFileSync('apps/company/public/section-pages.js', 'utf8');
 const driver = fs.readFileSync('apps/driver/public/index.html', 'utf8');
 const company = fs.readFileSync('apps/company/public/index.html', 'utf8');
 const driverMap = fs.readFileSync('apps/driver/public/map.html', 'utf8');
@@ -14,6 +21,7 @@ for (const [name, html, app] of [
   ['Customer', customer, 'customer'],
   ['Customer root', customerRoot, 'customer'],
   ['Customer wallet', customerWallet, 'customer'],
+  ['Customer settings', customerSettings, 'customer'],
   ['Driver', driver, 'driver'],
   ['Company Admin', company, 'company']
 ]) {
@@ -45,4 +53,26 @@ for (const [name, css] of [['Customer', customerTheme], ['Driver', driverTheme],
   assert.match(css, /auth-panel form>button\.primary/, `${name} must align sign-in actions`);
 }
 
-process.stdout.write('Customer, Driver and Company Admin dark-premium theme wiring checks passed.\\n');
+
+for (const [name, html] of [
+  ['Customer', customer], ['Customer root', customerRoot], ['Customer wallet', customerWallet],
+  ['Customer settings', customerSettings], ['Driver', driver], ['Company Admin', company]
+]) {
+  assert.match(html, /<section id="auth-screen" hidden>/, `${name} must not flash the sign-in page during session restoration`);
+  assert.match(html, /id="session-restore"/, `${name} must show a session restoration state`);
+  assert.match(html, /class="workspace-navigation"/, `${name} must use the focused workspace navigation menu`);
+}
+for (const [name, auth] of [['Customer', customerAuth], ['Driver', driverAuth], ['Company Admin', companyAuth]]) {
+  assert.match(auth, /persistSession:\s*true/, `${name} must persist its authenticated session`);
+  assert.match(auth, /function showSessionRestore/, `${name} must restore the session before showing sign-in`);
+  assert.match(auth, /function showSignIn/, `${name} must show sign-in only when needed`);
+  assert.doesNotMatch(auth, /addEventListener\(['"]visibilitychange['"]/, `${name} must not revalidate and bounce users to sign-in on every page focus`);
+}
+for (const key of ['book','activity','wallet','account']) assert.ok(customerPages.includes(key), `Customer navigation must include ${key}`);
+assert.match(customer, /customer-pages\.js/);
+assert.match(customerWallet, /customer-pages\.js/);
+assert.match(customerSettings, /customer-pages\.js/);
+assert.match(driverPages, /removeAttribute\('open'\)/);
+assert.match(companyPages, /removeAttribute\('open'\)/);
+
+process.stdout.write('Customer, Driver and Company Admin dark-premium theme wiring and focused workspace page routing checks passed.\\n');
