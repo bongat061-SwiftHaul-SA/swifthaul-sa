@@ -34,7 +34,7 @@ assert.match(driver, /action: 'status', app_type: 'driver'/);
 assert.match(edge, /\["customer",\s*"driver",\s*"company"\]/);
 assert.match(company, /app_type:'company'/);
 assert.match(company, /auth\.setSession\(pinData\.session\)/);
-assert.match(companyMigration, /p_app_type='company' and v_role not in \\('admin','dispatcher'\\)/);
+assert.ok(companyMigration.includes("(p_app_type='company' and v_role not in ('admin','dispatcher'))"));
 assert.match(companyMigration, /p_app_type='company' and p\.role in \('admin','dispatcher'\)/);
 assert.match(companyMigration, /v_attempts:=coalesce\(v_attempts,0\)\+1/);
 assert.doesNotMatch(companyHtml, /Continue with Google|Continue with Apple|data-social-provider/);
