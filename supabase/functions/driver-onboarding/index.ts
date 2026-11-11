@@ -28,7 +28,8 @@ Deno.serve(async(req:Request)=>{
   if(error)return reply(500,{error:"application_status_unavailable"});
   const {data:allDocuments, error:documentsError}=await db.from("driver_documents").select("id,document_type,verification_status,expiry_date,issued_at,rejection_reason,reviewed_at,created_at").eq("driver_user_id",u.user.id).order("created_at",{ascending:false});
   if(documentsError)return reply(500,{error:"driver_document_status_unavailable"});
-  const seenTypes=new Set<string>();const documents=(allDocuments||[]).filter((d:any)=>{if(seenTypes.has(d.document_type))return false;seenTypes.add(d.document_type);return ["rejected","expired"].includes(d.verification_status);});
+  const seenTypes=new Set<string>(),todaySast=new Date(Date.now()+2*60*60*1000).toISOString().slice(0,10);
+  const documents=(allDocuments||[]).filter((d:any)=>{if(seenTypes.has(d.document_type))return false;seenTypes.add(d.document_type);const expiring=!!d.expiry_date&&Date.parse(d.expiry_date+"T00:00:00+02:00")<=Date.now()+30*86400000;return ["rejected","expired"].includes(d.verification_status)||expiring;}).map((d:any)=>({...d,action_reason:d.verification_status==="approved"&&d.expiry_date?"Expires on "+d.expiry_date+". Upload a current replacement before it expires.":d.verification_status==="expired"?"This document has expired. Upload a current replacement.":"This document was rejected and must be replaced."}));
   const {data:notifications,error:notificationError}=await db.from("driver_onboarding_notifications").select("id,title,message,notification_type,created_at,read_at").eq("driver_user_id",u.user.id).order("created_at",{ascending:false}).limit(20);
   if(notificationError)return reply(500,{error:"driver_notifications_unavailable"});
   return reply(200,{application:application||null,rejected_documents:documents,notifications:notifications||[]});
