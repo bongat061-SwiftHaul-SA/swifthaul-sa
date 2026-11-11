@@ -1,0 +1,27 @@
+const fs = require('node:fs');
+const assert = require('node:assert/strict');
+const customer = fs.readFileSync('public/auth.js', 'utf8');
+const driver = fs.readFileSync('apps/driver/public/auth.js', 'utf8');
+const edge = fs.readFileSync('supabase/functions/account-pin/index.ts', 'utf8');
+const migration = fs.readFileSync('supabase/migrations/20261111103000_add_customer_driver_login_pins.sql', 'utf8');
+
+assert.match(migration, /private\.account_login_pins/);
+assert.match(migration, /extensions\.crypt\(p_pin,extensions\.gen_salt\('bf',12\)\)/);
+assert.match(migration, /failed_attempts >= 5/);
+assert.match(migration, /interval '15 minutes'/);
+assert.match(migration, /revoke all on function public\.verify_account_login_pin[\s\S]*from public,anon,authenticated/i);
+assert.match(migration, /grant execute on function public\.verify_account_login_pin[\s\S]*to service_role/i);
+assert.match(edge, /auth\.admin\.generateLink/);
+assert.match(edge, /auth\.verifyOtp/);
+assert.match(edge, /SUPABASE_SERVICE_ROLE_KEY/);
+assert.match(edge, /verify_account_login_pin/);
+assert.match(edge, /set_account_login_pin/);
+assert.match(edge, /invalid_or_expired_session|missing_bearer_token/);
+assert.match(customer, /action: 'login', app_type: 'customer'/);
+assert.match(customer, /action: 'set', app_type: 'customer'/);
+assert.match(customer, /action: 'status', app_type: 'customer'/);
+assert.match(driver, /supportsPin = app === 'driver'/);
+assert.match(driver, /action: 'login', app_type: 'driver'/);
+assert.match(driver, /action: 'set', app_type: 'driver'/);
+assert.match(driver, /action: 'status', app_type: 'driver'/);
+process.stdout.write('Customer and Driver PIN implementation static checks passed.\n');
