@@ -73,3 +73,16 @@ end $$;
 revoke all on function public.on_delivery_rating_created() from public,anon,authenticated;
 drop trigger if exists delivery_rating_score_and_quality on public.delivery_ratings;
 create trigger delivery_rating_score_and_quality after insert on public.delivery_ratings for each row execute function public.on_delivery_rating_created();
+
+alter table public.driver_delivery_offers add column if not exists priority_window_ends_at timestamptz;
+create or replace function public.recalculate_driver_score_on_trip_change()
+returns trigger language plpgsql security definer set search_path=public as $$
+begin
+ if new.driver_user_id is not null and (old.status is distinct from new.status or old.arrived_pickup_at is distinct from new.arrived_pickup_at or old.completed_at is distinct from new.completed_at) then
+  perform public.recalculate_driver_score(new.driver_user_id);
+ end if;
+ return new;
+end $$;
+revoke all on function public.recalculate_driver_score_on_trip_change() from public,anon,authenticated;
+drop trigger if exists customer_booking_recalculate_driver_score on public.customer_bookings;
+create trigger customer_booking_recalculate_driver_score after update of status,arrived_pickup_at,completed_at on public.customer_bookings for each row execute function public.recalculate_driver_score_on_trip_change();
