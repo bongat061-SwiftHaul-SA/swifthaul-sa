@@ -41,6 +41,10 @@ jobs:
       - name: Install fleet portal dependencies
         working-directory: apps/fleet
         run: npm install --no-audit --no-fund
+      - name: Syntax-check customer and driver signup modules
+        run: |
+          node --input-type=module --check < public/auth.js
+          node --input-type=module --check < apps/driver/public/auth.js
       - name: Type-check fleet portal
         working-directory: apps/fleet
         run: npm run typecheck
