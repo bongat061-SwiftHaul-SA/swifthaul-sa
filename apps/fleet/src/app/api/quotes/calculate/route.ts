@@ -13,9 +13,10 @@ function isRuleActive(rule: typeof surgeRules.$inferSelect, now: Date) {
   if (!rule.isActive) return false;
   if (rule.ruleType !== "scheduled_peak") return true;
   if (!rule.startTimeSast || !rule.endTimeSast) return false;
-  const local = new Date(now.toLocaleString("en-US", { timeZone: "Africa/Johannesburg" }));
-  const day = local.getDay();
-  const time = local.getHours() * 60 + local.getMinutes();
+  const parts = new Intl.DateTimeFormat("en-ZA", { timeZone: "Africa/Johannesburg", weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(now);
+  const part = (type: string) => parts.find((p) => p.type === type)?.value || "";
+  const day = ({ Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 } as Record<string, number>)[part("weekday")];
+  const time = Number(part("hour")) * 60 + Number(part("minute"));
   const toMinutes = (v: string) => { const [h,m] = v.slice(0,5).split(":").map(Number); return h*60+m; };
   const start = toMinutes(rule.startTimeSast), end = toMinutes(rule.endTimeSast);
   const dayAllowed = (rule.daysOfWeek || []).includes(day);
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
     const fuelPercent = Number(settings?.fuelSurchargePercent || 0);
     const globalCap = Number(settings?.maxGlobalSurgeCap || 1.5);
     const active = rules.filter((rule) => isRuleActive(rule, new Date()));
-    const selected = active.sort((a,b) => Number(b.multiplier)-Number(a.multiplier))[0];
+    const selected = active.sort((a,b) => Math.min(Number(b.multiplier),Number(b.maxMultiplierCap),globalCap)-Math.min(Number(a.multiplier),Number(a.maxMultiplierCap),globalCap))[0];
     const surgeMultiplier = selected ? Math.min(Number(selected.multiplier), Number(selected.maxMultiplierCap), globalCap) : 1;
     const included = Number(tariff.includedKm);
     const tierBoundary = Number(tariff.tier1MaxKm);
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
     const driverNet = money(gross - commission);
     const validity = Math.min(60, Math.max(1, Number(settings?.quoteValidityMinutes || 10)));
     const expiresAt = new Date(Date.now() + validity * 60_000);
-    const breakdown = { base_fare_zar: money(base), included_km: included, tier1_km: money(tier1Km), tier1_charge_zar: money(tier1), tier2_km: money(tier2Km), tier2_charge_zar: money(tier2), extra_stops: extraStops, extra_stop_fees_zar: money(stopFees), minimum_fare_adjustment_zar: money(minimumAdjustment), fare_before_surge_zar: money(fareBeforeMinimum), surge_rule: selected?.name || null, surge_multiplier: surgeMultiplier, surge_charge_zar: money(surgeAmount), fuel_surcharge_percent: fuelPercent, fuel_surcharge_zar: money(fuelAmount), platform_commission_percent: Number(tariff.platformCommissionPercent), gross_fare_zar: gross, platform_commission_zar: commission, driver_net_payout_zar: driverNet };
+    const breakdown = { base_fare_zar: money(base), included_km: included, tier1_km: money(tier1Km), tier1_charge_zar: money(tier1), tier2_km: money(tier2Km), tier2_charge_zar: money(tier2), extra_stops: extraStops, extra_stop_fees_zar: money(stopFees), minimum_fare_adjustment_zar: money(minimumAdjustment), fare_before_surge_zar: money(fareBeforeSurge), surge_rule: selected?.name || null, surge_multiplier: surgeMultiplier, surge_charge_zar: money(surgeAmount), fuel_surcharge_percent: fuelPercent, fuel_surcharge_zar: money(fuelAmount), platform_commission_percent: Number(tariff.platformCommissionPercent), gross_fare_zar: gross, platform_commission_zar: commission, driver_net_payout_zar: driverNet };
     const [quote] = await db.insert(tariffQuotes).values({ vehicleType, distanceKm: String(distanceKm), extraStops, grossFareZar: String(gross), platformCommissionZar: String(commission), driverNetPayoutZar: String(driverNet), surgeMultiplier: String(surgeMultiplier), fuelSurchargePercent: String(fuelPercent), fareBreakdown: breakdown, tariffSnapshot: tariff, expiresAt }).returning({ id: tariffQuotes.id, expiresAt: tariffQuotes.expiresAt });
     return NextResponse.json({ quote_id: quote.id, expires_at: quote.expiresAt, validity_minutes: validity, ...breakdown });
   } catch (error) {
