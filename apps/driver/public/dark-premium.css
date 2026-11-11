@@ -105,10 +105,6 @@ body[data-app="customer"] .auth-story p,body[data-app="driver"] .auth-story p{co
 body[data-app="customer"] .auth-panel,body[data-app="driver"] .auth-panel{color:#f5f7fb}
 body[data-app="customer"] .auth-panel h1,body[data-app="driver"] .auth-panel h1{color:#fff}
 body[data-app="customer"] .auth-note,body[data-app="driver"] .auth-note{color:#aeb8c6}
-body[data-app="customer"] .social-auth button,body[data-app="driver"] .social-auth button{
-  background:#171f2b;color:#f5f7fb;border-color:#3a4554
-}
-body[data-app="customer"] .social-auth p,body[data-app="driver"] .social-auth p{color:#aeb8c6}
 body[data-app="customer"] .guest-button,body[data-app="driver"] .guest-button{
   background:#202733;color:#e4e8ee;border-color:#566171
 }
