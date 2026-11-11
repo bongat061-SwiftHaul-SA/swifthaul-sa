@@ -36,7 +36,7 @@ const server = http.createServer((req,res)=>{
       page.on('response',r=>{if(r.status()>=400 && new URL(r.url()).origin===base)badLocal.push(r.status()+' '+r.url());});
       const response=await page.goto(base+app.path,{waitUntil:'domcontentloaded'});
       assert.equal(response.status(),200,app.name+' page should return HTTP 200');
-      await page.waitForFunction(()=>document.body.dataset.authState!=='checking',{timeout:20000});
+      await page.waitForFunction(()=>document.body.dataset.authState!=='checking',null,{timeout:20000});
       assert.equal(await page.locator('body').getAttribute('data-app'),app.id,app.name+' app identity');
       assert.ok((await page.title()).toLowerCase().includes(app.name==='Company Admin'?'company':app.name.toLowerCase()),app.name+' document title');
       assert.equal(await page.locator('#auth-form').count(),1,app.name+' sign-in form');
