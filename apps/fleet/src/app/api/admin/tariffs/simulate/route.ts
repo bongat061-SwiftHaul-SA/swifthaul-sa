@@ -28,7 +28,7 @@ export async function POST(request:NextRequest) {
     const body=await request.json();
     const t=body.vehicle_tariff||{};
     const type=String(t.vehicleType||"");
-    const allowed=["motorbike","hatchback_sedan","bakkie","truck"];
+    const allowed=["motorbike","bakkie","truck"];
     const distance=Number(body.distance_km),stops=Number(body.extra_stops||0);
     const fields=["baseFareZar","includedKm","tier1MaxKm","tier1RatePerKmZar","tier2RatePerKmZar","minimumFareZar","extraStopFeeZar","platformCommissionPercent"];
     const v:Record<string,number>={};
