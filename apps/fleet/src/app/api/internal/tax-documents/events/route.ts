@@ -29,8 +29,8 @@ async function senderDocument(waybill:string,reference:string,forceInvoice=false
  if(error||!b||!b.paid_at)throw new Error("Paid booking could not be verified for invoice generation.");
  const company=await companySettings(),total=money(Number(b.price||0));
  const fullDetails=Boolean(b.billing_company_name&&b.billing_address);
- const fullRequired=total>5000;
  const registered=Boolean(company?.isVatRegistered);
+ const fullRequired=registered&&total>5000;
  if(forceInvoice&&(!registered||!fullDetails))throw new Error("A full SARS tax invoice requires confirmed VAT registration and recipient company name and address.");
  const docType=forceInvoice?"sender_tax_invoice":registered&&(!fullRequired||fullDetails)?"sender_tax_invoice":"sender_receipt";
  const rate=registered?Number(company?.vatRatePercent||15.5):0;
