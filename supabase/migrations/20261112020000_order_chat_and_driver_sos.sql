@@ -52,3 +52,21 @@ alter table public.sos_incidents enable row level security;
 alter table public.sos_incident_actions enable row level security;
 revoke all on public.order_messages,public.sos_incidents,public.sos_incident_actions from anon,authenticated;
 grant all on public.order_messages,public.sos_incidents,public.sos_incident_actions to service_role;
+
+-- Only assigned drivers, fleet owners and company responders may receive private SOS broadcasts.
+-- Order chat broadcasts are restricted to the assigned driver and company responders.
+drop policy if exists "swifthaul_private_order_sos_broadcast_read" on realtime.messages;
+create policy "swifthaul_private_order_sos_broadcast_read" on realtime.messages for select to authenticated using (
+ (realtime.topic() ~ '^sos:[0-9a-fA-F-]{36}$' and exists (
+   select 1 from public.sos_incidents i where i.id=substring(realtime.topic() from 5)::uuid
+   and (i.driver_id=(select auth.uid())
+    or exists(select 1 from public.fleets f where f.id=i.fleet_id and f.owner_user_id=(select auth.uid()))
+    or exists(select 1 from public.user_profiles p where p.id=(select auth.uid()) and p.role in ('admin','company_admin','dispatcher'))
+   )
+ ))
+ or (realtime.topic() like 'order:%' and exists (
+   select 1 from public.customer_bookings b where b.waybill=substring(realtime.topic() from 7)
+   and (b.driver_user_id=(select auth.uid())
+    or exists(select 1 from public.user_profiles p where p.id=(select auth.uid()) and p.role in ('admin','company_admin','dispatcher')))
+ ))
+);
