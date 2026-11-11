@@ -17,7 +17,7 @@
    status.textContent="Sending emergency alert…";
    try{
     const client=window.swiftHaulSupabase;if(!client)throw new Error("Secure connection unavailable");
-    const activeOrder=document.querySelector("[data-waybill][data-status]")?.dataset.waybill||null;
+    const activeOrder=document.querySelector("#dispatches .order[data-delivery-status=\"accepted\"],#dispatches .order[data-delivery-status=\"picked_up\"],#dispatches .order[data-delivery-status=\"in_transit\"]")?.dataset.waybill||null;
     const {data,error}=await client.functions.invoke("driver-sos",{body:{lat:pos.coords.latitude,lng:pos.coords.longitude,order_id:activeOrder}});
     if(error||!data?.success)throw new Error(data?.error||error?.message||"SOS request failed");
     status.textContent="SOS logged. Incident "+data.incident.id+". Notifications: "+(data.notifications||[]).filter(x=>x.queued).length+" queued. Call emergency services if you need immediate help.";
