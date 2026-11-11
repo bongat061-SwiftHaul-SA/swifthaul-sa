@@ -50,7 +50,7 @@ if (app === 'driver' || app === 'company') {
         empty.textContent = 'No deliveries are currently assigned to this account.';
         list.append(empty);
       }
-      for (const order of data.orders || []) render(order, data.driverOrderCounts || {}, data.orders || []);
+      for (const order of data.orders || []) render(order, data.driverOrderCounts || {}, data.orders || [], data.fleetRouteStops || []);
       message.textContent = '';
     } catch (error) {
       if (current === requestNumber) message.textContent = error.message || 'Unable to load deliveries.';
@@ -81,7 +81,7 @@ if (app === 'driver' || app === 'company') {
     return button;
   }
 
-  function render(order, driverOrderCounts = {}, allOrders = []) {
+  function render(order, driverOrderCounts = {}, allOrders = [], fleetRouteStops = []) {
     const card = document.createElement('article');
     card.className = 'order';
   card.dataset.deliveryStatus = order.status || '';
@@ -104,6 +104,11 @@ if (app === 'driver' || app === 'company') {
       const summaryLabel=document.createElement('summary');summaryLabel.textContent='Open driver inspector · stacked deliveries';inspector.append(summaryLabel);
       const stacked=allOrders.filter(item=>item.driver_user_id===order.driver_user_id&&!['delivered','failed','cancelled'].includes(item.status));
       for(const item of stacked){const row=document.createElement('p');row.textContent=item.waybill+' · '+item.pickup+' → '+item.dropoff+' · '+statusLabel(item.status);inspector.append(row);}
+      const orderedStops=fleetRouteStops.filter(stop=>stop.driver_id===order.driver_user_id);
+      if(orderedStops.length){
+        const stopHeading=document.createElement('strong');stopHeading.textContent='Next route stops';inspector.append(stopHeading);
+        for(const stop of orderedStops){const row=document.createElement('p');row.textContent='Stop '+stop.sequence_order+' · '+String(stop.stop_type).toUpperCase()+' · '+(stop.address||'Address unavailable')+' · '+String(stop.order_id).slice(0,10);inspector.append(row);}
+      }
       card.append(inspector);
     }
     if (app === 'company' && order.counter_offer != null) {
