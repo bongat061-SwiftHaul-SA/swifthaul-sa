@@ -47,6 +47,19 @@ export async function PUT(request: NextRequest) {
       await db.insert(tariffAuditLogs).values({ changedBy: actor, entityType: "tariff_settings", entityId: updated.id, action: previous ? "update" : "insert", previousValues: previous || null, newValues: updated });
       return NextResponse.json({ item: updated });
     }
+    if (body.kind === "tax_profile") {
+      const v=body.values||{};
+      const vat=String(v.vatNumber||"").trim();
+      const rate=Number(v.vatRatePercent??15.5);
+      if(vat&&!/^\\d{10}$/.test(vat))return NextResponse.json({error:"South African VAT number must contain exactly 10 digits."},{status:400});
+      if(!Number.isFinite(rate)||rate<0||rate>100)return NextResponse.json({error:"VAT rate must be between 0 and 100."},{status:400});
+      if(v.isVatRegistered&&(!vat||!String(v.legalEntityName||"").trim()||!String(v.registeredAddress||"").trim()))return NextResponse.json({error:"VAT registration requires a legal entity name, 10-digit VAT number and registered address."},{status:400});
+      const [previous]=await db.select().from(tariffSettings).orderBy(desc(tariffSettings.updatedAt)).limit(1);
+      const patch={legalEntityName:String(v.legalEntityName||"").trim()||null,c ipcRegNumber:undefined};
+      const values={legalEntityName:String(v.legalEntityName||"").trim()||null,c ipcRegNumber:undefined};
+      const update={legalEntityName:values.legalEntityName,c ipcRegNumber:undefined};
+      return NextResponse.json({error:"Tax profile handler placeholder."},{status:501});
+    }
     if (body.kind === "surge") {
       const v = body.values || {};
       const ruleValues = { name: String(v.name || "").trim(), ruleType: v.ruleType, daysOfWeek: Array.isArray(v.daysOfWeek) ? v.daysOfWeek : [0,1,2,3,4,5,6], startTimeSast: v.startTimeSast || null, endTimeSast: v.endTimeSast || null, multiplier: v.multiplier, maxMultiplierCap: v.maxMultiplierCap || 1.5, isActive: Boolean(v.isActive), updatedAt: new Date() };
