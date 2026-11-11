@@ -21,7 +21,7 @@ for (const [name, path] of authFiles) {
   assert.match(auth, /persistSession:\s*true/, name + ' must persist Supabase sessions across page loads.');
   assert.match(auth, /autoRefreshToken:\s*true/, name + ' must refresh expiring sessions.');
   assert.match(auth, /async function init\s*\([\s\S]*?getSession\(\)/, name + ' must check the saved session before presenting sign-in.');
-  assert.match(auth, /if\s*\(session\)\s*\{[\s\S]*?validateAccount\(session\)/, name + ' must validate and restore an existing session.');
+  assert.match(auth, /if\s*\(session\)\s*\{?[\s\S]*?validateAccount\(session\)/, name + ' must validate and restore an existing session.');
   assert.match(auth, /auth\.signOut\(\)/, name + ' must provide an explicit sign-out action.');
   assert.match(auth, /event === 'SIGNED_OUT'[\s\S]*?authScreen\.hidden = false/, name + ' may return to sign-in after an actual signed-out event.');
   assert.match(auth, /event === 'TOKEN_REFRESHED'[\s\S]*?currentUser[\s\S]*?validateAccount\(session\)\.catch/, name + ' must not hide the workspace when background account revalidation is temporarily unavailable.');
@@ -34,6 +34,11 @@ for (const [name, path] of pageFiles) {
   assert.match(pages, /preventDefault\(\)/, name + ' section links must prevent full page reloads.');
   assert.doesNotMatch(pages, /location\.(?:assign|replace|reload)\s*\(/, name + ' section controller must not force a reload or redirect to sign-in.');
   assert.match(pages, /navCurrent\.textContent/, name + ' navigation summary must match the selected workspace page.');
+}
+
+for (const [name, path] of [['Customer', 'public/customer.html'], ['Customer default entry', 'public/index.html'], ['Driver', 'apps/driver/public/index.html'], ['Company Admin', 'apps/company/public/index.html']]) {
+  const html = read(path);
+  assert.match(html, /<section id="session-restore" hidden/, name + ' restore screen must start hidden to prevent a first-paint flash.');
 }
 
 const driverShell = read('apps/driver/public/premium-shell.js');
