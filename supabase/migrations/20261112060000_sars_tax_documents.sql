@@ -23,6 +23,7 @@ alter table public.customer_bookings drop constraint if exists customer_bookings
 alter table public.customer_bookings add constraint customer_bookings_billing_vat_check check (billing_vat_number is null or billing_vat_number ~ '^[0-9]{10}$');
 
 create sequence if not exists public.tax_document_number_seq start 1 increment 1;
+grant usage, select on sequence public.tax_document_number_seq to service_role;
 create table if not exists public.tax_documents (
  id uuid primary key default gen_random_uuid(),
  document_number text not null unique,
