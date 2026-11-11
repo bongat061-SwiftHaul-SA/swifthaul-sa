@@ -164,8 +164,8 @@ form.addEventListener('submit', async event => {
     if (mode === 'pin') {
       const pinAccountEmail = rememberedCustomerEmail();
       if (!pinAccountEmail) {
-        status.textContent = 'For your first sign-in on this device, use your email and password. Then create your six-digit PIN.';
         setMode('login');
+        status.textContent = 'For your first sign-in on this device, use your email and password. Then create your six-digit PIN.';
         return;
       }
       if (!/^[0-9]{6}$/.test(pinInput.value)) {
