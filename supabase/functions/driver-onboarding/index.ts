@@ -87,7 +87,7 @@ if(!["sa_citizen","foreign_national"].includes(identityType))return reply(400,{e
   if(idCipher.error||passportCipher.error||accountCipher.error)throw new Error("secure_profile_pii_encryption_failed");
   const {error:profileSaveError}=await db.from("driver_profiles").update({
    verification_status:"pending",onboarding_status:"pending_review",can_go_online:false,is_online:false,availability_status:"offline",
-   phone,license_expiry:licenceExpiry,license_number:text(form.get("license_number"),40)||"PENDING",
+   phone,license_expiry:licenceExpiry,
    vehicle_type:vehicleType==="motorbike"?"bike":vehicleType==="truck"?"truck":vehicleType==="hatchback_sedan"?"car":"van",
    vehicle_registration:plate.toUpperCase(),identity_type:identityType,identity_number_encrypted:idCipher.data||null,
    passport_number_encrypted:passportCipher.data||null,identity_last4:identityType==="sa_citizen"?idNumber.slice(-4):passport.slice(-4),
