@@ -55,6 +55,7 @@ Deno.serve(async (req: Request) => {
       const { error } = await admin.from("driver_live_locations").delete()
         .eq("waybill", booking.waybill).eq("driver_user_id", actorId);
       if (error) return reply(500, { error: "location_sharing_stop_failed" });
+      await admin.from("public_tracking_locations").delete().eq("waybill",booking.waybill);
       return reply(200, { sharing: false });
     }
     const lat = body.latitude, lng = body.longitude, accuracy = body.accuracy_m;
@@ -72,7 +73,8 @@ Deno.serve(async (req: Request) => {
       waybill: booking.waybill, driver_user_id: actorId, latitude: lat, longitude: lng,
       accuracy_m: accuracy ?? null, updated_at: updatedAt,
     }, { onConflict: "waybill" });
-    if (error) return reply(500, { error: "location_update_failed" });\n    if(booking.tracking_code){const {error:publicError}=await admin.from("public_tracking_locations").upsert({tracking_code:booking.tracking_code,waybill:booking.waybill,latitude:lat,longitude:lng,updated_at:updatedAt},{onConflict:"tracking_code"});if(publicError)return reply(500,{error:"public_tracking_update_failed"});}
+    if (error) return reply(500, { error: "location_update_failed" });
+    if(booking.tracking_code){const {error:publicError}=await admin.from("public_tracking_locations").upsert({tracking_code:booking.tracking_code,waybill:booking.waybill,latitude:lat,longitude:lng,updated_at:updatedAt},{onConflict:"tracking_code"});if(publicError)return reply(500,{error:"public_tracking_update_failed"});}
     const { data: insurancePolicy, error: insurancePolicyError } = await admin.from("driver_insurance_policies")
       .select("id").eq("driver_user_id", actorId).eq("status", "active")
       .lte("coverage_starts_at", updatedAt).gt("coverage_ends_at", updatedAt).maybeSingle();
