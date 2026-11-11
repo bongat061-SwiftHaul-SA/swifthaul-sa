@@ -44,7 +44,7 @@ if (app === 'driver' || app === 'company') {
     offerPanel.replaceChildren();
     try {
       const client = window.swiftHaulSupabase;
-      const { data, error } = await client.functions.invoke('dispatch-offers');
+      const { data, error } = await client.functions.invoke('dispatch-offers', { method: 'GET' });
       if (error || data?.error) throw new Error(data?.error || error?.message || 'Unable to load offers.');
       const offers = data?.offers || [];
       if (!offers.length) return;
