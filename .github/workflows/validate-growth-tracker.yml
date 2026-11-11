@@ -17,6 +17,10 @@ on:
     branches:
       - feature/sa-sms-whatsapp-notifications-staging
     paths:
+      - "public/auth.js"
+      - "public/customer.html"
+      - "apps/driver/public/auth.js"
+      - "apps/driver/public/index.html"
       - "apps/fleet/src/app/admin/growth/**"
       - "apps/fleet/src/app/admin/dashboard/**"
       - "apps/fleet/src/app/api/admin/growth/**"
