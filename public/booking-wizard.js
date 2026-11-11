@@ -21,6 +21,7 @@
   const calculate = form.querySelector('#calculate-route');
   const quote = form.querySelector('#quote-result');
   const pricingNote = calculate?.nextElementSibling;
+  const vehicleNote = vehicle?.nextElementSibling;
   const submit = form.querySelector('#submit');
   const counterSubmit = form.querySelector('#submit-counter-offer');
   const message = form.querySelector('#message');
@@ -59,7 +60,7 @@
 
   const move = (node,index) => { if(node) panes[index].append(node); };
   [pickup,dropoff,recipient,schedule,returnTrip].forEach(node=>move(node,0));
-  [parcel,vehicle,calculate,pricingNote,quote].forEach(node=>move(node,1));
+  [parcel,vehicle,vehicleNote,calculate,pricingNote,quote].forEach(node=>move(node,1));
   [payment,assistance,protection].forEach(node=>move(node,2));
   const review = document.createElement('section');
   review.className = 'booking-review-card';
