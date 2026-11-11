@@ -14,7 +14,7 @@ const assert = (condition, message) => { if (!condition) throw new Error(message
 assert(index.includes('customer-dashboard.css') && index.includes('customer-pages.js?v=20261111-dashboard4'), 'Customer default index entry must load the same refreshed dashboard assets.');
 assert(index.includes('booking-wizard.js?v=20261111-route-stage4'), 'Customer default index entry must retain the current booking wizard.');
 assert(auth.includes("new URL('customer.html', window.location.href)") && auth.includes('emailRedirectTo: customerReturnUrl()') && auth.includes('redirectTo: customerReturnUrl()'), 'Customer signup and password recovery emails must return to the current dashboard entry point.');
-assert(html.includes('customer-dashboard.css') && html.includes('customer-pages.js?v=20261111-dashboard3'), 'Customer HTML must load the refreshed dashboard assets.');
+assert(html.includes('customer-dashboard.css') && html.includes('customer-pages.js?v=20261111-dashboard4'), 'Customer HTML must load the refreshed dashboard assets.');
 assert(pages.includes('className = \'customer-home\'') && pages.includes('What can we move for you?'), 'Customer home dashboard must render its dedicated welcome panel.');
 assert(['home','book','activity','tracking','wallet','account'].every(key => pages.includes(key + ': { title:')), 'Customer dashboard must provide separate Home, Book, Deliveries, Tracking, Wallet and Account pages.');
 assert(pages.includes('nav.innerHTML =') && pages.includes('data-page="home"') && pages.includes('data-page="book"') && pages.includes('data-page="tracking"'), 'Customer navigation must expose dedicated home, booking and tracking destinations.');
