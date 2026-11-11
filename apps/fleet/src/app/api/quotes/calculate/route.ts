@@ -15,7 +15,7 @@ function isRuleActive(rule: typeof surgeRules.$inferSelect, now: Date) {
   if (!rule.startTimeSast || !rule.endTimeSast) return false;
   const parts = new Intl.DateTimeFormat("en-ZA", { timeZone: "Africa/Johannesburg", weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(now);
   const part = (type: string) => parts.find((p) => p.type === type)?.value || "";
-  const day = ({ Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 } as Record<string, number>)[part("weekday")];
+  const day = ({ Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 } as Record<string, number>)[part("weekday")] ?? -1;
   const time = Number(part("hour")) * 60 + Number(part("minute"));
   const toMinutes = (v: string) => { const [h,m] = v.slice(0,5).split(":").map(Number); return h*60+m; };
   const start = toMinutes(rule.startTimeSast), end = toMinutes(rule.endTimeSast);
