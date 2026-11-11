@@ -39,7 +39,13 @@ Deno.serve(async(req:Request)=>{
   const status=event.event==="transfer.success"?"success":"failed";
   const {data:applied,error}=await db.rpc("apply_paystack_payout_event",{p_reference:ref,p_status:status,p_transfer_code:code||null,p_failure_reason:String(event.data?.reason||event.data?.message||"Transfer failed")});
   if(error){console.error("Paystack payout webhook update failed",error.message);return response(503,"Payout update failed");}
-  if(applied!==true)return response(404,"Payout reference not found");
+  if(applied!==true){
+   const {data:fleetTransfer,error:fleetLookupError}=await db.from("fleet_payout_transfers").select("id,status").eq("reference",ref).maybeSingle();
+   if(fleetLookupError){console.error("Fleet payout lookup failed",fleetLookupError.message);return response(503,"Fleet payout lookup failed");}
+   if(!fleetTransfer)return response(404,"Payout reference not found");
+   const {error:fleetUpdateError}=await db.from("fleet_payout_transfers").update({status,transfer_code:code||null,failure_reason:status==="failed"?String(event.data?.reason||event.data?.message||"Transfer failed"):null,updated_at:new Date().toISOString()}).eq("id",fleetTransfer.id);
+   if(fleetUpdateError){console.error("Fleet payout status update failed",fleetUpdateError.message);return response(503,"Fleet payout update failed");}
+  }
   if(status==="success"){
    const generated=await emitTaxDocument({event:"transfer.success",reference:ref});if(!generated)return response(503,"Payout saved; remittance generation will retry.");
    const {data:payout,error:payoutError}=await db.from("driver_payouts").select("driver_id,amount_zar,reference").eq("reference",ref).maybeSingle();
