@@ -4,6 +4,8 @@
   const form = document.getElementById('booking-form');
   if (!form || form.dataset.wizardReady === 'true') return;
   form.dataset.wizardReady = 'true';
+  // Validate the active wizard pane ourselves so native validation never tries
+  // to focus a required field inside a hidden step.
 
   const byText = (selector, match) => [...form.querySelectorAll(selector)].find(node =>
     (node.querySelector('legend')?.textContent || node.textContent || '').toLowerCase().includes(match)
@@ -57,6 +59,7 @@
   controls.innerHTML = '<button type="button" class="booking-back" data-wizard-back hidden>Back</button><span class="booking-wizard-spacer"></span><button type="button" class="primary booking-next" data-wizard-next>Continue</button>';
   shell.append(header,content,controls);
   form.insertBefore(shell,form.firstChild);
+  form.noValidate = true;
 
   const move = (node,index) => { if(node) panes[index].append(node); };
   [pickup,dropoff,recipient,schedule,returnTrip].forEach(node=>move(node,0));
