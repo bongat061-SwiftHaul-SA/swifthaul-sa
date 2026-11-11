@@ -112,9 +112,11 @@ Deno.serve(async (req: Request) => {
     if (typeof body.driver_id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.driver_id))
       return reply(400, { error: "enter_valid_driver_account_id" });
     const { data: driver, error } = await admin.from("driver_profiles")
-      .select("user_id,verification_status").eq("user_id", body.driver_id).maybeSingle();
+      .select("user_id,verification_status,can_go_online").eq("user_id", body.driver_id).maybeSingle();
     if (error) return reply(500, { error: "driver_lookup_failed" });
     if (!driver || driver.verification_status !== "approved") return reply(409, { error: "driver_not_approved" });
+    const {data:eligible,error:eligibilityError}=await admin.rpc("driver_can_accept_work",{p_driver_user_id:driver.user_id});
+    if(eligibilityError||eligible!==true) return reply(409,{error:"driver_onboarding_documents_or_background_clearance_incomplete"});
     const { error: updateError } = await admin.from("customer_bookings")
       .update({ driver_user_id: driver.user_id, assigned_driver: driver.user_id, status: "assigned" })
       .eq("waybill", order.waybill);
@@ -137,6 +139,10 @@ Deno.serve(async (req: Request) => {
     in_transit: { from: ["picked_up"], to: "in_transit" },
   };
   if (typeof body.action === "string" && transitions[body.action]) {
+    if(body.action==="accept"){
+      const {data:eligible,error:eligibilityError}=await admin.rpc("driver_can_accept_work",{p_driver_user_id:actorId});
+      if(eligibilityError||eligible!==true)return reply(403,{error:"driver_not_cleared_to_accept_trips"});
+    }
     const transition = transitions[body.action];
     if (!transition.from.includes(order.status)) return reply(409, { error: "invalid_status_transition" });
     await setStatus(transition.to);
