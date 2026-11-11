@@ -1,0 +1,317 @@
+/* SwiftHaul unified signed-in dark-premium workspace
+   Applied last in Customer, Driver and Company Admin to eliminate legacy light/green surfaces. */
+:root{
+  --sh-bg:#090b0f;--sh-panel:#12161d;--sh-panel-2:#191f28;--sh-border:#303946;
+  --sh-text:#f4f6f8;--sh-muted:#a3adba;--sh-white:#f7f8fa;--sh-ink:#101318;
+}
+html:has(body[data-app]){background:var(--sh-bg);color-scheme:dark}
+body[data-app="customer"],body[data-app="driver"],body[data-app="company"]{
+  background:var(--sh-bg)!important;color:var(--sh-text)!important;
+  font-family:Inter,"Plus Jakarta Sans",system-ui,sans-serif!important;
+}
+body[data-app] #workspace{background:var(--sh-bg)!important;color:var(--sh-text)!important;min-height:100dvh}
+body[data-app] #workspace>.topbar{
+  background:#0d1015!important;color:var(--sh-text)!important;border:0!important;
+  border-bottom:1px solid var(--sh-border)!important;box-shadow:none!important;
+}
+body[data-app] #workspace .page{color:var(--sh-text)!important}
+body[data-app] #workspace .page-heading h1,
+body[data-app] #workspace h1,body[data-app] #workspace h2,body[data-app] #workspace h3,
+body[data-app] #workspace h4,body[data-app] #workspace strong{color:var(--sh-text)!important}
+body[data-app] #workspace p,body[data-app] #workspace label,
+body[data-app] #workspace .subtle,body[data-app] #workspace small,
+body[data-app] #workspace .eyebrow{color:var(--sh-muted)!important}
+body[data-app] #workspace .panel,body[data-app] #workspace .stat,
+body[data-app] #workspace .empty,body[data-app] #workspace .help,
+body[data-app] #workspace .quote-result,body[data-app] #workspace .workspace-grid aside>section,
+body[data-app] #workspace .workspace-grid>.panel,body[data-app] #workspace .workspace-grid aside>.panel,
+body[data-app] #workspace .page>section.panel,body[data-app] #workspace .customer-settings,
+body[data-app] #workspace .driver-settings,body[data-app] #workspace .settings-card,
+body[data-app] #workspace .operations-card,body[data-app] #workspace .management-card{
+  background:var(--sh-panel)!important;color:var(--sh-text)!important;
+  border:1px solid var(--sh-border)!important;border-radius:17px!important;box-shadow:none!important;
+}
+body[data-app] #workspace .panel *,body[data-app] #workspace .stat *,
+body[data-app] #workspace .empty *,body[data-app] #workspace .help *{border-color:var(--sh-border)}
+body[data-app] #workspace .section-links{
+  background:#11151c!important;border:1px solid var(--sh-border)!important;
+  box-shadow:none!important;border-radius:16px!important;
+}
+body[data-app] #workspace .section-links a{
+  color:#b8c1cd!important;background:transparent!important;border-radius:10px!important;
+}
+body[data-app] #workspace .section-links a:hover,
+body[data-app] #workspace .section-links a:focus,
+body[data-app] #workspace .section-links a.is-active,
+body[data-app] #workspace .section-links a[aria-current="page"]{
+  background:#f0f2f5!important;color:#11151b!important;
+}
+body[data-app] #workspace button,body[data-app] #workspace .button,
+body[data-app] #workspace input[type=button],body[data-app] #workspace input[type=submit]{
+  min-height:42px!important;padding:10px 15px!important;border-radius:11px!important;
+  background:linear-gradient(180deg,#252d38,#1b222c)!important;color:#f3f5f8!important;
+  border:1px solid #465160!important;box-shadow:none!important;font-weight:750!important;
+}
+body[data-app] #workspace button.primary,body[data-app] #workspace .primary,
+body[data-app] #workspace button[type=submit],body[data-app] #workspace input[type=submit]{
+  background:linear-gradient(180deg,#f7f8fa,#dce1e8)!important;color:#101318!important;
+  border-color:#f7f8fa!important;
+}
+body[data-app] #workspace button:disabled,body[data-app] #workspace .button:disabled{
+  opacity:.45!important;cursor:not-allowed!important;
+}
+body[data-app] #workspace input:not([type=checkbox]):not([type=radio]):not([type=file]),
+body[data-app] #workspace select,body[data-app] #workspace textarea{
+  background:#0b0f15!important;color:#f3f5f8!important;border:1px solid #3a4554!important;
+  border-radius:11px!important;box-shadow:none!important;
+}
+body[data-app] #workspace input::placeholder,body[data-app] #workspace textarea::placeholder{color:#778392!important}
+body[data-app] #workspace input:focus,body[data-app] #workspace select:focus,
+body[data-app] #workspace textarea:focus{outline:2px solid #aeb8c6!important;outline-offset:2px!important}
+body[data-app] #workspace table{background:transparent!important;color:var(--sh-text)!important}
+body[data-app] #workspace table th{background:#1b222c!important;color:#cbd2dc!important;border-color:var(--sh-border)!important}
+body[data-app] #workspace table td{background:transparent!important;color:#e4e8ee!important;border-color:var(--sh-border)!important}
+body[data-app] #workspace .table-wrap{border-color:var(--sh-border)!important}
+body[data-app] #workspace hr{border-color:var(--sh-border)!important}
+body[data-app] #workspace .footer{background:#0d1015!important;color:#8d98a6!important;border-color:var(--sh-border)!important}
+body[data-app] #workspace .status-message,[role=status]{color:var(--sh-muted)}
+body[data-app] #workspace a:not(.section-links a){text-decoration-color:#667180}
+body[data-app] #workspace .modal,body[data-app] #workspace dialog,
+body[data-app] #workspace [role=dialog]{background:#12161d!important;color:var(--sh-text)!important;border:1px solid var(--sh-border)!important}
+body[data-app] #workspace .notice,body[data-app] #workspace .callout{background:#1a2029!important;color:#e5e9ef!important;border-color:var(--sh-border)!important}
+body[data-app] #workspace .stat strong{color:var(--sh-white)!important}
+body[data-app] #workspace .section-number{color:#9da7b5!important}
+@media(max-width:760px){
+ body[data-app] #workspace .page{padding-left:14px!important;padding-right:14px!important}
+ body[data-app] #workspace .section-links{background:#11151cf2!important}
+ body[data-app] #workspace .stats{gap:8px!important}
+ body[data-app] #workspace .stat{padding:13px 10px!important}
+ body[data-app] #workspace .table-wrap{max-width:100%;overflow-x:auto}
+ body[data-app] #workspace .panel,body[data-app] #workspace .page>section.panel{padding:16px!important}
+}
+@media(prefers-reduced-motion:reduce){body[data-app] #workspace *,body[data-app] #workspace *:before,body[data-app] #workspace *:after{animation:none!important;transition:none!important}}
+/* Keep map tiles and map labels in their own cartographic colour scheme. */
+body[data-app] #workspace .maplibregl-map,body[data-app] #workspace .leaflet-container{color:#20252c!important}
+
+
+/* Company Admin: complete dark-premium treatment, including sign-in and map subpage. */
+body[data-app="company"]{--brand:#dce2e9;--muted:#a3adba;--line:#303946;--surface:#12161d;--soft:#191f28;--border:#303946;background:#090b0f!important;color:#f4f6f8!important}
+body[data-app="company"] #auth-screen{min-height:100dvh;background:#090b0f!important;color:#f4f6f8!important}
+body[data-app="company"] #auth-screen>.topbar{background:#0d1015!important;border-bottom:1px solid #303946!important;color:#f4f6f8!important}
+body[data-app="company"] #auth-screen .wordmark{color:#f4f6f8!important}
+body[data-app="company"] #auth-screen .wordmark span{color:#c5cdd7!important}
+body[data-app="company"] #auth-screen .app-tag{color:#a3adba!important;border-color:#465160!important}
+body[data-app="company"] #auth-screen .eyebrow{color:#aeb8c6!important}
+body[data-app="company"] #auth-screen .auth-layout{background:#090b0f!important}
+body[data-app="company"] #auth-screen .auth-story{background:linear-gradient(145deg,#171d26,#0d1117 72%)!important;color:#f4f6f8!important}
+body[data-app="company"] #auth-screen .auth-story:after{border-color:#8793a21f!important;box-shadow:0 0 0 65px #8793a20c,0 0 0 130px #8793a208!important}
+body[data-app="company"] #auth-screen .auth-story .eyebrow,
+body[data-app="company"] #auth-screen .story-bottom{color:#aeb8c6!important}
+body[data-app="company"] #auth-screen .auth-story h2,
+body[data-app="company"] #auth-screen .auth-panel h1{color:#f4f6f8!important}
+body[data-app="company"] #auth-screen .auth-story p,
+body[data-app="company"] #auth-screen .subtle,
+body[data-app="company"] #auth-screen .auth-note,
+body[data-app="company"] #auth-screen .social-auth p{color:#a3adba!important}
+body[data-app="company"] #auth-screen .auth-panel{color:#f4f6f8!important}
+body[data-app="company"] #auth-screen label{color:#d6dce4!important}
+body[data-app="company"] #auth-screen input:not([type=checkbox]){background:#10151c!important;color:#f4f6f8!important;border:1px solid #3a4554!important;border-radius:12px!important}
+body[data-app="company"] #auth-screen input::placeholder{color:#778392!important}
+body[data-app="company"] #auth-screen .primary{background:#f0f2f5!important;color:#101318!important;border:1px solid #f0f2f5!important;border-radius:12px!important}
+body[data-app="company"] #auth-screen .quiet,
+body[data-app="company"] #auth-screen button:not(.primary){background:#1b222c!important;color:#e8edf3!important;border:1px solid #465160!important}
+body[data-app="company"] #auth-screen .social-auth button{background:#171d26!important;color:#e8edf3!important;border:1px solid #3a4554!important}
+body[data-app="company"] #auth-screen .guest-button{background:#1b222c!important;color:#e8edf3!important;border-color:#465160!important}
+body[data-app="company"] #auth-screen .auth-links button{background:transparent!important;border:0!important;color:#c2cad4!important}
+body[data-app="company"] #workspace .topbar .wordmark{color:#f4f6f8!important}
+body[data-app="company"] #workspace .topbar .wordmark span{color:#c5cdd7!important}
+body[data-app="company"] #workspace .topbar .app-tag{color:#a3adba!important;border-color:#465160!important}
+body[data-app="company"] #workspace .account{color:#dce2e9!important}
+body[data-app="company"] #workspace .page{grid-template-columns:224px minmax(0,1fr)!important}
+body[data-app="company"] #workspace .section-links{background:#11151c!important;border-color:#303946!important}
+body[data-app="company"] #workspace .section-links:before{color:#8994a2!important}
+body[data-app="company"] #workspace .section-links a{color:#b8c1cd!important}
+body[data-app="company"] #workspace .section-links a:first-child,
+body[data-app="company"] #workspace .section-links a.is-active,
+body[data-app="company"] #workspace .section-links a[aria-current="page"],
+body[data-app="company"] #workspace .section-links a:hover,
+body[data-app="company"] #workspace .section-links a:focus{background:#eef1f5!important;color:#11151b!important}
+body[data-app="company"] #workspace .page>section.panel,
+body[data-app="company"] #workspace .workspace-grid>.panel,
+body[data-app="company"] #workspace .workspace-grid aside>.panel,
+body[data-app="company"] #workspace #monthly-reports{background:#12161d!important;border-color:#303946!important;color:#f4f6f8!important;box-shadow:none!important}
+body[data-app="company"] #workspace .accent-panel{background:#191f28!important;color:#f4f6f8!important;border-color:#465160!important}
+body[data-app="company"] #workspace .accent-panel h2,
+body[data-app="company"] #workspace .accent-panel strong{color:#f4f6f8!important}
+body[data-app="company"] #workspace .accent-panel p{color:#aeb8c6!important}
+body[data-app="company"] #workspace .status,
+body[data-app="company"] #workspace .badge{background:#252d38!important;color:#dce2e9!important;border:1px solid #465160!important}
+body[data-app="company"] #workspace .operations-list .order,
+body[data-app="company"] #workspace .operations-list .card{background:#171d26!important;border-color:#303946!important;color:#e8edf3!important}
+body[data-app="company"] #workspace #financial-content>.stat,
+body[data-app="company"] #workspace #financial-content>.panel{background:#171d26!important;border-color:#303946!important}
+body[data-app="company"] #workspace #monthly-reports input{background:#0b0f15!important;color:#f4f6f8!important;border-color:#3a4554!important}
+body[data-app="company"] #workspace #monthly-reports button{background:#eef1f5!important;color:#11151b!important;border:1px solid #eef1f5!important}
+body[data-app="company"] #workspace .guest-banner{background:#191f28!important;color:#e8edf3!important;border-color:#303946!important}
+
+/* Standalone Company operations map uses the same graphite shell; map tiles stay natural. */
+body[data-app="company"]>.top{background:#0d1015!important;color:#f4f6f8!important;border-bottom:1px solid #303946!important}
+body[data-app="company"]>.top .brand{color:#f4f6f8!important}
+body[data-app="company"]>.top .brand span{color:#c5cdd7!important}
+body[data-app="company"]>.top .back{color:#dce2e9!important}
+body[data-app="company"]>.wrap{color:#f4f6f8!important}
+body[data-app="company"]>.wrap .eyebrow{color:#aeb8c6!important}
+body[data-app="company"]>.wrap .intro h1{color:#f4f6f8!important}
+body[data-app="company"]>.wrap .intro p,
+body[data-app="company"]>.wrap .footer{color:#a3adba!important}
+body[data-app="company"]>.wrap .address-panel{background:#12161d!important;border-color:#303946!important;box-shadow:none!important}
+body[data-app="company"]>.wrap .address-panel input,
+body[data-app="company"]>.wrap .pin-choice select{background:#0b0f15!important;color:#f4f6f8!important;border-color:#3a4554!important}
+body[data-app="company"]>.wrap .address-panel input::placeholder{color:#778392!important}
+body[data-app="company"]>.wrap .search-meta,
+body[data-app="company"]>.wrap .pin-summary{color:#a3adba!important}
+body[data-app="company"]>.wrap .pin-summary strong{color:#f4f6f8!important}
+body[data-app="company"]>.wrap .pin-summary p{color:#a3adba!important}
+body[data-app="company"]>.wrap .address-result{background:#191f28!important;color:#e8edf3!important;border-color:#3a4554!important}
+body[data-app="company"]>.wrap .city-shortcuts button{background:#191f28!important;color:#e8edf3!important;border-color:#3a4554!important}
+body[data-app="company"]>.wrap .city-shortcuts button[aria-pressed=true]{background:#eef1f5!important;color:#11151b!important;border-color:#eef1f5!important}
+body[data-app="company"]>.wrap .search-row button,
+body[data-app="company"]>.wrap .pin-summary button{background:#eef1f5!important;color:#11151b!important}
+body[data-app="company"]>.wrap .map-shell{border-color:#303946!important;box-shadow:none!important}
+@media(max-width:760px){
+ body[data-app="company"] #workspace .page{display:block!important;padding:20px 14px 48px!important}
+ body[data-app="company"] #workspace .section-links{display:flex!important;flex-direction:row!important;overflow-x:auto!important}
+}
+
+
+/* Consistent action layout across Customer, Driver and Company Admin. */
+body[data-app] #workspace button,
+body[data-app] #workspace input[type=button],
+body[data-app] #workspace input[type=submit]{
+  display:inline-flex!important;align-items:center!important;justify-content:center!important;
+  gap:8px!important;min-width:0!important;max-width:100%!important;
+  text-align:center!important;line-height:1.25!important;white-space:normal!important;
+  vertical-align:middle!important;cursor:pointer!important;
+  transition:background-color .18s ease,border-color .18s ease,transform .18s ease!important;
+}
+body[data-app] #workspace button:hover:not(:disabled),
+body[data-app] #workspace input[type=button]:hover,
+body[data-app] #workspace input[type=submit]:hover{border-color:#aeb8c6!important;transform:translateY(-1px)}
+body[data-app] #workspace button:focus-visible,
+body[data-app] #workspace a:focus-visible{outline:2px solid #dce2e9!important;outline-offset:3px!important}
+body[data-app] #workspace .order-actions,
+body[data-app] #workspace .tracking-actions,
+body[data-app] #workspace .driver-home-actions,
+body[data-app] #workspace .form-actions,
+body[data-app] #workspace .button-row,
+body[data-app] #workspace .card-actions,
+body[data-app] #workspace .toolbar-actions,
+body[data-app] #workspace .modal-actions,
+body[data-app] #workspace .actions{
+  display:flex!important;align-items:stretch!important;justify-content:flex-start!important;
+  flex-wrap:wrap!important;gap:9px!important;width:100%!important;margin-top:10px!important;
+}
+body[data-app] #workspace .order-actions>button,
+body[data-app] #workspace .tracking-actions>button,
+body[data-app] #workspace .driver-home-actions>a,
+body[data-app] #workspace .form-actions>button,
+body[data-app] #workspace .button-row>button,
+body[data-app] #workspace .card-actions>button,
+body[data-app] #workspace .toolbar-actions>button,
+body[data-app] #workspace .modal-actions>button,
+body[data-app] #workspace .actions>button{
+  flex:1 1 145px!important;min-height:44px!important;margin:0!important;
+}
+body[data-app] #workspace form>button[type=submit],
+body[data-app] #workspace form>input[type=submit]{
+  min-width:min(100%,190px)!important;min-height:46px!important;margin-top:6px!important;
+}
+body[data-app] #workspace .panel>button,
+body[data-app] #workspace .panel>form>button{margin-top:8px!important}
+body[data-app] #workspace .account{display:flex!important;align-items:center!important;gap:10px!important}
+body[data-app] #workspace .account button{flex:0 0 auto!important;min-height:38px!important;padding:8px 12px!important}
+body[data-app] #workspace .section-links{align-items:center!important}
+body[data-app] #workspace .section-links a{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-height:38px!important;padding:9px 13px!important;flex:0 0 auto!important}
+body[data-app] #workspace .operations-list .order>button,
+body[data-app] #workspace .operations-list .card>button{margin:7px 7px 0 0!important;min-height:42px!important}
+body[data-app] #workspace .operations-list .order>button:last-child,
+body[data-app] #workspace .operations-list .card>button:last-child{margin-right:0!important}
+#auth-screen .auth-panel form{display:grid!important;gap:13px!important}
+#auth-screen .auth-panel form>button.primary,
+#auth-screen .auth-panel>.guest-button{display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;min-height:48px!important;margin:5px 0 0!important}
+#auth-screen .auth-links{display:flex!important;align-items:center!important;justify-content:space-between!important;flex-wrap:wrap!important;gap:8px 14px!important}
+#auth-screen .auth-links button{min-height:38px!important;padding:7px 9px!important}
+@media(max-width:600px){
+ body[data-app] #workspace .order-actions,
+ body[data-app] #workspace .tracking-actions,
+ body[data-app] #workspace .form-actions,
+ body[data-app] #workspace .button-row,
+ body[data-app] #workspace .card-actions,
+ body[data-app] #workspace .toolbar-actions,
+ body[data-app] #workspace .modal-actions,
+ body[data-app] #workspace .actions{gap:8px!important}
+ body[data-app] #workspace .order-actions>button,
+ body[data-app] #workspace .tracking-actions>button,
+ body[data-app] #workspace .form-actions>button,
+ body[data-app] #workspace .button-row>button,
+ body[data-app] #workspace .card-actions>button,
+ body[data-app] #workspace .toolbar-actions>button,
+ body[data-app] #workspace .modal-actions>button,
+ body[data-app] #workspace .actions>button{flex:1 1 125px!important;min-height:44px!important;padding:10px 11px!important}
+ body[data-app] #workspace .account{gap:6px!important}
+ body[data-app] #workspace .account button{padding:7px 9px!important}
+ #auth-screen .auth-links{justify-content:center!important}
+}
+
+
+/* Focused page navigation and quiet session restoration. */
+.session-restore{min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:32px;text-align:center;background:#080a0e;color:#f4f6f8}
+.session-restore-mark{font-size:18px;font-weight:800;letter-spacing:.08em}
+.session-restore-mark span{color:#aeb8c6}
+.session-restore p{max-width:34rem;color:#a3adba}
+.session-restore-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+.session-restore-actions button{min-height:44px;padding:10px 16px;border:1px solid #303946;border-radius:12px;background:#151b23;color:#f4f6f8;font:inherit;font-weight:700}
+.session-restore-actions button:first-child{background:#f4f6f8;color:#080a0e;border-color:#f4f6f8}
+body[data-app] #workspace .workspace-navigation{position:sticky;top:8px;z-index:30;margin:0 0 20px;border:1px solid #303946;border-radius:16px;background:rgba(12,15,20,.96);backdrop-filter:blur(16px);box-shadow:0 12px 32px rgba(0,0,0,.22)}
+body[data-app] #workspace .workspace-navigation>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:54px;padding:12px 16px;cursor:pointer;color:#a3adba;font-size:12px;font-weight:700}
+body[data-app] #workspace .workspace-navigation>summary::-webkit-details-marker{display:none}
+body[data-app] #workspace .workspace-navigation>summary::after{content:"+";display:grid;place-items:center;width:28px;height:28px;border:1px solid #303946;border-radius:9px;color:#f4f6f8;font-size:18px}
+body[data-app] #workspace .workspace-navigation[open]>summary::after{content:"−"}
+body[data-app] #workspace .workspace-navigation>summary strong{margin-left:auto;color:#f4f6f8;font-size:13px}
+body[data-app] #workspace .workspace-navigation .section-links{position:static!important;display:grid!important;grid-template-columns:repeat(auto-fit,minmax(125px,1fr))!important;gap:8px!important;max-height:min(48svh,420px);overflow:auto;padding:0 12px 12px!important;margin:0!important;border:0!important;background:transparent!important;white-space:normal!important}
+body[data-app] #workspace .workspace-navigation .section-links a{display:flex!important;align-items:center;justify-content:center;min-height:42px;padding:10px 12px!important;border:1px solid #303946!important;border-radius:11px!important;background:#141a22!important;color:#c5cdd7!important;text-align:center;text-decoration:none;font-size:12px!important;font-weight:700}
+body[data-app] #workspace .workspace-navigation .section-links a.is-active,
+body[data-app] #workspace .workspace-navigation .section-links a[aria-current=page]{background:#f4f6f8!important;border-color:#f4f6f8!important;color:#080a0e!important}
+body[data-app] #workspace .workspace-navigation .section-links a:hover{border-color:#9ba7b5!important;color:#fff!important}
+@media(min-width:900px){
+ body[data-app] #workspace .workspace-navigation[open] .section-links{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+}
+@media(max-width:600px){
+ body[data-app] #workspace .workspace-navigation{top:4px;margin-bottom:14px}
+ body[data-app] #workspace .workspace-navigation>summary{min-height:50px;padding:10px 12px}
+ body[data-app] #workspace .workspace-navigation .section-links{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:7px!important}
+ body[data-app] #workspace .workspace-navigation .section-links a{min-height:44px;padding:9px!important;font-size:11px!important}
+}
+
+
+/* Post-login refresh: force the approved graphite system onto every signed-in page,
+   including panels revealed later by the in-app page router. */
+body[data-app] #workspace{background:#090c11!important;color:#f1f4f8!important;color-scheme:dark}
+body[data-app] #workspace>.topbar{background:rgba(10,13,18,.97)!important;color:#f4f6f8!important;border-color:#303946!important}
+body[data-app] #workspace .page{background:transparent!important;color:#f1f4f8!important}
+body[data-app] #workspace .page-heading{color:#f4f6f8!important}
+body[data-app] #workspace .page-heading h1,body[data-app] #workspace h1,body[data-app] #workspace h2,body[data-app] #workspace h3,body[data-app] #workspace h4,body[data-app] #workspace strong{color:#f4f6f8!important}
+body[data-app] #workspace p,body[data-app] #workspace label,body[data-app] #workspace legend,body[data-app] #workspace small,body[data-app] #workspace .subtle{color:#aeb8c6!important}
+body[data-app] #workspace .panel,body[data-app] #workspace .stat,body[data-app] #workspace .empty,body[data-app] #workspace .order,body[data-app] #workspace .help,body[data-app] #workspace .notice,body[data-app] #workspace .callout,body[data-app] #workspace .settings-card,body[data-app] #workspace .operations-card,body[data-app] #workspace .management-card,body[data-app] #workspace .quote-result{background:linear-gradient(155deg,#1b222d,#121720)!important;color:#f1f4f8!important;border:1px solid #303946!important;border-radius:18px!important;box-shadow:0 10px 28px #0004!important}
+body[data-app] #workspace input:not([type=checkbox]):not([type=radio]):not([type=file]),body[data-app] #workspace select,body[data-app] #workspace textarea{background:#0b1017!important;color:#f5f7fa!important;border:1px solid #3a4554!important;border-radius:12px!important}
+body[data-app] #workspace input::placeholder,body[data-app] #workspace textarea::placeholder{color:#7f8a9a!important}
+body[data-app] #workspace button,body[data-app] #workspace .button,body[data-app] #workspace input[type=button],body[data-app] #workspace input[type=submit]{background:#202733!important;color:#f4f6f9!important;border:1px solid #3a4554!important;border-radius:12px!important;box-shadow:none!important}
+body[data-app] #workspace button.primary,body[data-app] #workspace .primary,body[data-app] #workspace button[type=submit],body[data-app] #workspace input[type=submit]{background:linear-gradient(180deg,#fff,#dce2e9)!important;color:#11151b!important;border-color:#f1f3f6!important;font-weight:800!important}
+body[data-app] #workspace .section-links{background:#0d121bf5!important;border:1px solid #303946!important;border-radius:16px!important}
+body[data-app] #workspace .section-links a{background:transparent!important;color:#c2cad4!important;border-radius:11px!important}
+body[data-app] #workspace .section-links a[aria-current=page],body[data-app] #workspace .section-links a.is-active{background:#e9edf2!important;color:#11151b!important}
+body[data-app] #workspace table,body[data-app] #workspace tbody,body[data-app] #workspace tr{background:transparent!important;color:#e4e8ee!important}
+body[data-app] #workspace th{background:#1b222c!important;color:#dce2e9!important;border-color:#303946!important}
+body[data-app] #workspace td{background:transparent!important;color:#c2cad4!important;border-color:#303946!important}
+body[data-app] #workspace [hidden]{display:none!important}
+@media(max-width:700px){body[data-app] #workspace .page{padding:18px 14px 120px!important}body[data-app] #workspace .panel{padding:16px!important}}
