@@ -1,0 +1,2 @@
+import FleetSOSPanel from "../FleetSOSPanel";
+export default function FleetDashboard(){return <><header><div><p className="eyebrow">FLEET OWNER PORTAL</p><h1>Fleet safety dashboard</h1><p className="muted">Emergency incidents requiring fleet-owner attention.</p></div></header><FleetSOSPanel/></>}
