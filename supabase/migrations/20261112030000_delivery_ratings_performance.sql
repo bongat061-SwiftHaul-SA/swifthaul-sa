@@ -129,3 +129,8 @@ begin
  update public.driver_profiles set average_rating=v_avg,total_ratings=v_count,on_time_percentage=v_ontime,completion_percentage=v_complete,performance_score=v_score,performance_tier=v_tier,updated_at=now() where user_id=p_driver_id;
  return jsonb_build_object('driver_id',p_driver_id,'average_rating',v_avg,'total_ratings',v_count,'on_time_percentage',v_ontime,'completion_percentage',v_complete,'proof_capture_percentage',v_pod,'performance_score',v_score,'performance_tier',v_tier,'trips_scored',v_trips,'completed_trips',v_completed);
 end $$;
+
+-- Gold performance tier and stacked orders are explicit dispatch offer tiers.
+alter table public.driver_delivery_offers drop constraint if exists driver_delivery_offers_priority_tier_check;
+alter table public.driver_delivery_offers add constraint driver_delivery_offers_priority_tier_check
+ check(priority_tier in ('gold','premium','standard','add_on'));
