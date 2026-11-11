@@ -9,6 +9,8 @@ const cases = [
 for (const item of cases) {
   const html = fs.readFileSync(item.html, 'utf8');
   const auth = fs.readFileSync(item.auth, 'utf8');
+  const modalPath = item.html.startsWith('apps/') ? 'apps/driver/public/popia-consent.js' : 'public/popia-consent.js';
+  const modal = fs.readFileSync(modalPath, 'utf8');
   const section = html.match(/<section id="terms-acceptance"[\s\S]*?<\/section>/)?.[0] || '';
   assert.ok(section, item.app + ': consent section exists');
   assert.match(section, /type="checkbox" name="acceptTerms"[^>]*required/, item.app + ': required service consent');
@@ -16,6 +18,11 @@ for (const item of cases) {
   assert.match(section, /href="privacy-policy\.html"/, item.app + ': Privacy Policy link target');
   assert.match(section, /Terms of Service/, item.app + ': Terms of Service link label');
   assert.match(section, /href="terms\.html"/, item.app + ': Terms link target');
+  assert.match(html, /src="popia-consent\.js\?v=20261111-policy-modal"/, item.app + ': modal script loaded');
+  assert.match(modal, /button\.innerHTML = '<strong>'/, item.app + ': bold interactive policy links');
+  assert.match(modal, /dialog\.showModal\(\)/, item.app + ': policy opens in modal');
+  assert.match(modal, /data-policy-close/, item.app + ': modal includes Close action');
+  assert.match(modal, /dialog\.close\(\)/, item.app + ': Close returns to sign-up');
   assert.ok(section.includes(item.purpose), item.app + ': consent purpose disclosed');
   assert.match(section, /id="marketing-consent"[\s\S]*?name="acceptMarketing"/, item.app + ': separate marketing checkbox');
   assert.match(auth, /submit\.disabled = signup && !serviceConsent\.checked/, item.app + ': signup disabled until consent');
