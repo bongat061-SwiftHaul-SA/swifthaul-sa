@@ -29,7 +29,7 @@ else{
    submit.addEventListener("click",async()=>{if(!selected){feedback.textContent="Please select a star rating.";return;}submit.disabled=true;try{const chosen=[...tagBox.querySelectorAll("button[data-selected=true]")].map(b=>b.textContent);const response=await fetch(SUPABASE_URL+"/functions/v1/order-rating",{method:"POST",headers:{apikey:SUPABASE_PUBLISHABLE_KEY,"Content-Type":"application/json"},body:JSON.stringify({tracking_code:code,rater_role:"recipient",stars:selected,tags:chosen,comment:comment.value})});const result=await response.json();if(!response.ok||result.error)throw new Error(result.error||"Rating could not be saved.");feedback.textContent="Thank you. Your rating has been saved.";card.querySelectorAll("button,textarea").forEach(el=>el.disabled=true);}catch(e){feedback.textContent=e.message;submit.disabled=false;}});
    card.append(heading,intro,stars,tagBox,comment,submit,feedback);
    const previous=await fetch(SUPABASE_URL+"/functions/v1/order-rating?tracking_code="+encodeURIComponent(code),{headers:{apikey:SUPABASE_PUBLISHABLE_KEY}}).then(r=>r.json()).catch(()=>null);
-   if(previous?.ratings?.some(r=>r.rater_role==="recipient")){feedback.textContent="Thank you. You have already rated this delivery.";stars.querySelectorAll("button").forEach(b=>b.disabled=true);comment.disabled=true;submit.disabled=true;}
+   if(previous?.ratings?.some(r=>r.rater_role==="recipient")){feedback.textContent="Thank you. You have already rated this delivery.";card.querySelectorAll("button,textarea").forEach(b=>b.disabled=true);}
    content.append(card);
   }
  }catch(e){status.textContent=e.message;status.className="track-error";}
