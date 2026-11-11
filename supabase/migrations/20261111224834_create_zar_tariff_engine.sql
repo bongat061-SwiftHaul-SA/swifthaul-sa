@@ -40,7 +40,7 @@ alter table public.tariff_audit_logs enable row level security;
 alter table public.tariff_quotes enable row level security;
 revoke all on public.vehicle_tariffs,public.surge_rules,public.tariff_settings,public.tariff_audit_logs,public.tariff_quotes from anon,authenticated;
 grant all on public.vehicle_tariffs,public.surge_rules,public.tariff_settings,public.tariff_audit_logs,public.tariff_quotes to service_role;
-insert into public.vehicle_tariffs(vehicle_type) values ('motorbike'),('hatchback_sedan'),('bakkie_van'),('truck') on conflict(vehicle_type) do nothing;
+insert into public.vehicle_tariffs(vehicle_type) values ('motorbike'),('bakkie'),('truck') on conflict(vehicle_type) do nothing;
 insert into public.tariff_settings(fuel_surcharge_percent,max_global_surge_cap,quote_validity_minutes) select 0,1.5,10 where not exists(select 1 from public.tariff_settings);
 insert into public.tariff_audit_logs(changed_by,entity_type,entity_id,action,previous_values,new_values)
 select null,'tariff_settings',s.id,'insert',null,to_jsonb(s) from public.tariff_settings s
