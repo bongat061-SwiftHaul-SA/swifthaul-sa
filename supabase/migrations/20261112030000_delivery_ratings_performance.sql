@@ -134,3 +134,11 @@ end $$;
 alter table public.driver_delivery_offers drop constraint if exists driver_delivery_offers_priority_tier_check;
 alter table public.driver_delivery_offers add constraint driver_delivery_offers_priority_tier_check
  check(priority_tier in ('gold','premium','standard','add_on'));
+
+do $$ begin
+ if not exists(select 1 from pg_constraint where conname='driver_average_rating_range') then alter table public.driver_profiles add constraint driver_average_rating_range check(average_rating between 0 and 5); end if;
+ if not exists(select 1 from pg_constraint where conname='driver_total_ratings_nonnegative') then alter table public.driver_profiles add constraint driver_total_ratings_nonnegative check(total_ratings>=0); end if;
+ if not exists(select 1 from pg_constraint where conname='driver_on_time_percentage_range') then alter table public.driver_profiles add constraint driver_on_time_percentage_range check(on_time_percentage between 0 and 100); end if;
+ if not exists(select 1 from pg_constraint where conname='driver_completion_percentage_range') then alter table public.driver_profiles add constraint driver_completion_percentage_range check(completion_percentage between 0 and 100); end if;
+ if not exists(select 1 from pg_constraint where conname='driver_performance_score_range') then alter table public.driver_profiles add constraint driver_performance_score_range check(performance_score between 0 and 100); end if;
+end $$;
