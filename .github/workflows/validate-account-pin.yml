@@ -8,6 +8,11 @@ on:
       - "apps/driver/public/account-settings.js"
       - "supabase/functions/driver-settings/**"
       - "supabase/functions/customer-settings/**"
+      - "supabase/functions/account-deletion-admin/**"
+      - "apps/company/public/account-deletions.js"
+      - "apps/company/public/index.html"
+      - "apps/company/public/section-pages.js"
+      - "tests/account-deletion-admin-static-check.cjs"
       - "supabase/migrations/*account_self_service*"
       - "public/supabase-config.js"
       - "apps/driver/public/supabase-config.js"
@@ -34,7 +39,10 @@ jobs:
           node --input-type=module --check < apps/driver/public/auth.js
           node --check apps/driver/public/account-settings.js
           node --check public/settings.js
+          node --check apps/company/public/account-deletions.js
       - name: Verify secure PIN wiring
         run: node tests/account-pin-static-check.cjs
       - name: Verify account self-service flows
         run: node tests/account-self-service-static-check.cjs
+      - name: Verify administrator deletion review
+        run: node tests/account-deletion-admin-static-check.cjs
