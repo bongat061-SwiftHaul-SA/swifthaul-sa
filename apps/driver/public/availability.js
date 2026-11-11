@@ -33,7 +33,7 @@
    const d=await call("GET");const eligible=d.driver?.can_go_online===true;
    toggle.checked=d.driver?.is_online===true;toggle.disabled=!eligible;
    state.textContent=!eligible?"Your account is not cleared for online work.":toggle.checked?"You are ONLINE and eligible for delivery offers.":"You are OFFLINE and will not receive delivery offers.";
-   list.replaceChildren();
+   list.replaceChildren();offersById.clear();
    if(!eligible)list.append(complianceBanner());
    for(const o of d.offers||[]){if(offersById.has(o.id))continue;offersById.set(o.id,true);list.append(renderOffer(o));}
    tick();
