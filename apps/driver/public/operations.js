@@ -11,11 +11,14 @@ if (app === 'driver' || app === 'company') {
   const offerPanel = document.createElement('section');
   offerPanel.className = 'driver-stacked-offers';
   offerPanel.setAttribute('aria-label', 'Incoming delivery offers');
+  const scorePanel = document.createElement('section');
+  scorePanel.className = 'driver-performance-card';
+  scorePanel.setAttribute('aria-label', 'Driver performance and ratings');
   const itineraryPanel = document.createElement('section');
   itineraryPanel.className = 'driver-itinerary-panel';
   const list = document.createElement('div');
   list.className = 'operations-list';
-  panel.replaceChildren(heading, refresh, message, offerPanel, itineraryPanel, list);
+  panel.replaceChildren(heading, refresh, message, scorePanel, offerPanel, itineraryPanel, list);
 
   let active = false;
   let requestNumber = 0;
@@ -185,6 +188,18 @@ if (app === 'driver' || app === 'company') {
       activeTrackingCleanups.clear();
       list.replaceChildren();
       historyList()?.replaceChildren();
+      if(app==='driver'){
+        const score=data.driverProfile||{};
+        scorePanel.replaceChildren();
+        const title=document.createElement('h3');title.textContent='Performance & Ratings';
+        const main=document.createElement('div');main.className='driver-score-main';
+        const value=document.createElement('strong');value.textContent=String(score.performance_score??100)+'/100';
+        const tier=document.createElement('span');tier.className='driver-score-tier tier-'+(score.performance_tier||'gold');tier.textContent=String(score.performance_tier||'gold').replace('_',' ').toUpperCase();
+        main.append(value,tier);
+        const metrics=document.createElement('p');metrics.textContent='★ '+Number(score.average_rating??5).toFixed(2)+' average · '+Number(score.total_ratings||0)+' ratings · '+Number(score.on_time_percentage??100).toFixed(1)+'% on time · '+Number(score.completion_percentage??100).toFixed(1)+'% completion';
+        const tips=document.createElement('p');tips.className='driver-score-tips';tips.textContent=Number(score.average_rating??5)<4.5?'Tip: communicate clearly, protect parcels and confirm delivery details with the recipient.':Number(score.on_time_percentage??100)<95?'Tip: plan pickup routes early and update customers if delayed.':Number(score.completion_percentage??100)<95?'Tip: accept only deliveries you can complete and report issues promptly.':'Great work. Keep punctual pickups, careful handling and verified proof of delivery.';
+        scorePanel.append(title,main,metrics,tips);
+      }
       if (app === 'driver' && data.driverProfile?.verification_status !== 'approved') {
         const notice = document.createElement('p');
         notice.textContent = 'Your driver application is awaiting verification. Dispatch access will be enabled after approval.';
