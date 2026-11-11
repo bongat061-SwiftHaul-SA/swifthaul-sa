@@ -72,7 +72,8 @@ if(!["sa_citizen","foreign_national"].includes(identityType))return reply(400,{e
  if((vehicleType==="bakkie_panel_van"&&(!Number.isFinite(gvm)||gvm<=0))||(heavy&&!prdp)|| (prdp&&(!["goods","passengers","dangerous_goods"].includes(prdpCategory)||!validDate(prdpExpiry)||Date.parse(prdpExpiry+"T00:00:00")<=Date.now())))return reply(400,{error:"valid_prdp_details_required"});
  const proofDate=text(form.get("proof_of_address_date"),10),discExpiry=text(form.get("vehicle_disc_expiry"),10),insuranceExpiry=text(form.get("insurance_expiry"),10);
  if(!validDate(discExpiry)||Date.parse(discExpiry+"T00:00:00")<=Date.now()||!validDate(insuranceExpiry)||Date.parse(insuranceExpiry+"T00:00:00")<=Date.now())return reply(400,{error:"vehicle_disc_and_insurance_must_be_current"});
- if(!form.get("enatis_certificate")&&!form.get("fleet_lease_agreement"))return reply(400,{error:"enatis_or_fleet_lease_document_required"});
+ const enatisFile=form.get("enatis_certificate"),leaseFile=form.get("fleet_lease_agreement");
+ if(!(enatisFile instanceof File&&enatisFile.size>0)&&!(leaseFile instanceof File&&leaseFile.size>0))return reply(400,{error:"enatis_or_fleet_lease_document_required"});
  if(!validDate(proofDate)||Date.now()-Date.parse(proofDate+"T00:00:00")>92*86400000||Date.parse(proofDate+"T00:00:00")>Date.now())return reply(400,{error:"proof_of_residence_must_be_under_three_months_old"});
  if(identityType==="foreign_national"&&(!validDate(text(form.get("passport_expiry"),10))||Date.parse(text(form.get("passport_expiry"),10)+"T00:00:00")<=Date.now()||!validDate(text(form.get("work_permit_expiry"),10))||Date.parse(text(form.get("work_permit_expiry"),10)+"T00:00:00")<=Date.now()))return reply(400,{error:"passport_and_work_permit_must_be_current"});
  if(!validDate(text(form.get("registration_document_expiry"),10))||Date.parse(text(form.get("registration_document_expiry"),10)+"T00:00:00")<=Date.now())return reply(400,{error:"registration_document_must_be_current"});
