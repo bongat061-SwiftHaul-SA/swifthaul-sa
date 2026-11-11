@@ -27,7 +27,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm install --ignore-scripts --no-audit --no-fund
       - run: node --check public/customer.js
       - run: node --check public/address-autocomplete.js
       - run: node --check apps/driver/public/payouts.js
