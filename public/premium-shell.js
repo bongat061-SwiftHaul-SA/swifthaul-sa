@@ -49,7 +49,7 @@
   const footer = workspace.querySelector('.footer');
   if (footer) footer.classList.add('premium-footer');
   const markActive = () => {
-    const customerPage = new URLSearchParams(location.search).get('page') || 'book';
+    const customerPage = new URLSearchParams(location.search).get('page') || body.dataset.customerPage || 'home';
     const hash = location.hash || (app === 'customer' ? '#new-delivery' : '');
     nav.querySelectorAll('a').forEach(a => {
       const href = a.getAttribute('href');
