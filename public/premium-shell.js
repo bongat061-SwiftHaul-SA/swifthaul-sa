@@ -55,7 +55,7 @@
     }
     stats?.classList.add('premium-driver-stats');
     dispatch?.classList.add('premium-dispatch-card');
-    nav.innerHTML = '<a href="?page=home">Home</a><a href="?page=deliveries">Deliveries</a><a href="map.html">Map</a><a href="?page=earnings">Earnings</a><a href="?page=account">Account</a>';
+    // The page controller owns these links; do not replace them after it binds handlers.
     const payout = document.getElementById('payouts');
     payout?.classList.add('premium-secondary-section');
     if (status) status.classList.add('premium-status-copy');
