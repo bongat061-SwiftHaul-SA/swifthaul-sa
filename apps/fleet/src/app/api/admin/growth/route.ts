@@ -13,7 +13,7 @@ export async function GET(req:NextRequest){
  const auth=await requireCompanyAdmin(req);if(auth.response)return auth.response;
  try{
   const now=new Date(),today=dayKey(now),todayStart=startSast(today);
-  const weekStartDate=addDays(todayStart,-((todayStart.getUTCDay()+6)%7));
+  const todayNoon=new Date(today+"T12:00:00+02:00");const weekStartDate=startSast(dayKey(addDays(todayNoon,-((todayNoon.getUTCDay()+6)%7))));
   const monthStart=startSast(today.slice(0,7)+"-01");
   const [allCounts,activeCustomers,customerToday,driverToday,combinedToday,customerWeek,driverWeek,combinedWeek,customerMonth,driverMonth,combinedMonth,milestones,recent,chartRows]=await Promise.all([
    db.select({role:userProfiles.role,n:sql<number>`count(*)::int`}).from(userProfiles).where(inArray(userProfiles.role,[...roles])).groupBy(userProfiles.role),
@@ -46,7 +46,7 @@ export async function GET(req:NextRequest){
   const last7=chart.slice(-7).reduce((s,x)=>s+x.customersDaily+x.driversDaily,0),rate=Math.round(last7/7*100)/100;
   const nextCombined=milestones.find(m=>m.category==="combined_users"&&!m.isUnlocked)?.targetCount||500;
   const daysTo=rate>0?Math.ceil(Math.max(0,nextCombined-combined)/rate):null;
-  const seq={customer:customers,driver:drivers};const recentRows=recent.map(row=>{const role=row.role as "customer"|"driver";const rank=recent.filter(x=>x.role===role&&x.createdAt.getTime()<=row.createdAt.getTime()).length;const number=seq[role]-rank+1;return {...row,userNumber:number,onboardingStatus:role==="customer"?row.accountStatus:(row.verificationStatus||row.onboardingStatus||"pending")};});
+  const seq={customer:customers,driver:drivers};const roleRecent={customer:recent.filter(x=>x.role==="customer").sort((a,b)=>a.createdAt.getTime()-b.createdAt.getTime()),driver:recent.filter(x=>x.role==="driver").sort((a,b)=>a.createdAt.getTime()-b.createdAt.getTime())};const recentRows=recent.map(row=>{const role=row.role as "customer"|"driver";const rank=roleRecent[role].findIndex(x=>x.id===row.id)+1;const number=seq[role]-roleRecent[role].length+rank;return {...row,userNumber:number,onboardingStatus:role==="customer"?row.accountStatus:(row.verificationStatus||row.onboardingStatus||"pending")};});
   const csv=req.nextUrl.searchParams.get("format")==="csv";
   if(csv){const cols=["name","role","city","province","onboarding_status","signed_up_at","user_number"];const q=(v:unknown)=>'"'+String(v??"").replace(/"/g,'""')+'"';const rows=recentRows.map(r=>[r.fullName,r.role,r.city,r.province,r.onboardingStatus,r.createdAt.toISOString(),r.userNumber].map(q).join(","));return new NextResponse([cols.join(","),...rows].join("\r\n"),{headers:{"Content-Type":"text/csv; charset=utf-8","Content-Disposition":'attachment; filename="swifthaul-recent-signups.csv"'}});}
   const delta=(a:number,b:number)=>({today:a,week:b,month:0});
