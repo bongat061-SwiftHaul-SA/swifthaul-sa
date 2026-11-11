@@ -10,7 +10,7 @@ The PDF generator runs in the Next.js Node.js runtime. It requires:
 - `TAX_DOCUMENTS_API_URL`: the absolute HTTPS URL to `/api/internal/tax-documents/events` on the deployed Next.js staging app. Configure this and the same `TAX_DOCUMENT_WEBHOOK_SECRET` in Supabase Edge Function secrets for `paystack-webhook`.
 - `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`: browser sign-in only.
 
-The webhook now sends signed `charge.success` and `transfer.success` events to the Next.js PDF service. It returns a retryable 503 if the service is not configured or the PDF could not be stored. Set the two Edge Function secrets before accepting this as a live automated document workflow.
+The webhook now sends signed `charge.success` and `transfer.success` events to the Next.js PDF service. The customer static tracking app also needs `window.SWIFTHAUL_TAX_API_BASE_URL` set to this same HTTPS Next.js origin so its receipt links and invoice request form reach the API. It returns a retryable 503 if the service is not configured or the PDF could not be stored. Set the two Edge Function secrets before accepting this as a live automated document workflow.
 
 ## Storage and access
 
