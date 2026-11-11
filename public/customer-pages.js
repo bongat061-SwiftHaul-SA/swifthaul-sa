@@ -45,10 +45,12 @@
     nav?.closest('details')?.removeAttribute('open');
     window.scrollTo({ top:0, behavior:'instant' });
   }
-  root.querySelectorAll('a[data-page]').forEach(link => link.addEventListener('click', event => {
+  root.addEventListener('click', event => {
+    const link = event.target.closest('a[data-page]');
+    if (!link || !root.contains(link)) return;
     event.preventDefault();
     render(link.dataset.page || 'book', true);
-  }));
+  });
   window.addEventListener('popstate', () => render(new URLSearchParams(location.search).get('page') || body.dataset.customerView || 'book', false));
   render(new URLSearchParams(location.search).get('page') || body.dataset.customerView || 'book', false);
 })();
