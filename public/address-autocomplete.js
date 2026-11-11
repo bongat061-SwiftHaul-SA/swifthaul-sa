@@ -134,7 +134,7 @@
     async function search(){
       const query=input.value.trim();
       if(query.length<3){status.textContent='Enter at least 3 characters, then search.';return;}
-      controller?.abort();controller=new AbortController();
+      controller?.abort();const activeController=new AbortController();controller=activeController;
       status.textContent='Searching OpenStreetMap addresses…';
       const cacheKey=query.toLocaleLowerCase();
       try{
@@ -142,19 +142,19 @@
         if(!results){
           const params=new URLSearchParams({q:query,format:'jsonv2',addressdetails:'1',limit:'8','accept-language':'en'});
           const response=await window.swiftHaulNominatimFetch('https://nominatim.openstreetmap.org/search?'+params.toString(),{
-            signal:controller.signal,headers:{Accept:'application/json'}
+            signal:activeController.signal,headers:{Accept:'application/json'}
           });
           if(!response.ok)throw new Error('Nominatim address search unavailable ('+response.status+').');
           results=await response.json();
           resultCache.set(cacheKey,results);
           if(resultCache.size>80)resultCache.delete(resultCache.keys().next().value);
         }
-        if(controller.signal.aborted)return;
+        if(activeController.signal.aborted)return;
         const items=results.map(asFeature).filter(item=>Number.isFinite(item.geometry.coordinates[0])&&Number.isFinite(item.geometry.coordinates[1]));
         render(items);
         status.textContent=items.length?'Choose the closest match. Then check and adjust its exact map pin.':'No matching address found. Try adding the suburb, city, province or postal code.';
       }catch(error){
-        if(error.name==='AbortError')return;
+        if(error.name==='AbortError'||activeController.signal.aborted)return;
         close();status.textContent='Nominatim search is temporarily unavailable. You can still type an address and place both pins manually.';
       }
     }
