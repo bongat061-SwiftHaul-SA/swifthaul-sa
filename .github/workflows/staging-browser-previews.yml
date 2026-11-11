@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - feature/dark-premium-customer-driver-staging
+      - feature/sa-sms-whatsapp-notifications-staging
     paths:
       - 'public/**'
       - 'apps/driver/public/**'
