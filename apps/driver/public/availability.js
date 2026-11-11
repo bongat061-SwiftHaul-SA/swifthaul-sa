@@ -1,6 +1,6 @@
 (() => {
  if(document.body.dataset.app!=="driver")return;
- const $=id=>document.getElementById(id),toggle=$("driver-online-toggle"),state=$("availability-state"),list=$("driver-offers");
+ const $=id=>document.getElementById(id),toggle=$("driver-online-toggle"),onlineLabel=$("driver-online-label"),state=$("availability-state"),list=$("driver-offers");
  let active=false,busy=false,timer=null,offersById=new Map();
  const money=v=>"R"+Number(v||0).toFixed(2);
  async function call(method,body){const c=window.swiftHaulSupabase;if(!c)throw Error("Secure account connection unavailable.");const {data,error}=await c.functions.invoke("dispatch-offers",{method,...(body?{body}:{})});if(error||data?.error)throw Error(data?.error||error.message||"Dispatch request failed.");return data;}
@@ -31,7 +31,7 @@
   if(!active||busy||document.body.dataset.guestPreview==="true")return;
   try{
    const d=await call("GET");const eligible=d.driver?.can_go_online===true;
-   toggle.checked=d.driver?.is_online===true;toggle.disabled=!eligible;
+   toggle.checked=d.driver?.is_online===true;if(onlineLabel)onlineLabel.textContent=toggle.checked?"Go Offline":"Go Online";toggle.disabled=!eligible;
    state.textContent=!eligible?"Your account is not cleared for online work.":toggle.checked?"You are ONLINE and eligible for delivery offers.":"You are OFFLINE and will not receive delivery offers.";
    list.replaceChildren();offersById.clear();
    if(!eligible)list.append(complianceBanner());
@@ -49,12 +49,12 @@
  toggle.addEventListener("change",async()=>{
   if(!toggle.checked){toggle.disabled=true;try{const d=await call("POST",{action:"set_online",online:false});toggle.checked=d.is_online;state.textContent="You are OFFLINE.";}catch(e){state.textContent=e.message||"Unable to update availability.";}finally{toggle.disabled=false;}return;}
   toggle.disabled=true;
-  try{const check=await call("GET");if(check.driver?.can_go_online!==true)throw Error("Your documents or background check are not approved. Review onboarding before going online.");const d=await call("POST",{action:"set_online",online:true});toggle.checked=d.is_online;state.textContent=d.is_online?"You are ONLINE. GPS and dispatch services can now be enabled for eligible work.":"You are OFFLINE.";}
+  try{const check=await call("GET");if(check.driver?.can_go_online!==true)throw Error("Your documents or background check are not approved. Review onboarding before going online.");const d=await call("POST",{action:"set_online",online:true});toggle.checked=d.is_online;if(onlineLabel)onlineLabel.textContent=toggle.checked?"Go Offline":"Go Online";state.textContent=d.is_online?"You are ONLINE. GPS and dispatch services can now be enabled for eligible work.":"You are OFFLINE.";}
   catch(e){toggle.checked=false;state.textContent=e.message||"Unable to update availability.";list.replaceChildren(complianceBanner());}
   finally{toggle.disabled=false;}
  });
  document.addEventListener("account-ready",()=>{active=true;load();if(timer)clearInterval(timer);timer=setInterval(load,5000);});
- const clear=()=>{active=false;if(timer)clearInterval(timer);timer=null;offersById.clear();toggle.checked=false;toggle.disabled=true;list.replaceChildren();state.textContent="Sign in to manage availability.";};
+ const clear=()=>{active=false;if(timer)clearInterval(timer);timer=null;offersById.clear();toggle.checked=false;if(onlineLabel)onlineLabel.textContent="Go Online";toggle.disabled=true;list.replaceChildren();state.textContent="Sign in to manage availability.";};
  document.addEventListener("account-cleared",clear);document.addEventListener("guest-preview",clear);
  setInterval(tick,250);
 })();
