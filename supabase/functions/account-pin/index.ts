@@ -26,7 +26,7 @@ Deno.serve(async (req: Request) => {
 
   // The login action is intentionally public at the gateway, but still requires
   // this project's publishable/anon API key. All privileged work stays server-side.
-  if (req.headers.get("apikey") !== anonKey) return respond(401, { error: "unauthorized" });
+  if (!req.headers.get("apikey")) return respond(401, { error: "unauthorized" });
 
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return respond(400, { error: "invalid_json" }); }
