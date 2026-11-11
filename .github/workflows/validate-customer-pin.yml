@@ -14,6 +14,12 @@ on:
       - "public/premium-shell.js"
       - "tests/booking-wizard-static-check.cjs"
       - "apps/driver/public/map.html"
+      - "apps/company/public/map.html"
+      - "apps/driver/public/auth.js"
+      - "apps/company/public/auth.js"
+      - "apps/driver/public/section-pages.js"
+      - "apps/company/public/section-pages.js"
+      - "tests/workspace-navigation-session-static-check.cjs"
       - "tests/customer-pin-static-check.cjs"
       - ".github/workflows/validate-customer-pin.yml"
 
@@ -40,3 +46,5 @@ jobs:
         run: node tests/booking-wizard-static-check.cjs
       - name: Verify signup-to-pin wiring
         run: node tests/customer-pin-static-check.cjs
+      - name: Verify session persistence and workspace navigation
+        run: node tests/workspace-navigation-session-static-check.cjs
