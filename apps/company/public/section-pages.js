@@ -45,6 +45,7 @@
     insurance: { title:'Driver insurance management.', description:'Verify Premium eligibility and manage insurer-issued driver policies.', show:['insurance'] },
     'insurance-claims': { title:'Insurance claims review.', description:'Review dispatch-bound GPS evidence, route compliance and insurer decisions.', show:['insurance-claims'] },
     deletions: { title:'Account deletion requests.', description:'Review customer and driver account closure requests while protecting active deliveries and financial records.', show:['deletions'] },
+    notifications: { title:'Notification audit.', description:'Review WhatsApp and SMS delivery receipts, automatic fallback and failed-message retries.', show:['notifications'] },
     account: { title:'Company account.', description:'Company administrator profile and support information.', show:['account'] }
   };
   const nodes = { stats, dispatches, drivers, account, refunds, payouts, offers, finance, reports, insurance, "insurance-claims": root.querySelector("#insurance-claims-admin"), deletions: root.querySelector("#account-deletions"), "cash-reconciliation": root.querySelector("#cash-reconciliation") };
