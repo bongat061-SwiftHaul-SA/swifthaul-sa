@@ -101,3 +101,14 @@ body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift
  body[data-app="customer"] #booking-form .booking-step #delivery-map-stage{height:430px!important;min-height:410px!important;max-height:460px!important}
  body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-location-sheet{max-height:78%!important;padding:11px!important}
 }
+
+body[data-app="customer"] #delivery-map-stage .swift-continue-booking{display:block;width:100%;min-height:48px;margin:12px 0 0;padding:12px 16px;border:1px solid #f4f6f9;border-radius:12px;background:linear-gradient(180deg,#fff,#dce2e9);color:#11151b;font-size:12px;font-weight:850;letter-spacing:.01em}
+body[data-app="customer"] #delivery-map-stage .swift-continue-booking[hidden]{display:none!important}
+body[data-app="customer"] #delivery-map-stage .swift-geocoder-credit{margin:6px 0 0;color:#8995a4;font-size:9px;line-height:1.4}
+body[data-app="customer"] #delivery-map-stage .address-search-button{background:#202a36!important;border-color:#465364!important;color:#e9edf2!important}
+body[data-app="customer"] #delivery-map-stage .address-search-status{color:#aeb8c6}
+body[data-app="customer"] #delivery-map-stage .address-suggestions{background:#111923;border-color:#3b4655}
+body[data-app="customer"] #delivery-map-stage .address-suggestions button{background:#111923;color:#f4f6f9;border-color:#303946}
+body[data-app="customer"] #delivery-map-stage .address-suggestions button:hover,
+body[data-app="customer"] #delivery-map-stage .address-suggestions button[aria-selected=true]{background:#202a36}
+body[data-app="customer"] #delivery-map-stage .address-suggestions .suggestion-meta{color:#aeb8c6}
