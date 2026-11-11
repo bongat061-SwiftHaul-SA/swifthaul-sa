@@ -52,6 +52,7 @@
     });
     document.title = 'SwiftHaul SA · Driver · ' + page.title.replace(/\.$/,'');
     if (updateUrl) history.pushState({ page:key }, '', '?page=' + encodeURIComponent(key));
+    nav?.closest('details')?.removeAttribute('open');
     window.scrollTo({ top:0, behavior:'instant' });
   }
   nav?.querySelectorAll('a').forEach(link => {
