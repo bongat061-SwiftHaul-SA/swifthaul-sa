@@ -1,0 +1,44 @@
+name: Validate SwiftHaul SMS and WhatsApp notifications
+on:
+  pull_request:
+    paths:
+      - "supabase/functions/_shared/notifications.ts"
+      - "supabase/functions/notification-dispatch/**"
+      - "supabase/functions/messaging-webhook/**"
+      - "supabase/migrations/*unified_sms_whatsapp_notification_queue*"
+      - "apps/company/public/notification-admin.*"
+      - "apps/company/public/index.html"
+      - "apps/company/public/section-pages.js"
+      - "tests/notification-service-static-check.cjs"
+      - ".github/workflows/validate-notification-service.yml"
+  push:
+    branches:
+      - feature/sa-sms-whatsapp-notifications-staging
+    paths:
+      - "supabase/functions/_shared/notifications.ts"
+      - "supabase/functions/notification-dispatch/**"
+      - "supabase/functions/messaging-webhook/**"
+      - "supabase/migrations/*unified_sms_whatsapp_notification_queue*"
+      - "apps/company/public/notification-admin.*"
+      - "apps/company/public/index.html"
+      - "apps/company/public/section-pages.js"
+      - "tests/notification-service-static-check.cjs"
+      - ".github/workflows/validate-notification-service.yml"
+permissions:
+  contents: read
+jobs:
+  notifications:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check notification function syntax
+        run: |
+          node --check --input-type=module < supabase/functions/_shared/notifications.ts
+          node --check --input-type=module < supabase/functions/notification-dispatch/index.ts
+          node --check --input-type=module < supabase/functions/messaging-webhook/index.ts
+          node --check apps/company/public/notification-admin.js
+      - name: Verify notification security and admin audit wiring
+        run: node tests/notification-service-static-check.cjs
