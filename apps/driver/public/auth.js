@@ -15,6 +15,14 @@ const submit = form.querySelector('[type=submit]');
 let mode = 'login';
 let currentUser = null;
 const supportsPin = app === 'driver';
+const PIN_ACCOUNT_KEY = 'swifthaul.driver.pin-account';
+function rememberPinAccount(email) {
+  if (typeof email !== 'string' || !email.includes('@')) return;
+  try { localStorage.setItem(PIN_ACCOUNT_KEY, email.trim().toLowerCase()); } catch (error) { console.warn('Could not remember Driver PIN account on this device:', error); }
+}
+function rememberedPinAccount() {
+  try { return localStorage.getItem(PIN_ACCOUNT_KEY) || ''; } catch { return ''; }
+}
 const pinLabel = document.createElement('label');
 pinLabel.textContent = '6-digit PIN';
 pinLabel.hidden = true;
@@ -60,8 +68,8 @@ function setMode(next) {
       control.required = signup;
     }
   }
-  form.elements.email.closest('label').hidden = reset;
-  form.elements.email.required = !reset;
+  form.elements.email.closest('label').hidden = reset || pinLogin;
+  form.elements.email.required = !reset && !pinLogin;
   form.elements.password.closest('label').hidden = recovery || pinLogin;
   form.elements.password.required = !recovery && !pinLogin;
   pinLabel.hidden = !pinLogin;
@@ -176,6 +184,7 @@ async function validateAccount(session) {
     throw new Error('Company access is invitation-only. Please contact your administrator.');
   }
   if (user.accountStatus !== 'active') throw new Error('Your account is not active. Please contact SwiftHaul support.');
+  if (app === 'driver') rememberPinAccount(session?.user?.email || user.email);
   if (app === 'driver' && session?.access_token) {
     // Only run after an authenticated session exists and account-me validates the driver.
     // With email confirmation enabled, this first runs on sign-in after confirmation.
@@ -211,8 +220,15 @@ form.addEventListener('submit', async event => {
     const email = form.elements.email.value.trim().toLowerCase();
     const password = form.elements.password.value;
     if (mode === 'pin') {
+      const pinAccountEmail = rememberedPinAccount();
+      if (!pinAccountEmail) {
+        setMode('login');
+        status.textContent = 'For the first sign-in on this device, use your email and password. Your verified account will then be remembered for PIN-only sign-in.';
+        return;
+      }
+      if (!/^[0-9]{6}$/.test(pinInput.value)) throw new Error('Enter your six-digit PIN.');
       const { data: pinData, error: pinError } = await supabase.functions.invoke('account-pin', {
-        body: { action: 'login', app_type: 'driver', email, pin: pinInput.value }
+        body: { action: 'login', app_type: 'driver', email: pinAccountEmail, pin: pinInput.value }
       });
       if (pinError) throw new Error(pinData?.error || pinError.message || 'PIN sign-in failed.');
       const { data: sessionData, error: sessionError } = await supabase.auth.setSession(pinData.session);
