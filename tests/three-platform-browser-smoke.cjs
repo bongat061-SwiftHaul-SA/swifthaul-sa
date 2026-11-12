@@ -36,7 +36,8 @@ const server = http.createServer((req,res)=>{
       {name:'Company Admin',path:'/company/',id:'company',signup:false}
     ]) {
       const page=await browser.newPage();
-      page.on('pageerror',e=>failures.push(app.name+' JavaScript: '+e.message));
+      page.on('pageerror',e=>{failures.push(app.name+' JavaScript: '+e.message);console.error('PAGE ERROR '+app.name+': '+e.stack);});
+      page.on('console',m=>{if(m.type()==='error')console.error('CONSOLE ERROR '+app.name+': '+m.text());});
       const badLocal=[];
       page.on('response',r=>{if(r.status()>=400 && new URL(r.url()).origin===base)badLocal.push(r.status()+' '+r.url());});
       // Keep this UI smoke test deterministic and offline: auth backend behavior is
@@ -61,7 +62,10 @@ const server = http.createServer((req,res)=>{
       }));
       const response=await page.goto(base+app.path,{waitUntil:'domcontentloaded'});
       assert.equal(response.status(),200,app.name+' page should return HTTP 200');
-      await page.waitForFunction(()=>document.body.dataset.authState!=='checking',null,{timeout:20000});
+      await page.waitForFunction(()=>document.body.dataset.authState!=='checking',null,{timeout:20000}).catch(async error=>{
+        const details=await page.evaluate(()=>({state:document.body.dataset.authState,authHidden:document.querySelector('#auth-screen')?.hidden,title:document.title}));
+        throw new Error(app.name+' auth initialization did not finish: '+JSON.stringify(details)+'; '+error.message);
+      });
       assert.equal(await page.locator('body').getAttribute('data-app'),app.id,app.name+' app identity');
       assert.ok((await page.title()).toLowerCase().includes(app.name==='Company Admin'?'company':app.name.toLowerCase()),app.name+' document title');
       assert.equal(await page.locator('#auth-form').count(),1,app.name+' sign-in form');
