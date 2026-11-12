@@ -44,7 +44,7 @@ const server = http.createServer((req,res)=>{
       // Keep this UI smoke test deterministic and offline: auth backend behavior is
       // covered separately; here a no-session Supabase client lets the real app
       // initialize and exposes the actual sign-in controls without credentials.
-      await page.route(/supabase-js@2\\.49\\.1/,route=>route.fulfill({
+      await page.route(/supabase-js@2\.49\.1/,route=>route.fulfill({
         status:200,
         contentType:'application/javascript',
         body:`export function createClient(){
