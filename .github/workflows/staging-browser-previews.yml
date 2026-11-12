@@ -13,6 +13,7 @@ on:
       - 'shared/**'
       - 'scripts/prepare-sites.cjs'
       - 'scripts/build-pages.cjs'
+      - 'tests/three-platform-browser-smoke.cjs'
       - '.github/workflows/staging-browser-previews.yml'
   workflow_dispatch:
 
