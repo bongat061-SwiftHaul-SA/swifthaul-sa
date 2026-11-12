@@ -44,23 +44,27 @@ const server = http.createServer((req,res)=>{
       // Keep this UI smoke test deterministic and offline: auth backend behavior is
       // covered separately; here a no-session Supabase client lets the real app
       // initialize and exposes the actual sign-in controls without credentials.
-      await page.route(/supabase-js@2\.49\.1/,route=>route.fulfill({
-        status:200,
-        contentType:'application/javascript',
-        body:`export function createClient(){
-          const auth={
-            getSession:async()=>({data:{session:null},error:null}),
-            onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}}),
-            signOut:async()=>({error:null}),
-            signInWithPassword:async()=>({data:{session:null},error:new Error('Mock auth only')}),
-            signUp:async()=>({data:{session:null},error:new Error('Mock auth only')}),
-            setSession:async()=>({data:{session:null},error:new Error('Mock auth only')}),
-            resetPasswordForEmail:async()=>({error:null}),
-            updateUser:async()=>({error:null})
-          };
-          return {auth,functions:{invoke:async()=>({data:null,error:null})}};
-        }`
-      }));
+      await page.route('**/*',async route=>{
+        const url=route.request().url();
+        if(url.includes('supabase-js@2.49.1')) return route.fulfill({
+          status:200,contentType:'application/javascript',
+          body:`export function createClient(){
+            const auth={
+              getSession:async()=>({data:{session:null},error:null}),
+              onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}}),
+              signOut:async()=>({error:null}),
+              signInWithPassword:async()=>({data:{session:null},error:new Error('Mock auth only')}),
+              signUp:async()=>({data:{session:null},error:new Error('Mock auth only')}),
+              setSession:async()=>({data:{session:null},error:new Error('Mock auth only')}),
+              resetPasswordForEmail:async()=>({error:null}),
+              updateUser:async()=>({error:null})
+            };
+            return {auth,functions:{invoke:async()=>({data:null,error:null})}};
+          }`
+        });
+        if(url.includes('openlocationcode/1.0.5/openlocationcode.min.js')) return route.fulfill({status:200,contentType:'application/javascript',body:'window.OpenLocationCode = window.OpenLocationCode || {};'});
+        return route.continue();
+      });
       const response=await page.goto(base+app.path,{waitUntil:'domcontentloaded'});
       assert.equal(response.status(),200,app.name+' page should return HTTP 200');
       await page.waitForFunction(()=>document.body.dataset.authState!=='checking',null,{timeout:20000}).catch(async error=>{
