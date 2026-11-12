@@ -7,6 +7,7 @@ on:
       - feature/android-apk-packaging
       - feature/uber-style-parcel-map-staging
       - feature/dark-premium-customer-driver-staging
+      - feature/sa-sms-whatsapp-notifications-staging
   pull_request:
     paths:
       - "public/**"
