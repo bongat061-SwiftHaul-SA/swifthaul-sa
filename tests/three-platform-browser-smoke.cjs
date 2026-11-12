@@ -38,12 +38,13 @@ const server = http.createServer((req,res)=>{
       const page=await browser.newPage();
       page.on('pageerror',e=>{failures.push(app.name+' JavaScript: '+e.message);console.error('PAGE ERROR '+app.name+': '+e.stack);});
       page.on('console',m=>{if(m.type()==='error')console.error('CONSOLE ERROR '+app.name+': '+m.text());});
+      page.on('requestfailed',r=>console.error('REQUEST FAILED '+app.name+': '+r.url()+' '+r.failure()?.errorText));
       const badLocal=[];
       page.on('response',r=>{if(r.status()>=400 && new URL(r.url()).origin===base)badLocal.push(r.status()+' '+r.url());});
       // Keep this UI smoke test deterministic and offline: auth backend behavior is
       // covered separately; here a no-session Supabase client lets the real app
       // initialize and exposes the actual sign-in controls without credentials.
-      await page.route('**/supabase-js@2.49.1*',route=>route.fulfill({
+      await page.route(/supabase-js@2\\.49\\.1/,route=>route.fulfill({
         status:200,
         contentType:'application/javascript',
         body:`export function createClient(){
