@@ -39,6 +39,26 @@ const server = http.createServer((req,res)=>{
       page.on('pageerror',e=>failures.push(app.name+' JavaScript: '+e.message));
       const badLocal=[];
       page.on('response',r=>{if(r.status()>=400 && new URL(r.url()).origin===base)badLocal.push(r.status()+' '+r.url());});
+      // Keep this UI smoke test deterministic and offline: auth backend behavior is
+      // covered separately; here a no-session Supabase client lets the real app
+      // initialize and exposes the actual sign-in controls without credentials.
+      await page.route('https://esm.sh/@supabase/supabase-js@2.49.1',route=>route.fulfill({
+        status:200,
+        contentType:'application/javascript',
+        body:`export function createClient(){
+          const auth={
+            getSession:async()=>({data:{session:null},error:null}),
+            onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}}),
+            signOut:async()=>({error:null}),
+            signInWithPassword:async()=>({data:{session:null},error:new Error('Mock auth only')}),
+            signUp:async()=>({data:{session:null},error:new Error('Mock auth only')}),
+            setSession:async()=>({data:{session:null},error:new Error('Mock auth only')}),
+            resetPasswordForEmail:async()=>({error:null}),
+            updateUser:async()=>({error:null})
+          };
+          return {auth,functions:{invoke:async()=>({data:null,error:null})}};
+        }`
+      }));
       const response=await page.goto(base+app.path,{waitUntil:'domcontentloaded'});
       assert.equal(response.status(),200,app.name+' page should return HTTP 200');
       await page.waitForFunction(()=>document.body.dataset.authState!=='checking',null,{timeout:20000});
