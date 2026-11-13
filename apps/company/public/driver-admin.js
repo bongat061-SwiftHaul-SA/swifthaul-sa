@@ -1,3 +1,4 @@
+(() => {
 const panel=document.getElementById('drivers');
 if(panel){
   const note=document.createElement('p');
@@ -94,3 +95,5 @@ if(panel){
   });
   document.addEventListener('account-cleared',()=>{active=false;isAdmin=false;epoch++;list.replaceChildren();status.textContent='';});
 }
+
+})();
