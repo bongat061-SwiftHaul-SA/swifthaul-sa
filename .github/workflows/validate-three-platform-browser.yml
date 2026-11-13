@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/sa-sms-whatsapp-notifications-staging
+      - feature/customer-simple-estimator-driver-account
     paths:
       - "public/**"
       - "apps/driver/public/**"
