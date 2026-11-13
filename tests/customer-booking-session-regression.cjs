@@ -21,6 +21,7 @@ assert.ok(auth.includes('form.elements.namedItem(name)') && auth.includes("field
 assert.match(auth, /catch \(error\) \{[\s\S]*?showSignIn\(error\?\.message/, 'Failed session restoration must return customers to a usable sign-in screen.');
 assert.match(auth, /withTimeout\([\s\S]*?supabase\.auth\.getSession\(\)[\s\S]*?12000/, 'Session restoration must recover from a stalled local session check.');
 assert.match(prepareSites, /if \(!fs\.existsSync\(target\)\) fs\.copyFileSync/, 'Site preparation must preserve platform-specific auth, theme and configuration files.');
+assert.ok(prepareSites.includes("const chatSource = path.join(root, 'public', 'order-chat.js')") && prepareSites.includes("const chatTarget = path.join(publicDir, 'order-chat.js')"), 'Driver bundle must include the shared delivery chat asset.');
 assert.ok(customerHtml.includes('customer-simple-estimator.css?v=20261113-compact-estimator'), 'Dedicated Customer entry must load the current compact estimator styling.');
 assert.ok(indexHtml.includes('customer-simple-estimator.css?v=20261113-compact-estimator'), 'Root Customer entry must load the same current estimator styling.');
 assert.ok(indexHtml.includes('name="city"') && indexHtml.includes('name="province"'), 'Root Customer entry must preserve required signup location fields.');
