@@ -73,7 +73,9 @@ const server = http.createServer((req,res)=>{
       assert.equal(response.status(),200,app.name+' page should return HTTP 200');
       await page.waitForFunction(()=>document.body.dataset.authState!=='checking',null,{timeout:20000}).catch(async error=>{
         const details=await page.evaluate(()=>({
-          state:document.body.dataset.authState,\n          mockClientCreated:window.__smokeSupabaseClientCreated||false,\n          getSessionCalled:window.__smokeGetSessionCalled||false,
+          state:document.body.dataset.authState,
+          mockClientCreated:window.__smokeSupabaseClientCreated||false,
+          getSessionCalled:window.__smokeGetSessionCalled||false,
           authHidden:document.querySelector('#auth-screen')?.hidden,
           title:document.title,
           authStatus:document.querySelector('#auth-status')?.textContent,
