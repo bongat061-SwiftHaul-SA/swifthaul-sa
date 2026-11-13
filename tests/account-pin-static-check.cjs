@@ -27,7 +27,7 @@ assert.match(customer, /action: 'set', app_type: 'customer'/);
 assert.match(customer, /password: setup\.elements\.password\.value/);
 assert.match(customer, /action: 'status', app_type: 'customer'/);
 assert.match(customer, /rememberedCustomerEmail\(\)/);
-assert.match(customer, /form\.elements\.email\.closest\('label'\)\.hidden = reset \|\| pinLogin/);
+assert.match(customer, /const field = name => form\.elements\.namedItem\(name\);[\s\S]*?const email = field\('email'\)[\s\S]*?email\.closest\('label'\)\.hidden = reset \|\| pinLogin/);
 assert.match(driver, /supportsPin = app === 'driver'/);
 assert.match(driver, /action: 'login', app_type: 'driver'/);
 assert.match(driver, /action: 'set', app_type: 'driver'/);
