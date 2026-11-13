@@ -7,7 +7,10 @@ for (const app of ['customer', 'driver', 'company']) {
   const base = app === 'customer' ? root : path.join(root, 'apps', app);
   const publicDir = path.join(base, 'public');
   for (const name of fs.readdirSync(path.join(root, 'shared'))) {
-    fs.copyFileSync(path.join(root, 'shared', name), path.join(publicDir, name));
+    const target = path.join(publicDir, name);
+    // Shared files are fallbacks only. Never overwrite a platform's own
+    // customised auth, theme, Supabase config, service worker or terms page.
+    if (!fs.existsSync(target)) fs.copyFileSync(path.join(root, 'shared', name), target);
   }
   if (app !== 'customer') {
     const functions = path.join(base, 'netlify', 'functions');
