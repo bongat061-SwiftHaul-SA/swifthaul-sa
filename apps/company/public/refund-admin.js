@@ -1,3 +1,4 @@
+(() => {
 const panel=document.getElementById('refunds');
 if(panel){
   const refresh=document.getElementById('refund-refresh');
@@ -51,3 +52,5 @@ if(panel){
   document.addEventListener('account-ready',event=>{active=true;isAdmin=event.detail.role==='admin';if(isAdmin)load();else status.textContent='Only administrators can review refund requests.';});
   document.addEventListener('account-cleared',()=>{active=false;isAdmin=false;epoch++;list.replaceChildren();status.textContent='';});
 }
+
+})();
