@@ -168,7 +168,6 @@
     document.querySelectorAll('dialog').forEach(dialog => dialog.addEventListener('click', event => {
       if (event.target === dialog) dialog.close();
     }));
-    calculateQuote();
     document.querySelectorAll('[data-interest-track]').forEach(link => link.addEventListener('click', () => { document.getElementById('partnerTrack').value = link.dataset.interestTrack; }));
     document.getElementById('partnerInterestForm').addEventListener('submit', async event => {
       event.preventDefault();
