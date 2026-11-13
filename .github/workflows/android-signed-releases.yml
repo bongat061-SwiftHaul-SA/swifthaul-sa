@@ -96,7 +96,12 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/swifthaul-release.keystore
+          # Accept line-wrapped Base64, but reject copied labels, quotes, or shell commands.
+          KEYSTORE_B64="$(printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d '[:space:]')"
+          if ! printf '%s' "$KEYSTORE_B64" | base64 --decode > android/app/swifthaul-release.keystore; then
+            echo "ANDROID_KEYSTORE_BASE64 is not valid Base64. Recreate it from the .jks file using the documented command; do not include quotes, labels, or the command itself."
+            exit 1
+          fi
           test -s android/app/swifthaul-release.keystore
           keytool -list -keystore android/app/swifthaul-release.keystore \
             -storepass "$ANDROID_KEYSTORE_PASSWORD" \
