@@ -1,0 +1,135 @@
+name: Build signed SwiftHaul Android release APKs
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-signed-releases
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Signed \${{ matrix.label }} APK
+    if: github.ref == 'refs/heads/feature/customer-simple-estimator-driver-account'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Customer
+            path: .
+            artifact: swifthaul-customer-signed-apk
+            config: public/supabase-config.js
+          - label: Driver
+            path: apps/driver
+            artifact: swifthaul-driver-signed-apk
+            config: apps/driver/public/supabase-config.js
+          - label: Company-Admin
+            path: apps/company
+            artifact: swifthaul-company-admin-signed-apk
+            config: apps/company/public/supabase-config.js
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Verify signing secrets are configured
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: \${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: \${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: \${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: \${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          missing=()
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            if [ -z "\${!name}" ]; then missing+=("$name"); fi
+          done
+          if [ "\${#missing[@]}" -gt 0 ]; then
+            printf 'Missing required GitHub Actions secrets: %s\n' "\${missing[*]}"
+            exit 1
+          fi
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install pinned app dependencies
+        working-directory: \${{ matrix.path }}
+        run: npm install --no-audit --no-fund
+
+      - name: Use current customer website as APK entry point
+        if: matrix.label == 'Customer'
+        run: cp public/customer.html public/index.html
+
+      - name: Configure isolated staging backend
+        shell: bash
+        run: |
+          cat > "\${{ matrix.config }}" <<'EOF'
+          // Isolated staging configuration for signed preview APKs.
+          export const SUPABASE_URL = 'https://tagkbropgzthsbjlhyvz.supabase.co';
+          export const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_QWOeGbSVs2nXECI-KsAmWQ_K_Rav892';
+          EOF
+
+      - name: Generate Android project and sync app assets
+        working-directory: \${{ matrix.path }}
+        run: |
+          npx cap add android
+          npx cap sync android
+
+      - name: Configure Android release signing
+        working-directory: \${{ matrix.path }}
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: \${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: \${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: \${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: \${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/swifthaul-release.keystore
+          test -s android/app/swifthaul-release.keystore
+          cat >> android/app/build.gradle <<'EOF'
+
+          // SwiftHaul release signing: credentials are injected from GitHub Actions secrets.
+          android {
+              signingConfigs {
+                  release {
+                      storeFile file("swifthaul-release.keystore")
+                      storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                      keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                      keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+                  }
+              }
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.release
+                      minifyEnabled false
+                  }
+              }
+          }
+          EOF
+
+      - name: Build signed release APK
+        working-directory: \${{ matrix.path }}/android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon assembleRelease
+          test -s app/build/outputs/apk/release/app-release.apk
+
+      - name: Publish signed APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: \${{ matrix.artifact }}
+          path: \${{ matrix.path }}/android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 14
