@@ -16,7 +16,7 @@ Deno.serve(async(req:Request)=>{
  const requestedWaybill=String(req.method==="GET"?new URL(req.url).searchParams.get("order_id")||"":body.order_id||"").trim().slice(0,100);
  const tracking=String(req.method==="GET"?new URL(req.url).searchParams.get("tracking_code")||"":body.tracking_code||"").trim().slice(0,100);
  if(!tracking)return reply(400,{error:"tracking_code_required"});
- let bookingQuery=db.from("customer_bookings").select("waybill,tracking_code,driver_user_id,status,completed_at,cancelled_at,pickup,dropoff,vehicle,created_at").eq("tracking_code",tracking);
+ let bookingQuery=db.from("customer_bookings").select("waybill,tracking_code,driver_user_id,status,completed_at,cancelled_at,pickup,dropoff,vehicle,created_at,paid_at,price").eq("tracking_code",tracking);
  if(requestedWaybill)bookingQuery=bookingQuery.eq("waybill",requestedWaybill);
  const {data:booking,error:bookingError}=await bookingQuery.maybeSingle();
  if(bookingError||!booking)return reply(404,{error:"tracking_credentials_invalid"});
