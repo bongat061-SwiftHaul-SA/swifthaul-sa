@@ -4,6 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#090d16">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SwiftHaul SA">
   <meta name="description" content="SwiftHaul South Africa — on-demand motorbike courier, bakkie, panel van and commercial truck deliveries.">
   <title>SwiftHaul South Africa | Courier, Bakkie & Freight</title>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -189,6 +194,9 @@
       finally { button.disabled = false; }
     });
 
+    if ('serviceWorker' in navigator && location.protocol === 'https:') {
+      window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(error => console.warn('SwiftHaul offline support unavailable:', error)));
+    }
   </script>
 </body>
 </html>
