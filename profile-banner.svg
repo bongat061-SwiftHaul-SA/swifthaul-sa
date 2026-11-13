@@ -1,14 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 600" role="img" aria-labelledby="title desc">
-<title id="title">SwiftHaul South Africa — Move, Deliver, Grow</title><desc id="desc">A branded logistics banner with a delivery van, city skyline and South African flag-inspired accents.</desc>
-<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#061426"/><stop offset=".58" stop-color="#0b2848"/><stop offset="1" stop-color="#07111f"/></linearGradient><linearGradient id="accent" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#67e8f9"/><stop offset="1" stop-color="#0284c7"/></linearGradient><filter id="glow"><feGaussianBlur stdDeviation="24"/></filter></defs>
-<rect width="1600" height="600" fill="url(#bg)"/><circle cx="1270" cy="250" r="250" fill="#0ea5e9" opacity=".14" filter="url(#glow)"/>
-<path d="M0 470h1600" stroke="#38bdf8" stroke-width="3" opacity=".3"/>
-<g fill="#102d4a" opacity=".95"><path d="M890 470V300h90v170zm110 0V220h120v250zm140 0V275h100v195zm120 0V180h100v290zm120 0V310h90v160z"/></g>
-<g fill="#38bdf8" opacity=".45"><path d="M920 325h14v18h-14zm28 0h14v18h-14zm-28 36h14v18h-14zm28 0h14v18h-14zm92-95h18v20h-18zm34 0h18v20h-18zm-34 42h18v20h-18zm34 0h18v20h-18zm172-100h18v22h-18zm34 0h18v22h-18zm-34 45h18v22h-18zm34 0h18v22h-18z"/></g>
-<g transform="translate(1040 325)"><path d="M0 110h410v82H0z" fill="#071426" opacity=".55"/><path d="M35 85h230l58 65h66v86h-42a38 38 0 0 1-75 0H145a38 38 0 0 1-75 0H35z" fill="#f8fafc"/><path d="M72 100h90v45H48zm110 0h72l40 45H182z" fill="url(#accent)"/><circle cx="108" cy="236" r="29" fill="#071426" stroke="#38bdf8" stroke-width="12"/><circle cx="309" cy="236" r="29" fill="#071426" stroke="#38bdf8" stroke-width="12"/><path d="M0 76h95" stroke="#16a34a" stroke-width="9"/><path d="M95 76h95" stroke="#fff" stroke-width="9"/><path d="M190 76h95" stroke="#de3831" stroke-width="9"/></g>
-<g transform="translate(100 95)"><circle cx="74" cy="74" r="70" fill="#0a1b30" stroke="#38bdf8" stroke-width="6"/><path d="M26 81h96l18 22v26h-18a16 16 0 0 1-32 0H60a16 16 0 0 1-32 0H16V98z" fill="#fff"/><path d="M45 62h57l18 19H35z" fill="#38bdf8"/><circle cx="44" cy="131" r="10" fill="#071426" stroke="#38bdf8" stroke-width="5"/><circle cx="106" cy="131" r="10" fill="#071426" stroke="#38bdf8" stroke-width="5"/></g>
-<text x="100" y="270" fill="#fff" font-family="Arial,sans-serif" font-size="68" font-weight="900" letter-spacing="1">SwiftHaul <tspan fill="#38bdf8">SA</tspan></text>
-<text x="104" y="345" fill="#dbeafe" font-family="Arial,sans-serif" font-size="38" font-weight="700" letter-spacing="8">MOVE • DELIVER • GROW</text>
-<text x="105" y="405" fill="#94a3b8" font-family="Arial,sans-serif" font-size="24" letter-spacing="2">SMARTER LOGISTICS. A STRONGER SOUTH AFRICA.</text>
-<path d="M100 455h460" stroke="url(#accent)" stroke-width="8" stroke-linecap="round"/>
+<title id="title">SwiftHaul South Africa — Move, Deliver, Grow</title>
+<desc id="desc">SwiftHaul's circular delivery-van emblem, South African flag accents and brand message on a deep navy background.</desc>
+<defs>
+ <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#061426"/><stop offset=".55" stop-color="#0b2848"/><stop offset="1" stop-color="#07111f"/></linearGradient>
+ <linearGradient id="cyan" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#67e8f9"/><stop offset="1" stop-color="#0284c7"/></linearGradient>
+ <radialGradient id="halo"><stop stop-color="#0ea5e9" stop-opacity=".22"/><stop offset="1" stop-color="#0ea5e9" stop-opacity="0"/></radialGradient>
+</defs>
+<rect width="1600" height="600" fill="url(#bg)"/>
+<circle cx="330" cy="300" r="300" fill="url(#halo)"/>
+<circle cx="1320" cy="310" r="310" fill="url(#halo)" opacity=".55"/>
+<path d="M0 510H1600" stroke="#38bdf8" stroke-opacity=".22" stroke-width="2"/>
+<g opacity=".2" fill="none" stroke="#38bdf8"><path d="M980 500C1080 390 1100 420 1180 300s120-110 210-170" stroke-width="3"/><path d="M1000 500C1110 390 1125 435 1205 315s125-110 220-170" stroke-width="1.5" stroke-dasharray="8 12"/></g>
+<g fill="#67e8f9"><circle cx="980" cy="500" r="8"/><circle cx="1180" cy="300" r="8"/><circle cx="1390" cy="130" r="8"/></g>
+<image href="/icon.svg" x="100" y="90" width="420" height="420" preserveAspectRatio="xMidYMid meet"/>
+<g font-family="Arial,Helvetica,sans-serif">
+ <text x="610" y="235" fill="#fff" font-size="78" font-weight="900" letter-spacing="-2">SwiftHaul <tspan fill="#38bdf8">SA</tspan></text>
+ <text x="616" y="315" fill="#dbeafe" font-size="34" font-weight="800" letter-spacing="8">MOVE • DELIVER • GROW</text>
+ <rect x="616" y="355" width="500" height="5" rx="2.5" fill="url(#cyan)"/>
+ <text x="616" y="415" fill="#9fb4ca" font-size="24" font-weight="700" letter-spacing="3">SMARTER LOGISTICS.</text>
+ <text x="616" y="452" fill="#9fb4ca" font-size="24" font-weight="700" letter-spacing="3">A STRONGER SOUTH AFRICA.</text>
+</g>
+<g transform="translate(1270 440)"><path d="M0 0h210" stroke="#16a34a" stroke-width="8"/><path d="M0 14h210" stroke="#fff" stroke-width="8"/><path d="M0 28h210" stroke="#de3831" stroke-width="8"/></g>
 </svg>
