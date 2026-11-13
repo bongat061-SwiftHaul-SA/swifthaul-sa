@@ -103,9 +103,7 @@ jobs:
             exit 1
           fi
           test -s android/app/swifthaul-release.keystore
-          keytool -list -keystore android/app/swifthaul-release.keystore \\
-            -storepass "$ANDROID_KEYSTORE_PASSWORD" \\
-            -alias "$ANDROID_KEY_ALIAS" >/dev/null
+          keytool -list -keystore android/app/swifthaul-release.keystore -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" >/dev/null
           cat >> android/app/build.gradle <<'EOF'
 
           // SwiftHaul release signing: credentials are injected from GitHub Actions secrets.
