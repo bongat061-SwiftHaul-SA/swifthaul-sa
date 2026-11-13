@@ -54,7 +54,7 @@ const server = http.createServer((req,res)=>{
           headers:{'access-control-allow-origin':'*'},
           body:`export function createClient(){
             const auth={
-              getSession:async()=>{window.__smokeGetSessionCalled=true;return {data:{session:null},error:null};},
+              getSession:async()=>{window.__smokeGetSessionCalled=true;const result={data:{session:null},error:null};window.__smokeGetSessionResolved=true;return result;},
               onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}}),
               signOut:async()=>({error:null}),
               signInWithPassword:async()=>({data:{session:null},error:new Error('Mock auth only')}),
@@ -76,6 +76,7 @@ const server = http.createServer((req,res)=>{
           state:document.body.dataset.authState,
           mockClientCreated:window.__smokeSupabaseClientCreated||false,
           getSessionCalled:window.__smokeGetSessionCalled||false,
+          getSessionResolved:window.__smokeGetSessionResolved||false,
           authHidden:document.querySelector('#auth-screen')?.hidden,
           title:document.title,
           authStatus:document.querySelector('#auth-status')?.textContent,
