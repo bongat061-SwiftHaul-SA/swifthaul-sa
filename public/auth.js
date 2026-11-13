@@ -318,7 +318,9 @@ async function init() {
     else showSignIn();
   } catch (error) {
     console.error('Customer session initialization failed:', error);
-    showSessionRestore(error?.message || 'We could not verify your saved session. Try again, or return to sign in.', true);
+    // A failed restore must still leave a usable sign-in route; never strand
+    // the customer behind a permanent session-restoration interstitial.
+    showSignIn(error?.message || 'We could not verify your saved session. Please sign in again.');
   } finally {
     if (restoreTimer) clearTimeout(restoreTimer);
     restoreTimer = null;
