@@ -36,14 +36,14 @@ const server = http.createServer((req,res)=>{
       {name:'Company Admin',path:'/company/',id:'company',signup:false}
     ]) {
       const page=await browser.newPage();
-      page.on('pageerror',e=>{failures.push(app.name+' JavaScript: '+e.message);console.error('PAGE ERROR '+app.name+': '+e.stack);});
+      page.on('pageerror',e=>{failures.push(app.name+' JavaScript: '+e.message);console.error('PAGE ERROR '+app.name+': '+e.message+' '+(e.stack||''));});
       page.on('console',m=>{if(m.type()==='error')console.error('CONSOLE ERROR '+app.name+': '+m.text());});
       page.on('request',r=>{if(/bootstrap\\.js|auth\\.js|supabase-config\\.js|supabase-js/i.test(r.url()))console.error('MODULE REQUEST '+app.name+': '+r.url());});
       page.on('response',r=>{if(/bootstrap\\.js|auth\\.js|supabase-config\\.js|supabase-js/i.test(r.url()))console.error('MODULE RESPONSE '+app.name+': '+r.status()+' '+r.url());});
       page.on('requestfailed',r=>console.error('REQUEST FAILED '+app.name+': '+r.url()+' '+r.failure()?.errorText));
       const badLocal=[];
       page.on('response',r=>{if(r.status()>=400 && new URL(r.url()).origin===base)badLocal.push(r.status()+' '+r.url());});
-      await page.addInitScript(()=>{window.__smokeLocalFailures=[];});
+      await page.addInitScript(()=>{window.__smokeLocalFailures=[];window.__smokePageErrors=[];window.addEventListener('error',event=>window.__smokePageErrors.push({message:event.message,filename:event.filename,lineno:event.lineno,colno:event.colno}));});
       // Keep this UI smoke test deterministic and offline: auth backend behavior is
       // covered separately; here a no-session Supabase client lets the real app
       // initialize and exposes the actual sign-in controls without credentials.
@@ -116,6 +116,8 @@ const server = http.createServer((req,res)=>{
         assert.equal(await page.locator('#auth-form input[name="email"]').isVisible(),true,'Company Admin password sign-in remains available');
       }
       await page.waitForTimeout(800);
+      const scriptErrors=await page.evaluate(()=>window.__smokePageErrors||[]);
+      if(scriptErrors.length) failures.push(app.name+' script locations: '+JSON.stringify(scriptErrors));
       assert.deepEqual(badLocal,[],app.name+' should not have missing local assets');
       await page.close();
       console.log('PASS '+app.name+' browser smoke test');
