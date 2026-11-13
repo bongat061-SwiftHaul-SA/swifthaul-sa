@@ -98,6 +98,9 @@ jobs:
         run: |
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/swifthaul-release.keystore
           test -s android/app/swifthaul-release.keystore
+          keytool -list -keystore android/app/swifthaul-release.keystore \
+            -storepass "$ANDROID_KEYSTORE_PASSWORD" \
+            -alias "$ANDROID_KEY_ALIAS" >/dev/null
           cat >> android/app/build.gradle <<'EOF'
 
           // SwiftHaul release signing: credentials are injected from GitHub Actions secrets.
