@@ -1,30 +1,182 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#173d31">
-  <meta name="description" content="SwiftHaul SA driver and company workspaces">
-  <title>SwiftHaul SA · Workspaces</title>
+  <meta name="theme-color" content="#090d16">
+  <meta name="description" content="SwiftHaul South Africa — on-demand motorbike courier, bakkie, panel van and commercial truck deliveries.">
+  <title>SwiftHaul South Africa | Courier, Bakkie & Freight</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { colors: {
+        brand: { 400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7' },
+        darkbg: '#090d16', cardbg: '#111827', borderdark: '#263244'
+      }, boxShadow: { glow: '0 18px 60px rgba(14,165,233,.16)' } } }
+    };
+  </script>
   <style>
-    :root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#18382e;background:#f3f5f0}
-    body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;box-sizing:border-box}
-    main{width:min(760px,100%)}h1{font-size:clamp(2rem,6vw,3.5rem);margin:.3em 0}
-    p{line-height:1.6;color:#52645b}.apps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:32px 0}
-    a.card{display:block;padding:24px;border:1px solid #d6dfd8;border-radius:18px;background:#fff;color:inherit;text-decoration:none}
-    a.card:hover{border-color:#527a68}a.card strong{font-size:1.2rem}small{color:#66786d}
+    html{color-scheme:dark}body{background:#090d16}
+    .glass{background:rgba(17,24,39,.82);backdrop-filter:blur(18px)}
+    .grid-glow{background-image:linear-gradient(rgba(148,163,184,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,.045) 1px,transparent 1px);background-size:44px 44px}
+    .field{width:100%;border:1px solid #334155;background:#090d16;border-radius:.75rem;padding:.8rem .9rem;color:white;outline:none}
+    .field:focus{border-color:#38bdf8;box-shadow:0 0 0 3px rgba(56,189,248,.12)}
+    .eyebrow{letter-spacing:.16em}
+    dialog{max-width:min(42rem,calc(100% - 2rem));border:1px solid #334155;border-radius:1.25rem;background:#111827;color:#e5e7eb;padding:1.5rem}
+    dialog::backdrop{background:rgba(2,6,23,.78);backdrop-filter:blur(5px)}
   </style>
 </head>
-<body>
-  <main>
-    <p>SWIFTHAUL SOUTH AFRICA</p>
-    <h1>Move work forward.</h1>
-    <p>Choose your SwiftHaul workspace. These driver and company apps are being tested on GitHub Pages; the live customer booking website remains unchanged.</p>
-    <div class="apps">
-      <a class="card" href="./public/customer.html"><strong>Customer website</strong><p>Book and track deliveries, manage your customer account.</p><small>Open customer platform →</small></a>\n      <a class="card" href="./apps/driver/public/"><strong>Driver workspace</strong><p>Driver registration, verification status and delivery progress.</p><small>Open driver app →</small></a>
-      <a class="card" href="./apps/company/public/"><strong>Company workspace</strong><p>Dispatch operations and driver application review.</p><small>Open company app →</small></a>
+<body class="font-sans antialiased text-slate-100 selection:bg-sky-500 selection:text-slate-950">
+  <header class="sticky top-0 z-40 border-b border-slate-800/80 bg-[#090d16]/90 backdrop-blur-xl">
+    <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <a href="#" class="flex items-center gap-3" aria-label="SwiftHaul home">
+        <span class="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-sky-400 to-blue-700 text-sm font-black text-white shadow-glow">SH</span>
+        <span class="text-lg font-extrabold tracking-tight text-white">Swift<span class="text-sky-400">Haul</span><span class="ml-2 hidden rounded border border-sky-400/20 bg-sky-400/10 px-2 py-1 text-[9px] font-bold uppercase tracking-widest text-sky-300 sm:inline">South Africa</span></span>
+      </a>
+      <nav class="hidden items-center gap-7 text-sm font-medium text-slate-300 md:flex">
+        <a class="transition hover:text-white" href="#quote">Instant quote</a>
+        <a class="transition hover:text-white" href="#fleet">Vehicles</a>
+        <a class="transition hover:text-white" href="#features">Why SwiftHaul</a>
+        <a class="transition hover:text-white" href="#partners">Partner with us</a>
+      </nav>
+      <div class="flex items-center gap-2 sm:gap-3">
+        <a href="./public/customer.html" class="hidden rounded-lg px-3 py-2 text-sm font-semibold text-slate-300 transition hover:text-white sm:inline-flex">Customer login</a>
+        <a href="./apps/driver/public/index.html" class="rounded-lg border border-sky-400/30 bg-sky-400/10 px-3 py-2 text-xs font-bold text-sky-300 transition hover:bg-sky-400/20 sm:text-sm">Driver portal</a>
+        <a href="#quote" class="rounded-lg bg-sky-500 px-3.5 py-2 text-xs font-extrabold text-slate-950 shadow-glow transition hover:bg-sky-400 sm:text-sm">Send now</a>
+      </div>
     </div>
-    <p><a href="https://swifthaul-sa.netlify.app">Customer booking website ↗</a></p>
+  </header>
+
+  <main>
+    <section class="relative isolate overflow-hidden border-b border-slate-800/80">
+      <div class="grid-glow absolute inset-0 -z-20 opacity-70"></div>
+      <div class="absolute -right-40 -top-40 -z-10 h-[34rem] w-[34rem] rounded-full bg-sky-500/10 blur-3xl"></div>
+      <div class="absolute -bottom-48 -left-40 -z-10 h-[28rem] w-[28rem] rounded-full bg-emerald-500/10 blur-3xl"></div>
+      <div class="mx-auto grid max-w-7xl items-center gap-12 px-4 py-16 sm:px-6 lg:grid-cols-12 lg:px-8 lg:py-24">
+        <div class="lg:col-span-7">
+          <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-xs font-bold text-emerald-300">
+            <span class="h-2 w-2 animate-pulse rounded-full bg-emerald-400"></span>
+            Courier and freight solutions across South Africa
+          </div>
+          <h1 class="max-w-3xl text-4xl font-black leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl">Move anything from <span class="bg-gradient-to-r from-sky-300 to-emerald-300 bg-clip-text text-transparent">envelopes to pallets.</span></h1>
+          <p class="mt-6 max-w-2xl text-lg leading-relaxed text-slate-400">Book a motorbike courier, a bakkie or panel van, or a commercial truck. SwiftHaul brings delivery booking, dispatch and trip visibility together in one South African logistics platform.</p>
+          <div class="mt-8 flex flex-wrap gap-3">
+            <a href="#quote" class="rounded-xl bg-sky-500 px-6 py-3.5 text-sm font-extrabold text-slate-950 shadow-glow transition hover:-translate-y-0.5 hover:bg-sky-400">Get an instant estimate <span aria-hidden="true">→</span></a>
+            <a href="./public/customer.html" class="rounded-xl border border-slate-700 bg-slate-900/70 px-6 py-3.5 text-sm font-bold text-white transition hover:border-slate-500">Customer workspace</a>
+          </div>
+          <div class="mt-10 grid max-w-xl grid-cols-3 gap-4 border-t border-slate-800 pt-6">
+            <div><p class="text-xl font-black text-white sm:text-2xl">3</p><p class="mt-1 text-xs leading-relaxed text-slate-500">Vehicle categories</p></div>
+            <div><p class="text-xl font-black text-white sm:text-2xl">OTP</p><p class="mt-1 text-xs leading-relaxed text-slate-500">Recipient handover check</p></div>
+            <div><p class="text-xl font-black text-white sm:text-2xl">GPS</p><p class="mt-1 text-xs leading-relaxed text-slate-500">Trip visibility features</p></div>
+          </div>
+        </div>
+
+        <div id="quote" class="lg:col-span-5">
+          <div class="glass rounded-3xl border border-slate-700/80 p-5 shadow-2xl shadow-sky-950/30 sm:p-7">
+            <div class="mb-6 flex items-start justify-between gap-3">
+              <div><p class="eyebrow text-[10px] font-extrabold uppercase text-sky-300">Plan your delivery</p><h2 class="mt-2 text-2xl font-extrabold text-white">Rate estimator</h2><p class="mt-1 text-xs text-slate-400">Indicative pricing in South African rand</p></div>
+              <span class="rounded-lg border border-sky-400/20 bg-sky-400/10 px-3 py-1.5 text-xs font-black text-sky-300">ZAR · R</span>
+            </div>
+            <div class="space-y-4">
+              <div><label for="pickupInput" class="mb-1.5 block text-xs font-semibold text-slate-400">Pickup suburb / city</label><input id="pickupInput" class="field" value="Sandton, Johannesburg" autocomplete="street-address"></div>
+              <div><label for="dropoffInput" class="mb-1.5 block text-xs font-semibold text-slate-400">Drop-off suburb / city</label><input id="dropoffInput" class="field" value="Centurion, Pretoria" autocomplete="off"></div>
+              <div class="grid grid-cols-2 gap-3">
+                <div><label for="vehicleSelect" class="mb-1.5 block text-xs font-semibold text-slate-400">Vehicle class</label><select id="vehicleSelect" class="field"><option value="motorbike">Motorbike · up to 15 kg</option><option value="bakkie" selected>Bakkie / Panel Van</option><option value="truck">Commercial Truck</option></select></div>
+                <div><label for="distanceInput" class="mb-1.5 block text-xs font-semibold text-slate-400">Estimated distance (km)</label><input id="distanceInput" class="field" type="number" min="1" max="600" step="1" value="32"></div>
+              </div>
+              <div class="rounded-2xl border border-slate-700 bg-[#090d16] p-4">
+                <div class="flex items-end justify-between gap-3"><div><p class="text-xs text-slate-400">Estimated total</p><p class="mt-1 text-[10px] text-slate-600">Includes 3.5% fuel adjustment</p></div><output id="quoteTotal" class="text-3xl font-black tracking-tight text-sky-300" aria-live="polite">R 577.53</output></div>
+                <div class="mt-3 border-t border-slate-800 pt-3 text-[11px] text-slate-500"><p id="quoteBreakdown">Bakkie / Van · R180 base + 32 km tiered distance</p><p class="mt-1">Final fare is confirmed in the booking flow.</p></div>
+              </div>
+              <a href="./public/customer.html" class="block w-full rounded-xl bg-sky-500 px-4 py-3.5 text-center text-sm font-extrabold text-slate-950 transition hover:bg-sky-400">Continue to booking <span aria-hidden="true">→</span></a>
+              <p class="text-center text-[10px] leading-relaxed text-slate-500">This estimator is a guide, not a confirmed offer. Distance, load, access and dispatch availability may affect the final quote.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="fleet" class="border-b border-slate-800 py-20">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="mx-auto mb-12 max-w-2xl text-center"><p class="eyebrow text-[10px] font-extrabold uppercase text-sky-300">Choose the right fit</p><h2 class="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">The right vehicle for every load.</h2><p class="mt-4 text-slate-400">From urgent documents to bulky goods and palletised freight, choose from three straightforward vehicle categories.</p></div>
+        <div class="grid gap-5 md:grid-cols-3">
+          <article class="rounded-2xl border border-slate-700 bg-cardbg p-6 transition hover:-translate-y-1 hover:border-sky-400/50"><div class="flex items-center justify-between"><span class="text-4xl" aria-hidden="true">🏍️</span><span class="rounded-full bg-slate-800 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Express</span></div><h3 class="mt-5 text-xl font-extrabold text-white">Motorbike Courier</h3><p class="mt-2 text-sm text-slate-400">From <strong class="text-sky-300">R45.00</strong> base fare</p><p class="mt-4 text-sm leading-relaxed text-slate-400">For urgent documents, keys, e-commerce parcels and compact packages up to 15 kg.</p><ul class="mt-5 space-y-2 text-xs text-slate-300"><li>✓ Agile urban deliveries</li><li>✓ Ideal for small, time-sensitive items</li></ul></article>
+          <article class="relative rounded-2xl border border-sky-400/50 bg-gradient-to-b from-sky-950/50 to-cardbg p-6 shadow-glow"><span class="absolute right-5 top-5 rounded-full bg-sky-400 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-slate-950">Popular</span><div class="text-4xl" aria-hidden="true">🛻</div><h3 class="mt-5 text-xl font-extrabold text-white">Bakkie / Panel Van</h3><p class="mt-2 text-sm text-slate-400">From <strong class="text-sky-300">R180.00</strong> base fare</p><p class="mt-4 text-sm leading-relaxed text-slate-400">For furniture, retail stock, hardware, appliances and larger commercial loads.</p><ul class="mt-5 space-y-2 text-xs text-slate-300"><li>✓ Open or enclosed load options</li><li>✓ Suited to bulky and multi-item goods</li></ul></article>
+          <article class="rounded-2xl border border-slate-700 bg-cardbg p-6 transition hover:-translate-y-1 hover:border-sky-400/50"><div class="flex items-center justify-between"><span class="text-4xl" aria-hidden="true">🚚</span><span class="rounded-full bg-slate-800 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Freight</span></div><h3 class="mt-5 text-xl font-extrabold text-white">Commercial Truck</h3><p class="mt-2 text-sm text-slate-400">From <strong class="text-sky-300">R450.00</strong> base fare</p><p class="mt-4 text-sm leading-relaxed text-slate-400">For warehouse transfers, palletised freight and heavier commercial consignments.</p><ul class="mt-5 space-y-2 text-xs text-slate-300"><li>✓ 1.5-ton to 8-ton vehicle options</li><li>✓ Driver and vehicle checks apply</li></ul></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="border-b border-slate-800 py-20">
+      <div class="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
+        <div><p class="eyebrow text-[10px] font-extrabold uppercase text-sky-300">Built around visibility</p><h2 class="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">A clearer way to move goods.</h2><p class="mt-5 max-w-xl leading-relaxed text-slate-400">SwiftHaul brings customer booking, driver workflows and company dispatch into connected workspaces, with delivery details organised from request through handover.</p><a href="./public/customer.html" class="mt-7 inline-flex font-bold text-sky-300 hover:text-sky-200">Explore the customer platform →</a></div>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <article class="rounded-2xl border border-slate-800 bg-cardbg p-5"><span class="text-2xl">📍</span><h3 class="mt-3 font-bold text-white">Trip visibility</h3><p class="mt-2 text-sm leading-relaxed text-slate-400">Delivery status and location features help keep customers and operations informed.</p></article>
+          <article class="rounded-2xl border border-slate-800 bg-cardbg p-5"><span class="text-2xl">🔐</span><h3 class="mt-3 font-bold text-white">Secure handover</h3><p class="mt-2 text-sm leading-relaxed text-slate-400">Recipient PIN verification is part of the delivery handover workflow.</p></article>
+          <article class="rounded-2xl border border-slate-800 bg-cardbg p-5"><span class="text-2xl">🧾</span><h3 class="mt-3 font-bold text-white">Delivery records</h3><p class="mt-2 text-sm leading-relaxed text-slate-400">Keep booking information and available delivery documents together.</p></article>
+          <article class="rounded-2xl border border-slate-800 bg-cardbg p-5"><span class="text-2xl">🛡️</span><h3 class="mt-3 font-bold text-white">Verification-led</h3><p class="mt-2 text-sm leading-relaxed text-slate-400">Driver and vehicle document checks support safer platform operations.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="partners" class="border-b border-slate-800 py-20">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="mb-10 max-w-2xl"><p class="eyebrow text-[10px] font-extrabold uppercase text-sky-300">Grow with SwiftHaul</p><h2 class="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">Built for drivers and fleet partners.</h2><p class="mt-4 text-slate-400">Bring your vehicle, skills or transport business into a connected delivery network.</p></div>
+        <div class="grid gap-5 md:grid-cols-2">
+          <article class="rounded-2xl border border-slate-700 bg-cardbg p-7"><div class="text-3xl">🧑‍✈️</div><h3 class="mt-4 text-2xl font-extrabold text-white">Owner-drivers</h3><p class="mt-3 text-sm leading-relaxed text-slate-400">View delivery opportunities, manage your driver profile and follow trip progress through the driver workspace.</p><ul class="mt-5 space-y-2 text-sm text-slate-300"><li>✓ Work through a dedicated driver portal</li><li>✓ Manage verification and delivery activity</li><li>✓ Review trip and earnings information</li></ul><a href="./apps/driver/public/index.html" class="mt-7 inline-flex rounded-xl border border-sky-400/30 bg-sky-400/10 px-4 py-3 text-sm font-bold text-sky-300 hover:bg-sky-400/20">Open driver portal →</a></article>
+          <article class="rounded-2xl border border-slate-700 bg-cardbg p-7"><div class="text-3xl">🏢</div><h3 class="mt-4 text-2xl font-extrabold text-white">Transport companies</h3><p class="mt-3 text-sm leading-relaxed text-slate-400">Use the company workspace for fleet operations, dispatch visibility and driver application management.</p><ul class="mt-5 space-y-2 text-sm text-slate-300"><li>✓ Centralised company workspace</li><li>✓ Driver and dispatch operations</li><li>✓ Fleet workflow access</li></ul><a href="./apps/company/public/index.html" class="mt-7 inline-flex rounded-xl border border-sky-400/30 bg-sky-400/10 px-4 py-3 text-sm font-bold text-sky-300 hover:bg-sky-400/20">Open company portal →</a></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="py-16"><div class="mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 rounded-3xl border border-sky-400/20 bg-gradient-to-r from-sky-950/70 to-slate-900 px-6 py-9 sm:px-10 md:flex-row md:items-center"><div><p class="eyebrow text-[10px] font-extrabold uppercase text-sky-300">Ready when you are</p><h2 class="mt-2 text-2xl font-black text-white sm:text-3xl">Your next delivery starts here.</h2><p class="mt-2 text-sm text-slate-400">Open the customer platform to create a booking.</p></div><a href="./public/customer.html" class="shrink-0 rounded-xl bg-sky-500 px-6 py-3.5 text-sm font-extrabold text-slate-950 hover:bg-sky-400">Book a delivery →</a></div></section>
   </main>
+
+  <footer class="border-t border-slate-800 bg-[#070a11]">
+    <div class="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-3 lg:px-8">
+      <div><a href="#" class="text-lg font-black text-white">Swift<span class="text-sky-400">Haul</span> SA</a><p class="mt-3 max-w-xs text-xs leading-relaxed text-slate-500">South African delivery and logistics platform connecting customers, drivers and transport partners.</p></div>
+      <div><p class="text-xs font-bold uppercase tracking-widest text-slate-400">Platforms</p><div class="mt-3 flex flex-col gap-2 text-sm text-slate-400"><a class="hover:text-white" href="./public/customer.html">Customer workspace</a><a class="hover:text-white" href="./apps/driver/public/index.html">Driver portal</a><a class="hover:text-white" href="./apps/company/public/index.html">Company operations</a></div></div>
+      <div><p class="text-xs font-bold uppercase tracking-widest text-slate-400">Information</p><div class="mt-3 flex flex-col gap-2 text-sm text-slate-400"><button class="w-fit hover:text-white" data-modal="privacy">Privacy overview</button><button class="w-fit hover:text-white" data-modal="terms">Terms overview</button><a class="hover:text-white" href="./apps/company/public/index.html">Operations login</a></div></div>
+    </div>
+    <div class="border-t border-slate-800/70 py-4 text-center text-[11px] text-slate-600">© <span id="year">2026</span> SwiftHaul South Africa. All rights reserved.</div>
+  </footer>
+
+  <dialog id="privacy" aria-labelledby="privacy-title"><h2 id="privacy-title" class="text-xl font-extrabold text-white">Privacy overview</h2><p class="mt-4 text-sm leading-relaxed text-slate-300">SwiftHaul processes information needed to provide delivery services, support account security, coordinate deliveries and maintain relevant business records. Personal information should be handled in accordance with applicable South African privacy law, including POPIA. For requests about your information, use the contact route provided inside the relevant SwiftHaul platform. This short overview is not a substitute for the full privacy policy.</p><button class="mt-6 rounded-lg bg-sky-500 px-4 py-2 text-sm font-bold text-slate-950" data-close>Close</button></dialog>
+  <dialog id="terms" aria-labelledby="terms-title"><h2 id="terms-title" class="text-xl font-extrabold text-white">Terms overview</h2><p class="mt-4 text-sm leading-relaxed text-slate-300">SwiftHaul connects customers with delivery drivers and transport partners. Customers must provide accurate collection, delivery and goods information and may not submit prohibited or unlawful items. Delivery estimates are not confirmed bookings; final acceptance, availability, pricing and service conditions are shown in the booking and dispatch process. The full terms presented in the platform apply.</p><button class="mt-6 rounded-lg bg-sky-500 px-4 py-2 text-sm font-bold text-slate-950" data-close>Close</button></dialog>
+
+  <script>
+    const tariffs = {
+      motorbike: { base: 45, includedKm: 3, tier1Rate: 7.5, tier2Rate: 6, label: 'Motorbike' },
+      bakkie: { base: 180, includedKm: 5, tier1Rate: 14, tier2Rate: 11.5, label: 'Bakkie / Panel Van' },
+      truck: { base: 450, includedKm: 5, tier1Rate: 22, tier2Rate: 18, label: 'Commercial Truck' }
+    };
+    const money = value => new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(value);
+    function calculateQuote() {
+      const vehicle = document.getElementById('vehicleSelect').value;
+      const distanceField = document.getElementById('distanceInput');
+      const km = Math.max(1, Math.min(600, Number.parseFloat(distanceField.value) || 1));
+      const tariff = tariffs[vehicle];
+      const extraKm = Math.max(0, km - tariff.includedKm);
+      const tier1Km = Math.min(extraKm, 20);
+      const tier2Km = Math.max(0, extraKm - 20);
+      const subtotal = tariff.base + tier1Km * tariff.tier1Rate + tier2Km * tariff.tier2Rate;
+      const fuelLevy = subtotal * 0.035;
+      const total = subtotal + fuelLevy;
+      document.getElementById('quoteTotal').textContent = money(total);
+      document.getElementById('quoteBreakdown').textContent =
+        tariff.label + ' · ' + money(tariff.base) + ' base (' + tariff.includedKm +
+        ' km included) + ' + km + ' km distance + ' + money(fuelLevy) + ' fuel adjustment';
+      distanceField.setCustomValidity(Number(distanceField.value) > 600 ? 'Enter a distance of 600 km or less.' : '');
+    }
+    document.getElementById('vehicleSelect').addEventListener('change', calculateQuote);
+    document.getElementById('distanceInput').addEventListener('input', calculateQuote);
+    document.getElementById('year').textContent = new Date().getFullYear();
+    document.querySelectorAll('[data-modal]').forEach(button => button.addEventListener('click', () => document.getElementById(button.dataset.modal).showModal()));
+    document.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click', () => button.closest('dialog').close()));
+    document.querySelectorAll('dialog').forEach(dialog => dialog.addEventListener('click', event => {
+      if (event.target === dialog) dialog.close();
+    }));
+    calculateQuote();
+  </script>
 </body>
 </html>
