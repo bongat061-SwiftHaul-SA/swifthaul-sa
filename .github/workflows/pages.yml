@@ -9,8 +9,8 @@ on:
       - feature/secure-driver-live-location
   workflow_dispatch:
 
-# Publishing the three platform entry points from the validated main branch and legacy staging branches.
-
+# The existing Pages hostname is shared by the three app paths.
+# Build the independent app bundles before publishing; never publish the source tree.
 permissions:
   contents: read
   pages: write
@@ -29,18 +29,24 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
-      - name: Verify three platform entry points
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build three independent platform bundles
+        run: npm run build:pages
+      - name: Verify generated platform entry points
         run: |
-          test -f index.html
-          test -f public/customer.html
-          test -f apps/driver/public/index.html
-          test -f apps/company/public/index.html
+          test -f dist/index.html
+          test -f dist/customer/customer.html
+          test -f dist/driver/index.html
+          test -f dist/company/index.html
       - name: Configure Pages
         uses: actions/configure-pages@v5
-      - name: Upload website
+      - name: Upload built website
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: dist
           name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
       - name: Publish website
         id: deployment

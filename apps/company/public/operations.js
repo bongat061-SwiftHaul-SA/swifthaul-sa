@@ -1,3 +1,4 @@
+(() => {
 const app = document.body.dataset.app;
 if (app === 'driver' || app === 'company') {
   const panel = document.getElementById('dispatches');
@@ -469,3 +470,5 @@ if (app === 'driver' || app === 'company') {
     message.textContent = 'Sign in to access assigned deliveries and company dispatch.';
   });
 }
+
+})();

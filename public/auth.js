@@ -77,28 +77,37 @@ const titles = { login:'Welcome back.', pin:'Sign in with your six-digit PIN.', 
 function setMode(next) {
   mode = next;
   const signup = mode === 'signup', recovery = mode === 'recovery', reset = mode === 'reset', pinLogin = mode === 'pin';
+  const field = name => form.elements.namedItem(name);
   const referral = document.getElementById('referral-signup-field');
+  const referralCode = field('referralCode');
   if (referral) {
     referral.hidden = !signup;
-    if (signup && !form.elements.referralCode.value) form.elements.referralCode.value = new URLSearchParams(location.search).get('ref') || '';
+    if (signup && referralCode && !referralCode.value)
+      referralCode.value = new URLSearchParams(location.search).get('ref') || '';
   }
-  document.getElementById('terms-acceptance').hidden = !signup;
-  form.elements.acceptTerms.required = signup;
-  form.elements.acceptTerms.checked = false;
+  const terms = document.getElementById('terms-acceptance');
+  const acceptTerms = field('acceptTerms');
+  if (terms) terms.hidden = !signup;
+  if (acceptTerms) { acceptTerms.required = signup; acceptTerms.checked = false; }
   document.getElementById('auth-title').textContent = titles[mode];
-  form.elements.name.closest('label').hidden = !signup;
-  form.elements.name.required = signup;
-  for (const field of ['city','province']) { const control=form.elements[field]; if(control){control.closest('label').hidden=!signup;control.required=signup;} }
-  form.elements.email.closest('label').hidden = reset || pinLogin;
-  form.elements.email.required = !reset && !pinLogin;
-  form.elements.password.closest('label').hidden = recovery || pinLogin;
-  form.elements.password.required = !recovery && !pinLogin;
+  const name = field('name');
+  if (name) { name.closest('label').hidden = !signup; name.required = signup; }
+  for (const key of ['city','province']) {
+    const control = field(key);
+    if (control) { control.closest('label').hidden = !signup; control.required = signup; }
+  }
+  const email = field('email'), password = field('password');
+  if (email) { email.closest('label').hidden = reset || pinLogin; email.required = !reset && !pinLogin; }
+  if (password) {
+    password.closest('label').hidden = recovery || pinLogin;
+    password.required = !recovery && !pinLogin;
+    password.minLength = mode === 'login' ? 1 : 10;
+    password.autocomplete = mode === 'login' ? 'current-password' : 'new-password';
+  }
   pinLabel.hidden = !pinLogin;
   pinInput.required = pinLogin;
   pinLoginButton.hidden = !['login','pin'].includes(mode);
   pinLoginButton.textContent = pinLogin ? 'Use password instead' : 'Use 6-digit PIN';
-  form.elements.password.minLength = mode === 'login' ? 1 : 10;
-  form.elements.password.autocomplete = mode === 'login' ? 'current-password' : 'new-password';
   submit.textContent = ({login:'Sign in',pin:'Sign in with PIN',signup:'Create account',recovery:'Send reset link',reset:'Save password'})[mode];
   status.textContent = '';
 }
@@ -164,7 +173,8 @@ async function validateAccount(session) {
     headers: {
       apikey: SUPABASE_PUBLISHABLE_KEY,
       Authorization: 'Bearer ' + session.access_token
-    }
+    },
+    signal: AbortSignal.timeout(12000)
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data?.error || `Account validation failed (${response.status}).`);
@@ -174,15 +184,6 @@ async function validateAccount(session) {
   currentUser = user;
   // Remember the verified account on this device so PIN sign-in needs no email field.
   rememberCustomerEmail(session?.user?.email || user.email);
-  // Send customer welcome email only after authenticated session and customer role validation.
-  // This also covers first sign-in after email confirmation and social signup completion.
-  if (session?.access_token) {
-    const { data: welcomeResult, error: welcomeError } = await supabase.functions.invoke('customer-welcome-notify', {
-      body: {}, headers: { Authorization: 'Bearer ' + session.access_token }
-    });
-    if (welcomeError) console.warn('Customer welcome email pending:', welcomeError.message);
-    else if (welcomeResult?.success !== true) console.warn('Customer welcome email was not delivered yet.');
-  }
   document.querySelectorAll('[data-user-name]').forEach(el => { el.textContent = user.name || user.email || 'Your account'; });
   document.body.dataset.guestPreview = 'false';
   document.getElementById('guest-banner').hidden = true;
@@ -192,11 +193,21 @@ async function validateAccount(session) {
   document.body.dataset.authState = 'authenticated';
   authScreen.hidden = true; workspace.hidden = false;
   document.dispatchEvent(new CustomEvent('account-ready', { detail: user }));
+  // Welcome/admin email delivery is best-effort background work. It must never
+  // hold the authenticated Customer workspace behind an external mail provider.
+  if (session?.access_token) {
+    void supabase.functions.invoke('customer-welcome-notify', {
+      body: {}, headers: { Authorization: 'Bearer ' + session.access_token }
+    }).then(({ data: welcomeResult, error: welcomeError }) => {
+      if (welcomeError) console.warn('Customer welcome email pending:', welcomeError.message);
+      else if (welcomeResult?.success !== true) console.warn('Customer welcome email was not delivered yet.');
+    }).catch(error => console.warn('Customer welcome email pending:', error?.message || error));
+  }
   await refreshPinPanel(session);
 }
 async function openWorkspace() {
   if (document.body.dataset.guestPreview === 'true') return;
-  const { data: { session }, error } = await supabase.auth.getSession();
+  const { data: { session }, error } = await withTimeout(supabase.auth.getSession(), 12000, 'Session check timed out. Check your connection and retry.');
   if (error || !session) throw new Error('Please sign in to continue.');
   await validateAccount(session);
 }
@@ -280,22 +291,40 @@ supabase.auth.onAuthStateChange((event, session) => {
     validateAccount(session).catch(error => console.warn('Customer session refresh validation will retry on the next page load:', error));
 });
 let restoreTimer = null;
+function withTimeout(promise, milliseconds, message) {
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(message)), milliseconds); })
+  ]).finally(() => clearTimeout(timer));
+}
 async function init() {
-  setMode('login');
   if (restoreTimer) clearTimeout(restoreTimer);
   if (restoreScreen) restoreScreen.hidden = true;
-  // Avoid flashing the restore interstitial during normal, fast in-app returns.
-  restoreTimer = setTimeout(() => { if (workspace.hidden) showSessionRestore(); }, 450);
+  // Render the sign-in screen immediately. A slow local session read must not
+  // strand customers on an indefinite "Restoring your secure session" screen.
   try {
-    const { data: { session }, error } = await supabase.auth.getSession();
-    if (error) throw error;
-    if (session) { await validateAccount(session); }
+    setMode('login');
+    showSignIn();
+    submit.disabled = true;
+    const result = await withTimeout(
+      supabase.auth.getSession(),
+      12000,
+      'Session check timed out. Check your connection and retry.'
+    );
+    if (result?.error) throw result.error;
+    const session = result?.data?.session || null;
+    if (session) await validateAccount(session);
     else showSignIn();
   } catch (error) {
-    showSessionRestore(error?.message || 'We could not verify your saved session. Try again, or return to sign in.', true);
+    console.error('Customer session initialization failed:', error);
+    // A failed restore must still leave a usable sign-in route; never strand
+    // the customer behind a permanent session-restoration interstitial.
+    showSignIn(error?.message || 'We could not verify your saved session. Please sign in again.');
   } finally {
     if (restoreTimer) clearTimeout(restoreTimer);
     restoreTimer = null;
+    submit.disabled = false;
   }
 }
 init();

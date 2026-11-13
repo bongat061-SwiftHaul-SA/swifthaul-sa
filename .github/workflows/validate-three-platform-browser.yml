@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feature/sa-sms-whatsapp-notifications-staging
+      - feature/customer-simple-estimator-driver-account
     paths:
       - "public/**"
       - "apps/driver/public/**"
@@ -12,6 +13,7 @@ on:
       - "scripts/build-pages.cjs"
       - "scripts/prepare-sites.cjs"
       - "tests/three-platform-browser-smoke.cjs"
+      - "tests/customer-booking-session-regression.cjs"
       - ".github/workflows/validate-three-platform-browser.yml"
   pull_request:
     paths:
@@ -41,3 +43,12 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Test Customer, Driver and Company Admin
         run: node tests/three-platform-browser-smoke.cjs
+      - name: Check Customer booking and session regressions
+        run: node tests/customer-booking-session-regression.cjs
+      - name: Package isolated staging browser preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: swifthaul-staging-preview-${{ github.run_id }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7

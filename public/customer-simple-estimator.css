@@ -1,0 +1,75 @@
+/* Compact customer estimator: reference-led, dark premium UI. */
+body[data-app="customer"] #cargo-estimator{
+  margin:10px 0;padding:16px;background:#0c121b!important;color:#f4f6f9!important;
+  border:1px solid #303b49!important;border-radius:18px!important;box-shadow:none!important
+}
+body[data-app="customer"] #cargo-estimator h3{margin:0;color:#fff!important;font-size:18px;font-weight:800;letter-spacing:-.45px}
+body[data-app="customer"] #cargo-estimator .cargo-intro{margin:5px 0 14px;color:#aab5c3!important;font-size:12px;line-height:1.5}
+body[data-app="customer"] #cargo-estimator .cargo-categories{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+body[data-app="customer"] #cargo-estimator .cargo-category{
+  min-height:62px;padding:10px 7px;border:1px solid #354252!important;border-radius:12px!important;
+  background:#151d28!important;color:#e9edf3!important;gap:3px;box-shadow:none!important
+}
+body[data-app="customer"] #cargo-estimator .cargo-category svg{display:none}
+body[data-app="customer"] #cargo-estimator .cargo-category strong{font-size:12px;font-weight:800}
+body[data-app="customer"] #cargo-estimator .cargo-category small{font-size:9px;color:#9eabba!important}
+body[data-app="customer"] #cargo-estimator .cargo-category[aria-pressed=true]{
+  border:2px solid #dce2e9!important;padding:9px 6px;background:#222b36!important;
+  color:#fff!important;box-shadow:0 0 0 2px #dce2e922!important;transform:none
+}
+body[data-app="customer"] #cargo-estimator .cargo-choice-row{grid-template-columns:minmax(0,1fr) 84px;gap:9px;margin-top:13px}
+body[data-app="customer"] #cargo-estimator label{margin-bottom:6px;color:#aeb9c7!important;font-size:10px;letter-spacing:.03em}
+body[data-app="customer"] #cargo-estimator select,
+body[data-app="customer"] #cargo-estimator input{
+  height:46px;padding:10px 12px;background:#080d15!important;color:#f7f9fc!important;
+  border:1px solid #354252!important;border-radius:12px!important;font-size:13px
+}
+body[data-app="customer"] #cargo-estimator .cargo-add-item{
+  width:100%;min-height:43px;margin-top:10px;background:#eaf0f5!important;color:#10151c!important;
+  border:1px solid #eaf0f5!important;border-radius:11px!important;font-weight:800
+}
+body[data-app="customer"] #cargo-estimator .cargo-selected-list{display:grid;gap:6px;margin-top:10px}
+body[data-app="customer"] #cargo-estimator .cargo-selected-row{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 11px;
+  background:#151d28;border:1px solid #303b49;border-radius:10px;color:#e9edf3;font-size:11px
+}
+body[data-app="customer"] #cargo-estimator .cargo-remove-item{min-height:30px;padding:5px 9px;background:#222d3a!important;color:#dbe3ec!important;border-radius:8px}
+body[data-app="customer"] #cargo-estimator .cargo-estimate-note{
+  margin:10px 0 0;padding:10px 11px;background:#18212c!important;border:1px solid #394554;
+  border-radius:11px;color:#c2cad4!important;font-size:11px;line-height:1.5
+}
+body[data-app="customer"] #cargo-estimator .cargo-dimensions{
+  margin-top:12px;padding-top:10px;border-top:1px solid #303b49
+}
+body[data-app="customer"] #cargo-estimator .cargo-dimensions-title{color:#aeb9c7;font-size:10px}
+body[data-app="customer"] #cargo-estimator .cargo-vehicle{
+  margin-top:10px;padding:11px 12px;background:#151d28!important;border:1px solid #354252!important;border-radius:12px!important
+}
+body[data-app="customer"] #cargo-estimator .cargo-vehicle-head strong{color:#eef2f7!important;font-size:11px}
+body[data-app="customer"] #cargo-estimator .cargo-vehicle-head span{
+  color:#11151b!important;background:#dce2e9!important;border-radius:8px;font-size:10px;padding:6px 9px
+}
+body[data-app="customer"] #cargo-estimator .cargo-vehicle-visual{display:none}
+body[data-app="customer"] #cargo-estimator .cargo-vehicle-copy{margin:6px 0 0;color:#aab5c3!important;text-align:left;font-size:10px}
+body[data-app="customer"] #booking-form #quote-result{
+  margin-top:12px;padding:18px;background:#080e17!important;border:1px solid #354252!important;
+  border-radius:18px!important;color:#f5f7fa!important
+}
+body[data-app="customer"] #booking-form #quote-result h3{color:#fff!important;font-size:15px}
+body[data-app="customer"] #booking-form #quote-result .quote-totals{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;padding:4px 0 14px;border-bottom:1px solid #283341}
+body[data-app="customer"] #booking-form #quote-distance{display:block;color:#dce4ed;font-size:18px;font-weight:750}
+body[data-app="customer"] #booking-form #quote-price{color:#f4f6f8!important;font-size:clamp(27px,7vw,38px);font-weight:850;letter-spacing:-1px;white-space:nowrap}
+body[data-app="customer"] #booking-form #quote-load,
+body[data-app="customer"] #booking-form #quote-breakdown,
+body[data-app="customer"] #booking-form #quote-band,
+body[data-app="customer"] #booking-form #quote-locations,
+body[data-app="customer"] #booking-form #quote-map-note{color:#9eabba!important;font-size:11px;line-height:1.55}
+body[data-app="customer"] #booking-form #quote-map{min-height:180px;border-radius:13px}
+body[data-app="customer"] #booking-form #calculate-route{width:100%;min-height:46px;border-radius:12px;font-weight:800}
+@media(max-width:560px){
+ body[data-app="customer"] #cargo-estimator{padding:13px}
+ body[data-app="customer"] #cargo-estimator .cargo-categories{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ body[data-app="customer"] #cargo-estimator .cargo-category{min-height:54px}
+ body[data-app="customer"] #booking-form #quote-result .quote-totals{grid-template-columns:minmax(0,1fr) auto}
+ body[data-app="customer"] #booking-form #quote-price{font-size:29px}
+}
