@@ -16,8 +16,7 @@ assert(mapLib >= 0 && plusCodeLib > mapLib && pickerScript > plusCodeLib,
   'Customer page must load MapLibre and Open Location Code before its pin picker');
 
 assert.match(customerAuth, /const field = name => form.elements.namedItem\(name\);[\s\S]*?const email = field\('email'\)[\s\S]*?email\.closest\('label'\)\.hidden = reset \|\| pinLogin/,
-  'Customer PIN quick sign-in must hide the email field using the safe named-control lookup');|\| pinLogin/,
-  'Customer PIN quick sign-in must hide the email field');
+  'Customer PIN quick sign-in must hide the email field using the safe named-control lookup');
 assert.match(customerAuth, /rememberedCustomerEmail\(\)[\s\S]*email: pinAccountEmail/,
   'Customer PIN quick sign-in must use the remembered account on this device');
 assert.match(customerAuth, /For your first sign-in on this device, use your email and password/,
