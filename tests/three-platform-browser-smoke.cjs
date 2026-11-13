@@ -54,7 +54,7 @@ const server = http.createServer((req,res)=>{
           headers:{'access-control-allow-origin':'*'},
           body:`export function createClient(){
             const auth={
-              getSession:async()=>({data:{session:null},error:null}),
+              getSession:async()=>{window.__smokeGetSessionCalled=true;return {data:{session:null},error:null};},
               onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}}),
               signOut:async()=>({error:null}),
               signInWithPassword:async()=>({data:{session:null},error:new Error('Mock auth only')}),
@@ -63,7 +63,7 @@ const server = http.createServer((req,res)=>{
               resetPasswordForEmail:async()=>({error:null}),
               updateUser:async()=>({error:null})
             };
-            return {auth,functions:{invoke:async()=>({data:null,error:null})}};
+            window.__smokeSupabaseClientCreated=true;\n            return {auth,functions:{invoke:async()=>({data:null,error:null})}};
           }`
         });
         if(url.includes('openlocationcode/1.0.5/openlocationcode.min.js')) return route.fulfill({status:200,contentType:'application/javascript',body:'window.OpenLocationCode = window.OpenLocationCode || {};'});
@@ -73,7 +73,7 @@ const server = http.createServer((req,res)=>{
       assert.equal(response.status(),200,app.name+' page should return HTTP 200');
       await page.waitForFunction(()=>document.body.dataset.authState!=='checking',null,{timeout:20000}).catch(async error=>{
         const details=await page.evaluate(()=>({
-          state:document.body.dataset.authState,
+          state:document.body.dataset.authState,\n          mockClientCreated:window.__smokeSupabaseClientCreated||false,\n          getSessionCalled:window.__smokeGetSessionCalled||false,
           authHidden:document.querySelector('#auth-screen')?.hidden,
           title:document.title,
           authStatus:document.querySelector('#auth-status')?.textContent,
