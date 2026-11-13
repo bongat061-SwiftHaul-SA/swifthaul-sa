@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   build:
-    name: Signed \${{ matrix.label }} APK
+    name: Signed ${{ matrix.label }} APK
     if: github.ref == 'refs/heads/feature/customer-simple-estimator-driver-account'
     runs-on: ubuntu-latest
     strategy:
@@ -39,17 +39,17 @@ jobs:
       - name: Verify signing secrets are configured
         shell: bash
         env:
-          ANDROID_KEYSTORE_BASE64: \${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          ANDROID_KEYSTORE_PASSWORD: \${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: \${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: \${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           missing=()
           for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
-            if [ -z "\${!name}" ]; then missing+=("$name"); fi
+            if [ -z "${!name}" ]; then missing+=("$name"); fi
           done
-          if [ "\${#missing[@]}" -gt 0 ]; then
-            printf 'Missing required GitHub Actions secrets: %s\n' "\${missing[*]}"
+          if [ "${#missing[@]}" -gt 0 ]; then
+            printf 'Missing required GitHub Actions secrets: %s\n' "${missing[*]}"
             exit 1
           fi
 
@@ -65,7 +65,7 @@ jobs:
           java-version: "21"
 
       - name: Install pinned app dependencies
-        working-directory: \${{ matrix.path }}
+        working-directory: ${{ matrix.path }}
         run: npm install --no-audit --no-fund
 
       - name: Use current customer website as APK entry point
@@ -75,26 +75,26 @@ jobs:
       - name: Configure isolated staging backend
         shell: bash
         run: |
-          cat > "\${{ matrix.config }}" <<'EOF'
+          cat > "${{ matrix.config }}" <<'EOF'
           // Isolated staging configuration for signed preview APKs.
           export const SUPABASE_URL = 'https://tagkbropgzthsbjlhyvz.supabase.co';
           export const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_QWOeGbSVs2nXECI-KsAmWQ_K_Rav892';
           EOF
 
       - name: Generate Android project and sync app assets
-        working-directory: \${{ matrix.path }}
+        working-directory: ${{ matrix.path }}
         run: |
           npx cap add android
           npx cap sync android
 
       - name: Configure Android release signing
-        working-directory: \${{ matrix.path }}
+        working-directory: ${{ matrix.path }}
         shell: bash
         env:
-          ANDROID_KEYSTORE_BASE64: \${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          ANDROID_KEYSTORE_PASSWORD: \${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: \${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: \${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/swifthaul-release.keystore
           test -s android/app/swifthaul-release.keystore
@@ -120,7 +120,7 @@ jobs:
           EOF
 
       - name: Build signed release APK
-        working-directory: \${{ matrix.path }}/android
+        working-directory: ${{ matrix.path }}/android
         run: |
           chmod +x ./gradlew
           ./gradlew --no-daemon assembleRelease
@@ -129,7 +129,7 @@ jobs:
       - name: Publish signed APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: \${{ matrix.artifact }}
-          path: \${{ matrix.path }}/android/app/build/outputs/apk/release/app-release.apk
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.path }}/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 14
