@@ -290,21 +290,29 @@ function withTimeout(promise, milliseconds, message) {
   ]).finally(() => clearTimeout(timer));
 }
 async function init() {
-  setMode('login');
   if (restoreTimer) clearTimeout(restoreTimer);
   if (restoreScreen) restoreScreen.hidden = true;
-  // Avoid flashing the restore interstitial during normal, fast in-app returns.
-  restoreTimer = setTimeout(() => { if (workspace.hidden) showSessionRestore(); }, 450);
+  // Render the sign-in screen immediately. A slow local session read must not
+  // strand customers on an indefinite "Restoring your secure session" screen.
   try {
-    const { data: { session }, error } = await supabase.auth.getSession();
-    if (error) throw error;
-    if (session) { await validateAccount(session); }
+    setMode('login');
+    showSignIn();
+    submit.disabled = true;
+    const result = await withTimeout(
+      supabase.auth.getSession(),
+      12000,
+      'Session check timed out. Check your connection and retry.'
+    );
+    if (result?.error) throw result.error;
+    const session = result?.data?.session || null;
+    if (session) await validateAccount(session);
     else showSignIn();
   } catch (error) {
     showSessionRestore(error?.message || 'We could not verify your saved session. Try again, or return to sign in.', true);
   } finally {
     if (restoreTimer) clearTimeout(restoreTimer);
     restoreTimer = null;
+    submit.disabled = false;
   }
 }
 init();
