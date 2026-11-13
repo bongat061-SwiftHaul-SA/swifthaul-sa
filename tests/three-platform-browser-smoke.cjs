@@ -38,6 +38,8 @@ const server = http.createServer((req,res)=>{
       const page=await browser.newPage();
       page.on('pageerror',e=>{failures.push(app.name+' JavaScript: '+e.message);console.error('PAGE ERROR '+app.name+': '+e.stack);});
       page.on('console',m=>{if(m.type()==='error')console.error('CONSOLE ERROR '+app.name+': '+m.text());});
+      page.on('request',r=>{if(/bootstrap\\.js|auth\\.js|supabase-config\\.js|supabase-js/i.test(r.url()))console.error('MODULE REQUEST '+app.name+': '+r.url());});
+      page.on('response',r=>{if(/bootstrap\\.js|auth\\.js|supabase-config\\.js|supabase-js/i.test(r.url()))console.error('MODULE RESPONSE '+app.name+': '+r.status()+' '+r.url());});
       page.on('requestfailed',r=>console.error('REQUEST FAILED '+app.name+': '+r.url()+' '+r.failure()?.errorText));
       const badLocal=[];
       page.on('response',r=>{if(r.status()>=400 && new URL(r.url()).origin===base)badLocal.push(r.status()+' '+r.url());});
@@ -77,7 +79,7 @@ const server = http.createServer((req,res)=>{
           authStatus:document.querySelector('#auth-status')?.textContent,
           restoreMessage:document.querySelector('[data-session-message]')?.textContent,
           scripts:[...document.scripts].map(s=>({src:s.src,type:s.type,ready:s.readyState||null})),
-          resources:performance.getEntriesByType('resource').map(r=>r.name).filter(n=>/bootstrap|auth\\.js|supabase|openlocationcode/i.test(n)),
+          resources:performance.getEntriesByType('resource').map(r=>r.name).filter(n=>/bootstrap|auth\.js|supabase|openlocationcode/i.test(n)),
           localFailures:window.__smokeLocalFailures||[]
         }));
         throw new Error(app.name+' auth initialization did not finish: '+JSON.stringify(details)+'; '+error.message);
