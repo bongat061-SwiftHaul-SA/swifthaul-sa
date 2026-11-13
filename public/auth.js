@@ -164,7 +164,8 @@ async function validateAccount(session) {
     headers: {
       apikey: SUPABASE_PUBLISHABLE_KEY,
       Authorization: 'Bearer ' + session.access_token
-    }
+    },
+    signal: AbortSignal.timeout(12000)
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data?.error || `Account validation failed (${response.status}).`);
@@ -174,15 +175,6 @@ async function validateAccount(session) {
   currentUser = user;
   // Remember the verified account on this device so PIN sign-in needs no email field.
   rememberCustomerEmail(session?.user?.email || user.email);
-  // Send customer welcome email only after authenticated session and customer role validation.
-  // This also covers first sign-in after email confirmation and social signup completion.
-  if (session?.access_token) {
-    const { data: welcomeResult, error: welcomeError } = await supabase.functions.invoke('customer-welcome-notify', {
-      body: {}, headers: { Authorization: 'Bearer ' + session.access_token }
-    });
-    if (welcomeError) console.warn('Customer welcome email pending:', welcomeError.message);
-    else if (welcomeResult?.success !== true) console.warn('Customer welcome email was not delivered yet.');
-  }
   document.querySelectorAll('[data-user-name]').forEach(el => { el.textContent = user.name || user.email || 'Your account'; });
   document.body.dataset.guestPreview = 'false';
   document.getElementById('guest-banner').hidden = true;
@@ -192,11 +184,21 @@ async function validateAccount(session) {
   document.body.dataset.authState = 'authenticated';
   authScreen.hidden = true; workspace.hidden = false;
   document.dispatchEvent(new CustomEvent('account-ready', { detail: user }));
+  // Welcome/admin email delivery is best-effort background work. It must never
+  // hold the authenticated Customer workspace behind an external mail provider.
+  if (session?.access_token) {
+    void supabase.functions.invoke('customer-welcome-notify', {
+      body: {}, headers: { Authorization: 'Bearer ' + session.access_token }
+    }).then(({ data: welcomeResult, error: welcomeError }) => {
+      if (welcomeError) console.warn('Customer welcome email pending:', welcomeError.message);
+      else if (welcomeResult?.success !== true) console.warn('Customer welcome email was not delivered yet.');
+    }).catch(error => console.warn('Customer welcome email pending:', error?.message || error));
+  }
   await refreshPinPanel(session);
 }
 async function openWorkspace() {
   if (document.body.dataset.guestPreview === 'true') return;
-  const { data: { session }, error } = await supabase.auth.getSession();
+  const { data: { session }, error } = await withTimeout(supabase.auth.getSession(), 12000, 'Session check timed out. Check your connection and retry.');
   if (error || !session) throw new Error('Please sign in to continue.');
   await validateAccount(session);
 }
@@ -280,6 +282,13 @@ supabase.auth.onAuthStateChange((event, session) => {
     validateAccount(session).catch(error => console.warn('Customer session refresh validation will retry on the next page load:', error));
 });
 let restoreTimer = null;
+function withTimeout(promise, milliseconds, message) {
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(message)), milliseconds); })
+  ]).finally(() => clearTimeout(timer));
+}
 async function init() {
   setMode('login');
   if (restoreTimer) clearTimeout(restoreTimer);
