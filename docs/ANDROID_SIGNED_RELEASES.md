@@ -40,7 +40,9 @@ On macOS:
 base64 < swifthaul-release.jks | tr -d '\n'
 ```
 
-Copy the encoded output directly into the GitHub secret value. Never commit the encoded output file.
+Copy only the encoded characters directly into the GitHub secret value. Do not include the `base64` command, quotation marks, a `base64:` label, Markdown fences, or any explanatory text. If the secret was pasted with extra text, edit `ANDROID_KEYSTORE_BASE64` and replace its entire value with freshly generated output. Never commit the encoded output file.
+
+After saving the secret, rerun the manual workflow. It will remove whitespace and validate the Base64 before checking that the keystore password and alias open the keystore.
 
 ## Run the signed build
 
