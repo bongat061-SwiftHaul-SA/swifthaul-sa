@@ -77,28 +77,37 @@ const titles = { login:'Welcome back.', pin:'Sign in with your six-digit PIN.', 
 function setMode(next) {
   mode = next;
   const signup = mode === 'signup', recovery = mode === 'recovery', reset = mode === 'reset', pinLogin = mode === 'pin';
+  const field = name => form.elements.namedItem(name);
   const referral = document.getElementById('referral-signup-field');
+  const referralCode = field('referralCode');
   if (referral) {
     referral.hidden = !signup;
-    if (signup && !form.elements.referralCode.value) form.elements.referralCode.value = new URLSearchParams(location.search).get('ref') || '';
+    if (signup && referralCode && !referralCode.value)
+      referralCode.value = new URLSearchParams(location.search).get('ref') || '';
   }
-  document.getElementById('terms-acceptance').hidden = !signup;
-  form.elements.acceptTerms.required = signup;
-  form.elements.acceptTerms.checked = false;
+  const terms = document.getElementById('terms-acceptance');
+  const acceptTerms = field('acceptTerms');
+  if (terms) terms.hidden = !signup;
+  if (acceptTerms) { acceptTerms.required = signup; acceptTerms.checked = false; }
   document.getElementById('auth-title').textContent = titles[mode];
-  form.elements.name.closest('label').hidden = !signup;
-  form.elements.name.required = signup;
-  for (const field of ['city','province']) { const control=form.elements[field]; if(control){control.closest('label').hidden=!signup;control.required=signup;} }
-  form.elements.email.closest('label').hidden = reset || pinLogin;
-  form.elements.email.required = !reset && !pinLogin;
-  form.elements.password.closest('label').hidden = recovery || pinLogin;
-  form.elements.password.required = !recovery && !pinLogin;
+  const name = field('name');
+  if (name) { name.closest('label').hidden = !signup; name.required = signup; }
+  for (const key of ['city','province']) {
+    const control = field(key);
+    if (control) { control.closest('label').hidden = !signup; control.required = signup; }
+  }
+  const email = field('email'), password = field('password');
+  if (email) { email.closest('label').hidden = reset || pinLogin; email.required = !reset && !pinLogin; }
+  if (password) {
+    password.closest('label').hidden = recovery || pinLogin;
+    password.required = !recovery && !pinLogin;
+    password.minLength = mode === 'login' ? 1 : 10;
+    password.autocomplete = mode === 'login' ? 'current-password' : 'new-password';
+  }
   pinLabel.hidden = !pinLogin;
   pinInput.required = pinLogin;
   pinLoginButton.hidden = !['login','pin'].includes(mode);
   pinLoginButton.textContent = pinLogin ? 'Use password instead' : 'Use 6-digit PIN';
-  form.elements.password.minLength = mode === 'login' ? 1 : 10;
-  form.elements.password.autocomplete = mode === 'login' ? 'current-password' : 'new-password';
   submit.textContent = ({login:'Sign in',pin:'Sign in with PIN',signup:'Create account',recovery:'Send reset link',reset:'Save password'})[mode];
   status.textContent = '';
 }
@@ -308,6 +317,7 @@ async function init() {
     if (session) await validateAccount(session);
     else showSignIn();
   } catch (error) {
+    console.error('Customer session initialization failed:', error);
     showSessionRestore(error?.message || 'We could not verify your saved session. Try again, or return to sign in.', true);
   } finally {
     if (restoreTimer) clearTimeout(restoreTimer);
