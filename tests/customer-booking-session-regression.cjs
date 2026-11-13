@@ -16,6 +16,8 @@ assert.match(portal, /typeof code !== "string"[\s\S]*?typeof hash !== "string"/,
 assert.doesNotMatch(auth, /await supabase\.functions\.invoke\('customer-welcome-notify'/, 'Email notification must not block Customer workspace restoration.');
 assert.ok(auth.indexOf('workspace.hidden = false') < auth.indexOf("void supabase.functions.invoke('customer-welcome-notify'"), 'Customer workspace must be shown before best-effort welcome notification starts.');
 assert.ok(auth.includes('AbortSignal.timeout(12000)'), 'Account validation must have a bounded network wait.');
+assert.ok(auth.includes("form.elements.namedItem('name')") && auth.includes("form.elements.namedItem('acceptTerms')"), 'Customer auth mode switching must safely resolve named form controls.');
+assert.match(auth, /catch \(error\) \{[\s\S]*?showSignIn\(error\?\.message/, 'Failed session restoration must return customers to a usable sign-in screen.');
 assert.match(auth, /withTimeout\([\s\S]*?supabase\.auth\.getSession\(\)[\s\S]*?12000/, 'Session restoration must recover from a stalled local session check.');
 assert.ok(customerHtml.includes('customer-simple-estimator.css?v=20261113-compact-estimator'), 'Dedicated Customer entry must load the current compact estimator styling.');
 assert.ok(indexHtml.includes('customer-simple-estimator.css?v=20261113-compact-estimator'), 'Root Customer entry must load the same current estimator styling.');
