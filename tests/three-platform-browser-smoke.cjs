@@ -68,7 +68,15 @@ const server = http.createServer((req,res)=>{
       const response=await page.goto(base+app.path,{waitUntil:'domcontentloaded'});
       assert.equal(response.status(),200,app.name+' page should return HTTP 200');
       await page.waitForFunction(()=>document.body.dataset.authState!=='checking',null,{timeout:20000}).catch(async error=>{
-        const details=await page.evaluate(()=>({state:document.body.dataset.authState,authHidden:document.querySelector('#auth-screen')?.hidden,title:document.title}));
+        const details=await page.evaluate(()=>({
+          state:document.body.dataset.authState,
+          authHidden:document.querySelector('#auth-screen')?.hidden,
+          title:document.title,
+          authStatus:document.querySelector('#auth-status')?.textContent,
+          restoreMessage:document.querySelector('[data-session-message]')?.textContent,
+          scripts:[...document.scripts].map(s=>({src:s.src,type:s.type,ready:s.readyState||null})),
+          resources:performance.getEntriesByType('resource').map(r=>r.name).filter(n=>/bootstrap|auth\\.js|supabase|openlocationcode/i.test(n))
+        }));
         throw new Error(app.name+' auth initialization did not finish: '+JSON.stringify(details)+'; '+error.message);
       });
       assert.equal(await page.locator('body').getAttribute('data-app'),app.id,app.name+' app identity');
