@@ -183,6 +183,7 @@
       if (event.target === dialog) dialog.close();
     }));
     calculateQuote();
+    if (window.location.hash === '#privacy') document.getElementById('privacy').showModal();
   </script>
 </body>
 </html>
