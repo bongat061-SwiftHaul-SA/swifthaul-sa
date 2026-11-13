@@ -45,3 +45,10 @@ jobs:
         run: node tests/three-platform-browser-smoke.cjs
       - name: Check Customer booking and session regressions
         run: node tests/customer-booking-session-regression.cjs
+      - name: Package isolated staging browser preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: swifthaul-staging-preview-${{ github.run_id }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
