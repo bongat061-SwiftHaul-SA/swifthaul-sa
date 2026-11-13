@@ -16,7 +16,7 @@ assert.match(portal, /typeof code !== "string"[\s\S]*?typeof hash !== "string"/,
 assert.doesNotMatch(auth, /await supabase\.functions\.invoke\('customer-welcome-notify'/, 'Email notification must not block Customer workspace restoration.');
 assert.ok(auth.indexOf('workspace.hidden = false') < auth.indexOf("void supabase.functions.invoke('customer-welcome-notify'"), 'Customer workspace must be shown before best-effort welcome notification starts.');
 assert.ok(auth.includes('AbortSignal.timeout(12000)'), 'Account validation must have a bounded network wait.');
-assert.ok(auth.includes("withTimeout(supabase.auth.getSession(), 12000"), 'Session restoration must recover from a stalled local session check.');
+assert.match(auth, /withTimeout\([\s\S]*?supabase\.auth\.getSession\(\)[\s\S]*?12000/, 'Session restoration must recover from a stalled local session check.');
 assert.ok(customerHtml.includes('customer-simple-estimator.css?v=20261113-compact-estimator'), 'Dedicated Customer entry must load the current compact estimator styling.');
 assert.ok(indexHtml.includes('customer-simple-estimator.css?v=20261113-compact-estimator'), 'Root Customer entry must load the same current estimator styling.');
 assert.ok(indexHtml.includes('name="city"') && indexHtml.includes('name="province"'), 'Root Customer entry must preserve required signup location fields.');
