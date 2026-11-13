@@ -17,10 +17,10 @@ for (const [name, path] of authFiles) {
   const auth = read(path);
   assert.match(auth, /function showSessionRestore\(message = 'Restoring your secure session…', allowRecoveryActions = false\)/, name + ' must reserve recovery buttons for actual session restore failures.');
   if (name === 'Customer') {
-    assert.match(auth, /Render the sign-in screen immediately[\\s\\S]*showSignIn\\(\\)[\\s\\S]*withTimeout\\([\\s\\S]*supabase\\.auth\\.getSession\\(\\)[\\s\\S]*12000/, name + ' must show a usable sign-in screen immediately and bound session restoration.');
-    assert.doesNotMatch(auth, /setTimeout\\(\\(\\) => \\{ if \\(workspace\\.hidden\\) showSessionRestore\\(\\); \\}, 450\\)/, name + ' must not delay the usable sign-in screen behind a restore interstitial.');
+    assert.match(auth, /Render the sign-in screen immediately[\s\S]*showSignIn\(\)[\s\S]*withTimeout\([\s\S]*supabase\.auth\.getSession\(\)[\s\S]*12000/, name + ' must show a usable sign-in screen immediately and bound session restoration.');
+    assert.doesNotMatch(auth, /setTimeout\(\(\) => \{ if \(workspace\.hidden\) showSessionRestore\(\); \}, 450\)/, name + ' must not delay the usable sign-in screen behind a restore interstitial.');
   } else {
-    assert.match(auth, /setTimeout\\(\\(\\) => \\{ if \\(workspace\\.hidden\\) showSessionRestore\\(\\); \\}, 450\\)/, name + ' must delay the restore screen to avoid a flash on fast page loads.');
+    assert.match(auth, /setTimeout\(\(\) => \{ if \(workspace\.hidden\) showSessionRestore\(\); \}, 450\)/, name + ' must delay the restore screen to avoid a flash on fast page loads.');
   }
   assert.match(auth, /finally\s*\{[\s\S]*?clearTimeout\(restoreTimer\)/, name + ' must cancel the delayed restore screen after session initialization.');
   assert.match(auth, /persistSession:\s*true/, name + ' must persist Supabase sessions across page loads.');
