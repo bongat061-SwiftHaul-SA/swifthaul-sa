@@ -41,6 +41,7 @@ const server = http.createServer((req,res)=>{
       page.on('requestfailed',r=>console.error('REQUEST FAILED '+app.name+': '+r.url()+' '+r.failure()?.errorText));
       const badLocal=[];
       page.on('response',r=>{if(r.status()>=400 && new URL(r.url()).origin===base)badLocal.push(r.status()+' '+r.url());});
+      await page.addInitScript(()=>{window.__smokeLocalFailures=[];});
       // Keep this UI smoke test deterministic and offline: auth backend behavior is
       // covered separately; here a no-session Supabase client lets the real app
       // initialize and exposes the actual sign-in controls without credentials.
@@ -48,6 +49,7 @@ const server = http.createServer((req,res)=>{
         const url=route.request().url();
         if(url.includes('supabase-js@2.49.1')) return route.fulfill({
           status:200,contentType:'application/javascript',
+          headers:{'access-control-allow-origin':'*'},
           body:`export function createClient(){
             const auth={
               getSession:async()=>({data:{session:null},error:null}),
@@ -75,7 +77,8 @@ const server = http.createServer((req,res)=>{
           authStatus:document.querySelector('#auth-status')?.textContent,
           restoreMessage:document.querySelector('[data-session-message]')?.textContent,
           scripts:[...document.scripts].map(s=>({src:s.src,type:s.type,ready:s.readyState||null})),
-          resources:performance.getEntriesByType('resource').map(r=>r.name).filter(n=>/bootstrap|auth\\.js|supabase|openlocationcode/i.test(n))
+          resources:performance.getEntriesByType('resource').map(r=>r.name).filter(n=>/bootstrap|auth\\.js|supabase|openlocationcode/i.test(n)),
+          localFailures:window.__smokeLocalFailures||[]
         }));
         throw new Error(app.name+' auth initialization did not finish: '+JSON.stringify(details)+'; '+error.message);
       });
