@@ -9,6 +9,9 @@ const customerHtml = read('public/customer.html');
 const indexHtml = read('public/index.html');
 const estimatorTheme = read('public/customer-simple-estimator.css');
 const prepareSites = read('scripts/prepare-sites.cjs');
+const companyOperations = read('apps/company/public/operations.js');
+const companyDrivers = read('apps/company/public/driver-admin.js');
+const companyRefunds = read('apps/company/public/refund-admin.js');
 
 for (const field of ['pickup_plus_code','pickup_geohash','dropoff_plus_code','dropoff_geohash']) {
   assert.ok(customer.includes(field + ':data.' + field), 'Customer booking submission must send ' + field + '.');
@@ -22,6 +25,7 @@ assert.match(auth, /catch \(error\) \{[\s\S]*?showSignIn\(error\?\.message/, 'Fa
 assert.match(auth, /withTimeout\([\s\S]*?supabase\.auth\.getSession\(\)[\s\S]*?12000/, 'Session restoration must recover from a stalled local session check.');
 assert.match(prepareSites, /if \(!fs\.existsSync\(target\)\) fs\.copyFileSync/, 'Site preparation must preserve platform-specific auth, theme and configuration files.');
 assert.ok(prepareSites.includes("const chatSource = path.join(root, 'public', 'order-chat.js')") && prepareSites.includes("const chatTarget = path.join(publicDir, 'order-chat.js')"), 'Driver bundle must include the shared delivery chat asset.');
+for (const [name, source] of [['operations',companyOperations],['driver admin',companyDrivers],['refund admin',companyRefunds]]) assert.ok(source.startsWith('(() => {') && source.trimEnd().endsWith('})();'), 'Company ' + name + ' script must isolate its top-level variables.');
 assert.ok(customerHtml.includes('customer-simple-estimator.css?v=20261113-compact-estimator'), 'Dedicated Customer entry must load the current compact estimator styling.');
 assert.ok(indexHtml.includes('customer-simple-estimator.css?v=20261113-compact-estimator'), 'Root Customer entry must load the same current estimator styling.');
 assert.ok(indexHtml.includes('name="city"') && indexHtml.includes('name="province"'), 'Root Customer entry must preserve required signup location fields.');
