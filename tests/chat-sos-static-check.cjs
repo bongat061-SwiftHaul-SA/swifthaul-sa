@@ -27,6 +27,6 @@ assert.match(driverUi,/tel:10177/);
 assert.match(chatUi,/I am at the gate/);
 assert.match(chatUi,/Call via SwiftHaul/);
 assert.match(trackingPage,/track-chat/);
-assert.match(trackingFallback,/track\\.html\\?code=/);
+assert.ok(trackingFallback.includes("track.html?code="),"GitHub Pages fallback must preserve tracking codes");
 assert.match(notifyShared,/sos_alert/);
 console.log("Chat and SOS security/static checks passed.");
