@@ -12,6 +12,13 @@ for (const app of ['customer', 'driver', 'company']) {
     // customised auth, theme, Supabase config, service worker or terms page.
     if (!fs.existsSync(target)) fs.copyFileSync(path.join(root, 'shared', name), target);
   }
+  // Delivery chat is shared with Customer, but Driver's page loads it from
+  // its own app root. Supply it as a fallback without overwriting local work.
+  if (app === 'driver') {
+    const chatSource = path.join(root, 'public', 'order-chat.js');
+    const chatTarget = path.join(publicDir, 'order-chat.js');
+    if (fs.existsSync(chatSource) && !fs.existsSync(chatTarget)) fs.copyFileSync(chatSource, chatTarget);
+  }
   if (app !== 'customer') {
     const functions = path.join(base, 'netlify', 'functions');
     fs.mkdirSync(functions, {recursive:true});
