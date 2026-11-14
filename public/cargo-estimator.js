@@ -103,7 +103,9 @@
     const chargeable=Math.max(totalWeight,dims.length*dims.width*dims.height/5000);
     const type=chargeable<=600?'light_commercial':chargeable<=1000?'one_ton_bakkie':chargeable<=3000?'closed_truck':'freight_truck';
     $('cargo-estimate-note').textContent=totalPieces+' parcel item(s) across '+new Set(cargoItems.map(item=>item.category)).size+' categories · estimated payload '+chargeable.toFixed(1)+' kg including volumetric estimate. No per-item weight charge applies; vehicle selection is based on this estimate.';
-    renderVehicle(type,chargeable,({light_commercial:'Mini-Van / Light Commercial',one_ton_bakkie:'1-Ton Bakkie / Panel Van',closed_truck:'1.5-Ton – 3-Ton Closed Truck',freight_truck:'4-Ton – 8-Ton Freight Truck'})[type]+' recommended');
+    const labels={light_commercial:'Mini-Van / Light Commercial',one_ton_bakkie:'1-Ton Bakkie / Panel Van',closed_truck:'1.5-Ton – 3-Ton Closed Truck',freight_truck:'4-Ton – 8-Ton Freight Truck'};
+    const chosen=form.querySelector('[name=vehicle]:checked')?.value || type;
+    renderVehicle(chosen,chargeable,labels[chosen]+(chosen===type?' recommended':' selected'));
   }
 
   function chooseCategory(id) {
