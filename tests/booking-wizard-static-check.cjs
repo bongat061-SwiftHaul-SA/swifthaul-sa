@@ -19,6 +19,14 @@ assert(wizard.includes('submit-counter-offer') && html.includes('booking-terms-a
 assert(wizard.includes('swift-haul:locations-confirmed') && wizard.includes('active===0 || active===3'), 'The route-pin page must advance into the separate Book a delivery steps only after pin confirmation.');
 assert(html.includes('customer-nominatim-20261111') && html.includes('customer-google-maps-verify-20261114'), 'Customer entry page must load the updated Nominatim geocoder and keyless Google Maps verification code.');
 assert(locationPicker.includes('loc-google-pickup') && locationPicker.includes('loc-google-dropoff'), 'Customer booking must offer separate Google Maps verification for pickup and drop-off.');
+const googleConfig = read('public/google-maps-config.js');
+assert(html.includes('google-maps-config.js') && html.indexOf('google-maps-config.js') < html.indexOf('location-picker.js'), 'Google Maps configuration must load before the customer map provider.');
+assert(googleConfig.includes('SWIFTHAUL_GOOGLE_MAPS_API_KEY') && googleConfig.includes("= '';"), 'The Google Maps browser key must remain blank until the replacement key is restricted.');
+assert(locationPicker.includes('loadGoogleMaps') && locationPicker.includes('new google.maps.Map'), 'Customer map picker must support the native Google Maps JavaScript API.');
+assert(locationPicker.includes('new google.maps.Marker') && locationPicker.includes('draggable:true'), 'Google Maps pickup and drop-off markers must be draggable.');
+assert(locationPicker.includes('ensureMapLibre') && locationPicker.includes('free backup map'), 'Customer booking must retain the free map provider as a fallback.');
+assert(locationPicker.includes('new google.maps.Polyline'), 'Google Maps provider must support route previews.');
+
 assert(locationPicker.includes('https://www.google.com/maps/search/?api=1&query=') && locationPicker.includes('encodeURIComponent(query)'), 'Google Maps verification must use keyless Maps URLs with encoded address or saved coordinates.');
 assert(locationPicker.includes('Google Maps opened in a new tab. Return to SwiftHaul to continue your booking.'), 'Google Maps verification must preserve the booking flow and explain how to return.');
 assert(customerPages.includes("title: 'Welcome to SwiftHaul.'") && customerPages.includes("const selected = pages[key] ? key : 'home'") && customerPages.includes('customer-home-actions'), 'Signed-in customer landing must open a dedicated dashboard with separate action destinations.');
