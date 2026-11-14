@@ -154,7 +154,21 @@
     show(active+1);
   });
   document.addEventListener('swift-haul:locations-confirmed',()=>{
-    if(active!==0 || !validateStep())return;
+    if(active!==0)return;
+    // The location picker emits this event only after both pins and Plus Codes
+    // are saved. Do not run the full pane validator again here: it can inspect
+    // controls nested in the map sheet or optional controls moved by the wizard.
+    const routeReady = ['pickup','dropoff'].every(key => {
+      const address = form.querySelector('[name="'+key+'"]')?.value.trim();
+      const lat = form.querySelector('[name="'+key+'_latitude"]')?.value;
+      const lng = form.querySelector('[name="'+key+'_longitude"]')?.value;
+      const code = form.querySelector('[name="'+key+'_plus_code"]')?.value;
+      return Boolean(address && lat && lng && code);
+    });
+    if(!routeReady){
+      announce('Please confirm both pickup and drop-off addresses and map pins before continuing.');
+      return;
+    }
     show(1);
   });
   back.addEventListener('click',()=>show(active-1));
