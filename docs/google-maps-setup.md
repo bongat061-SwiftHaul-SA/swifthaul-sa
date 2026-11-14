@@ -27,4 +27,4 @@ window.SWIFTHAUL_GOOGLE_MAPS_API_KEY = 'YOUR_RESTRICTED_BROWSER_KEY';
 
 A browser Maps key is visible to visitors in page source and network requests. That is expected for Maps JavaScript API; HTTP-referrer and API restrictions are the security controls. Never place a service-account credential or server-side secret in this file.
 
-The current configuration intentionally contains an empty value. Until a restricted key is supplied, the booking map uses the existing free map provider. Google Maps loading failures also fall back to that free map.
+The Customer staging configuration now includes the browser key supplied by the project owner and the configured Map ID. Keep the key restricted to the exact SwiftHaul GitHub Pages HTTP referrer and Maps JavaScript API. Google Maps loading failures fall back to the free map provider.
