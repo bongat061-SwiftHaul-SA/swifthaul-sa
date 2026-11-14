@@ -71,18 +71,17 @@
   const mapStage = form.querySelector('#delivery-map-stage');
   if (mapStage) {
     move(mapStage,0);
-    // Keep the supporting collection details in the same first step as the
-    // pickup/drop-off map. The location picker moves only those two address
-    // fields into its map sheet; recipient and scheduling controls remain in
-    // the original form unless explicitly moved here.
-    [recipient,schedule,returnTrip].forEach(node=>move(node,0));
-    // The parcel estimator is initially inserted into the map sheet by the
-    // location picker; move only the parcel/quote controls into step two.
-    [parcel,vehicle,vehicleNote,calculate,pricingNote,quote].forEach(node=>move(node,1));
+    // Keep the pickup/drop-off map and optional scheduling controls together
+    // on step one. Recipient information belongs with the parcel details, so
+    // an empty recipient field cannot block the map-to-parcel transition.
+    [schedule,returnTrip].forEach(node=>move(node,0));
+    // The location picker initially places the recipient and parcel estimator
+    // in its map sheet. Move them into step two while leaving the map intact.
+    [recipient,parcel,vehicle,vehicleNote,calculate,pricingNote,quote].forEach(node=>move(node,1));
     [payment,assistance,protection].forEach(node=>move(node,2));
   } else {
-    [pickup,dropoff,recipient,schedule,returnTrip].forEach(node=>move(node,0));
-    [parcel,vehicle,vehicleNote,calculate,pricingNote,quote].forEach(node=>move(node,1));
+    [pickup,dropoff,schedule,returnTrip].forEach(node=>move(node,0));
+    [recipient,parcel,vehicle,vehicleNote,calculate,pricingNote,quote].forEach(node=>move(node,1));
     [payment,assistance,protection].forEach(node=>move(node,2));
   }
   const review = document.createElement('section');
