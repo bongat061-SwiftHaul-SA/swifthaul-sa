@@ -8,6 +8,7 @@ const portal = read('supabase/functions/customer-portal/index.ts');
 const customerHtml = read('public/customer.html');
 const indexHtml = read('public/index.html');
 const estimatorTheme = read('public/customer-simple-estimator.css');
+const bookingWizardTheme = read('public/booking-wizard.css');
 const prepareSites = read('scripts/prepare-sites.cjs');
 const pagesBuilder = read('scripts/build-pages.cjs');
 const companyOperations = read('apps/company/public/operations.js');
@@ -29,16 +30,17 @@ assert.ok(prepareSites.includes("const chatSource = path.join(root, 'public', 'o
 for (const [name, source] of [['operations',companyOperations],['driver admin',companyDrivers],['refund admin',companyRefunds]]) assert.ok(source.startsWith('(() => {') && source.trimEnd().endsWith('})();'), 'Company ' + name + ' script must isolate its top-level variables.');
 assert.equal(indexHtml, customerHtml, 'Customer directory default and dedicated entry must remain identical.');
 const wizardJs = 'booking-wizard.js?v=20261114-customer-wizard-flow2';
-const wizardCss = 'booking-wizard.css?v=20261114-customer-wizard-flow2';
+const wizardCss = 'booking-wizard.css?v=20261114-navy-booking-v1';
 for (const [name, html] of [['Customer default entry', indexHtml], ['Customer dedicated entry', customerHtml]]) {
   assert.ok(html.includes(wizardJs), name + ' must load the current booking wizard script.');
   assert.ok(html.includes(wizardCss), name + ' must load the current booking wizard stylesheet.');
   assert.ok(html.indexOf('customer-simple-estimator.css') < html.indexOf(wizardCss), name + ' must load wizard CSS after estimator CSS.');
 }
 assert.ok(pagesBuilder.includes("if (app === 'customer')") && pagesBuilder.includes("fs.copyFileSync(path.join(source, 'customer.html'), path.join(target, 'index.html'))"), 'GitHub Pages build must generate its Customer directory default from customer.html.');
-assert.ok(customerHtml.includes('customer-simple-estimator.css?v=20261113-compact-estimator'), 'Dedicated Customer entry must load the current compact estimator styling.');
-assert.ok(indexHtml.includes('customer-simple-estimator.css?v=20261113-compact-estimator'), 'Root Customer entry must load the same current estimator styling.');
+assert.ok(customerHtml.includes('customer-simple-estimator.css?v=20261114-navy-booking-v1'), 'Dedicated Customer entry must load the current compact estimator styling.');
+assert.ok(indexHtml.includes('customer-simple-estimator.css?v=20261114-navy-booking-v1'), 'Root Customer entry must load the same current estimator styling.');
 assert.ok(indexHtml.includes('name="city"') && indexHtml.includes('name="province"'), 'Root Customer entry must preserve required signup location fields.');
-assert.ok(!/#(?:69d2f4|102b3a|65d1f2|72d4f3)/i.test(estimatorTheme), 'Customer estimator must use neutral graphite/silver accents, not the old blue accent.');
-assert.ok(estimatorTheme.includes('#dce2e9') && estimatorTheme.includes('#f4f6f8'), 'Customer estimator must use silver/white highlights.');
-console.log('Customer session restoration, booking pin metadata and graphite theme regression checks passed.');
+assert.ok(bookingWizardTheme.includes('#071426') && bookingWizardTheme.includes('#3ce3f6') && bookingWizardTheme.includes('#0875f5'), 'Customer booking must retain the approved midnight-navy, cyan-total and blue-action theme.');
+assert.ok(estimatorTheme.includes('#0b2038') && bookingWizardTheme.includes('#102b49'), 'Customer vehicle and parcel estimator must use the same premium navy surfaces.');
+assert.ok(customerHtml.includes('id="fare-base"') && customerHtml.includes('id="fare-included"') && customerHtml.includes('id="fare-distance"') && customerHtml.includes('id="fare-weight"') && customerHtml.includes('id="fare-fuel"'), 'Customer quote must show the complete reference fare breakdown.');
+console.log('Customer session restoration, booking pin metadata and navy premium theme regression checks passed.');
