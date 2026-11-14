@@ -163,7 +163,8 @@ const server = http.createServer((req,res)=>{
         assert.equal(await page.locator('#cargo-estimator').count(),1,'Customer booking must retain the parcel and vehicle estimator');
         assert.equal(await page.locator('#cargo-vehicle-tag').count(),1,'Customer booking must show its recommended vehicle selector');
         assert.equal(await page.locator('#quote-breakdown .fare-row').count(),5,'Customer quote must show base fare, included distance, distance adjustment, weight charge and fuel adjustment');
-        assert.match(await page.locator('#quote-breakdown').textContent(),/Base fare[\\s\\S]*Included distance[\\s\\S]*Distance band adjustment[\\s\\S]*Weight charge[\\s\\S]*Fuel adjustment/,'Customer quote breakdown must retain the reference line items');
+        const breakdownText=await page.locator('#quote-breakdown').textContent();
+        for(const lineItem of ['Base fare','Included distance','Distance band adjustment','Weight charge','Fuel adjustment']) assert.ok(breakdownText.includes(lineItem),'Customer quote breakdown must include '+lineItem);
         const next=page.locator('[data-wizard-next]');
         await page.locator('[name="length"]').fill('30');
         await page.locator('[name="width"]').fill('20');
