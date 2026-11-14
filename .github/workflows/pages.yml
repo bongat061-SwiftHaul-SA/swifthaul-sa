@@ -1,12 +1,8 @@
 name: Publish SwiftHaul platforms to GitHub Pages
 
 on:
-  # One controlled staging-branch publication: workflow builds the three
-  # production bundles from main and replaces ONLY the tested Customer bundle.
-  # Remove this temporary push trigger after the approved Customer release.
-  push:
-    branches:
-      - feature/sa-sms-whatsapp-notifications-staging
+  # Run the approved Customer-only publication manually after browser validation.
+  # Staging pushes run browser validation and previews only.
   workflow_dispatch:
 
 # The existing Pages hostname is shared by the three app paths.
