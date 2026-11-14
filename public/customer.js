@@ -55,8 +55,15 @@ const report = (text, error = false) => { message.textContent = text; message.cl
 form.addEventListener('input', event => {if(['pickup','dropoff'].includes(event.target.name)){for(const suffix of ['latitude','longitude']){const hidden=form.elements.namedItem(event.target.name+'_'+suffix);if(hidden)hidden.value='';}const picker=event.target.nextElementSibling;if(picker?.matches('button'))picker.textContent='Pick / copy pin';}if (['pickup','dropoff','weight','length','width','height'].includes(event.target.name)) resetQuote();});
 form.addEventListener('change', event => {if (['weight','length','width','height'].includes(event.target.name)) resetQuote();});
 function whatsapp(order) {
-  const text = `*SWIFTHAUL SA DISPATCH*\n*Order:* ${order.waybill}\n*Pickup:* ${order.pickup}\n*Drop:* ${order.dropoff}\n*Recipient & notes:* ${order.recipient}\n*Vehicle:* ${order.vehicle.toUpperCase()}${order.load?.truckClass?' ('+order.load.truckClass+')':''}${order.load?'\n*Chargeable weight:* '+mass(order.load.chargeable)+' kg\n*Distance fee:* '+money(order.distance_fee)+'\n*Weight fee:* '+money(order.load.weightFee):''}\n*Outbound fee:* ${money(order.price)}\n*Payment:* ${order.paid_at?'Confirmed via '+order.payment_source:order.payment_source==='pay_later'?'Pay later':order.payment_method==='cash'?'Cash requested (unconfirmed)':'Arrange with dispatch'}${order.counter_offer?'\n*Counteroffer:* '+money(order.counter_offer)+' · '+order.counter_offer_status:''}${order.scheduled_at?'\n*Scheduled pickup:* '+localTime(order.scheduled_at):''}${order.return_address?'\n*Return request (separate quote):* '+order.return_address:''}${order.return_at?'\n*Requested return:* '+localTime(order.return_at):''}`;
-  return `https://wa.me/27615083880?text=${encodeURIComponent(text)}`;
+  const text = \`*SWIFTHAUL SA DISPATCH*
+*Order:* \${order.waybill}
+*Pickup:* \${order.pickup}
+*Drop:* \${order.dropoff}
+*Recipient & notes:* \${order.recipient}
+*Vehicle:* \${order.load?.truckClass || order.vehicle.toUpperCase()}\${order.load ? '\n*Estimated payload:* '+mass(order.load.chargeable)+' kg\n*Distance charge:* '+money(order.distance_fee) : ''}
+*Outbound fee:* \${money(order.price)}
+*Payment:* \${order.paid_at?'Confirmed via '+order.payment_source:order.payment_source==='pay_later'?'Pay later':order.payment_method==='cash'?'Cash requested (unconfirmed)':'Arrange with dispatch'}\${order.counter_offer?'\n*Counteroffer:* '+money(order.counter_offer)+' · '+order.counter_offer_status:''}\${order.scheduled_at?'\n*Scheduled pickup:* '+localTime(order.scheduled_at):''}\${order.return_address?'\n*Return request (separate quote):* '+order.return_address:''}\${order.return_at?'\n*Requested return:* '+localTime(order.return_at):''}\`;
+  return \`https://wa.me/27615083880?text=${encodeURIComponent(text)}`;
 }
 function addOrder(order, prepend = false) {
   for (const existing of container.querySelectorAll('.order')) {if (existing.dataset.waybill===order.waybill) existing.remove();}
@@ -77,13 +84,13 @@ function addOrder(order, prepend = false) {
   }
   const meta = document.createElement('div'); meta.className = 'order-meta';
   const pin = document.createElement('span'); pin.textContent = `Recipient PIN: ${order.pin} · Share only after delivery`;
-  const fee = document.createElement('span'); fee.textContent = `${order.vehicle.toUpperCase()} · ${money(order.price)}`;
+  const fee = document.createElement('span'); fee.textContent = `${order.load?.truckClass || order.vehicle.toUpperCase()} · ${money(order.price)}`;
   meta.append(pin, fee);
   if (order.distance_meters != null) {const distance=document.createElement('span');distance.textContent=`${km(order.distance_meters)} km`;meta.append(distance);}
   if(order.assistance_requested){const handling=document.createElement('p');handling.textContent='Optional handling assistance requested · '+(Number(order.assistance_minutes)||0)+' minutes · '+money((Number(order.assistance_fee_cents)||0)/100)+' · '+String(order.assistance_status||'pending dispatch confirmation').replaceAll('_',' ');card.append(handling);}
   const paymentInfo=document.createElement('p');paymentInfo.textContent=order.paid_at?'Payment confirmed · '+order.payment_source:order.payment_source==='pay_later'?'Pay later · repayment due in 7 days':order.payment_source==='wallet'?'Paid from SwiftHaul wallet · Refund '+money((order.wallet_refund_used||0)/100)+' + promotional '+money((order.wallet_promo_used||0)/100):order.payment_method==='cash'?'Payment: Cash requested · payment unconfirmed':'Payment: Arrange with dispatch · payment unconfirmed';card.append(paymentInfo);
   if(order.counter_offer){const offer=document.createElement('p');offer.textContent=`Counteroffer: ${money(order.counter_offer)} · ${order.counter_offer_status}. ${order.counter_offer_status==='pending'?'Original fare '+money(order.price)+' remains until company approval.':order.counter_offer_status==='accepted'?'Accepted fare '+money(order.price)+'. Original fare '+money(order.original_price)+'.':'Original fare '+money(order.price)+'.'}`;card.append(offer);}
-  if(order.load) {const weight=document.createElement('p');weight.textContent=`${order.load.truckClass || order.vehicle.toUpperCase()} · ${mass(order.load.chargeable)} chargeable kg · Distance ${money(order.distance_fee)} + weight ${money(order.load.weightFee)}`;card.append(weight);}
+  if(order.load) {const weight=document.createElement('p');weight.textContent=`${order.load.truckClass || order.vehicle.toUpperCase()} · Estimated payload ${mass(order.load.chargeable)} kg · ${order.load.freeMinutes || 0} minutes loading/offloading included`;card.append(weight);}
   if(order.scheduled_at) {const time=document.createElement('p');time.textContent='Requested pickup: '+localTime(order.scheduled_at)+' · Awaiting dispatch confirmation';card.append(time);}
   if(order.return_address) {const ret=document.createElement('p');ret.textContent='Return requested: '+order.return_address+(order.return_at?' · '+localTime(order.return_at):'')+' · Separate quote pending';card.append(ret);}
   const actions = document.createElement('div'); actions.className = 'order-actions';
@@ -217,7 +224,7 @@ form.addEventListener('submit', async event => {
     return;
   }
   const assistance=assistanceQuote();
-  if(assistance.requested && (!assistance.fee || acceptedQuote.vehicle==='bike')){report('Optional assistance requires a van or truck quote. Please update your vehicle/load or contact dispatch.',true);return;}
+  if(assistance.requested && !assistance.fee){report('Optional assistance is unavailable for this vehicle/load. Please update your selection or contact dispatch.',true);return;}
   if (['pickup', 'dropoff', 'recipient'].some(key => !data[key].trim())) { report('Enter pickup, drop-off and recipient details.', true); return; }
   const submit = document.getElementById('submit'); bookingBusy=true; submit.disabled = true; report('Saving your booking…');
   try {
@@ -252,8 +259,8 @@ function downloadPDF(order) {
     line(`Issued: ${new Date(order.created_at).toLocaleDateString('en-ZA')}`);
     line(`Pickup: ${order.pickup}`); line(`Drop-off: ${order.dropoff}`);
     if (order.distance_meters != null) line(`Mapped driving distance: ${km(order.distance_meters)} km`);
-    line(`Recipient and notes: ${order.recipient}`); line(`Vehicle: ${order.vehicle.toUpperCase()}`);
-    if(order.load) {line(`Actual: ${mass(order.load.weight)} kg; volumetric: ${mass(order.load.volumetric)} kg; chargeable: ${mass(order.load.chargeable)} kg`);line(`Packed dimensions: ${order.load.length} x ${order.load.width} x ${order.load.height} cm; divisor 5000`);line(`Vehicle class: ${order.load.truckClass || order.vehicle}`);line(`Distance fee: ${money(order.distance_fee)}; extra weight: ${mass(order.load.extra)} kg at ${money(order.load.rate)}/kg = ${money(order.load.weightFee)}`);}
+    line(`Recipient and notes: ${order.recipient}`); line(`Vehicle: ${order.load?.truckClass || order.vehicle.toUpperCase()}`);
+    if(order.load) {line(`Estimated payload: ${mass(order.load.chargeable)} kg (used for vehicle recommendation)`);line(`Packed dimensions: ${order.load.length} x ${order.load.width} x ${order.load.height} cm; divisor 5000`);line(`Call-out fee: ${money(order.load.callOutFee)}; distance rate: ${money(order.load.distanceRate)}/km; distance charge: ${money(order.distance_fee)}`);line(`Free loading/offloading window: ${order.load.freeMinutes} minutes`);}
     if(order.scheduled_at) line('Requested pickup: '+localTime(order.scheduled_at));
     if(order.return_address) line('Return request (separate quote, excluded from total): '+order.return_address+(order.return_at?' at '+localTime(order.return_at):''));
     line(`Acceptance PIN: ${order.pin}`); line(`Fare: ${money(order.price)} ZAR`, 13);
@@ -310,7 +317,7 @@ calculateButton.addEventListener('click', async () => {
   resetQuote();const active=new AbortController();quoteRequest=active;calculateButton.disabled=true;
   quoteStatus.textContent='Mapping the addresses and calculating your fare…';
   try {
-    const result=await customerApi('POST',{action:'quote',pickup:data.pickup,dropoff:data.dropoff,pickup_location:data.pickup_latitude?{latitude:Number(data.pickup_latitude),longitude:Number(data.pickup_longitude)}:null,dropoff_location:data.dropoff_latitude?{latitude:Number(data.dropoff_latitude),longitude:Number(data.dropoff_longitude)}:null,parcel:Object.fromEntries(['weight','length','width','height'].map(key=>[key,Number(data[key])]))});
+    const result=await customerApi('POST',{action:'quote',pickup:data.pickup,dropoff:data.dropoff,pickup_location:data.pickup_latitude?{latitude:Number(data.pickup_latitude),longitude:Number(data.pickup_longitude)}:null,dropoff_location:data.dropoff_latitude?{latitude:Number(data.dropoff_latitude),longitude:Number(data.dropoff_longitude)}:null,selected_vehicle:form.querySelector('[name=vehicle]:checked')?.value,parcel:Object.fromEntries(['weight','length','width','height'].map(key=>[key,Number(data[key])]))});
     if (quoteRequest!==active || active.signal.aborted) return;
     if (!result.quote) throw new Error('Unable to calculate the route.');
     currentQuote=result.quote;assistanceQuote();updatePaymentOptions();window.swiftHaulUpdateVehiclePreview?.(currentQuote.vehicle,currentQuote.load?.chargeable,currentQuote.load?.truckClass || (currentQuote.vehicle||'').toUpperCase());const route=currentQuote.route;window.swiftHaulSetRoadRoute?.(route);
@@ -318,16 +325,15 @@ calculateButton.addEventListener('click', async () => {
     document.getElementById('quote-distance').textContent=`${km(route.distance)} km`;
     document.getElementById('quote-price').textContent=money(currentQuote.price);
     document.getElementById('priceBadge').textContent=money(currentQuote.price);
-    document.getElementById('quote-band').textContent=`Fare band: ${currentQuote.band*12} km to below ${(currentQuote.band+1)*12} km. Every new 12 km band doubles the fare.`;
+    document.getElementById('quote-band').textContent=`Indicative Gauteng tariff · VAT excluded · ${currentQuote.freeMinutes} minutes loading/offloading included.`;
     document.getElementById('quote-locations').textContent=`Pickup: ${route.pickup.label}. Drop-off: ${route.dropoff.label}.`;
     document.getElementById('truck-route-note').hidden=currentQuote.vehicle!=='truck';
-    document.getElementById('quote-load').textContent=`${currentQuote.load.truckClass || currentQuote.vehicle.toUpperCase()} selected · Estimated weight ${mass(currentQuote.load.weight)} kg · Volumetric ${mass(currentQuote.load.volumetric)} kg · Chargeable ${mass(currentQuote.load.chargeable)} kg. Includes ${currentQuote.load.included} kg.`;
-    const baseFare=({bike:40,van:80,truck:180})[currentQuote.vehicle] ?? Number(currentQuote.distanceFee);
-    document.getElementById('fare-base').textContent=money(baseFare);
-    document.getElementById('fare-multiplier').textContent='×'+(2 ** Number(currentQuote.band))+' · '+(Number(currentQuote.band)*12)+'–'+((Number(currentQuote.band)+1)*12)+' km band';
+    document.getElementById('quote-load').textContent=`${currentQuote.load.truckClass} selected · Estimated payload ${mass(currentQuote.load.chargeable)} kg. Vehicle recommendation uses item weight and packed dimensions; no separate weight fee applies.`;
+    document.getElementById('fare-callout').textContent=money(currentQuote.callOutFee);
+    document.getElementById('fare-rate').textContent=money(currentQuote.distanceRate)+'/km';
     document.getElementById('fare-distance').textContent=money(currentQuote.distanceFee);
-    document.getElementById('fare-weight').textContent=money(currentQuote.load.weightFee);
-    document.getElementById('fare-fuel').textContent=money(0);
+    document.getElementById('fare-window').textContent=currentQuote.freeMinutes+' minutes included';
+    document.getElementById('fare-vat').textContent='Excluded';
     const directions=new URL('https://www.google.com/maps/dir/');directions.search=new URLSearchParams({api:'1',origin:data.pickup,destination:data.dropoff,travelmode:'driving'}).toString();
     document.getElementById('quote-directions').href=directions.href;
     const note=document.getElementById('quote-map-note');note.textContent='Planned road route. Live driver location is not included.';
@@ -354,19 +360,23 @@ toggleBookingOptions();
 
 function previewLoad(){
   const values=['weight','length','width','height'].map(key=>Number(form.elements.namedItem(key).value));
-  let vehicle='',text='Choose a parcel category to estimate your load and vehicle.';
+  let vehicle='',text='Choose your items to estimate the load and recommended vehicle.';
   let chargeable=0,label='';
   if(values.every(value=>Number.isFinite(value)&&value>0)){
     const [estimatedWeight,length,width,height]=values,volumetric=length*width*height/5000;
     chargeable=Math.max(estimatedWeight,volumetric);
     if(chargeable>8000)text='Above 8,000 chargeable kg: contact dispatch for a manual quote.';
     else{
-      vehicle=chargeable<=20?'bike':chargeable<=1000?'van':'truck';
-      label=vehicle==='truck'?(chargeable<=4000?'4-ton Truck':'8-ton Truck'):vehicle.toUpperCase();
-      text=label+' recommended · '+mass(chargeable)+' chargeable kg (estimated weight '+mass(estimatedWeight)+' kg; volumetric '+mass(volumetric)+' kg). Physical cargo fit and access require dispatch confirmation.';
+      const recommendation=chargeable<=600?'light_commercial':chargeable<=1000?'one_ton_bakkie':chargeable<=3000?'closed_truck':'freight_truck';
+      const labels={light_commercial:'Mini-Van / Light Commercial',one_ton_bakkie:'1-Ton Bakkie / Panel Van',closed_truck:'1.5-Ton – 3-Ton Closed Truck',freight_truck:'4-Ton – 8-Ton Freight Truck'};
+      const capacities={light_commercial:600,one_ton_bakkie:1000,closed_truck:3000,freight_truck:8000};
+      const checked=form.querySelector('[name=vehicle]:checked')?.value;
+      vehicle=checked && capacities[checked]>=chargeable ? checked : recommendation;
+      label=labels[vehicle];
+      text=label+' recommended · estimated payload '+mass(chargeable)+' kg. You may choose this class or a larger suitable vehicle; dispatch confirms physical fit and access.';
     }
   }
-  form.querySelectorAll('[name=vehicle]').forEach(input=>{input.checked=input.value===vehicle;});
+  form.querySelectorAll('[name=vehicle]').forEach(input=>{input.checked=input.value===vehicle;input.disabled=chargeable>0 && ({light_commercial:600,one_ton_bakkie:1000,closed_truck:3000,freight_truck:8000})[input.value]<chargeable;});
   const summary=document.getElementById('load-summary');
   if(summary)summary.textContent=text;
   window.swiftHaulUpdateVehiclePreview?.(vehicle,chargeable,label);
