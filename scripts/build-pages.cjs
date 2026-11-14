@@ -14,6 +14,12 @@ for (const app of ['customer', 'driver', 'company']) {
     : path.join(root, 'apps', app, 'public');
   const target = path.join(output, app);
   fs.cpSync(source, target, { recursive: true });
+  // The Customer app has a dedicated customer.html entry point. Keep the
+  // directory default (index.html) identical so browser visitors cannot land
+  // on an older booking form when they open /customer/ instead.
+  if (app === 'customer') {
+    fs.copyFileSync(path.join(source, 'customer.html'), path.join(target, 'index.html'));
+  }
 }
  
 // Driver and Company retain root-relative shared map modules in their HTML entry points.
