@@ -130,6 +130,9 @@ const server = http.createServer((req,res)=>{
         // test does not depend on GPS or third-party map tile availability.
         await page.locator('#continue-as-guest').click();
         await page.locator('#workspace').waitFor({state:'visible'});
+        // Guest preview opens on Home; explicitly enter the dedicated booking page.
+        await page.locator('.customer-book-cta').click();
+        await page.locator('#new-delivery').waitFor({state:'visible'});
         await page.locator('#custPickup').fill('1 Main Road, Sandton, Johannesburg');
         await page.locator('#custDropoff').fill('10 Rivonia Road, Sandton, Johannesburg');
         await page.locator('#custRecip').fill('Test recipient · 071 000 0000');
