@@ -44,7 +44,7 @@ Deno.serve(async (req:Request) => {
     if(action==="invite"){
       const email=clean(body.email,254).toLowerCase(), name=clean(body.display_name,160);
       if(!validEmail(email)||name.length<2) return reply(400,{error:"valid_email_and_name_required"});
-      const {data,error}=await auth.auth.admin.inviteUserByEmail(email,{data:{app_type:"investor",full_name:name}});
+      const {data,error}=await db.auth.admin.inviteUserByEmail(email,{data:{app_type:"investor",full_name:name}});
       if(error||!data.user) return reply(400,{error:error?.message||"invitation_failed"});
       const {error:insertError}=await db.from("investor_profiles").upsert({user_id:data.user.id,display_name:name,shares_owned:0,ownership_percentage:0,investment_amount_zar:0,status:"active"},{onConflict:"user_id"});
       if(insertError) return reply(500,{error:"investor_profile_create_failed"});
