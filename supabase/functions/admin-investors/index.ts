@@ -36,7 +36,8 @@ Deno.serve(async (req:Request) => {
         db.from("investor_updates").select("*").order("created_at",{ascending:false})
       ]);
       if(profiles.error||metrics.error||updates.error) throw new Error("investor_data_read_failed");
-      const enrichedProfiles=await Promise.all((profiles.data||[]).map(async (profile)=>{const {data:userData}=await db.auth.admin.getUserById(profile.user_id);return {...profile,email:userData?.user?.email||""};}));\n      return reply(200,{profiles:enrichedProfiles,metrics:metrics.data,updates:updates.data});
+      const enrichedProfiles=await Promise.all((profiles.data||[]).map(async (profile)=>{const {data:userData}=await db.auth.admin.getUserById(profile.user_id);return {...profile,email:userData?.user?.email||""};}));
+      return reply(200,{profiles:enrichedProfiles,metrics:metrics.data,updates:updates.data});
     }
     const body=await req.json().catch(()=>null);
     if(!body||typeof body!=="object") return reply(400,{error:"invalid_json"});
