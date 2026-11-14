@@ -15,7 +15,7 @@
   const schedule = form.querySelector('#schedule-later')?.closest('fieldset');
   const returnTrip = form.querySelector('#request-return')?.closest('fieldset');
   const parcel = byText('fieldset', 'what are you sending');
-  const vehicle = byText('fieldset', 'selected automatically');
+  const vehicle = byText('fieldset', 'vehicle class');
   const payment = byText('fieldset', 'payment & counteroffer');
   const assistance = form.querySelector('#handling-assistance');
   const protection = form.querySelector('.customer-terms-acknowledgement');
