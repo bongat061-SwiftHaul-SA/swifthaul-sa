@@ -178,6 +178,7 @@
   let googleMapLoading = null;
   let googleRoute = null;
   const googleMapsApiKey = String(window.SWIFTHAUL_GOOGLE_MAPS_API_KEY || '').trim();
+  const googleMapId = String(window.SWIFTHAUL_GOOGLE_MAP_ID || '').trim();
   const hasMap = () => Boolean(map || googleMap);
   let activeField = pickup;
   let routeLine = false;
@@ -221,6 +222,7 @@
         googleMap=new google.maps.Map($('global-location-map'),{
           center:{lat:-26.32516865200042,lng:28.195352552065742},zoom:13.5,mapTypeId:'roadmap',
           mapTypeControl:false,streetViewControl:false,fullscreenControl:true,clickableIcons:false,
+          ...(googleMapId ? {mapId:googleMapId} : {}),
           gestureHandling:'greedy',controlSize:32
         });
         mapLoaded=true;
