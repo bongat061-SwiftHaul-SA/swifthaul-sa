@@ -322,7 +322,12 @@ calculateButton.addEventListener('click', async () => {
     document.getElementById('quote-locations').textContent=`Pickup: ${route.pickup.label}. Drop-off: ${route.dropoff.label}.`;
     document.getElementById('truck-route-note').hidden=currentQuote.vehicle!=='truck';
     document.getElementById('quote-load').textContent=`${currentQuote.load.truckClass || currentQuote.vehicle.toUpperCase()} selected · Estimated weight ${mass(currentQuote.load.weight)} kg · Volumetric ${mass(currentQuote.load.volumetric)} kg · Chargeable ${mass(currentQuote.load.chargeable)} kg. Includes ${currentQuote.load.included} kg.`;
-    document.getElementById('quote-breakdown').textContent=`Distance ${money(currentQuote.distanceFee)} + extra weight ${mass(currentQuote.load.extra)} kg × ${money(currentQuote.load.rate)}/kg = ${money(currentQuote.load.weightFee)}. Outbound total ${money(currentQuote.price)}.`;
+    const baseFare=({bike:40,van:80,truck:180})[currentQuote.vehicle] ?? Number(currentQuote.distanceFee);
+    document.getElementById('fare-base').textContent=money(baseFare);
+    document.getElementById('fare-included').textContent='First 12 km';
+    document.getElementById('fare-distance').textContent=money(Math.max(0,Number(currentQuote.distanceFee)-baseFare));
+    document.getElementById('fare-weight').textContent=money(currentQuote.load.weightFee);
+    document.getElementById('fare-fuel').textContent=money(0);
     const directions=new URL('https://www.google.com/maps/dir/');directions.search=new URLSearchParams({api:'1',origin:data.pickup,destination:data.dropoff,travelmode:'driving'}).toString();
     document.getElementById('quote-directions').href=directions.href;
     const note=document.getElementById('quote-map-note');note.textContent='Planned road route. Live driver location is not included.';
