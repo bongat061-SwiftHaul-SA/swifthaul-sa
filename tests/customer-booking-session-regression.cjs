@@ -9,6 +9,7 @@ const customerHtml = read('public/customer.html');
 const indexHtml = read('public/index.html');
 const estimatorTheme = read('public/customer-simple-estimator.css');
 const prepareSites = read('scripts/prepare-sites.cjs');
+const pagesBuilder = read('scripts/build-pages.cjs');
 const companyOperations = read('apps/company/public/operations.js');
 const companyDrivers = read('apps/company/public/driver-admin.js');
 const companyRefunds = read('apps/company/public/refund-admin.js');
@@ -26,6 +27,15 @@ assert.match(auth, /withTimeout\([\s\S]*?supabase\.auth\.getSession\(\)[\s\S]*?1
 assert.match(prepareSites, /if \(!fs\.existsSync\(target\)\) fs\.copyFileSync/, 'Site preparation must preserve platform-specific auth, theme and configuration files.');
 assert.ok(prepareSites.includes("const chatSource = path.join(root, 'public', 'order-chat.js')") && prepareSites.includes("const chatTarget = path.join(publicDir, 'order-chat.js')"), 'Driver bundle must include the shared delivery chat asset.');
 for (const [name, source] of [['operations',companyOperations],['driver admin',companyDrivers],['refund admin',companyRefunds]]) assert.ok(source.startsWith('(() => {') && source.trimEnd().endsWith('})();'), 'Company ' + name + ' script must isolate its top-level variables.');
+assert.equal(indexHtml, customerHtml, 'Customer directory default and dedicated entry must remain identical.');
+const wizardJs = 'booking-wizard.js?v=20261114-route-wizard-fix1';
+const wizardCss = 'booking-wizard.css?v=20261114-route-wizard-fix1';
+for (const [name, html] of [['Customer default entry', indexHtml], ['Customer dedicated entry', customerHtml]]) {
+  assert.ok(html.includes(wizardJs), name + ' must load the current booking wizard script.');
+  assert.ok(html.includes(wizardCss), name + ' must load the current booking wizard stylesheet.');
+  assert.ok(html.indexOf('customer-simple-estimator.css') < html.indexOf(wizardCss), name + ' must load wizard CSS after estimator CSS.');
+}
+assert.match(pagesBuilder, /if \(app === 'customer'\)[\\s\\S]*fs\\.copyFileSync\(path\\.join\(source, 'customer\\.html'\), path\\.join\(target, 'index\\.html'\)\)/, 'GitHub Pages build must generate its Customer directory default from customer.html.');
 assert.ok(customerHtml.includes('customer-simple-estimator.css?v=20261113-compact-estimator'), 'Dedicated Customer entry must load the current compact estimator styling.');
 assert.ok(indexHtml.includes('customer-simple-estimator.css?v=20261113-compact-estimator'), 'Root Customer entry must load the same current estimator styling.');
 assert.ok(indexHtml.includes('name="city"') && indexHtml.includes('name="province"'), 'Root Customer entry must preserve required signup location fields.');
