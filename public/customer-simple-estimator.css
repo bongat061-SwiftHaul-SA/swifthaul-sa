@@ -73,3 +73,6 @@ body[data-app="customer"] #booking-form #calculate-route{width:100%;min-height:4
  body[data-app="customer"] #booking-form #quote-result .quote-totals{grid-template-columns:minmax(0,1fr) auto}
  body[data-app="customer"] #booking-form #quote-price{font-size:29px}
 }
+
+/* Match the approved midnight-navy / cyan booking reference. */
+body[data-app="customer"] #cargo-estimator .cargo-vehicle-visual{background:#0b2038;border-radius:12px}
