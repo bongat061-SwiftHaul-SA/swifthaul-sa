@@ -3,7 +3,6 @@
   if (app !== 'customer') return;
   const form = document.getElementById('booking-form');
   if (!form || form.dataset.wizardReady === 'true') return;
-  form.dataset.wizardReady = 'true';
   // Validate the active wizard pane ourselves so native validation never tries
   // to focus a required field inside a hidden step.
 
@@ -30,6 +29,7 @@
   const pageHeading = document.querySelector('#workspace .page-heading h1');
   const pageDescription = document.querySelector('#workspace .page-heading .subtle');
   if (![pickup,dropoff,recipient,parcel,vehicle,payment,assistance,protection,calculate,quote,submit,counterSubmit].every(Boolean)) return;
+  form.dataset.wizardReady = 'true';
 
   const oldHeading = form.querySelector(':scope > h2');
   oldHeading?.remove();
@@ -109,7 +109,7 @@
     const weight=Number(form.elements.weight.value);
     const vehicleValue=form.querySelector('[name=vehicle]:checked')?.value;
     set('parcel',weight>0 ? (vehicleValue||'Vehicle pending').toUpperCase()+' · '+weight+' kg estimated' : 'Complete parcel details');
-    set('fare',quote.hidden ? 'Calculate your route' : (form.querySelector('#quote-price')?.textContent || 'Quote ready'));
+    set('fare',quote.hidden ? (document.body.dataset.guestPreview === 'true' ? 'Sign in to calculate your live fare' : 'Calculate your route') : (form.querySelector('#quote-price')?.textContent || 'Quote ready'));
     set('payment',form.elements.payment_method.selectedOptions[0]?.textContent || 'Arrange with dispatch');
     set('assistance',form.querySelector('#assistance-requested').checked ? 'Requested · subject to dispatch approval' : 'Not requested');
   };
@@ -118,7 +118,7 @@
     panes.forEach((pane,i)=>pane.hidden=i!==active);
     title.textContent=steps[active].title;
     count.textContent='STEP '+(active+1)+' OF 4';
-    hint.textContent=steps[active].hint;
+    hint.textContent=(document.body.dataset.guestPreview === 'true' && active===1) ? 'Preview your parcel dimensions and vehicle recommendation. Sign in to calculate a live mapped fare.' : steps[active].hint;
     progress.forEach((bar,i)=>bar.classList.toggle('is-complete',i<=active));
     back.hidden=active===0;
     next.hidden=active===0 || active===3;
@@ -144,7 +144,7 @@
     }
     if(active===1){
       if(!(Number(form.elements.weight.value)>0)){announce('Please estimate your parcel weight and dimensions before continuing.');return false;}
-      if(quote.hidden){announce('Calculate the mapped route and fare before continuing.');calculate.focus();return false;}
+      if(quote.hidden && document.body.dataset.guestPreview !== 'true'){announce('Calculate the mapped route and fare before continuing.');calculate.focus();return false;}
     }
     return true;
   };
