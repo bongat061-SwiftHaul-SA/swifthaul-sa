@@ -17,7 +17,7 @@ assert(wizard.includes('[recipient,schedule,returnTrip].forEach(node=>move(node,
 assert(wizard.includes('Keep that stage intact on step one'), 'Wizard must document why the interactive location stage stays together.');
 assert(wizard.includes('submit-counter-offer') && html.includes('booking-terms-accepted'), 'Final review must preserve the existing counteroffer and protection acknowledgement controls.');
 assert(locationPicker.includes('swift-haul:locations-confirmed') && wizard.includes('next.hidden=active===3') && wizard.includes("active===0?'Continue to parcel details'"), 'The address stage must keep its Continue button visible and advance only after the map pins are confirmed.');
-assert(html.includes('customer-nominatim-20261111') && html.includes('customer-google-maps-native-provider-v2-20261114'), 'Customer entry page must load the updated Nominatim geocoder and keyless Google Maps verification code.');
+assert(html.includes('customer-nominatim-20261111') && html.includes('google-maps-native-provider-20261114'), 'Customer entry page must load the updated Nominatim geocoder and keyless Google Maps verification code.');
 assert(locationPicker.includes('loc-google-pickup') && locationPicker.includes('loc-google-dropoff'), 'Customer booking must offer separate Google Maps verification for pickup and drop-off.');
 const googleConfig = read('public/google-maps-config.js');
 assert(html.includes('google-maps-config.js') && html.indexOf('google-maps-config.js') < html.indexOf('location-picker.js'), 'Google Maps configuration must load before the customer map provider.');
