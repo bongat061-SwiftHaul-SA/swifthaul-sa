@@ -1,0 +1,36 @@
+name: Validate POPIA signup consent
+
+on:
+  pull_request:
+    paths:
+      - "public/index.html"
+      - "public/auth.js"
+      - "public/app.css"
+      - "public/privacy-policy.html"
+      - "apps/driver/public/index.html"
+      - "apps/driver/public/auth.js"
+      - "apps/driver/public/app.css"
+      - "apps/driver/public/privacy-policy.html"
+      - "tests/popia-consent-static-check.cjs"
+      - ".github/workflows/validate-popia-consent.yml"
+  push:
+    branches:
+      - feature/popia-signup-consent
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check Customer and Driver auth JavaScript
+        run: |
+          node --input-type=module --check < public/auth.js
+          node --input-type=module --check < apps/driver/public/auth.js
+      - name: Verify POPIA consent, links, button gating and separate marketing choice
+        run: node tests/popia-consent-static-check.cjs

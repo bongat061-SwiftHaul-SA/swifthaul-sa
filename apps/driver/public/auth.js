@@ -14,6 +14,12 @@ const status = document.getElementById('auth-status');
 const submit = form.querySelector('[type=submit]');
 let mode = 'login';
 let currentUser = null;
+const serviceConsent = form.elements.acceptTerms;
+const marketingConsent = form.elements.acceptMarketing;
+function syncSignupConsent() {
+  submit.disabled = mode === 'signup' && !serviceConsent.checked;
+}
+serviceConsent.addEventListener('change', syncSignupConsent);
 
 const titles = {
   login: 'Welcome back.',
@@ -46,6 +52,10 @@ function setMode(next) {
   document.getElementById('terms-acceptance').hidden = !signup;
   form.elements.acceptTerms.required = signup;
   form.elements.acceptTerms.checked = false;
+  if (marketingConsent) marketingConsent.checked = false;
+  const marketingLabel = document.getElementById('marketing-consent');
+  if (marketingLabel) marketingLabel.hidden = !signup;
+  syncSignupConsent();
   submit.textContent = ({login:'Sign in',signup:'Create driver account',recovery:'Send reset link',reset:'Save new password'})[mode];
   status.textContent = '';
 }
@@ -129,7 +139,7 @@ async function openWorkspace() {
 form.addEventListener('submit', async event => {
   event.preventDefault();
   if (mode === 'signup' && !form.elements.acceptTerms.checked) {
-    status.textContent = 'Read and accept the terms and conditions to continue.';
+    status.textContent = 'Please accept the Privacy Policy and Terms of Service to create your account.';
     form.elements.acceptTerms.reportValidity();
     return;
   }
@@ -173,7 +183,12 @@ form.addEventListener('submit', async event => {
             vehicle_type: form.elements.vehicleType.value,
             vehicle_registration: form.elements.vehicleRegistration.value.trim().toUpperCase(),
             terms_accepted: true,
-            terms_version: '2026-10-30-wallet'
+            terms_version: '2026-11-11-popia-consent-v1',
+            privacy_consent: true,
+            privacy_policy_version: '2026-11-11-v1',
+            privacy_consent_at: new Date().toISOString(),
+            marketing_consent: Boolean(marketingConsent?.checked),
+            marketing_consent_at: marketingConsent?.checked ? new Date().toISOString() : null
           }
         }
       });
@@ -194,7 +209,7 @@ form.addEventListener('submit', async event => {
   } catch (error) {
     status.textContent = error?.message || 'Unable to connect. Please try again.';
   } finally {
-    submit.disabled = false;
+    submit.disabled = mode === 'signup' && !serviceConsent.checked;
   }
 });
 
