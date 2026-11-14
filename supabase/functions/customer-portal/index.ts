@@ -11,25 +11,41 @@ const cors = {
 const reply = (status: number, body: Record<string, unknown>) =>
   new Response(JSON.stringify(body), { status, headers: cors });
 const validText = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0 && v.length <= 500;
-const baseFees = { bike: 40, van: 80, truck: 180 } as const;
-type Vehicle = keyof typeof baseFees;
+const tariffClasses = {
+  light_commercial: { label: "Mini-Van / Light Commercial", capacity: 600, callOutFee: 150, distanceRate: 8.5, freeMinutes: 20, vehicle: "van" },
+  one_ton_bakkie: { label: "1-Ton Bakkie / Panel Van", capacity: 1000, callOutFee: 220, distanceRate: 11, freeMinutes: 30, vehicle: "van" },
+  closed_truck: { label: "1.5-Ton – 3-Ton Closed Truck", capacity: 3000, callOutFee: 450, distanceRate: 16.5, freeMinutes: 45, vehicle: "truck" },
+  freight_truck: { label: "4-Ton – 8-Ton Freight Truck", capacity: 8000, callOutFee: 850, distanceRate: 24, freeMinutes: 60, vehicle: "truck" },
+} as const;
+type VehicleClass = keyof typeof tariffClasses;
+type Vehicle = "van" | "truck";
 class InputError extends Error { status: number; constructor(message: string, status = 400) { super(message); this.status = status; } }
 
-function calculateLoad(input: unknown) {
+function recommendedVehicleClass(chargeable: number): VehicleClass {
+  if (chargeable <= 600) return "light_commercial";
+  if (chargeable <= 1000) return "one_ton_bakkie";
+  if (chargeable <= 3000) return "closed_truck";
+  return "freight_truck";
+}
+function calculateLoad(input: unknown, selectedClass: unknown) {
   const p = input as Record<string, unknown> | null;
   const keys = ["weight", "length", "width", "height"] as const;
   if (!p || keys.some(k => typeof p[k] !== "number" || !Number.isFinite(p[k]) || Number(p[k]) <= 0 || Number(p[k]) > 100000))
-    throw new InputError("Enter a positive actual weight and all three packed dimensions.");
+    throw new InputError("Select your items and enter valid packed dimensions so we can recommend a vehicle.");
   const weight = Number(p.weight), length = Number(p.length), width = Number(p.width), height = Number(p.height);
   const volumetric = length * width * height / 5000, chargeable = Math.max(weight, volumetric);
   if (chargeable > 8000) throw new InputError("Loads above 8,000 chargeable kg require a manual quote. Contact dispatch.", 422);
-  const vehicle: Vehicle = chargeable <= 20 ? "bike" : chargeable <= 1000 ? "van" : "truck";
-  const truckClass = vehicle === "truck" ? (chargeable <= 4000 ? "4-ton" : "8-ton") : null;
-  const included = vehicle === "bike" ? 5 : vehicle === "van" ? 50 : 1000;
-  const rate = vehicle === "bike" ? 8.5 : vehicle === "van" ? 5 : truckClass === "4-ton" ? 0.45 : 0.5;
-  const extra = Math.max(0, chargeable - included);
-  const weightFee = Math.round((extra * rate + Number.EPSILON) * 100) / 100;
-  return { weight, length, width, height, volumetric, chargeable, vehicle, truckClass, included, rate, extra, weightFee, divisor: 5000 };
+  const recommendation = recommendedVehicleClass(chargeable);
+  const vehicleClass = (typeof selectedClass === "string" && selectedClass in tariffClasses ? selectedClass : recommendation) as VehicleClass;
+  const tariff = tariffClasses[vehicleClass];
+  if (chargeable > tariff.capacity)
+    throw new InputError("The selected vehicle class is below the estimated payload. Please choose the recommended or a larger vehicle.", 422);
+  return {
+    weight, length, width, height, volumetric, chargeable, vehicle: tariff.vehicle,
+    vehicleClass, truckClass: tariff.label, recommendedVehicleClass: recommendation,
+    capacity: tariff.capacity, callOutFee: tariff.callOutFee,
+    distanceRate: tariff.distanceRate, freeMinutes: tariff.freeMinutes, divisor: 5000
+  };
 }
 function pin(value: unknown) {
   if (value == null) return null;
@@ -155,12 +171,12 @@ Deno.serve(async (req: Request) => {
   if (body.action === "quote") {
     if (!validText(body.pickup) || !validText(body.dropoff)) return reply(400, { error: "enter_pickup_and_dropoff" });
     try {
-      const pickupPin = pin(body.pickup_location), dropoffPin = pin(body.dropoff_location), load = calculateLoad(body.parcel);
+      const pickupPin = pin(body.pickup_location), dropoffPin = pin(body.dropoff_location), load = calculateLoad(body.parcel, body.selected_vehicle);
       const route = await routeFor(body.pickup.trim(), body.dropoff.trim(), pickupPin, dropoffPin);
-      const band = Math.floor(route.distance / 12000), distanceFee = baseFees[load.vehicle] * (2 ** band);
-      if (!Number.isSafeInteger(distanceFee)) throw new InputError("This route requires a manual quote. Contact dispatch.", 422);
-      const cents = Math.round(distanceFee * 100) + Math.round(load.weightFee * 100);
-      if (!Number.isSafeInteger(cents)) throw new InputError("This load and route require a manual quote.", 422);
+      const band = 0;
+      const distanceFee = Math.round((route.distance / 1000 * load.distanceRate + Number.EPSILON) * 100) / 100;
+      const cents = Math.round((load.callOutFee + distanceFee + Number.EPSILON) * 100);
+      if (!Number.isSafeInteger(cents) || cents <= 0) throw new InputError("This route requires a manual quote. Contact dispatch.", 422);
       const id = crypto.randomUUID();
       const { data: quote, error } = await admin.from("delivery_quotes").insert({
         id, owner_hash: owner, pickup: body.pickup.trim(), dropoff: body.dropoff.trim(),
@@ -169,7 +185,7 @@ Deno.serve(async (req: Request) => {
         expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
       }).select("id,expires_at").single();
       if (error || !quote) return reply(503, { error: "quote_save_failed" });
-      return reply(200, { quote: { id: quote.id, expires_at: quote.expires_at, price: cents / 100, band, vehicle: load.vehicle, route, load, distanceFee } });
+      return reply(200, { quote: { id: quote.id, expires_at: quote.expires_at, price: cents / 100, band, vehicle: load.vehicle, vehicleClass: load.vehicleClass, route, load, callOutFee: load.callOutFee, distanceFee, distanceRate: load.distanceRate, freeMinutes: load.freeMinutes } });
     } catch (e) {
       return reply(e instanceof InputError ? e.status : 502, { error: e instanceof Error ? e.message : "route_quote_failed" });
     }
@@ -208,8 +224,9 @@ Deno.serve(async (req: Request) => {
   if (assistanceRequested) {
     if (!Number.isInteger(assistanceMinutes) || assistanceMinutes < 30 || assistanceMinutes > 120 || assistanceMinutes % 30 !== 0)
       return reply(400, { error: "choose_assistance_duration_between_30_and_120_minutes" });
-    if (quote.vehicle !== "van" && quote.vehicle !== "truck") return reply(400, { error: "assistance_requires_van_or_truck" });
-    const expectedFee = (quote.vehicle === "van" ? 18000 : 35000) + ((assistanceMinutes / 30) - 1) * (quote.vehicle === "van" ? 10000 : 18000);
+    if (quote.vehicle !== "van" && quote.vehicle !== "truck") return reply(400, { error: "assistance_requires_a_supported_vehicle" });
+    const isTruckClass = quote.load?.vehicleClass === "closed_truck" || quote.load?.vehicleClass === "freight_truck";
+    const expectedFee = (isTruckClass ? 35000 : 18000) + ((assistanceMinutes / 30) - 1) * (isTruckClass ? 18000 : 10000);
     if (assistanceFeeCents !== expectedFee) return reply(400, { error: "assistance_quote_changed_recalculate_and_review" });
   } else if ((body.assistance_minutes ?? 0) !== 0 || (body.assistance_fee_cents ?? 0) !== 0) return reply(400, { error: "unexpected_assistance_amount" });
   const method = body.payment_method ?? "dispatch";
