@@ -26,20 +26,44 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Check out source
+      - name: Check out production source
         uses: actions/checkout@v4
-      - name: Verify three platform entry points
+      - name: Check out approved Customer staging source
+        uses: actions/checkout@v4
+        with:
+          ref: feature/sa-sms-whatsapp-notifications-staging
+          path: staging
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build approved Customer bundle from staging
+        working-directory: staging
+        run: npm run build:pages
+      - name: Assemble Pages site with Customer staging and unchanged production apps
         run: |
-          test -f index.html
-          test -f public/customer.html
-          test -f apps/driver/public/index.html
-          test -f apps/company/public/index.html
+          rm -rf dist
+          mkdir -p dist
+          cp -a staging/dist/customer dist/customer
+          cp -a staging/dist/index.html dist/index.html
+          cp -a apps/driver/public dist/driver
+          cp -a apps/company/public dist/company
+          cp -a public dist/public
+          if [ -f public/live-location-view.js ]; then cp public/live-location-view.js dist/live-location-view.js; fi
+          touch dist/.nojekyll
+      - name: Verify deployed platform entry points
+        run: |
+          test -f dist/index.html
+          test -f dist/customer/index.html
+          test -f dist/customer/customer.html
+          test -f dist/driver/index.html
+          test -f dist/company/index.html
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload website
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: dist
           name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
       - name: Publish website
         id: deployment
