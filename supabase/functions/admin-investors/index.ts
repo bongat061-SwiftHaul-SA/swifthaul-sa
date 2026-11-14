@@ -43,12 +43,53 @@ Deno.serve(async (req:Request) => {
     const action=clean(body.action,40);
     if(action==="invite"){
       const email=clean(body.email,254).toLowerCase(), name=clean(body.display_name,160);
-      if(!validEmail(email)||name.length<2) return reply(400,{error:"valid_email_and_name_required"});
-      const {data,error}=await db.auth.admin.inviteUserByEmail(email,{data:{app_type:"investor",full_name:name}});
-      if(error||!data.user) return reply(400,{error:error?.message||"invitation_failed"});
-      const {error:insertError}=await db.from("investor_profiles").upsert({user_id:data.user.id,display_name:name,shares_owned:0,ownership_percentage:0,investment_amount_zar:0,status:"active"},{onConflict:"user_id"});
-      if(insertError) return reply(500,{error:"investor_profile_create_failed"});
-      return reply(201,{ok:true,invited:true});
+      if(!validEmail(email)||name.length<2) return reply(400,{error:"Enter a valid investor name and email address."});
+
+      // Reuse an existing Auth account instead of trying to invite the same email twice.
+      // Investor access is granted only by creating the separate investor_profiles record.
+      let existingUser:null|{id:string;email?:string|null}=null;
+      let page=1;
+      while(!existingUser){
+        const {data:list,error:listError}=await db.auth.admin.listUsers({page,perPage:1000});
+        if(listError) return reply(500,{error:"Could not check whether this email already has a SwiftHaul account."});
+        existingUser=list.users.find((user)=>String(user.email||"").toLowerCase()===email) ?? null;
+        if(existingUser||list.users.length<1000) break;
+        page++;
+        if(page>10) return reply(503,{error:"Too many accounts to safely check this email. Please contact support."});
+      }
+
+      let userId=existingUser?.id ?? "";
+      let invitationEmailSent=false;
+      if(!existingUser){
+        const {data,error}=await db.auth.admin.inviteUserByEmail(email,{data:{app_type:"investor",full_name:name}});
+        if(error||!data.user){
+          const message=String(error?.message||"");
+          if(/already.*(registered|exists)|email.*exists/i.test(message)){
+            // A concurrent signup may have happened after the initial lookup. Re-read once.
+            const {data:list}=await db.auth.admin.listUsers({page:1,perPage:1000});
+            const match=list?.users.find((user)=>String(user.email||"").toLowerCase()===email);
+            if(!match) return reply(409,{error:"This email already has a SwiftHaul account. Ask the account holder to use their existing login, or contact support."});
+            userId=match.id;
+          }else{
+            console.error("Investor invitation email failed",message);
+            return reply(400,{error:"The invitation email could not be sent. Check the email address and Supabase email delivery settings, then try again."});
+          }
+        }else{
+          userId=data.user.id;
+          invitationEmailSent=true;
+        }
+      }
+
+      const {data:existingProfile,error:profileReadError}=await db.from("investor_profiles").select("id").eq("user_id",userId).maybeSingle();
+      if(profileReadError) return reply(500,{error:"Could not check the investor access record."});
+      if(existingProfile) return reply(409,{error:"This account already has an investor profile. Find it in the share register below."});
+
+      const {error:insertError}=await db.from("investor_profiles").insert({user_id:userId,display_name:name,shares_owned:0,ownership_percentage:0,investment_amount_zar:0,status:"active"});
+      if(insertError){
+        console.error("Investor profile create failed",insertError.message);
+        return reply(500,{error:"The account was found, but its investor profile could not be created. Please refresh and try again."});
+      }
+      return reply(201,{ok:true,invited:invitationEmailSent,linked_existing_account:!invitationEmailSent});
     }
     if(action==="save_profile"){
       const userId=clean(body.user_id,64);
