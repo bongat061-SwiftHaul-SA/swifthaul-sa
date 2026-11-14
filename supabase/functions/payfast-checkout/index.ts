@@ -12,8 +12,8 @@ const cors = {
 const reply = (status: number, body: Record<string, unknown>) =>
   new Response(JSON.stringify(body), { status, headers: cors });
 const SANDBOX_PROCESS_URL = "https://sandbox.payfast.co.za/eng/process";
-const PROJECT_URL = "https://jikstpnvsdjhcibtjilp.supabase.co";
-const SITE_URL = "https://bongat061-swifthaul-sa.github.io/swifthaul-sa/public/customer.html";
+const PROJECT_URL = Deno.env.get("SUPABASE_URL") || "https://tagkbropgzthsbjlhyvz.supabase.co";
+const SITE_URL = Deno.env.get("SWIFTHAUL_CUSTOMER_URL") || "";
 function urlencode(value: string) {
   return encodeURIComponent(value.trim()).replace(/[!'()*]/g, c => "%" + c.charCodeAt(0).toString(16).toUpperCase()).replace(/%[0-9a-f]{2}/gi, m => m.toUpperCase()).replace(/%20/g, "+");
 }
@@ -42,15 +42,17 @@ Deno.serve(async (req: Request) => {
     return reply(400, { error: "invalid_payment_request" });
 
   const { data: booking, error: bookingError } = await admin.from("customer_bookings")
-    .select("waybill,owner_hash,price,paid_at,refunded_at,status,counter_offer_status")
+    .select("waybill,owner_hash,price,payment_method,paid_at,refunded_at,status,counter_offer_status")
     .eq("waybill", body.waybill).eq("owner_hash", user.id).maybeSingle();
   if (bookingError || !booking) return reply(404, { error: "booking_not_found" });
+  if (booking.payment_method !== "card") return reply(409, { error: "booking_not_set_to_card_payment" });
   if (booking.paid_at || booking.refunded_at || ["cancelled","completed"].includes(booking.status))
     return reply(409, { error: "booking_not_payable" });
   if (booking.counter_offer_status === "pending")
     return reply(409, { error: "counter_offer_pending_dispatch_decision" });
   const { data: deletion } = await admin.from("customer_deletions").select("owner_hash").eq("owner_hash", user.id).maybeSingle();
   if (deletion) return reply(403, { error: "profile_deletion_pending" });
+  if (!SITE_URL || !/^https:\/\//i.test(SITE_URL)) return reply(503, { error: "customer_return_url_not_configured" });
   const amount = Number(booking.price);
   if (!Number.isFinite(amount) || amount < 5 || amount > 1000000)
     return reply(422, { error: "payfast_sandbox_requires_a_valid_amount_of_at_least_R5" });

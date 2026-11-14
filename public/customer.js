@@ -55,6 +55,37 @@ let loadVersion = 0;
 let refundRequestsByWaybill = new Map();
 let eftPaymentsByWaybill = new Map();
 const report = (text, error = false) => { message.textContent = text; message.classList.toggle('error', error); };
+async function startPayFastCheckout(order, trigger) {
+  const client = window.swiftHaulSupabase;
+  if (!client) { report('Secure payment connection unavailable. Please reload and try again.', true); return; }
+  if (trigger) trigger.disabled = true;
+  report('Preparing secure PayFast checkout…');
+  try {
+    const { data, error } = await client.functions.invoke('payfast-checkout', {
+      body: { action: 'checkout', waybill: order.waybill }
+    });
+    if (error) throw new Error(await customerFunctionError(error, 'Unable to start card payment.'));
+    if (data?.error) throw new Error(data.error);
+    if (data?.provider !== 'payfast' || data?.mode !== 'sandbox' ||
+        typeof data.process_url !== 'string' || !data.fields || typeof data.fields !== 'object')
+      throw new Error('PayFast returned an incomplete checkout response.');
+    const paymentForm = document.createElement('form');
+    paymentForm.method = 'POST';
+    paymentForm.action = data.process_url;
+    paymentForm.hidden = true;
+    for (const [name, value] of Object.entries(data.fields)) {
+      if (typeof value !== 'string') continue;
+      const input = document.createElement('input');
+      input.type = 'hidden'; input.name = name; input.value = value;
+      paymentForm.append(input);
+    }
+    document.body.append(paymentForm);
+    paymentForm.submit();
+  } catch (error) {
+    report(error?.message || 'Unable to start card payment. You can retry from your booking.', true);
+    if (trigger) trigger.disabled = false;
+  }
+}
 form.addEventListener('input', event => {if(['pickup','dropoff'].includes(event.target.name)){for(const suffix of ['latitude','longitude']){const hidden=form.elements.namedItem(event.target.name+'_'+suffix);if(hidden)hidden.value='';}const picker=event.target.nextElementSibling;if(picker?.matches('button'))picker.textContent='Pick / copy pin';}if (['pickup','dropoff','weight','length','width','height'].includes(event.target.name)) resetQuote();});
 form.addEventListener('change', event => {if (['weight','length','width','height'].includes(event.target.name)) resetQuote();});
 function whatsapp(order) {
@@ -94,7 +125,8 @@ function addOrder(order, prepend = false) {
     order.payment_source==='pay_later'?'Pay later · repayment due in 7 days':
     order.payment_source==='wallet'?'Paid from SwiftHaul wallet · Refund '+money((order.wallet_refund_used||0)/100)+' + promotional '+money((order.wallet_promo_used||0)/100):
     order.payment_method==='cash'?'Payment: Cash requested · payment unconfirmed':
-    order.payment_method==='eft'?'Payment: EFT · awaiting proof':'Payment: Arrange with dispatch · payment unconfirmed';
+    order.payment_method==='eft'?'Payment: EFT · awaiting proof':
+    order.payment_method==='card'?'Payment: Visa / Mastercard · awaiting PayFast confirmation':'Payment: Arrange with dispatch · payment unconfirmed';
   card.append(paymentInfo);
   if(order.counter_offer){const offer=document.createElement('p');offer.textContent=`Counteroffer: ${money(order.counter_offer)} · ${order.counter_offer_status}. ${order.counter_offer_status==='pending'?'Original fare '+money(order.price)+' remains until company approval.':order.counter_offer_status==='accepted'?'Accepted fare '+money(order.price)+'. Original fare '+money(order.original_price)+'.':'Original fare '+money(order.price)+'.'}`;card.append(offer);}
   if(order.load) {const weight=document.createElement('p');weight.textContent=`${order.load.truckClass || order.vehicle.toUpperCase()} · ${mass(order.load.chargeable)} chargeable kg · Distance ${money(order.distance_fee)} + weight ${money(order.load.weightFee)}`;card.append(weight);}
@@ -106,7 +138,29 @@ function addOrder(order, prepend = false) {
   const track = document.createElement('button'); track.type = 'button'; track.className = 'track-delivery'; track.textContent = 'Track Delivery'; track.addEventListener('click', () => {
     if (document.body.dataset.guestPreview !== 'true') document.dispatchEvent(new CustomEvent('delivery-route', {detail:{waybill:order.waybill,pickup:order.pickup,dropoff:order.dropoff}}));
   });
-  if(!order.paid_at&&!order.refunded_at&&!['cancelled'].includes(order.status)&&eftPayment?.status!=='submitted'&&eftPayment?.status!=='verified'){
+  if(!order.paid_at&&!order.refunded_at&&!['cancelled','completed'].includes(order.status)){
+    const paymentBox=document.createElement('div');paymentBox.className='payment-choice';
+    const paymentLabel=document.createElement('label');paymentLabel.textContent='Choose payment method';
+    const paymentSelect=document.createElement('select');paymentSelect.setAttribute('aria-label','Payment method for booking '+order.waybill);
+    const choices=[['eft','EFT bank transfer']];
+    if(Number(order.price)>=5)choices.push(['card','Visa / Mastercard · PayFast secure checkout']);
+    choices.push(['dispatch','Arrange payment with dispatch']);
+    if(Number(order.distance_meters)<12000)choices.push(['cash','Cash payment']);
+    for(const [value,label] of choices){const option=document.createElement('option');option.value=value;option.textContent=label;paymentSelect.append(option);}
+    paymentSelect.value=order.payment_method||'dispatch';
+    if(order.counter_offer&&order.counter_offer_status==='pending'){paymentSelect.value='dispatch';paymentSelect.disabled=true;const hint=document.createElement('p');hint.className='subtle';hint.textContent='A pending counteroffer must remain on dispatch payment until the company decides.';paymentBox.append(hint);}
+    paymentLabel.append(paymentSelect);
+    const applyPayment=document.createElement('button');applyPayment.type='button';applyPayment.textContent='Save payment choice';
+    applyPayment.addEventListener('click',async()=>{applyPayment.disabled=true;report('Updating payment choice…');try{const updated=await customerApi('POST',{action:'set_payment_method',waybill:order.waybill,payment_method:paymentSelect.value});if(!updated.order)throw new Error('Payment choice was not saved.');await loadOrders();report('Payment choice saved. Use the separate payment action on your booking to continue.');}catch(error){report(error?.message||'Unable to update payment choice.',true);applyPayment.disabled=false;}});
+    paymentBox.append(paymentLabel,applyPayment);card.append(paymentBox);
+  }
+  if(order.payment_method==='card'&&!order.paid_at&&!order.refunded_at&&!['cancelled','completed'].includes(order.status)){
+    const cardPay=document.createElement('button');cardPay.type='button';
+    cardPay.textContent='Pay securely with Visa / Mastercard';
+    cardPay.addEventListener('click',()=>startPayFastCheckout(order,cardPay));
+    actions.append(cardPay);
+  }
+  if(order.payment_method==='eft'&&!order.paid_at&&!order.refunded_at&&!['cancelled','completed'].includes(order.status)&&eftPayment?.status!=='submitted'&&eftPayment?.status!=='verified'){
     const eft=document.createElement('button');eft.type='button';eft.textContent=eftPayment?.status==='rejected'?'Resubmit EFT proof':'Pay by EFT / submit proof';
     eft.addEventListener('click',()=>{
       const box=document.createElement('div');box.className='eft-instructions';
@@ -235,12 +289,12 @@ form.addEventListener('submit', async event => {
   if (['pickup', 'dropoff', 'recipient'].some(key => !data[key].trim())) { report('Enter pickup, drop-off and recipient details.', true); return; }
   const submit = document.getElementById('submit'); bookingBusy=true; submit.disabled = true; report('Saving your booking…');
   try {
-    const result = await customerApi('POST', {action:'book',terms_accepted:true,terms_version:'2026-11-10-protection-terms-only',quote_id:acceptedQuote.id,assistance_requested:assistance.requested,assistance_minutes:assistance.minutes,assistance_fee_cents:Math.round(assistance.fee*100),recipient:data.recipient,payment_method:data.payment_method,counter_offer:data.counter_offer || null,scheduled_at:data.scheduled_at ? data.scheduled_at+':00+02:00' : null,return_address:data.return_address || null,return_at:data.return_at ? data.return_at+':00+02:00' : null,pickup_latitude:data.pickup_latitude?Number(data.pickup_latitude):null,pickup_longitude:data.pickup_longitude?Number(data.pickup_longitude):null,dropoff_latitude:data.dropoff_latitude?Number(data.dropoff_latitude):null,dropoff_longitude:data.dropoff_longitude?Number(data.dropoff_longitude):null});
+    const result = await customerApi('POST', {action:'book',terms_accepted:true,terms_version:'2026-11-10-proposed-distance-tariff',quote_id:acceptedQuote.id,assistance_requested:assistance.requested,assistance_minutes:assistance.minutes,assistance_fee_cents:Math.round(assistance.fee*100),recipient:data.recipient,payment_method:'dispatch',counter_offer:data.counter_offer || null,scheduled_at:data.scheduled_at ? data.scheduled_at+':00+02:00' : null,return_address:data.return_address || null,return_at:data.return_at ? data.return_at+':00+02:00' : null,pickup_latitude:data.pickup_latitude?Number(data.pickup_latitude):null,pickup_longitude:data.pickup_longitude?Number(data.pickup_longitude):null,dropoff_latitude:data.dropoff_latitude?Number(data.dropoff_latitude):null,dropoff_longitude:data.dropoff_longitude?Number(data.dropoff_longitude):null});
     if (epoch !== accountEpoch) return;
     if (!result.order) throw new Error('Unable to save your booking. Please try again.');
     container.querySelector('.empty')?.remove(); addOrder(result.order, true);
-    report('Booking created. Choose cash (if eligible) or EFT instructions below. WhatsApp sharing is a separate action.');
     resetQuote();
+    report('Booking created. Choose a payment method on your booking below. WhatsApp sharing is a separate action.');
   } catch (error) {
     if (epoch!==accountEpoch) return;
     const reason = error instanceof Error ? error.message : 'Unable to save your booking.';
@@ -271,7 +325,7 @@ function downloadPDF(order) {
     if(order.scheduled_at) line('Requested pickup: '+localTime(order.scheduled_at));
     if(order.return_address) line('Return request (separate quote, excluded from total): '+order.return_address+(order.return_at?' at '+localTime(order.return_at):''));
     line(`Acceptance PIN: ${order.pin}`); line(`Fare: ${money(order.price)} ZAR`, 13);
-    line('Payment option: '+(order.payment_method==='cash'?'Cash requested':order.payment_method==='eft'?'EFT bank transfer · reference '+order.waybill:'Arrange with dispatch'));
+    line('Payment option: '+(order.payment_method==='cash'?'Cash requested':order.payment_method==='eft'?'EFT bank transfer · reference '+order.waybill:order.payment_method==='card'?'Visa / Mastercard · PayFast payment pending':'Arrange with dispatch'));
     if(order.counter_offer)line('Counteroffer: '+money(order.counter_offer)+'; status: '+order.counter_offer_status+(order.counter_offer_status==='pending'?'. Original fare remains pending company approval.':'.'));
     line('Payment status: '+(order.paid_at?'Confirmed via '+order.payment_source:order.payment_source==='pay_later'?'Pay later; repayment due':'Not confirmed'));
     if(order.original_price)line('Original quoted fare before accepted counteroffer: '+money(order.original_price));
@@ -283,7 +337,8 @@ function downloadPDF(order) {
 document.addEventListener('account-ready', () => {
   calculateButton.disabled=false;loadOrders();
   const params=new URLSearchParams(location.search), payment=params.get('payment');
-  if(payment==='return'||payment==='cancel') report('Card payments are currently unavailable. Choose EFT or eligible cash for your booking.');
+  if(payment==='return') report('You returned from PayFast. Your booking will show as paid once the secure payment notification is verified.');
+  if(payment==='cancel') report('Card payment was cancelled. Your booking is still unpaid; you can retry the card payment or choose another method.');
   if(payment){history.replaceState({},'',location.pathname+location.hash);}
 });
 document.addEventListener('account-cleared', () => {accountEpoch++;loadVersion++; ready = false;form.reset();toggleBookingOptions();previewLoad();resetQuote(); container.replaceChildren(); document.getElementById('legacy-import').hidden=true; document.getElementById('submit').disabled = true;});
@@ -332,11 +387,11 @@ calculateButton.addEventListener('click', async () => {
     document.getElementById('quote-distance').textContent=`${km(route.distance)} km`;
     document.getElementById('quote-price').textContent=money(currentQuote.price);
     document.getElementById('priceBadge').textContent=money(currentQuote.price);
-    document.getElementById('quote-band').textContent=`Fare band: ${currentQuote.band*12} km to below ${(currentQuote.band+1)*12} km. Every new 12 km band doubles the fare.`;
+    document.getElementById('quote-band').textContent=`Minimum ${money(currentQuote.minimumFare)} includes the first ${currentQuote.includedDistanceKm} km; then ${money(currentQuote.perKmRate)} per additional km. Trips below 1 km still pay the vehicle minimum.`;
     document.getElementById('quote-locations').textContent=`Pickup: ${route.pickup.label}. Drop-off: ${route.dropoff.label}.`;
     document.getElementById('truck-route-note').hidden=currentQuote.vehicle!=='truck';
     document.getElementById('quote-load').textContent=`${currentQuote.load.truckClass || currentQuote.vehicle.toUpperCase()} selected · Estimated weight ${mass(currentQuote.load.weight)} kg · Volumetric ${mass(currentQuote.load.volumetric)} kg · Chargeable ${mass(currentQuote.load.chargeable)} kg. Includes ${currentQuote.load.included} kg.`;
-    document.getElementById('quote-breakdown').textContent=`Distance ${money(currentQuote.distanceFee)} + extra weight ${mass(currentQuote.load.extra)} kg × ${money(currentQuote.load.rate)}/kg = ${money(currentQuote.load.weightFee)}. Outbound total ${money(currentQuote.price)}.`;
+    document.getElementById('quote-breakdown').textContent=`Distance: ${money(currentQuote.minimumFare)} minimum${currentQuote.additionalDistanceKm>0?` + ${currentQuote.additionalDistanceKm.toFixed(2)} km × ${money(currentQuote.perKmRate)}/km`:''} = ${money(currentQuote.distanceFee)}; extra weight: ${mass(currentQuote.load.extra)} kg × ${money(currentQuote.load.rate)}/kg = ${money(currentQuote.load.weightFee)}. Outbound total ${money(currentQuote.price)}.`;
     const directions=new URL('https://www.google.com/maps/dir/');directions.search=new URLSearchParams({api:'1',origin:data.pickup,destination:data.dropoff,travelmode:'driving'}).toString();
     document.getElementById('quote-directions').href=directions.href;
     const note=document.getElementById('quote-map-note');note.textContent='Planned road route. Live driver location is not included.';
@@ -384,22 +439,16 @@ form.addEventListener('input',event=>{if(['weight','length','width','height'].in
 previewLoad();
 
 function updatePaymentOptions(){
-  const distance=currentQuote?.route.distance;
-  const cash=Number.isFinite(distance)&&distance<12000;
-  const counter=Number.isFinite(distance)&&distance<24000;
-  document.getElementById('cash-payment-option').disabled=!cash;
-  if(form.elements.payment_method.value==='cash'&&!cash)form.elements.payment_method.value='dispatch';
+  const counter=Number.isFinite(currentQuote?.route?.distance)&&currentQuote.route.distance<24000;
   const checkbox=document.getElementById('make-counter-offer');checkbox.disabled=!counter;
   if(!counter)checkbox.checked=false;
-  const show=counter&&checkbox.checked&&form.elements.payment_method.value!=='wallet';
+  const show=counter&&checkbox.checked;
   document.getElementById('counter-offer-field').hidden=!show;
   document.getElementById('counter-offer-note').hidden=!show;
   form.elements.counter_offer.disabled=!show;form.elements.counter_offer.required=show;
   if(!show)form.elements.counter_offer.value='';
-  document.getElementById('payment-eligibility').textContent=!currentQuote?'Calculate a route to check cash and counteroffer eligibility.':(cash?'EFT bank transfer or eligible cash is available.':'EFT bank transfer is available; cash is unavailable for this distance.')+(counter?' Counteroffers are available only when paying through dispatch.':'');
 }
 document.getElementById('make-counter-offer').addEventListener('change',updatePaymentOptions);
-form.elements.payment_method.addEventListener('change',updatePaymentOptions);
 updatePaymentOptions();
 
 document.addEventListener('wallet-updated',loadOrders);

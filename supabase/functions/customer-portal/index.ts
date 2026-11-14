@@ -11,8 +11,13 @@ const cors = {
 const reply = (status: number, body: Record<string, unknown>) =>
   new Response(JSON.stringify(body), { status, headers: cors });
 const validText = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0 && v.length <= 500;
-const baseFees = { bike: 40, van: 80, truck: 180 } as const;
-type Vehicle = keyof typeof baseFees;
+const distancePricing = {
+  bike: { minimumFare: 49, includedKm: 2, perKmRate: 7.5 },
+  van: { minimumFare: 89, includedKm: 2, perKmRate: 10 },
+  "4-ton": { minimumFare: 249, includedKm: 5, perKmRate: 18 },
+  "8-ton": { minimumFare: 349, includedKm: 5, perKmRate: 25 },
+} as const;
+type Vehicle = "bike" | "van" | "truck";
 class InputError extends Error { status: number; constructor(message: string, status = 400) { super(message); this.status = status; } }
 
 function calculateLoad(input: unknown) {
@@ -163,8 +168,15 @@ Deno.serve(async (req: Request) => {
     try {
       const pickupPin = pin(body.pickup_location), dropoffPin = pin(body.dropoff_location), load = calculateLoad(body.parcel);
       const route = await routeFor(body.pickup.trim(), body.dropoff.trim(), pickupPin, dropoffPin);
-      const band = Math.floor(route.distance / 12000), distanceFee = baseFees[load.vehicle] * (2 ** band);
-      if (!Number.isSafeInteger(distanceFee)) throw new InputError("This route requires a manual quote. Contact dispatch.", 422);
+      const band = Math.floor(route.distance / 12000); // Retained only for legacy reporting; no longer determines the fare.
+      const tariff = load.vehicle === "truck"
+        ? (load.truckClass === "4-ton" ? distancePricing["4-ton"] : distancePricing["8-ton"])
+        : distancePricing[load.vehicle];
+      const distanceKm = route.distance / 1000;
+      const additionalDistanceKm = Math.max(0, distanceKm - tariff.includedKm);
+      const rawDistanceFee = tariff.minimumFare + additionalDistanceKm * tariff.perKmRate;
+      const distanceFee = Math.round((rawDistanceFee + Number.EPSILON) * 100) / 100;
+      if (!Number.isSafeInteger(Math.round(distanceFee * 100))) throw new InputError("This route requires a manual quote. Contact dispatch.", 422);
       const cents = Math.round(distanceFee * 100) + Math.round(load.weightFee * 100);
       if (!Number.isSafeInteger(cents)) throw new InputError("This load and route require a manual quote.", 422);
       const id = crypto.randomUUID();
@@ -175,14 +187,48 @@ Deno.serve(async (req: Request) => {
         expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
       }).select("id,expires_at").single();
       if (error || !quote) return reply(503, { error: "quote_save_failed" });
-      return reply(200, { quote: { id: quote.id, expires_at: quote.expires_at, price: cents / 100, band, vehicle: load.vehicle, route, load, distanceFee } });
+      return reply(200, { quote: { id: quote.id, expires_at: quote.expires_at, price: cents / 100, band, vehicle: load.vehicle, route, load, distanceFee, minimumFare: tariff.minimumFare, includedDistanceKm: tariff.includedKm, perKmRate: tariff.perKmRate, additionalDistanceKm } });
     } catch (e) {
       return reply(e instanceof InputError ? e.status : 502, { error: e instanceof Error ? e.message : "route_quote_failed" });
     }
   }
 
+  // Payment choice is made after a booking exists. The authenticated owner is
+  // derived from the verified Supabase session above, never from client input.
+  if (body.action === "set_payment_method") {
+    if (typeof body.waybill !== "string" || !/^SH-[0-9A-F-]{36}$/i.test(body.waybill) ||
+        !["cash", "dispatch", "eft", "card"].includes(body.payment_method))
+      return reply(400, { error: "valid_booking_and_payment_method_required" });
+    const { data: booking, error: bookingError } = await admin.from("customer_bookings")
+      .select("waybill,distance_meters,price,payment_method,counter_offer,counter_offer_status,paid_at,refunded_at,status")
+      .eq("waybill", body.waybill).eq("owner_hash", owner).maybeSingle();
+    if (bookingError) return reply(503, { error: "booking_lookup_failed" });
+    if (!booking) return reply(404, { error: "booking_not_found" });
+    if (booking.paid_at || booking.refunded_at || booking.status !== "pending")
+      return reply(409, { error: "booking_payment_is_locked" });
+    const method = body.payment_method;
+    if (method === "cash" && Number(booking.distance_meters) >= 12000)
+      return reply(400, { error: "cash_available_only_below_12km" });
+    if (method === "card" && (!Number.isFinite(Number(booking.price)) || Number(booking.price) < 5))
+      return reply(400, { error: "payfast_card_requires_fare_of_at_least_R5" });
+    if (booking.counter_offer && booking.counter_offer_status === "pending" && method !== "dispatch")
+      return reply(400, { error: "counteroffers_require_dispatch_payment" });
+    const { data: updated, error: updateError } = await admin.from("customer_bookings")
+      .update({ payment_method: method })
+      .eq("waybill", booking.waybill).eq("owner_hash", owner)
+      .is("paid_at", null).is("refunded_at", null).eq("status", "pending")
+      .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,nedbank_cargo_insurance_interest,status")
+      .maybeSingle();
+    if (updateError) {
+      console.error("Customer payment method update failed", updateError.message);
+      return reply(503, { error: "payment_method_update_failed" });
+    }
+    if (!updated) return reply(409, { error: "booking_payment_is_locked" });
+    return reply(200, { order: updated });
+  }
+
   if (body.action !== "book" || typeof body.quote_id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.quote_id) ||
-      body.terms_accepted !== true || body.terms_version !== "2026-11-10-protection-terms-only" ||
+      body.terms_accepted !== true || body.terms_version !== "2026-11-10-proposed-distance-tariff" ||
       typeof body.recipient !== "string" || !body.recipient.trim() || body.recipient.length > 500)
     return reply(400, { error: "calculate_a_quote_and_enter_recipient" });
   if (body.nedbank_cargo_insurance_interest !== undefined && typeof body.nedbank_cargo_insurance_interest !== "boolean") return reply(400, { error: "invalid_insurance_enquiry_selection" });
@@ -220,11 +266,12 @@ Deno.serve(async (req: Request) => {
     if (assistanceFeeCents !== expectedFee) return reply(400, { error: "assistance_must_be_free" });
   } else if ((body.assistance_minutes ?? 0) !== 0 || (body.assistance_fee_cents ?? 0) !== 0) return reply(400, { error: "unexpected_assistance_amount" });
   const method = body.payment_method ?? "dispatch";
-  if (method !== "cash" && method !== "dispatch" && method !== "eft") return reply(400, { error: "choose_eft_or_eligible_cash_payment" });
+  if (method !== "cash" && method !== "dispatch" && method !== "eft" && method !== "card") return reply(400, { error: "choose_a_supported_payment_method" });
   if (method === "cash" && distance >= 12000) return reply(400, { error: "cash_available_only_below_12km" });
   let offer: number | null = null;
   let offerStatus = "none";
   if (body.counter_offer !== undefined && body.counter_offer !== null && body.counter_offer !== "") {
+    if (method !== "dispatch") return reply(400, { error: "counteroffers_require_dispatch_payment" });
     if (typeof body.counter_offer !== "string" || !/^\d{1,10}(?:\.\d{1,2})?$/.test(body.counter_offer) ||
         Number(body.counter_offer) <= 0 || distance >= 24000)
       return reply(400, { error: "counter_offer_not_eligible_or_invalid_amount" });

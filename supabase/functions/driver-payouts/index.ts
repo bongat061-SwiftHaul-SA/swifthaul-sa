@@ -18,13 +18,15 @@ Deno.serve(async(req:Request)=>{
  if(!p||p.account_status!=="active"||!["driver","admin"].includes(p.role))return reply(403,{error:"payout_access_required"});
  if(p.role==="driver"){
   if(req.method==="GET"){
-   const [{data:ledger,error:le},{data:requests,error:re}]=await Promise.all([
+   const [{data:ledger,error:le},{data:rewards,error:we},{data:requests,error:re},{data:balance,error:be}]=await Promise.all([
     db.from("driver_earnings_ledger").select("event_type,amount_cents,description,created_at").eq("driver_user_id",id).order("created_at",{ascending:false}).limit(100),
-    db.from("driver_payout_requests").select("id,amount_cents,status,bank_name,account_holder,account_type,branch_code,created_at,reviewed_at,paid_at").eq("driver_user_id",id).order("created_at",{ascending:false}).limit(30)
+    db.from("driver_reward_ledger").select("event_type,amount_cents,description,created_at").eq("driver_user_id",id).order("created_at",{ascending:false}).limit(100),
+    db.from("driver_payout_requests").select("id,amount_cents,status,bank_name,account_holder,account_type,branch_code,created_at,reviewed_at,paid_at").eq("driver_user_id",id).order("created_at",{ascending:false}).limit(30),
+    db.rpc("get_driver_available_balance",{p_driver_id:id})
    ]);
-   if(le||re)return reply(500,{error:"payout_history_failed"});
-   const balance=(ledger??[]).reduce((n,x)=>n+Number(x.amount_cents),0);
-   return reply(200,{available_cents:balance,ledger:ledger??[],requests:requests??[]});
+   if(le||we||re||be)return reply(500,{error:"payout_history_failed"});
+   const combined=[...(ledger??[]),...(rewards??[])].sort((a,b)=>new Date(b.created_at).getTime()-new Date(a.created_at).getTime()).slice(0,100);
+   return reply(200,{available_cents:Number(balance??0),ledger:combined,requests:requests??[]});
   }
   const raw=await req.text();if(raw.length>4096)return reply(413,{error:"request_too_large"});
   let b:Record<string,unknown>;try{b=JSON.parse(raw)}catch{return reply(400,{error:"invalid_json"})}
