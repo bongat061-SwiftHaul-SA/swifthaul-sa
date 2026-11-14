@@ -103,6 +103,7 @@
     '.swift-booking-actions #submit{min-height:46px!important;border-radius:11px!important;background:#142d23!important;font-size:12px!important}',
     '@media(max-width:650px){#delivery-map-stage{height:430px!important;min-height:390px!important;max-height:58svh!important;margin:0 -4px 16px!important;border-radius:15px!important}.swift-location-sheet{left:8px!important;right:8px!important;bottom:8px!important;max-height:76%!important;padding:11px 12px 10px!important;border-radius:15px!important}.swift-sheet-head h3{font-size:14px!important}.swift-sheet-head p{font-size:9px!important}.swift-route-steps{gap:5px!important;padding:5px 7px!important;font-size:7px!important}.swift-location-fields{gap:4px!important}.swift-location-fields input{height:37px!important;min-height:37px!important;font-size:11px!important}.swift-sheet-tools{gap:5px!important}.swift-sheet-tools button{min-height:29px!important;padding:5px 7px!important;font-size:8px!important}.swift-pin-meta{font-size:8px!important}.swift-sheet-quote #quote-map{height:110px!important}.swift-booking-actions{margin:8px -12px -10px!important;padding:8px 12px 10px!important}}'
   ].join('\n');
+  style.textContent += '\n.swift-google-check{border:1px solid #d8e1ec!important;background:#f5f8fc!important;color:#18385f!important;border-radius:9px!important;padding:7px 9px!important;font-size:9px!important;font-weight:800!important;min-height:32px!important}\n.swift-google-check:focus-visible{outline:2px solid #4285f4!important;outline-offset:2px!important}\n@media(max-width:650px){.swift-google-check{font-size:8px!important;padding:6px 7px!important}}';
   document.head.append(style);
 
   const pickupWrap = pickup.closest('.field');
@@ -117,7 +118,7 @@
     '<div class="swift-sheet-head"><div><h3>Where should we collect and deliver?</h3><p>Choose an address, then confirm the exact point on the map.</p></div>' +
     '<div class="swift-route-steps" aria-label="Pickup to drop-off"><span class="step-dot"></span><span>Pickup</span><span class="step-line"></span><span class="step-dot drop"></span><span>Drop-off</span></div></div>' +
     '<div class="swift-location-fields"></div>' +
-    '<div class="swift-sheet-tools"><button type="button" id="loc-current" class="swift-current">◎ Use my location</button><button type="button" id="loc-open">Re-centre map</button><a href="https://www.openstreetmap.org/?mlat=-26.32517&amp;mlon=28.19535#map=14/-26.32517/28.19535&amp;layers=T" target="_blank" rel="noopener noreferrer" style="font-size:10px;color:#21664e;font-weight:700">Open transport map ↗</a></div>' +
+    '<div class="swift-sheet-tools"><button type="button" id="loc-current" class="swift-current">◎ Use my location</button><button type="button" id="loc-open">Re-centre map</button><button type="button" id="loc-google-pickup" class="swift-google-check">Verify pickup in Google Maps ↗</button><button type="button" id="loc-google-dropoff" class="swift-google-check">Verify drop-off in Google Maps ↗</button></div>' +
     '<div class="swift-pin-meta"><span>Pin coordinates</span><strong id="loc-coordinates">Choose pickup or drop-off</strong><span>Plus Code</span><strong id="loc-plus-code">Not set</strong></div>' +
     '<p id="loc-status" role="status" aria-live="polite">Search an address or tap the map. Confirm both pins at the exact gate or entrance.</p>' +
     '<p class="swift-geocoder-credit">Address data © OpenStreetMap contributors · Nominatim</p>' +
@@ -397,6 +398,23 @@
     });
     input.insertAdjacentElement('afterend', button);
   }
+
+  function openGoogleMapsFor(key) {
+    const point = state[key];
+    const address = (key === 'pickup' ? pickup : dropoff).value.trim();
+    const query = point && Number.isFinite(point.lat) && Number.isFinite(point.lng)
+      ? point.lat + ',' + point.lng
+      : address;
+    if (!query) {
+      $('loc-status').textContent = 'Enter or select the ' + (key === 'pickup' ? 'pickup' : 'drop-off') + ' address first.';
+      return;
+    }
+    const url = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(query);
+    window.open(url, '_blank', 'noopener,noreferrer');
+    $('loc-status').textContent = 'Google Maps opened in a new tab. Return to SwiftHaul to continue your booking.';
+  }
+  $('loc-google-pickup').addEventListener('click', () => openGoogleMapsFor('pickup'));
+  $('loc-google-dropoff').addEventListener('click', () => openGoogleMapsFor('dropoff'));
 
   $('loc-open').addEventListener('click', () => {
     ensureMap();
