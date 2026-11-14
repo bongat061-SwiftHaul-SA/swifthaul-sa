@@ -162,9 +162,9 @@ const server = http.createServer((req,res)=>{
         await page.waitForFunction(()=>document.querySelector('[data-wizard-count]')?.textContent==='STEP 2 OF 4');
         assert.equal(await page.locator('#cargo-estimator').count(),1,'Customer booking must retain the parcel and vehicle estimator');
         assert.equal(await page.locator('#cargo-vehicle-tag').count(),1,'Customer booking must show its recommended vehicle selector');
-        assert.equal(await page.locator('#quote-breakdown .fare-row').count(),5,'Customer quote must show base fare, included distance, distance adjustment, weight charge and fuel adjustment');
+        assert.equal(await page.locator('#quote-breakdown .fare-row').count(),5,'Customer quote must show the call-out fee, distance rate, distance charge, free loading window and VAT status');
         const breakdownText=await page.locator('#quote-breakdown').textContent();
-        for(const lineItem of ['Base vehicle fare','Distance band multiplier','Distance fare','Weight charge','Fuel adjustment']) assert.ok(breakdownText.includes(lineItem),'Customer quote breakdown must include '+lineItem);
+        for(const lineItem of ['Base call-out fee','Distance rate','Mapped distance charge','Free loading / offloading window','VAT']) assert.ok(breakdownText.includes(lineItem),'Customer quote breakdown must include '+lineItem);
         const next=page.locator('[data-wizard-next]');
         await page.locator('[name="length"]').fill('30');
         await page.locator('[name="width"]').fill('20');
