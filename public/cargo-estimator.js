@@ -41,7 +41,7 @@
   const vehicleSvg = type => {
     const defs = '<defs><linearGradient id="veh-side" x1="0" x2="0.9" y1="0" y2="1"><stop stop-color="#3f8b70"/><stop offset="1" stop-color="#15523d"/></linearGradient><linearGradient id="veh-top" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#a9d2bb"/><stop offset="1" stop-color="#4b9877"/></linearGradient><linearGradient id="veh-glass" x1="0" x2="1"><stop stop-color="#d9eff1"/><stop offset="1" stop-color="#78a8ae"/></linearGradient></defs>';
     if (type === 'bike') return '<svg viewBox="0 0 260 92" aria-label="Illustration of a delivery motorbike">' + defs + '<ellipse cx="132" cy="77" rx="91" ry="7" fill="#dfe8e1"/><circle cx="77" cy="67" r="17" fill="#25352e"/><circle cx="77" cy="67" r="8" fill="#aebbb2"/><circle cx="185" cy="67" r="17" fill="#25352e"/><circle cx="185" cy="67" r="8" fill="#aebbb2"/><path d="m77 66 25-25 29 1 20 25h34" fill="none" stroke="#24634b" stroke-width="8" stroke-linecap="round"/><path d="m113 42 21-15 20 2 13 17-23 6z" fill="url(#veh-side)"/><path d="m128 26 12-12h28l11 14z" fill="#dca65e"/><path d="m140 15 25 0 9 13h-35z" fill="#efc987"/></svg>';
-    if (type === 'van') return '<svg viewBox="0 0 260 92" aria-label="Illustration of a delivery van">' + defs + '<ellipse cx="132" cy="78" rx="103" ry="7" fill="#dfe8e1"/><path d="M40 29q0-8 9-8h108l31 16 20 23v12H40z" fill="url(#veh-side)" stroke="#174b39" stroke-width="1.5"/><path d="M158 22h-39v33h67l-8-17z" fill="url(#veh-top)"/><path d="M164 27h-36v22h53l-7-13z" fill="url(#veh-glass)"/><path d="M43 28h75v38H43z" fill="#2d7658"/><path d="M50 33h61v27H50z" fill="#4b9272"/><path d="M181 39h7l17 20h-24z" fill="#dce8df"/><circle cx="78" cy="69" r="14" fill="#26362e"/><circle cx="78" cy="69" r="6" fill="#aebbb2"/><circle cx="178" cy="69" r="14" fill="#26362e"/><circle cx="178" cy="69" r="6" fill="#aebbb2"/></svg>';
+    if (type === 'van' || type === 'light_commercial' || type === 'one_ton_bakkie') return '<svg viewBox="0 0 260 92" aria-label="Illustration of a delivery van">' + defs + '<ellipse cx="132" cy="78" rx="103" ry="7" fill="#dfe8e1"/><path d="M40 29q0-8 9-8h108l31 16 20 23v12H40z" fill="url(#veh-side)" stroke="#174b39" stroke-width="1.5"/><path d="M158 22h-39v33h67l-8-17z" fill="url(#veh-top)"/><path d="M164 27h-36v22h53l-7-13z" fill="url(#veh-glass)"/><path d="M43 28h75v38H43z" fill="#2d7658"/><path d="M50 33h61v27H50z" fill="#4b9272"/><path d="M181 39h7l17 20h-24z" fill="#dce8df"/><circle cx="78" cy="69" r="14" fill="#26362e"/><circle cx="78" cy="69" r="6" fill="#aebbb2"/><circle cx="178" cy="69" r="14" fill="#26362e"/><circle cx="178" cy="69" r="6" fill="#aebbb2"/></svg>';
     return '<svg viewBox="0 0 260 92" aria-label="Illustration of a delivery truck">' + defs + '<ellipse cx="133" cy="79" rx="111" ry="7" fill="#dfe8e1"/><path d="M24 19h139v49H24z" fill="url(#veh-side)" stroke="#174b39" stroke-width="1.5"/><path d="M33 26h120v34H33z" fill="#4b9272"/><path d="M163 37h42l29 22v10h-71z" fill="url(#veh-side)" stroke="#174b39" stroke-width="1.5"/><path d="M173 42h28l18 16h-46z" fill="url(#veh-glass)"/><path d="M24 19h139l-12 7H33z" fill="url(#veh-top)"/><circle cx="65" cy="70" r="14" fill="#26362e"/><circle cx="65" cy="70" r="6" fill="#aebbb2"/><circle cx="190" cy="70" r="14" fill="#26362e"/><circle cx="190" cy="70" r="6" fill="#aebbb2"/></svg>';
   };
 
@@ -61,7 +61,7 @@
     $('cargo-vehicle-tag').textContent = label || (type ? type.toUpperCase() + ' recommended' : 'Awaiting selection');
     $('cargo-vehicle-visual').innerHTML = type ? vehicleSvg(type) : '<span class="cargo-empty">Select a parcel category to preview a suitable vehicle</span>';
     $('cargo-vehicle-copy').textContent = type
-      ? 'Based on an estimated ' + Number(chargeable).toFixed(1) + ' chargeable kg. Vehicle choice is a guide; dispatch confirms physical fit and access.'
+      ? 'Recommended from the estimated ' + Number(chargeable).toFixed(1) + ' kg payload. No separate weight fee applies; dispatch confirms physical fit and access.'
       : 'Select a parcel category to preview a suitable vehicle.';
   }
 
@@ -101,9 +101,9 @@
     }
     if(weight){weight.value=String(totalWeight);weight.dispatchEvent(new Event('input',{bubbles:true}));}
     const chargeable=Math.max(totalWeight,dims.length*dims.width*dims.height/5000);
-    const type=chargeable<=20?'bike':chargeable<=1000?'van':'truck';
-    $('cargo-estimate-note').textContent=totalPieces+' parcel item(s) across '+new Set(cargoItems.map(item=>item.category)).size+' categories · estimated total '+totalWeight.toFixed(1)+' kg. Combined dimensions are a starting estimate; adjust below if needed.';
-    renderVehicle(type,chargeable);
+    const type=chargeable<=600?'light_commercial':chargeable<=1000?'one_ton_bakkie':chargeable<=3000?'closed_truck':'freight_truck';
+    $('cargo-estimate-note').textContent=totalPieces+' parcel item(s) across '+new Set(cargoItems.map(item=>item.category)).size+' categories · estimated payload '+chargeable.toFixed(1)+' kg including volumetric estimate. No per-item weight charge applies; vehicle selection is based on this estimate.';
+    renderVehicle(type,chargeable,({light_commercial:'Mini-Van / Light Commercial',one_ton_bakkie:'1-Ton Bakkie / Panel Van',closed_truck:'1.5-Ton – 3-Ton Closed Truck',freight_truck:'4-Ton – 8-Ton Freight Truck'})[type]+' recommended');
   }
 
   function chooseCategory(id) {
@@ -112,7 +112,7 @@
     categoriesNode.querySelectorAll('button').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.category===id||cargoItems.some(item=>item.categoryId===button.dataset.category))));
     itemSelect.disabled=false;
     itemSelect.replaceChildren(...selectedCategory.items.map((item,index)=>{
-      const option=document.createElement('option');option.value=String(index);option.textContent=item.name+' · approx. '+item.weight+' kg';return option;
+      const option=document.createElement('option');option.value=String(index);option.textContent=item.name;return option;
     }));
     quantity.disabled=false;quantity.value='1';addItemButton.disabled=false;
     updateLoad();
