@@ -62,7 +62,7 @@ Deno.serve(async (req:Request) => {
       const issueDate=clean(body.share_issue_date,10);
       const status=clean(body.status,16);
       const shareClass=clean(body.share_class,80);
-      const validIssueDate=!issueDate||/^\\d{4}-\\d{2}-\\d{2}$/.test(issueDate);
+      const validIssueDate=!issueDate||/^\d{4}-\d{2}-\d{2}$/.test(issueDate);
       if(!userId||name.length<2||![shares,ownership,amount,committed,received].every(Number.isFinite)||shares<0||ownership<0||ownership>100||amount<0||committed<0||received<0||received>committed||!validIssueDate||!["active","suspended","closed"].includes(status)) return reply(400,{error:"invalid_investor_profile"});
       const {data:saved,error}=await db.from("investor_profiles").update({display_name:name,shares_owned:shares,ownership_percentage:ownership,investment_amount_zar:amount,investment_committed_zar:committed,investment_received_zar:received,share_register_reference:registerRef||null,share_issue_date:issueDate||null,share_class:shareClass||null,status,updated_at:new Date().toISOString()}).eq("user_id",userId).select("id").maybeSingle();
       if(error) return reply(500,{error:"investor_profile_save_failed"});
