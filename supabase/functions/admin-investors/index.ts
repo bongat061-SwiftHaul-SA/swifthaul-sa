@@ -51,10 +51,22 @@ Deno.serve(async (req:Request) => {
       return reply(201,{ok:true,invited:true});
     }
     if(action==="save_profile"){
-      const userId=clean(body.user_id,64), name=clean(body.display_name,160), shares=Number(body.shares_owned), ownership=Number(body.ownership_percentage), amount=Number(body.investment_amount_zar), status=clean(body.status,16), shareClass=clean(body.share_class,80);
-      if(!userId||name.length<2||![shares,ownership,amount,committed,received].every(Number.isFinite)||shares<0||ownership<0||ownership>100||amount<0||committed<0||received<0||received>committed&&committed>0||!["active","suspended","closed"].includes(status)) return reply(400,{error:"invalid_investor_profile"});
-      const {error}=await db.from("investor_profiles").update({display_name:name,shares_owned:shares,ownership_percentage:ownership,investment_amount_zar:amount,investment_committed_zar:committed,investment_received_zar:received,share_register_reference:registerRef||null,share_issue_date:issueDate||null,share_class:shareClass||null,status,updated_at:new Date().toISOString()}).eq("user_id",userId);
+      const userId=clean(body.user_id,64);
+      const name=clean(body.display_name,160);
+      const shares=Number(body.shares_owned);
+      const ownership=Number(body.ownership_percentage);
+      const amount=Number(body.investment_amount_zar);
+      const committed=Number(body.investment_committed_zar ?? 0);
+      const received=Number(body.investment_received_zar ?? 0);
+      const registerRef=clean(body.share_register_reference,120);
+      const issueDate=clean(body.share_issue_date,10);
+      const status=clean(body.status,16);
+      const shareClass=clean(body.share_class,80);
+      const validIssueDate=!issueDate||/^\\d{4}-\\d{2}-\\d{2}$/.test(issueDate);
+      if(!userId||name.length<2||![shares,ownership,amount,committed,received].every(Number.isFinite)||shares<0||ownership<0||ownership>100||amount<0||committed<0||received<0||received>committed||!validIssueDate||!["active","suspended","closed"].includes(status)) return reply(400,{error:"invalid_investor_profile"});
+      const {data:saved,error}=await db.from("investor_profiles").update({display_name:name,shares_owned:shares,ownership_percentage:ownership,investment_amount_zar:amount,investment_committed_zar:committed,investment_received_zar:received,share_register_reference:registerRef||null,share_issue_date:issueDate||null,share_class:shareClass||null,status,updated_at:new Date().toISOString()}).eq("user_id",userId).select("id").maybeSingle();
       if(error) return reply(500,{error:"investor_profile_save_failed"});
+      if(!saved) return reply(404,{error:"investor_profile_not_found"});
       return reply(200,{ok:true});
     }
     if(action==="save_metric"){
