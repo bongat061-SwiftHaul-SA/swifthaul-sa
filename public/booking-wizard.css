@@ -185,3 +185,64 @@ body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift
     max-height:80%!important;
   }
 }
+
+/* Premium navy booking reference: midnight panels, electric-cyan totals and blue actions. */
+body[data-app="customer"] #booking-form{background:linear-gradient(155deg,#071426,#091b31 68%,#0b2440)!important;border:1px solid #1c3d60!important;color:#f4f9ff!important;box-shadow:0 22px 55px #020b18aa!important}
+body[data-app="customer"] #booking-form .booking-wizard-header{border-color:#1b3c60}
+body[data-app="customer"] #booking-form .booking-wizard-kicker{color:#6edcf3}
+body[data-app="customer"] #booking-form .booking-wizard-heading h2{color:#f6fbff}
+body[data-app="customer"] #booking-form [data-wizard-count]{color:#79dff4}
+body[data-app="customer"] #booking-form [data-wizard-hint]{color:#b5cbe0}
+body[data-app="customer"] #booking-form .booking-wizard-progress span{background:#183653}
+body[data-app="customer"] #booking-form .booking-wizard-progress span.is-complete{background:linear-gradient(90deg,#1685ff,#25d9ef)}
+body[data-app="customer"] #booking-form .booking-step>.field,body[data-app="customer"] #booking-form .booking-step>fieldset,body[data-app="customer"] #booking-form .booking-review-card{background:linear-gradient(145deg,#102b49,#0b2038)!important;border:1px solid #214b70!important;color:#f3f8ff!important}
+body[data-app="customer"] #booking-form .booking-step>.field label,body[data-app="customer"] #booking-form .booking-step>fieldset legend{color:#d8eaff!important}
+body[data-app="customer"] #booking-form .booking-step input:not([type=checkbox]):not([type=radio]),body[data-app="customer"] #booking-form .booking-step select,body[data-app="customer"] #booking-form .booking-step textarea{background:#06172b!important;border:1px solid #285276!important;color:#f5fbff!important}
+body[data-app="customer"] #booking-form .booking-step input:focus,body[data-app="customer"] #booking-form .booking-step select:focus,body[data-app="customer"] #booking-form .booking-step textarea:focus{outline:none!important;border-color:#24d8f2!important;box-shadow:0 0 0 3px #24d8f226!important}
+body[data-app="customer"] #booking-form .booking-step input::placeholder,body[data-app="customer"] #booking-form .booking-step textarea::placeholder{color:#829db8}
+body[data-app="customer"] #booking-form .booking-step>fieldset p,body[data-app="customer"] #booking-form .booking-step>.field p{color:#a9c2dc!important}
+body[data-app="customer"] #booking-form .booking-back{background:#102b49!important;border:1px solid #2b628d!important;color:#d9efff!important}
+body[data-app="customer"] #booking-form .booking-next,body[data-app="customer"] #booking-form #submit,body[data-app="customer"] #booking-form #submit-counter-offer,body[data-app="customer"] #delivery-map-stage .swift-continue-booking,body[data-app="customer"] #booking-form #calculate-route,body[data-app="customer"] #cargo-estimator .cargo-add-item{background:linear-gradient(110deg,#0875f5,#18cbe7)!important;border:1px solid #38d9f2!important;color:#041528!important;box-shadow:0 8px 22px #0875f533!important;font-weight:850!important}
+body[data-app="customer"] #booking-form .booking-review-card h3{color:#f5fbff}
+body[data-app="customer"] #booking-form .booking-review-card dt{color:#8fb2d2}
+body[data-app="customer"] #booking-form .booking-review-card dd{color:#f0f8ff}
+body[data-app="customer"] #booking-form .booking-review-card dl>div{border-color:#1e4264}
+body[data-app="customer"] #booking-form .booking-review-note{color:#9ebbd6}
+body[data-app="customer"] #booking-form #delivery-map-stage{background:#07182d!important;border-color:#214b70!important}
+body[data-app="customer"] #booking-form #delivery-map-stage #global-location-map{background:#07182d!important}
+body[data-app="customer"] #booking-form #delivery-map-stage .swift-location-sheet{background:rgba(5,19,38,.97)!important;border:1px solid #245078!important;color:#f1f8ff!important;box-shadow:0 14px 34px #020b18bb!important}
+body[data-app="customer"] #booking-form #delivery-map-stage .swift-sheet-head h3{color:#f5fbff!important}
+body[data-app="customer"] #booking-form #delivery-map-stage .swift-sheet-head p,body[data-app="customer"] #booking-form #delivery-map-stage #loc-status,body[data-app="customer"] #booking-form #delivery-map-stage .swift-geocoder-credit{color:#a8c3de!important}
+body[data-app="customer"] #booking-form #delivery-map-stage .swift-route-steps,body[data-app="customer"] #booking-form #delivery-map-stage .swift-pin-meta{background:#102d4b!important;border:1px solid #28577e!important;color:#b9d5ed!important}
+body[data-app="customer"] #booking-form #delivery-map-stage .swift-pin-meta strong{color:#f3fbff!important}
+body[data-app="customer"] #booking-form #delivery-map-stage .swift-location-fields input{background:#06172b!important;border:1px solid #2b5b82!important;color:#f5fbff!important}
+body[data-app="customer"] #booking-form #delivery-map-stage .swift-sheet-tools button,body[data-app="customer"] #booking-form #delivery-map-stage .swift-pin-button,body[data-app="customer"] #booking-form #delivery-map-stage .address-search-button{background:#102b49!important;border:1px solid #2b628d!important;color:#dff3ff!important}
+body[data-app="customer"] #booking-form #delivery-map-stage .swift-more-options{background:#0b2038!important;border:1px solid #245078!important}
+body[data-app="customer"] #booking-form #delivery-map-stage .swift-more-options>summary,body[data-app="customer"] #booking-form #delivery-map-stage .swift-more-content{color:#dceeff!important}
+body[data-app="customer"] #cargo-estimator{background:linear-gradient(150deg,#0b2038,#07182d)!important;border:1px solid #245078!important;color:#f1f8ff!important}
+body[data-app="customer"] #cargo-estimator h3{color:#f4fbff!important}
+body[data-app="customer"] #cargo-estimator .cargo-intro,body[data-app="customer"] #cargo-estimator label{color:#a9c8e4!important}
+body[data-app="customer"] #cargo-estimator .cargo-category{background:#102b49!important;border:1px solid #28577e!important;color:#e8f5ff!important}
+body[data-app="customer"] #cargo-estimator .cargo-category[aria-pressed=true]{background:#10395a!important;border:2px solid #24d8f2!important;box-shadow:0 0 0 3px #24d8f21c!important;color:#fff!important}
+body[data-app="customer"] #cargo-estimator select,body[data-app="customer"] #cargo-estimator input{background:#06172b!important;border:1px solid #28577e!important;color:#f4fbff!important}
+body[data-app="customer"] #cargo-estimator .cargo-selected-row,body[data-app="customer"] #cargo-estimator .cargo-vehicle{background:#102b49!important;border:1px solid #28577e!important;color:#eaf6ff!important}
+body[data-app="customer"] #cargo-estimator .cargo-vehicle-head strong{color:#f4fbff!important}
+body[data-app="customer"] #cargo-estimator .cargo-vehicle-head span{background:#153c5c!important;color:#5fe4f7!important;border:1px solid #28799c}
+body[data-app="customer"] #cargo-estimator .cargo-vehicle-copy,body[data-app="customer"] #cargo-estimator .cargo-estimate-note{color:#a9c8e4!important}
+body[data-app="customer"] #cargo-estimator .cargo-estimate-note{background:#0e2945!important;border-color:#28577e!important}
+body[data-app="customer"] #booking-form #quote-result{background:linear-gradient(150deg,#0a203a,#06172b)!important;border:1px solid #1b80ad!important;border-radius:20px!important;box-shadow:inset 0 1px 0 #ffffff0b,0 14px 35px #020b1880!important}
+body[data-app="customer"] #booking-form #quote-result h3{color:#f4fbff!important;font-size:17px}
+body[data-app="customer"] #booking-form #quote-result .quote-totals{padding:14px 15px 17px!important;border:1px solid #22557a!important;border-radius:15px!important;background:#0d2a47!important}
+body[data-app="customer"] #booking-form #quote-result .quote-totals span{color:#9fc4e3!important}
+body[data-app="customer"] #booking-form #quote-distance{color:#d9f4ff!important;font-size:23px!important;font-weight:850}
+body[data-app="customer"] #booking-form #quote-price{color:#3ce3f6!important;font-size:clamp(32px,8vw,44px)!important;font-weight:900!important;text-shadow:0 0 22px #22d5ef33}
+body[data-app="customer"] #booking-form #quote-load,body[data-app="customer"] #booking-form #quote-band,body[data-app="customer"] #booking-form #quote-locations,body[data-app="customer"] #booking-form #quote-map-note{color:#a8c4df!important}
+body[data-app="customer"] #booking-form #quote-breakdown{display:grid;gap:0;margin:13px 0 8px;padding:9px 13px;background:#07182d;border:1px solid #1e4a6d;border-radius:14px}
+body[data-app="customer"] #booking-form #quote-breakdown .fare-row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #1a3c5c;color:#a9c6e1;font-size:12px}
+body[data-app="customer"] #booking-form #quote-breakdown .fare-row:last-child{border-bottom:0}
+body[data-app="customer"] #booking-form #quote-breakdown .fare-row strong{color:#f0f9ff;font-size:12px;font-weight:800;text-align:right;white-space:nowrap}
+body[data-app="customer"] #booking-form #quote-breakdown .fare-row.fuel strong{color:#7ee8f5}
+body[data-app="customer"] #booking-form #quote-map{border:1px solid #245078;border-radius:14px}
+body[data-app="customer"] #booking-form #quote-status{color:#a9c8e4!important}
+body[data-app="customer"] #booking-form .customer-terms-acknowledgement{background:#0d2742!important}
+@media(max-width:600px){body[data-app="customer"] #booking-form #quote-result{padding:13px!important}body[data-app="customer"] #booking-form #quote-result .quote-totals{gap:8px;padding:12px!important}body[data-app="customer"] #booking-form #quote-distance{font-size:19px!important}body[data-app="customer"] #booking-form #quote-price{font-size:31px!important}body[data-app="customer"] #booking-form #quote-breakdown .fare-row{font-size:11px;padding:8px 0}}
