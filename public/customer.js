@@ -56,13 +56,13 @@ form.addEventListener('input', event => {if(['pickup','dropoff'].includes(event.
 form.addEventListener('change', event => {if (['weight','length','width','height','vehicle'].includes(event.target.name)) resetQuote();});
 function whatsapp(order) {
   const text = `*SWIFTHAUL SA DISPATCH*
-*Order:* \${order.waybill}
-*Pickup:* \${order.pickup}
-*Drop:* \${order.dropoff}
-*Recipient & notes:* \${order.recipient}
-*Vehicle:* \${order.load?.truckClass || order.vehicle.toUpperCase()}\${order.load ? '\n*Estimated payload:* '+mass(order.load.chargeable)+' kg\n*Distance charge:* '+money(order.distance_fee) : ''}
-*Outbound fee:* \${money(order.price)}
-*Payment:* \${order.paid_at?'Confirmed via '+order.payment_source:order.payment_source==='pay_later'?'Pay later':order.payment_method==='cash'?'Cash requested (unconfirmed)':'Arrange with dispatch'}\${order.counter_offer?'\n*Counteroffer:* '+money(order.counter_offer)+' · '+order.counter_offer_status:''}\${order.scheduled_at?'\n*Scheduled pickup:* '+localTime(order.scheduled_at):''}\${order.return_address?'\n*Return request (separate quote):* '+order.return_address:''}\${order.return_at?'\n*Requested return:* '+localTime(order.return_at):''}`;
+*Order:* ${order.waybill}
+*Pickup:* ${order.pickup}
+*Drop:* ${order.dropoff}
+*Recipient & notes:* ${order.recipient}
+*Vehicle:* ${order.load?.truckClass || order.vehicle.toUpperCase()}${order.load ? '\n*Estimated payload:* '+mass(order.load.chargeable)+' kg\n*Distance charge:* '+money(order.distance_fee) : ''}
+*Outbound fee:* ${money(order.price)}
+*Payment:* ${order.paid_at?'Confirmed via '+order.payment_source:order.payment_source==='pay_later'?'Pay later':order.payment_method==='cash'?'Cash requested (unconfirmed)':'Arrange with dispatch'}${order.counter_offer?'\n*Counteroffer:* '+money(order.counter_offer)+' · '+order.counter_offer_status:''}${order.scheduled_at?'\n*Scheduled pickup:* '+localTime(order.scheduled_at):''}${order.return_address?'\n*Return request (separate quote):* '+order.return_address:''}${order.return_at?'\n*Requested return:* '+localTime(order.return_at):''}`;
   return `https://wa.me/27615083880?text=${encodeURIComponent(text)}`;
 }
 function addOrder(order, prepend = false) {
