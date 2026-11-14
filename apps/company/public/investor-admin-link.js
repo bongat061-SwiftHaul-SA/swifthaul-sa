@@ -1,0 +1,1 @@
+(()=>{const nav=document.querySelector('.section-links');if(!nav||nav.querySelector('[data-page="investors"]'))return;const link=document.createElement('a');link.href='investor-admin.html';link.dataset.page='investors';link.textContent='Investor Management';nav.append(link);})();
