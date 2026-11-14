@@ -133,6 +133,9 @@ const server = http.createServer((req,res)=>{
         // Guest preview opens on Home; explicitly enter the dedicated booking page.
         await page.locator('.customer-book-cta').click();
         await page.locator('#new-delivery').waitFor({state:'visible'});
+        assert.equal(await page.locator('[data-wizard-next]').isVisible(),true,'Customer address stage must show a visible Continue action.');
+        assert.equal(await page.locator('#delivery-map-stage #global-location-map').count(),1,'Customer address stage must show the map above its address fields.');
+        assert.ok(await page.locator('#delivery-map-stage').evaluate(el=>el.querySelector('#global-location-map').compareDocumentPosition(el.querySelector('#custPickup')) & Node.DOCUMENT_POSITION_FOLLOWING),'The map must appear before the pickup and drop-off inputs.');
         await page.evaluate(()=>{
           const form=document.querySelector('#booking-form');
           const values={
@@ -156,9 +159,9 @@ const server = http.createServer((req,res)=>{
             input.dispatchEvent(new Event('input',{bubbles:true}));
             input.dispatchEvent(new Event('change',{bubbles:true}));
           }
-          document.dispatchEvent(new CustomEvent('swift-haul:locations-confirmed'));
+          // Continue is now the wizard's primary action; it validates both Plus Codes before advancing.
         });
-        await page.locator('[data-wizard-count]').waitFor();
+        await page.locator('[data-wizard-next]').click();
         await page.waitForFunction(()=>document.querySelector('[data-wizard-count]')?.textContent==='STEP 2 OF 4');
         assert.equal(await page.locator('#cargo-estimator').count(),1,'Customer booking must retain the parcel and vehicle estimator');
         assert.equal(await page.locator('#cargo-vehicle-tag').count(),1,'Customer booking must show its recommended vehicle selector');
