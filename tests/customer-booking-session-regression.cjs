@@ -42,5 +42,5 @@ assert.ok(indexHtml.includes('customer-simple-estimator.css?v=20261114-navy-book
 assert.ok(indexHtml.includes('name="city"') && indexHtml.includes('name="province"'), 'Root Customer entry must preserve required signup location fields.');
 assert.ok(bookingWizardTheme.includes('#071426') && bookingWizardTheme.includes('#3ce3f6') && bookingWizardTheme.includes('#0875f5'), 'Customer booking must retain the approved midnight-navy, cyan-total and blue-action theme.');
 assert.ok(estimatorTheme.includes('#0b2038') && bookingWizardTheme.includes('#102b49'), 'Customer vehicle and parcel estimator must use the same premium navy surfaces.');
-assert.ok(customerHtml.includes('id="fare-base"') && customerHtml.includes('id="fare-included"') && customerHtml.includes('id="fare-distance"') && customerHtml.includes('id="fare-weight"') && customerHtml.includes('id="fare-fuel"'), 'Customer quote must show the complete reference fare breakdown.');
+assert.ok(customerHtml.includes('id="fare-base"') && customerHtml.includes('id="fare-multiplier"') && customerHtml.includes('id="fare-distance"') && customerHtml.includes('id="fare-weight"') && customerHtml.includes('id="fare-fuel"'), 'Customer quote must show the complete reference fare breakdown.');
 console.log('Customer session restoration, booking pin metadata and navy premium theme regression checks passed.');
