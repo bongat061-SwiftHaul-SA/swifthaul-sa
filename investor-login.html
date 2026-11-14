@@ -37,18 +37,41 @@ $('year').textContent=new Date().getFullYear();
 function status(message,error=false){$('loginStatus').textContent=message;$('loginStatus').className='mt-4 min-h-5 text-sm '+(error?'text-rose-300':'text-slate-400')}
 function metricCard(row){const card=document.createElement('article');card.className='rounded-xl border border-slate-700 bg-[#090d16] p-4';const label=document.createElement('p');label.className='text-xs text-slate-400';label.textContent=row.metric_label;const value=document.createElement('p');value.className='mt-2 text-xl font-black text-white';value.textContent=row.value_format==='currency'?money(row.metric_value):row.value_format==='percent'?Number(row.metric_value).toLocaleString('en-ZA',{maximumFractionDigits:2})+'%':Number(row.metric_value).toLocaleString('en-ZA');const period=document.createElement('p');period.className='mt-1 text-[11px] text-slate-500';period.textContent=row.period_label||'Latest published';card.append(label,value,period);return card}
 function updateCard(row){const card=document.createElement('article');card.className='rounded-xl border border-slate-700 bg-[#090d16] p-4';const title=document.createElement('h4');title.className='font-bold text-white';title.textContent=row.title;const date=document.createElement('p');date.className='mt-1 text-[11px] text-sky-300';date.textContent=new Date(row.published_at).toLocaleDateString('en-ZA',{year:'numeric',month:'short',day:'numeric'});const body=document.createElement('p');body.className='mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-400';body.textContent=row.body;card.append(title,date,body);return card}
-async function loadDashboard(user){$('loginPanel').classList.add('hidden');$('dashboardPanel').classList.remove('hidden');$('investorName').textContent=user.email||'Investor';$('dashboardStatus').textContent='Checking your investor access…';
-const {data:profile,error:profileError}=await supabase.from('investor_profiles').select('display_name,shares_owned,ownership_percentage,investment_amount_zar,investment_committed_zar,investment_received_zar,share_register_reference,share_issue_date,share_class,status').eq('user_id',user.id).maybeSingle();
-if(profileError)throw profileError;if(!profile||profile.status!=='active'){await supabase.auth.signOut();$('dashboardPanel').classList.add('hidden');$('loginPanel').classList.remove('hidden');status('This account is not yet authorised for investor portal access. Please contact SwiftHaul.',true);return}
-$('investorName').textContent=profile.display_name||user.email;$('sharesOwned').textContent=Number(profile.shares_owned||0).toLocaleString('en-ZA')+(profile.share_class?' '+profile.share_class:'');$('ownership').textContent=Number(profile.ownership_percentage||0).toLocaleString('en-ZA',{maximumFractionDigits:4})+'%';$('investmentCommitted').textContent=money(profile.investment_committed_zar);$('investmentReceived').textContent=money(profile.investment_received_zar);$('shareRegister').textContent=[profile.share_register_reference,profile.share_issue_date?'Issued '+profile.share_issue_date:null].filter(Boolean).join(' · ')||'Not yet recorded';
-const [metrics,updates]=await Promise.all([supabase.from('investor_company_metrics').select('metric_label,metric_value,value_format,period_label,display_order').eq('is_published',true).order('display_order'),supabase.from('investor_updates').select('title,body,published_at').eq('is_published',true).order('published_at',{ascending:false}).limit(20)]);
-if(metrics.error)throw metrics.error;if(updates.error)throw updates.error;$('metrics').replaceChildren();$('updates').replaceChildren();
-if(metrics.data.length)metrics.data.forEach(row=>$('metrics').append(metricCard(row)));else $('metrics').textContent='No company performance reports have been published yet.';
-if(updates.data.length)updates.data.forEach(row=>$('updates').append(updateCard(row)));else $('updates').textContent='No investor updates have been published yet.';
-$('dashboardStatus').textContent='Figures and notices shown here are those formally published by SwiftHaul. Please contact the company if you believe your shareholding record needs correction.'}
-$('loginForm').addEventListener('submit',async event=>{event.preventDefault();const button=$('loginButton');button.disabled=true;button.textContent='Signing in…';status('Verifying your account…');try{const {data,error}=await supabase.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;await loadDashboard(data.user)}catch(error){status(error.message||'Sign-in failed. Please try again.',true)}finally{button.disabled=false;button.textContent='Sign in securely'}});
+async function loadDashboard(user){
+  $('dashboardStatus').textContent='Checking your investor access…';
+  const {data:profile,error:profileError}=await supabase.from('investor_profiles').select('display_name,shares_owned,ownership_percentage,investment_amount_zar,investment_committed_zar,investment_received_zar,share_register_reference,share_issue_date,share_class,status').eq('user_id',user.id).maybeSingle();
+  if(profileError) throw profileError;
+  if(!profile||profile.status!=='active'){
+    await supabase.auth.signOut();
+    $('dashboardPanel').classList.add('hidden');
+    $('loginPanel').classList.remove('hidden');
+    status('This account is not yet authorised for investor portal access. Please contact SwiftHaul.',true);
+    return;
+  }
+  $('investorName').textContent=profile.display_name||user.email;
+  $('sharesOwned').textContent=Number(profile.shares_owned||0).toLocaleString('en-ZA')+(profile.share_class?' '+profile.share_class:'');
+  $('ownership').textContent=Number(profile.ownership_percentage||0).toLocaleString('en-ZA',{maximumFractionDigits:4})+'%';
+  $('investmentCommitted').textContent=money(profile.investment_committed_zar);
+  $('investmentReceived').textContent=money(profile.investment_received_zar);
+  $('shareRegister').textContent=[profile.share_register_reference,profile.share_issue_date?'Issued '+profile.share_issue_date:null].filter(Boolean).join(' · ')||'Not yet recorded';
+  const [metrics,updates]=await Promise.all([
+    supabase.from('investor_company_metrics').select('metric_label,metric_value,value_format,period_label,display_order').eq('is_published',true).order('display_order'),
+    supabase.from('investor_updates').select('title,body,published_at').eq('is_published',true).order('published_at',{ascending:false}).limit(20)
+  ]);
+  if(metrics.error) throw metrics.error;
+  if(updates.error) throw updates.error;
+  $('metrics').replaceChildren();$('updates').replaceChildren();
+  if(metrics.data.length) metrics.data.forEach(row=>$('metrics').append(metricCard(row)));
+  else $('metrics').textContent='No company performance reports have been published yet.';
+  if(updates.data.length) updates.data.forEach(row=>$('updates').append(updateCard(row)));
+  else $('updates').textContent='No investor updates have been published yet.';
+  $('loginPanel').classList.add('hidden');
+  $('dashboardPanel').classList.remove('hidden');
+  $('dashboardStatus').textContent='Figures and notices shown here are those formally published by SwiftHaul. Please contact the company if you believe your shareholding record needs correction.';
+}
+$('loginForm').addEventListener('submit',async event=>{event.preventDefault();const button=$('loginButton');button.disabled=true;button.textContent='Signing in…';status('Verifying your account…');try{const {data,error}=await supabase.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;await loadDashboard(data.user)}catch(error){console.error('Investor dashboard load failed',error);$('dashboardPanel').classList.add('hidden');$('loginPanel').classList.remove('hidden');status('We could not load your investor account. Please try again or contact SwiftHaul support.',true)}finally{button.disabled=false;button.textContent='Sign in securely'}});
 $('resetButton').addEventListener('click',async()=>{const email=$('email').value.trim();if(!email){status('Enter your investor email address first.',true);return}status('Sending password reset instructions…');const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:location.origin+'/investor-login.html'});status(error?error.message:'If this email belongs to an account, password reset instructions will be sent.');});
 $('signOutButton').addEventListener('click',async()=>{await supabase.auth.signOut();$('dashboardPanel').classList.add('hidden');$('loginPanel').classList.remove('hidden');$('password').value='';status('You have signed out.')});
-const {data:{session}}=await supabase.auth.getSession();if(session?.user){try{await loadDashboard(session.user)}catch(error){$('dashboardStatus').textContent=error.message||'Unable to load your investor data.'}}
+const {data:{session}}=await supabase.auth.getSession();if(session?.user){try{await loadDashboard(session.user)}catch(error){console.error('Investor dashboard restore failed',error);$('dashboardPanel').classList.add('hidden');$('loginPanel').classList.remove('hidden');status('We could not load your investor account. Please sign in again or contact SwiftHaul support.',true)}}
 </script>
 </body></html>
