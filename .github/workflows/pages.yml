@@ -7,6 +7,7 @@ on:
       - migration/supabase-github-pages
       - feature/customer-smart-address-estimator
       - feature/secure-driver-live-location
+      - feature/sa-sms-whatsapp-notifications-staging
   workflow_dispatch:
 
 # The existing Pages hostname is shared by the three app paths.
@@ -27,17 +28,33 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Check out source
+      - name: Check out staging source
         uses: actions/checkout@v4
+      - name: Check out production baseline for unchanged platforms
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: production
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Build three independent platform bundles
+      # Build all three platforms from main first. On the approved staging
+      # branch, replace ONLY the Customer bundle with the tested staging build.
+      - name: Build production baseline platforms
+        working-directory: production
         run: npm run build:pages
+      - name: Build staging platform bundles
+        run: npm run build:pages
+      - name: Publish only the corrected staging Customer bundle
+        run: |
+          rm -rf production/dist/customer
+          cp -a dist/customer production/dist/customer
       - name: Verify generated platform entry points
+        working-directory: production
         run: |
           test -f dist/index.html
+          test -f dist/customer/index.html
           test -f dist/customer/customer.html
           test -f dist/driver/index.html
           test -f dist/company/index.html
@@ -46,7 +63,7 @@ jobs:
       - name: Upload built website
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: production/dist
           name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
       - name: Publish website
         id: deployment
