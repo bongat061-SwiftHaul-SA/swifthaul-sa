@@ -3,7 +3,7 @@
 <desc id="desc">SwiftHaul's circular delivery-van emblem and brand message in a vertical mobile banner.</desc>
 <defs><linearGradient id="bgm" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#061426"/><stop offset=".55" stop-color="#0b2848"/><stop offset="1" stop-color="#07111f"/></linearGradient><linearGradient id="cyan" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#67e8f9"/><stop offset="1" stop-color="#0284c7"/></linearGradient><radialGradient id="halo"><stop stop-color="#0ea5e9" stop-opacity=".24"/><stop offset="1" stop-color="#0ea5e9" stop-opacity="0"/></radialGradient></defs>
 <rect width="720" height="900" fill="url(#bgm)"/><circle cx="360" cy="250" r="320" fill="url(#halo)"/>
-<image href="/icon.svg" x="180" y="70" width="360" height="360" preserveAspectRatio="xMidYMid meet"/>
+<image href="/swifthaul-mark.svg" x="180" y="70" width="360" height="360" preserveAspectRatio="xMidYMid meet"/>
 <g text-anchor="middle" font-family="Arial,Helvetica,sans-serif">
  <text x="360" y="525" fill="#fff" font-size="66" font-weight="900" letter-spacing="-2">SwiftHaul <tspan fill="#38bdf8">SA</tspan></text>
  <text x="360" y="590" fill="#dbeafe" font-size="27" font-weight="800" letter-spacing="4">MOVE • DELIVER • GROW</text>
