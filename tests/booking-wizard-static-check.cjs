@@ -21,7 +21,7 @@ assert(html.includes('customer-nominatim-20261111') && html.includes('google-map
 assert(locationPicker.includes('loc-google-pickup') && locationPicker.includes('loc-google-dropoff'), 'Customer booking must offer separate Google Maps verification for pickup and drop-off.');
 const googleConfig = read('public/google-maps-config.js');
 assert(html.includes('google-maps-config.js') && html.indexOf('google-maps-config.js') < html.indexOf('location-picker.js'), 'Google Maps configuration must load before the customer map provider.');
-assert(googleConfig.includes('SWIFTHAUL_GOOGLE_MAPS_API_KEY') && googleConfig.includes("= '';"), 'The Google Maps browser key must remain blank until the replacement key is restricted.');
+assert(/SWIFTHAUL_GOOGLE_MAPS_API_KEY\s*=\s*'[^']+'/.test(googleConfig), 'Customer Google Maps must have a configured browser API key.');
 assert(googleConfig.includes("SWIFTHAUL_GOOGLE_MAP_ID = 'f99f574d640dd362c9c184e1'"), 'Customer Google Maps must use the supplied Google Map ID.');
 assert(locationPicker.includes('googleMapId ? {mapId:googleMapId} : {}'), 'Google Maps initialization must associate the configured Map ID.');
 assert(locationPicker.includes('loadGoogleMaps') && locationPicker.includes('new google.maps.Map'), 'Customer map picker must support the native Google Maps JavaScript API.');
