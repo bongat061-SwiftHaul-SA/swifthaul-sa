@@ -365,11 +365,38 @@
     document.dispatchEvent(new CustomEvent('swift-haul:locations-confirmed'));
   });
 
+  // Keep Plus Code generation reliable even when the optional CDN library is blocked
+  // by a mobile browser, content blocker, or slow connection. This implements the
+  // standard 10-character Open Location Code pair encoding as a local fallback.
+  function encodePlusCode(lat, lng, codeLength = 10) {
+    const library = window.OpenLocationCode;
+    if (library && typeof library.encode === 'function') {
+      try { return library.encode(lat, lng, codeLength); } catch { /* use local encoder */ }
+    }
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90) return '';
+    const alphabet = '23456789CFGHJMPQRVWX';
+    let latitude = Math.min(180 - Number.EPSILON * 180, Math.max(0, lat + 90));
+    let longitude = ((lng + 180) % 360 + 360) % 360;
+    let resolution = 20;
+    let code = '';
+    const pairs = Math.max(1, Math.min(5, Math.floor(codeLength / 2)));
+    for (let i = 0; i < pairs; i += 1) {
+      const latDigit = Math.min(19, Math.floor(latitude / resolution));
+      const lngDigit = Math.min(19, Math.floor(longitude / resolution));
+      code += alphabet[latDigit] + alphabet[lngDigit];
+      latitude -= latDigit * resolution;
+      longitude -= lngDigit * resolution;
+      resolution /= 20;
+    }
+    if (code.length < 8) code = code.padEnd(8, '0');
+    return code.length > 8 ? code.slice(0, 8) + '+' + code.slice(8) : code.slice(0, 8) + '+';
+  }
+
   function saveLocation(input, lat, lng, message) {
     if(!Number.isFinite(lat)||!Number.isFinite(lng)) return;
     const key=input.name==='pickup'?'pickup':'dropoff';
     state[key]={...state[key],lat,lng};
-    const plusCode=window.OpenLocationCode?.encode(lat,lng,10)||'';
+    const plusCode=encodePlusCode(lat,lng,10);
     Object.entries({latitude:lat,longitude:lng,plus_code:plusCode,geohash:geohash(lat,lng)}).forEach(([suffix,value])=>{hiddenField(key+'_'+suffix).value=String(value);});
     const pinButton=input.parentElement.querySelector('.swift-pin-button');
     if(pinButton){pinButton.setAttribute('aria-pressed','true');pinButton.textContent='✓ Pin confirmed';}
