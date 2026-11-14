@@ -47,7 +47,7 @@ jobs:
       - name: Check Customer booking and session regressions
         run: node tests/customer-booking-session-regression.cjs
       - name: Check booking wizard and Google Maps integration
-        run: node tests/booking-wizard-static-check.cjs
+        run: node --check public/location-picker.js && node tests/booking-wizard-static-check.cjs
       - name: Package isolated staging browser preview
         uses: actions/upload-artifact@v4
         with:
