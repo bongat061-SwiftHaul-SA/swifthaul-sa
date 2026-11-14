@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 900" role="img" aria-labelledby="title desc">
+<title id="title">SwiftHaul South Africa — Move, Deliver, Grow</title>
+<desc id="desc">SwiftHaul's circular delivery-van emblem and brand message in a vertical mobile banner.</desc>
+<defs><linearGradient id="bgm" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#061426"/><stop offset=".55" stop-color="#0b2848"/><stop offset="1" stop-color="#07111f"/></linearGradient><linearGradient id="cyan" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#67e8f9"/><stop offset="1" stop-color="#0284c7"/></linearGradient><radialGradient id="halo"><stop stop-color="#0ea5e9" stop-opacity=".24"/><stop offset="1" stop-color="#0ea5e9" stop-opacity="0"/></radialGradient></defs>
+<rect width="720" height="900" fill="url(#bgm)"/><circle cx="360" cy="250" r="320" fill="url(#halo)"/>
+<image href="/icon.svg" x="180" y="70" width="360" height="360" preserveAspectRatio="xMidYMid meet"/>
+<g text-anchor="middle" font-family="Arial,Helvetica,sans-serif">
+ <text x="360" y="525" fill="#fff" font-size="66" font-weight="900" letter-spacing="-2">SwiftHaul <tspan fill="#38bdf8">SA</tspan></text>
+ <text x="360" y="590" fill="#dbeafe" font-size="27" font-weight="800" letter-spacing="4">MOVE • DELIVER • GROW</text>
+ <rect x="150" y="630" width="420" height="5" rx="2.5" fill="url(#cyan)"/>
+ <text x="360" y="690" fill="#9fb4ca" font-size="19" font-weight="700" letter-spacing="2">SMARTER LOGISTICS.</text>
+ <text x="360" y="724" fill="#9fb4ca" font-size="19" font-weight="700" letter-spacing="2">A STRONGER SOUTH AFRICA.</text>
+</g>
+<path d="M100 820H620" stroke="#38bdf8" stroke-opacity=".25" stroke-width="2"/>
+<g transform="translate(230 850)"><path d="M0 0h260" stroke="#16a34a" stroke-width="7"/><path d="M0 12h260" stroke="#fff" stroke-width="7"/><path d="M0 24h260" stroke="#de3831" stroke-width="7"/></g>
+</svg>

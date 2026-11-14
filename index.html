@@ -1,30 +1,222 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#173d31">
-  <meta name="description" content="SwiftHaul SA customer, driver and company platforms">
-  <title>SwiftHaul SA · Platforms</title>
+  <meta name="theme-color" content="#090d16">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SwiftHaul SA">
+  <meta name="description" content="SwiftHaul South Africa — on-demand motorbike courier, bakkie, panel van and commercial truck deliveries.">
+  <title>SwiftHaul South Africa | Courier, Bakkie & Freight</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { colors: {
+        brand: { 400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7' },
+        darkbg: '#090d16', cardbg: '#111827', borderdark: '#263244'
+      }, boxShadow: { glow: '0 18px 60px rgba(14,165,233,.16)' } } }
+    };
+  </script>
   <style>
-    :root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#18382e;background:#f3f5f0}
-    body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;box-sizing:border-box}
-    main{width:min(760px,100%)}h1{font-size:clamp(2rem,6vw,3.5rem);margin:.3em 0}
-    p{line-height:1.6;color:#52645b}.apps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin:32px 0}
-    a.card{display:block;padding:24px;border:1px solid #d6dfd8;border-radius:18px;background:#fff;color:inherit;text-decoration:none}
-    a.card:hover{border-color:#527a68}a.card strong{font-size:1.2rem}small{color:#66786d}
+    html{color-scheme:dark}body{background:#090d16}
+    .glass{background:rgba(17,24,39,.82);backdrop-filter:blur(18px)}
+    .grid-glow{background-image:linear-gradient(rgba(148,163,184,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,.045) 1px,transparent 1px);background-size:44px 44px}
+    .field{width:100%;border:1px solid #334155;background:#090d16;border-radius:.75rem;padding:.8rem .9rem;color:white;outline:none}
+    .field:focus{border-color:#38bdf8;box-shadow:0 0 0 3px rgba(56,189,248,.12)}
+    .eyebrow{letter-spacing:.16em}
+    #sh-chat-launcher{position:fixed;right:1rem;bottom:1rem;z-index:80;border:1px solid #38bdf8;border-radius:999px;background:#0284c7;color:#06111f;padding:.8rem 1.1rem;font-weight:900;box-shadow:0 14px 42px #0008}#sh-chat-panel{position:fixed;right:1rem;bottom:5.5rem;z-index:81;display:none;flex-direction:column;width:min(24rem,calc(100vw - 2rem));height:min(39rem,calc(100dvh - 7rem));overflow:hidden;border:1px solid #334155;border-radius:1.25rem;background:#0f172a;box-shadow:0 24px 80px #0009}#sh-chat-panel[data-open=true]{display:flex}.sh-chat-scroll{flex:1;overflow:auto;padding:1rem}.sh-chat-bubble{max-width:90%;white-space:pre-wrap;border:1px solid #334155;border-radius:1rem;background:#1e293b;padding:.7rem .85rem;font-size:.82rem;line-height:1.5;color:#e2e8f0}.sh-chat-bubble.user{margin-left:auto;background:#082f49;border-color:#0369a1}.sh-chat-chip{border:1px solid #334155;border-radius:999px;padding:.45rem .7rem;font-size:.72rem;color:#bae6fd;background:#0b1220}#sh-chat-input{min-width:0;flex:1;border:1px solid #334155;border-radius:.75rem;background:#090d16;padding:.7rem;color:white;font-size:.85rem}@media(max-width:420px){#sh-chat-panel{right:.5rem;bottom:5rem;width:calc(100vw - 1rem);height:min(39rem,calc(100dvh - 6.5rem))}}
+    dialog{max-width:min(42rem,calc(100% - 2rem));border:1px solid #334155;border-radius:1.25rem;background:#111827;color:#e5e7eb;padding:1.5rem}
+    dialog::backdrop{background:rgba(2,6,23,.78);backdrop-filter:blur(5px)}
   </style>
 </head>
-<body>
-  <main>
-    <p>SWIFTHAUL SOUTH AFRICA</p>
-    <h1>Move work forward.</h1>
-    <p>Choose your SwiftHaul platform. Customer, Driver and Company Admin workspaces are published here and connect to the shared SwiftHaul backend.</p>
-    <div class="apps">
-      <a class="card" href="./public/customer.html"><strong>Customer website</strong><p>Book and track deliveries, manage your customer account.</p><small>Open customer platform →</small></a>
-      <a class="card" href="./apps/driver/public/index.html"><strong>Driver workspace</strong><p>Driver registration, verification status and delivery progress.</p><small>Open driver app →</small></a>
-      <a class="card" href="./apps/company/public/index.html"><strong>Company workspace</strong><p>Dispatch operations and driver application review.</p><small>Open company app →</small></a>
+<body class="font-sans antialiased text-slate-100 selection:bg-sky-500 selection:text-slate-950">
+  <header class="sticky top-0 z-40 border-b border-slate-800/80 bg-[#090d16]/90 backdrop-blur-xl">
+    <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <a href="#" class="flex items-center gap-3" aria-label="SwiftHaul home">
+        <img src="/icon.svg" alt="" class="h-10 w-10 rounded-full shadow-glow" width="40" height="40">
+        <span class="text-lg font-extrabold tracking-tight text-white">Swift<span class="text-sky-400">Haul</span><span class="ml-2 hidden rounded border border-sky-400/20 bg-sky-400/10 px-2 py-1 text-[9px] font-bold uppercase tracking-widest text-sky-300 sm:inline">South Africa</span></span>
+      </a>
+      <nav class="hidden items-center gap-7 text-sm font-medium text-slate-300 md:flex">
+        <a class="transition hover:text-white" href="#quote">Instant quote</a>
+        <a class="transition hover:text-white" href="#fleet">Vehicles</a>
+        <a class="transition hover:text-white" href="#features">Why SwiftHaul</a>
+        <a class="transition hover:text-white" href="#partners">Invest &amp; Partner</a>
+      </nav>
+      <div class="flex items-center gap-2 sm:gap-3">
+        <a href="https://api.github.com/repos/bongat061-SwiftHaul-SA/swifthaul-sa/actions/artifacts/14036000439/zip?utm_source=chatgpt.com" class="hidden rounded-lg px-3 py-2 text-sm font-semibold text-slate-300 transition hover:text-white sm:inline-flex">Download customer app</a>
+        <a href="https://api.github.com/repos/bongat061-SwiftHaul-SA/swifthaul-sa/actions/artifacts/14035151713/zip?utm_source=chatgpt.com" class="rounded-lg border border-sky-400/30 bg-sky-400/10 px-3 py-2 text-xs font-bold text-sky-300 transition hover:bg-sky-400/20 sm:text-sm">Download driver app</a>
+        <a href="#quote" class="rounded-lg bg-sky-500 px-3.5 py-2 text-xs font-extrabold text-slate-950 shadow-glow transition hover:bg-sky-400 sm:text-sm">Send now</a>
+        <details class="relative md:hidden">
+          <summary aria-label="Open site navigation" class="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-lg border border-slate-700 text-xl text-white">☰</summary>
+          <nav class="absolute right-0 top-12 z-50 flex w-56 flex-col gap-1 rounded-xl border border-slate-700 bg-slate-900 p-2 text-sm text-slate-200 shadow-2xl">
+            <a class="rounded-lg px-3 py-3 hover:bg-slate-800" href="#quote">Instant quote</a>
+            <a class="rounded-lg px-3 py-3 hover:bg-slate-800" href="#fleet">Vehicles</a>
+            <a class="rounded-lg px-3 py-3 hover:bg-slate-800" href="#features">Why SwiftHaul</a>
+            <a class="rounded-lg px-3 py-3 hover:bg-slate-800" href="#partners">Invest &amp; Partner</a>
+            <a class="rounded-lg px-3 py-3 hover:bg-slate-800" href="https://api.github.com/repos/bongat061-SwiftHaul-SA/swifthaul-sa/actions/artifacts/14036000439/zip?utm_source=chatgpt.com">Download customer app</a>
+            <a class="rounded-lg px-3 py-3 hover:bg-slate-800" href="https://api.github.com/repos/bongat061-SwiftHaul-SA/swifthaul-sa/actions/artifacts/14035151713/zip?utm_source=chatgpt.com">Download driver app</a>
+          </nav>
+        </details>
+      </div>
     </div>
+  </header>
+
+  <main>
+    <section class="relative isolate overflow-hidden border-b border-slate-800/80">
+      <div class="grid-glow absolute inset-0 -z-20 opacity-70"></div>
+      <div class="absolute -right-40 -top-40 -z-10 h-[34rem] w-[34rem] rounded-full bg-sky-500/10 blur-3xl"></div>
+      <div class="absolute -bottom-48 -left-40 -z-10 h-[28rem] w-[28rem] rounded-full bg-emerald-500/10 blur-3xl"></div>
+      <div class="mx-auto grid max-w-7xl items-center gap-12 px-4 py-16 sm:px-6 lg:grid-cols-12 lg:px-8 lg:py-24">
+        <div class="lg:col-span-7">
+          <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-xs font-bold text-emerald-300">
+            <span class="h-2 w-2 animate-pulse rounded-full bg-emerald-400"></span>
+            Courier and freight solutions across South Africa
+          </div>
+          <h1 class="max-w-3xl text-4xl font-black leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl">Move anything from <span class="bg-gradient-to-r from-sky-300 to-emerald-300 bg-clip-text text-transparent">envelopes to pallets.</span></h1>
+          <p class="mt-6 max-w-2xl text-lg leading-relaxed text-slate-400">Book a motorbike courier, a bakkie or panel van, or a commercial truck. SwiftHaul brings delivery booking, dispatch and trip visibility together in one South African logistics platform.</p>
+          <div class="mt-8 flex flex-wrap gap-3">
+            <a href="#quote" class="rounded-xl bg-sky-500 px-6 py-3.5 text-sm font-extrabold text-slate-950 shadow-glow transition hover:-translate-y-0.5 hover:bg-sky-400">Get an instant estimate <span aria-hidden="true">→</span></a>
+            <a href="https://api.github.com/repos/bongat061-SwiftHaul-SA/swifthaul-sa/actions/artifacts/14036000439/zip?utm_source=chatgpt.com" class="rounded-xl border border-slate-700 bg-slate-900/70 px-6 py-3.5 text-sm font-bold text-white transition hover:border-slate-500">Download customer app</a>
+          </div>
+          <div class="mt-10 grid max-w-xl grid-cols-3 gap-4 border-t border-slate-800 pt-6">
+            <div><p class="text-xl font-black text-white sm:text-2xl">3</p><p class="mt-1 text-xs leading-relaxed text-slate-500">Vehicle categories</p></div>
+            <div><p class="text-xl font-black text-white sm:text-2xl">OTP</p><p class="mt-1 text-xs leading-relaxed text-slate-500">Recipient handover check</p></div>
+            <div><p class="text-xl font-black text-white sm:text-2xl">GPS</p><p class="mt-1 text-xs leading-relaxed text-slate-500">Trip visibility features</p></div>
+          </div>
+        </div>
+
+        <div id="quote" class="lg:col-span-5">
+          <div class="glass rounded-3xl border border-slate-700/80 p-5 shadow-2xl shadow-sky-950/30 sm:p-7">
+            <div class="mb-6">
+              <p class="eyebrow text-[10px] font-extrabold uppercase text-sky-300">Plan your delivery</p>
+              <h2 class="mt-2 text-2xl font-extrabold text-white">Get an accurate delivery quote</h2>
+              <p class="mt-2 text-sm leading-relaxed text-slate-400">Your fare is calculated from the mapped driving route and the parcel’s chargeable weight, so you see a quote based on your actual delivery details.</p>
+            </div>
+            <div class="space-y-3">
+              <div class="flex items-start gap-3 rounded-xl border border-slate-700 bg-[#090d16] p-4"><span class="text-2xl" aria-hidden="true">🏍️</span><div><p class="font-bold text-white">Motorbike</p><p class="mt-1 text-xs leading-relaxed text-slate-400">Small parcels and urgent documents, subject to load limits.</p></div></div>
+              <div class="flex items-start gap-3 rounded-xl border border-slate-700 bg-[#090d16] p-4"><span class="text-2xl" aria-hidden="true">🛻</span><div><p class="font-bold text-white">Bakkie / Panel Van</p><p class="mt-1 text-xs leading-relaxed text-slate-400">Bulky goods, retail stock and larger consignments.</p></div></div>
+              <div class="flex items-start gap-3 rounded-xl border border-slate-700 bg-[#090d16] p-4"><span class="text-2xl" aria-hidden="true">🚚</span><div><p class="font-bold text-white">Commercial Truck</p><p class="mt-1 text-xs leading-relaxed text-slate-400">Heavier commercial loads and palletised freight.</p></div></div>
+            </div>
+            <div class="mt-5 rounded-2xl border border-sky-400/20 bg-sky-400/5 p-4">
+              <p class="text-sm font-bold text-sky-200">How your quote is calculated</p>
+              <p class="mt-2 text-xs leading-relaxed text-slate-400">Confirm both map pins and enter your parcel dimensions and weight in the customer workspace. SwiftHaul then calculates the route-band distance fee and any applicable chargeable-weight fee. The booking screen shows the live fare before you book.</p>
+            </div>
+            <a href="https://api.github.com/repos/bongat061-SwiftHaul-SA/swifthaul-sa/actions/artifacts/14036000439/zip?utm_source=chatgpt.com" class="mt-5 block w-full rounded-xl bg-sky-500 px-4 py-3.5 text-center text-sm font-extrabold text-slate-950 transition hover:bg-sky-400">Open customer app to calculate quote <span aria-hidden="true">→</span></a>
+            <p class="mt-3 text-center text-[10px] leading-relaxed text-slate-500">No sample fare or manual distance estimate is shown here; your exact quote is generated in the booking flow.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="fleet" class="border-b border-slate-800 py-20">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="mx-auto mb-12 max-w-2xl text-center"><p class="eyebrow text-[10px] font-extrabold uppercase text-sky-300">Choose the right fit</p><h2 class="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">The right vehicle for every load.</h2><p class="mt-4 text-slate-400">From urgent documents to bulky goods and palletised freight, choose from three straightforward vehicle categories.</p></div>
+        <div class="grid gap-5 md:grid-cols-3">
+          <article class="rounded-2xl border border-slate-700 bg-cardbg p-6 transition hover:-translate-y-1 hover:border-sky-400/50"><div class="flex items-center justify-between"><span class="text-4xl" aria-hidden="true">🏍️</span><span class="rounded-full bg-slate-800 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Express</span></div><h3 class="mt-5 text-xl font-extrabold text-white">Motorbike Courier</h3><p class="mt-2 text-sm text-slate-400">From <strong class="text-sky-300">R45.00</strong> base fare</p><p class="mt-4 text-sm leading-relaxed text-slate-400">For urgent documents, keys, e-commerce parcels and compact packages up to 15 kg.</p><ul class="mt-5 space-y-2 text-xs text-slate-300"><li>✓ Agile urban deliveries</li><li>✓ Ideal for small, time-sensitive items</li></ul></article>
+          <article class="relative rounded-2xl border border-sky-400/50 bg-gradient-to-b from-sky-950/50 to-cardbg p-6 shadow-glow"><span class="absolute right-5 top-5 rounded-full bg-sky-400 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-slate-950">Popular</span><div class="text-4xl" aria-hidden="true">🛻</div><h3 class="mt-5 text-xl font-extrabold text-white">Bakkie / Panel Van</h3><p class="mt-2 text-sm text-slate-400">From <strong class="text-sky-300">R180.00</strong> base fare</p><p class="mt-4 text-sm leading-relaxed text-slate-400">For furniture, retail stock, hardware, appliances and larger commercial loads.</p><ul class="mt-5 space-y-2 text-xs text-slate-300"><li>✓ Open or enclosed load options</li><li>✓ Suited to bulky and multi-item goods</li></ul></article>
+          <article class="rounded-2xl border border-slate-700 bg-cardbg p-6 transition hover:-translate-y-1 hover:border-sky-400/50"><div class="flex items-center justify-between"><span class="text-4xl" aria-hidden="true">🚚</span><span class="rounded-full bg-slate-800 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Freight</span></div><h3 class="mt-5 text-xl font-extrabold text-white">Commercial Truck</h3><p class="mt-2 text-sm text-slate-400">From <strong class="text-sky-300">R450.00</strong> base fare</p><p class="mt-4 text-sm leading-relaxed text-slate-400">For warehouse transfers, palletised freight and heavier commercial consignments.</p><ul class="mt-5 space-y-2 text-xs text-slate-300"><li>✓ 1.5-ton to 8-ton vehicle options</li><li>✓ Driver and vehicle checks apply</li></ul></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="border-b border-slate-800 py-20">
+      <div class="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
+        <div><p class="eyebrow text-[10px] font-extrabold uppercase text-sky-300">Built around visibility</p><h2 class="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">A clearer way to move goods.</h2><p class="mt-5 max-w-xl leading-relaxed text-slate-400">SwiftHaul brings customer booking, driver workflows and company dispatch into connected workspaces, with delivery details organised from request through handover.</p><a href="https://api.github.com/repos/bongat061-SwiftHaul-SA/swifthaul-sa/actions/artifacts/14036000439/zip?utm_source=chatgpt.com" class="mt-7 inline-flex font-bold text-sky-300 hover:text-sky-200">Download customer app →</a></div>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <article class="rounded-2xl border border-slate-800 bg-cardbg p-5"><span class="text-2xl">📍</span><h3 class="mt-3 font-bold text-white">Trip visibility</h3><p class="mt-2 text-sm leading-relaxed text-slate-400">Delivery status and location features help keep customers and operations informed.</p></article>
+          <article class="rounded-2xl border border-slate-800 bg-cardbg p-5"><span class="text-2xl">🔐</span><h3 class="mt-3 font-bold text-white">Secure handover</h3><p class="mt-2 text-sm leading-relaxed text-slate-400">Recipient PIN verification is part of the delivery handover workflow.</p></article>
+          <article class="rounded-2xl border border-slate-800 bg-cardbg p-5"><span class="text-2xl">🧾</span><h3 class="mt-3 font-bold text-white">Delivery records</h3><p class="mt-2 text-sm leading-relaxed text-slate-400">Keep booking information and available delivery documents together.</p></article>
+          <article class="rounded-2xl border border-slate-800 bg-cardbg p-5"><span class="text-2xl">🛡️</span><h3 class="mt-3 font-bold text-white">Verification-led</h3><p class="mt-2 text-sm leading-relaxed text-slate-400">Driver and vehicle document checks support safer platform operations.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section aria-label="SwiftHaul brand banner" class="border-b border-slate-800 bg-[#070d18] px-4 py-10 sm:px-6 lg:px-8"><div class="mx-auto max-w-7xl overflow-hidden rounded-2xl border border-slate-700/70 bg-[#061426] shadow-glow"><picture class="block w-full"><source media="(max-width: 640px)" srcset="/profile-banner-mobile.svg"><img src="/profile-banner.svg" alt="SwiftHaul South Africa — Move, Deliver, Grow" class="block h-auto w-full object-contain" width="1600" height="600" loading="eager" decoding="async"></picture></div></section>
+
+    <section id="partners" class="border-b border-slate-800 py-20">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="mb-10 max-w-3xl"><p class="eyebrow text-[10px] font-extrabold uppercase text-sky-300">Invest · Partner · Grow</p><h2 class="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">Build the SwiftHaul network with us.</h2><p class="mt-4 text-slate-400">Whether you are an owner-driver, fleet operator, strategic investor or community supporter, explore a way to take part in SwiftHaul’s growth. Investor enquiries are expressions of interest only — this website does not sell shares or accept investment funds.</p></div>
+        <div class="mb-10 grid gap-6 overflow-hidden rounded-3xl border border-sky-400/25 bg-gradient-to-br from-slate-900 to-[#071426] p-5 sm:p-7 lg:grid-cols-2 lg:items-center">
+          <div><p class="eyebrow text-[10px] font-extrabold uppercase text-sky-300">SwiftHaul investor introduction</p><h3 class="mt-3 text-2xl font-black text-white sm:text-3xl">Discover the SwiftHaul opportunity.</h3><p class="mt-3 text-sm leading-relaxed text-slate-400">Watch our introduction to learn more about SwiftHaul SA and the opportunity to connect with us as a potential investor or strategic partner. The video is informational only and is not an offer to invest or a promise of returns.</p><a href="https://youtu.be/r-zTTAPe5Q0" target="_blank" rel="noopener noreferrer" class="mt-5 inline-flex items-center gap-2 rounded-xl border border-sky-400/40 bg-sky-400/10 px-4 py-3 text-sm font-bold text-sky-200 transition hover:bg-sky-400/20">▶ Watch on YouTube <span aria-hidden="true">↗</span></a></div>
+          <div class="overflow-hidden rounded-2xl border border-slate-700 bg-black shadow-2xl"><div class="aspect-video"><iframe class="h-full w-full" src="https://www.youtube-nocookie.com/embed/r-zTTAPe5Q0" title="SwiftHaul SA investor introduction video" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div></div>
+        </div>
+        <div class="grid gap-5 lg:grid-cols-3">
+          <article class="rounded-2xl border border-slate-700 bg-cardbg p-7"><div class="text-3xl">🧑‍✈️</div><h3 class="mt-4 text-2xl font-extrabold text-white">Owner-drivers</h3><p class="mt-3 text-sm leading-relaxed text-slate-400">View delivery opportunities, manage your driver profile and follow trip progress through the driver workspace.</p><ul class="mt-5 space-y-2 text-sm text-slate-300"><li>✓ Dedicated driver portal</li><li>✓ Verification and delivery activity</li><li>✓ Trip and earnings information</li></ul><a href="https://api.github.com/repos/bongat061-SwiftHaul-SA/swifthaul-sa/actions/artifacts/14035151713/zip?utm_source=chatgpt.com" class="mt-7 inline-flex rounded-xl border border-sky-400/30 bg-sky-400/10 px-4 py-3 text-sm font-bold text-sky-300 hover:bg-sky-400/20">Open driver portal →</a></article>
+          <article class="rounded-2xl border border-slate-700 bg-cardbg p-7"><div class="text-3xl">🚚</div><h3 class="mt-4 text-2xl font-extrabold text-white">Fleet partners</h3><p class="mt-3 text-sm leading-relaxed text-slate-400">Transport companies and asset owners can discuss supplying or financing motorbikes, bakkies, panel vans and commercial trucks for potential platform work.</p><ul class="mt-5 space-y-2 text-sm text-slate-300"><li>✓ Vehicle supply and asset partnerships</li><li>✓ Fleet and driver operations</li><li>✓ Commercial terms agreed individually</li></ul><a href="#investor-interest" data-interest-track="fleet_asset" class="mt-7 inline-flex rounded-xl border border-sky-400/30 bg-sky-400/10 px-4 py-3 text-sm font-bold text-sky-300 hover:bg-sky-400/20">Partner with SwiftHaul →</a></article>
+          <article class="rounded-2xl border border-sky-400/40 bg-gradient-to-b from-sky-950/40 to-cardbg p-7"><div class="text-3xl">📈</div><p class="mt-3 text-[10px] font-extrabold uppercase tracking-widest text-sky-300">Investor relations</p><h3 class="mt-2 text-2xl font-extrabold text-white">Invest &amp; grow</h3><p class="mt-3 text-sm leading-relaxed text-slate-400">Register interest in strategic investment discussions or receive updates if a future community crowdfunding opportunity is considered through an appropriately authorised intermediary.</p><ul class="mt-5 space-y-2 text-sm text-slate-300"><li>✓ Angel and strategic investor enquiries</li><li>✓ Future regulated crowdfunding updates</li><li>✓ Request information and an introduction</li></ul><a href="#investor-interest" data-interest-track="angel_seed" class="mt-7 inline-flex rounded-xl bg-sky-500 px-4 py-3 text-sm font-extrabold text-slate-950 hover:bg-sky-400">Register investor interest →</a></article>
+        </div>
+        <div id="investor-interest" class="mt-8 grid gap-8 rounded-3xl border border-slate-700 bg-slate-900/60 p-6 sm:p-8 lg:grid-cols-2">
+          <div><p class="eyebrow text-[10px] font-extrabold uppercase text-sky-300">Expression of interest</p><h3 class="mt-3 text-2xl font-black text-white sm:text-3xl">Start a partnership or investor conversation.</h3><p class="mt-4 text-sm leading-relaxed text-slate-400">Tell us how you would like to participate. Submitting this form is non-binding and does not create an investment, partnership, allocation or offer. The SwiftHaul team can follow up to discuss whether there is a suitable next step.</p><div class="mt-6 rounded-2xl border border-slate-700 bg-[#090d16] p-5"><h4 class="font-bold text-white">Potential participation routes</h4><ul class="mt-3 space-y-2 text-sm leading-relaxed text-slate-400"><li><strong class="text-slate-200">Fleet asset partnership:</strong> discuss vehicle supply, ownership, operating responsibilities and any proposed commercial revenue-share agreement.</li><li><strong class="text-slate-200">Community crowdfunding:</strong> join an update list only. Any future securities campaign would need to be separately structured and handled through an appropriately authorised intermediary.</li><li><strong class="text-slate-200">Angel / strategic investment:</strong> request a private introductory discussion. Any securities offer would be subject to separate South African legal advice and applicable exemptions or regulatory requirements.</li></ul></div></div>
+          <form id="partnerInterestForm" class="rounded-2xl border border-slate-700 bg-cardbg p-5 sm:p-6">
+            <div class="grid gap-4 sm:grid-cols-2">
+              <label class="text-xs font-semibold text-slate-300">Full name *<input class="field mt-2" name="full_name" required maxlength="120" autocomplete="name"></label>
+              <label class="text-xs font-semibold text-slate-300">Email address *<input class="field mt-2" name="email" type="email" required maxlength="254" autocomplete="email"></label>
+              <label class="text-xs font-semibold text-slate-300 sm:col-span-2">Phone / WhatsApp *<input class="field mt-2" name="phone" type="tel" required maxlength="32" placeholder="+27..." autocomplete="tel"></label>
+              <label class="text-xs font-semibold text-slate-300 sm:col-span-2">I am interested in *<select class="field mt-2" id="partnerTrack" name="track" required><option value="fleet_asset">Fleet vehicle partnership</option><option value="crowdfunding">Future crowdfunding updates</option><option value="angel_seed">Angel / strategic investor discussion</option></select></label>
+              <label class="text-xs font-semibold text-slate-300 sm:col-span-2">Indicative contribution range (optional)<select class="field mt-2" name="indicative_range_zar"><option value="">Prefer not to say</option><option>Under R25,000</option><option>R25,000 – R250,000</option><option>R250,000 – R1,000,000</option><option>R1,000,000+</option><option>Vehicle / asset contribution (not cash)</option></select></label>
+              <label class="text-xs font-semibold text-slate-300 sm:col-span-2">Additional information (optional)<textarea class="field mt-2" name="message" rows="3" maxlength="1500" placeholder="Tell us about your fleet, organisation or interest."></textarea></label>
+            </div>
+            <label class="mt-5 flex items-start gap-3 text-xs leading-relaxed text-slate-400"><input class="mt-1" type="checkbox" name="popia_consented" value="true" required><span>I consent to SwiftHaul using the details I provide to respond to this enquiry. This is not a commitment to invest or enter into a partnership.</span></label>
+            <div class="absolute -left-[10000px]" aria-hidden="true"><label>Leave blank<input name="website" tabindex="-1" autocomplete="off"></label></div>
+            <button type="submit" class="mt-5 w-full rounded-xl bg-sky-500 px-5 py-3.5 text-sm font-extrabold text-slate-950 hover:bg-sky-400">Submit expression of interest</button>
+            <p id="partnerInterestStatus" class="mt-3 text-xs text-slate-400" role="status" aria-live="polite"></p>
+          </form>
+        </div>
+        <p class="mt-6 text-[11px] leading-relaxed text-slate-500"><strong class="text-slate-400">Important notice:</strong> This section is for information and non-binding expressions of interest only. It is not an offer, invitation or solicitation to acquire shares or other securities under the Companies Act 71 of 2008. No shares, securities, deposits or investment funds can be purchased or paid for through this website. Any future securities transaction or crowdfunding campaign would be assessed separately with South African legal and regulatory advice and any required authorised intermediary. Fleet partnership discussions are exploratory; no revenue, profit or investment return is guaranteed. This notice is not legal advice.</p>
+      </div>
+    </section>
+
+    <section class="py-16"><div class="mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 rounded-3xl border border-sky-400/20 bg-gradient-to-r from-sky-950/70 to-slate-900 px-6 py-9 sm:px-10 md:flex-row md:items-center"><div><p class="eyebrow text-[10px] font-extrabold uppercase text-sky-300">Ready when you are</p><h2 class="mt-2 text-2xl font-black text-white sm:text-3xl">Your next delivery starts here.</h2><p class="mt-2 text-sm text-slate-400">Open the customer platform to create a booking.</p></div><a href="https://api.github.com/repos/bongat061-SwiftHaul-SA/swifthaul-sa/actions/artifacts/14036000439/zip?utm_source=chatgpt.com" class="shrink-0 rounded-xl bg-sky-500 px-6 py-3.5 text-sm font-extrabold text-slate-950 hover:bg-sky-400">Open customer app to book →</a></div></section>
   </main>
+
+  <footer class="border-t border-slate-800 bg-[#070a11]">
+    <div class="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-3 lg:px-8">
+      <div><a href="#" class="inline-flex items-center gap-3 text-lg font-black text-white"><img src="/icon.svg" alt="" width="44" height="44" class="h-11 w-11 rounded-full">Swift<span class="text-sky-400">Haul</span> SA</a><p class="mt-3 max-w-xs text-xs leading-relaxed text-slate-500">South African delivery and logistics platform connecting customers, drivers and transport partners.</p></div>
+      <div><p class="text-xs font-bold uppercase tracking-widest text-slate-400">Platforms</p><div class="mt-3 flex flex-col gap-2 text-sm text-slate-400"><a class="hover:text-white" href="https://api.github.com/repos/bongat061-SwiftHaul-SA/swifthaul-sa/actions/artifacts/14036000439/zip?utm_source=chatgpt.com">Customer workspace</a><a class="hover:text-white" href="https://api.github.com/repos/bongat061-SwiftHaul-SA/swifthaul-sa/actions/artifacts/14035151713/zip?utm_source=chatgpt.com">Driver portal</a><a class="hover:text-white" href="./apps/company/public/index.html">Company operations</a></div></div>
+      <div><p class="text-xs font-bold uppercase tracking-widest text-slate-400">Information</p><div class="mt-3 flex flex-col gap-2 text-sm text-slate-400"><button class="w-fit hover:text-white" data-modal="privacy">Privacy overview</button><button class="w-fit hover:text-white" data-modal="terms">Terms overview</button><a class="hover:text-white" href="./apps/company/public/index.html">Operations login</a><a class="hover:text-white" href="#partners">Invest &amp; Partner</a></div></div>
+    </div>
+    <div class="border-t border-slate-800/70 py-4 text-center text-[11px] text-slate-600">© <span id="year">2026</span> SwiftHaul South Africa. All rights reserved.</div>
+  </footer>
+
+  <dialog id="privacy" aria-labelledby="privacy-title"><h2 id="privacy-title" class="text-xl font-extrabold text-white">Privacy overview</h2><p class="mt-4 text-sm leading-relaxed text-slate-300">SwiftHaul processes information needed to provide delivery services, support account security, coordinate deliveries and maintain relevant business records. Personal information should be handled in accordance with applicable South African privacy law, including POPIA. For requests about your information, use the contact route provided inside the relevant SwiftHaul platform. This short overview is not a substitute for the full privacy policy.</p><button class="mt-6 rounded-lg bg-sky-500 px-4 py-2 text-sm font-bold text-slate-950" data-close>Close</button></dialog>
+  <dialog id="terms" aria-labelledby="terms-title"><h2 id="terms-title" class="text-xl font-extrabold text-white">Terms overview</h2><p class="mt-4 text-sm leading-relaxed text-slate-300">SwiftHaul connects customers with delivery drivers and transport partners. Customers must provide accurate collection, delivery and goods information and may not submit prohibited or unlawful items. Delivery estimates are not confirmed bookings; final acceptance, availability, pricing and service conditions are shown in the booking and dispatch process. The full terms presented in the platform apply.</p><button class="mt-6 rounded-lg bg-sky-500 px-4 py-2 text-sm font-bold text-slate-950" data-close>Close</button></dialog>
+
+  <section id="sh-chat-panel" aria-label="SwiftHaul assistant" data-open="false"><div class="flex items-center justify-between border-b border-slate-700 bg-slate-900 p-4"><div><p class="font-extrabold text-white">✦ SwiftHaul Assistant</p><p class="text-xs text-emerald-300">Here to help • Instant answers</p></div><button id="sh-chat-close" type="button" aria-label="Close chat" class="px-3 py-1 text-xl text-slate-300">×</button></div><div id="sh-chat-messages" class="sh-chat-scroll"><div class="sh-chat-bubble">Hi! 👋 Welcome to SwiftHaul SA. Ask about bookings, delivery quotes, vehicles, drivers or partnerships. You can also speak to our team on WhatsApp.</div><div class="mt-4"><p class="mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">Popular questions</p><div id="sh-chat-suggestions" class="flex flex-wrap gap-2"><button class="sh-chat-chip" data-question="How do I book a delivery?">How do I book?</button><button class="sh-chat-chip" data-question="How do I get a delivery quote?">Delivery prices</button><button class="sh-chat-chip" data-question="Which vehicles are available?">Vehicle options</button><button class="sh-chat-chip" data-question="How can I become a SwiftHaul driver?">Become a driver</button><button class="sh-chat-chip" data-question="How do I track my delivery?">Track a delivery</button><button class="sh-chat-chip" data-question="I want to discuss a fleet partnership or investment.">Partner or invest</button></div></div></div><div class="border-t border-slate-800 bg-slate-900 p-3"><a id="sh-chat-human" href="https://wa.me/27615083880?text=Hello%20SwiftHaul%20SA%2C%20I%20would%20like%20to%20speak%20to%20a%20team%20member." target="_blank" rel="noopener noreferrer" class="mb-3 flex w-full justify-center rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-3 py-3 text-xs font-extrabold text-emerald-300">☏ Talk to a human on WhatsApp</a><a id="sh-chat-email" href="mailto:centurionfleetweb@gmail.com?subject=SwiftHaul%20SA%20Support%20Enquiry&body=Hello%20SwiftHaul%20SA%20Support%2C%0A%0AI%20need%20assistance%20with%3A%20" class="mb-2 flex w-full justify-center rounded-xl border border-sky-400/30 bg-sky-400/10 px-3 py-3 text-xs font-extrabold text-sky-200">✉ Email SwiftHaul support</a><form id="sh-chat-form" class="flex gap-2"><label class="sr-only" for="sh-chat-input">Your question</label><input id="sh-chat-input" maxlength="600" placeholder="Type your question…" autocomplete="off"><button type="submit" class="rounded-xl bg-sky-500 px-4 py-3 text-xs font-extrabold text-slate-950">Send</button></form><p class="mt-2 text-center text-[10px] text-slate-500">Email opens in your mail app so you can review and send your message. For an immediate response, use WhatsApp.</p></div></section><button id="sh-chat-launcher" type="button" aria-controls="sh-chat-panel" aria-expanded="false">✦ Ask SwiftHaul</button>
+  <script>
+    (() => {const panel=document.getElementById('sh-chat-panel'),launcher=document.getElementById('sh-chat-launcher'),messages=document.getElementById('sh-chat-messages'),form=document.getElementById('sh-chat-form'),input=document.getElementById('sh-chat-input'),human=document.getElementById('sh-chat-human');if(!panel||!launcher||!messages||!form||!input||!human)return;const open=()=>{panel.dataset.open='true';launcher.setAttribute('aria-expanded','true');input.focus()},close=()=>{panel.dataset.open='false';launcher.setAttribute('aria-expanded','false');launcher.focus()};launcher.addEventListener('click',()=>panel.dataset.open==='true'?close():open());document.getElementById('sh-chat-close').addEventListener('click',close);const faqs=[{keys:['book','booking','order','delivery'],answer:'To arrange a delivery, open the SwiftHaul Customer app and start a new booking. Enter your collection and delivery locations, choose a suitable vehicle and review the quote before confirming.'},{keys:['price','pricing','quote','cost','fare','how much'],answer:'Your quote depends on the route, selected vehicle and details of the goods. Use Instant Quote or the Customer app to calculate a current quote. The app shows the applicable amount before you confirm.'},{keys:['vehicle','vehicles','bike','motorbike','bakkie','van','truck'],answer:'SwiftHaul supports motorbike courier deliveries, bakkie or panel-van deliveries, and commercial truck transport. Choose the vehicle that suits your goods when requesting a quote.'},{keys:['driver','drive','register','join','application','work'],answer:'Interested in driving with SwiftHaul? Open the Driver app to access the driver workspace and registration process. Our team can also help on WhatsApp.'},{keys:['track','tracking','where','location','status'],answer:'For an active delivery, use the tracking details in your Customer app or the tracking link provided for your order. If you cannot find them, our team can assist on WhatsApp.'},{keys:['fleet','partner','partnership','invest','investor','fund'],answer:'Visit the Invest & Partner section to read about fleet partnerships and investor enquiries. You can submit the expression-of-interest form there; it is non-binding and is not an offer to invest.'},{keys:['pay','payment','payfast','card'],answer:'Payment options and the amount due are shown during the booking process. Check the payment instructions in your Customer app. Contact our team if a payment appears unsuccessful.'},{keys:['contact','human','person','agent','whatsapp','speak'],answer:'Of course — use the green Talk to a human on WhatsApp button below to contact the SwiftHaul team directly.'}];const add=(text,who)=>{const b=document.createElement('div');b.className='sh-chat-bubble'+(who==='user'?' user':'');b.textContent=text;const w=document.createElement('div');w.className='mt-3';w.appendChild(b);messages.appendChild(w);messages.scrollTop=messages.scrollHeight};const answer=q=>{const n=q.toLowerCase(),hit=faqs.find(f=>f.keys.some(k=>n.includes(k)));if(hit)add(hit.answer);else{add('I’m not fully sure, and I don’t want to give you incorrect information. Tap Talk to a human on WhatsApp and our team can help.');human.href='https://wa.me/27615083880?text='+encodeURIComponent('Hello SwiftHaul SA, I need help with: '+q)}};form.addEventListener('submit',e=>{e.preventDefault();const q=input.value.trim();if(!q)return;add(q,'user');input.value='';answer(q)});document.querySelectorAll('#sh-chat-suggestions [data-question]').forEach(b=>b.addEventListener('click',()=>{add(b.dataset.question,'user');answer(b.dataset.question)}))})();
+    document.getElementById('year').textContent = new Date().getFullYear();
+    document.querySelectorAll('[data-modal]').forEach(button => button.addEventListener('click', () => document.getElementById(button.dataset.modal).showModal()));
+    document.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click', () => button.closest('dialog').close()));
+    document.querySelectorAll('dialog').forEach(dialog => dialog.addEventListener('click', event => {
+      if (event.target === dialog) dialog.close();
+    }));
+    document.querySelectorAll('[data-interest-track]').forEach(link => link.addEventListener('click', () => { document.getElementById('partnerTrack').value = link.dataset.interestTrack; }));
+    document.getElementById('partnerInterestForm').addEventListener('submit', async event => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const status = document.getElementById('partnerInterestStatus');
+      const button = form.querySelector('button[type="submit"]');
+      const data = Object.fromEntries(new FormData(form).entries());
+      data.popia_consented = data.popia_consented === 'true';
+      const staging = (location.hostname.endsWith('.netlify.app') && location.hostname !== 'swifthaul-sa.netlify.app') || location.pathname.startsWith('/swifthaul-sa-preview/');
+      const supabaseUrl = staging ? 'https://tagkbropgzthsbjlhyvz.supabase.co' : 'https://jikstpnvsdjhcibtjilp.supabase.co';
+      const publishableKey = staging ? 'sb_publishable_QWOeGbSVs2nXECI-KsAmWQ_K_Rav892' : 'sb_publishable_K1USNabR38GFuMqupYAVNA_6gx3rKH2';
+      button.disabled = true; status.textContent = 'Submitting your enquiry…';
+      try {
+        const response = await fetch(supabaseUrl + '/functions/v1/investor-inquiries', { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: publishableKey }, body: JSON.stringify(data) });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || 'We could not submit your enquiry. Please try again.');
+        form.reset(); status.textContent = 'Thank you. Your enquiry has been received.';
+      } catch (error) { status.textContent = error instanceof Error ? error.message : 'Submission failed. Please try again later.'; }
+      finally { button.disabled = false; }
+    });
+
+    if ('serviceWorker' in navigator && location.protocol === 'https:') {
+      window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(error => console.warn('SwiftHaul offline support unavailable:', error)));
+    }
+  </script>
 </body>
 </html>
