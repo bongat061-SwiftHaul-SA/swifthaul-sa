@@ -226,8 +226,8 @@ Deno.serve(async (req: Request) => {
   let offerStatus = "none";
   if (body.counter_offer !== undefined && body.counter_offer !== null && body.counter_offer !== "") {
     if (typeof body.counter_offer !== "string" || !/^\d{1,10}(?:\.\d{1,2})?$/.test(body.counter_offer) ||
-        Number(body.counter_offer) <= 0 || distance >= 24000)
-      return reply(400, { error: "counter_offer_not_eligible_or_invalid_amount" });
+        Number(body.counter_offer) <= 0 || distance >= 24000 || method !== "dispatch")
+      return reply(400, { error: "counter_offer_requires_dispatch_payment_and_valid_amount" });
     offer = Number(body.counter_offer);
     offerStatus = "pending";
   }
