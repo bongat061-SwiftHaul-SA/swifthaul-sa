@@ -5,6 +5,7 @@ const read = path => fs.readFileSync(path, 'utf8');
 const customer = read('public/customer.js');
 const auth = read('public/auth.js');
 const portal = read('supabase/functions/customer-portal/index.ts');
+const cargo = read('public/cargo-estimator.js');
 const customerHtml = read('public/customer.html');
 const indexHtml = read('public/index.html');
 const estimatorTheme = read('public/customer-simple-estimator.css');
