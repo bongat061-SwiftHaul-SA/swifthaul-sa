@@ -133,20 +133,22 @@ const server = http.createServer((req,res)=>{
         // Guest preview opens on Home; explicitly enter the dedicated booking page.
         await page.locator('.customer-book-cta').click();
         await page.locator('#new-delivery').waitFor({state:'visible'});
-        await page.locator('#custPickup').fill('1 Main Road, Sandton, Johannesburg');
-        await page.locator('#custDropoff').fill('10 Rivonia Road, Sandton, Johannesburg');
-        await page.locator('#custRecip').fill('Test recipient · 071 000 0000');
         await page.evaluate(()=>{
           const form=document.querySelector('#booking-form');
           const values={
+            pickup:'1 Main Road, Sandton, Johannesburg',
+            dropoff:'10 Rivonia Road, Sandton, Johannesburg',
+            recipient:'Test recipient · 071 000 0000',
             pickup_latitude:'-26.1076',pickup_longitude:'28.0567',pickup_plus_code:'5G5C+X8 Sandton',
             dropoff_latitude:'-26.1022',dropoff_longitude:'28.0586',dropoff_plus_code:'5G5C+W9 Sandton',
             weight:'3'
           };
           for(const [name,value] of Object.entries(values)){
-            let input=form.querySelector('[name="'+name+'"]');
-            if(!input){input=document.createElement('input');input.type='hidden';input.name=name;form.append(input);}
+            const input=form.querySelector('[name="'+name+'"]');
+            if(!input)throw new Error('Missing Customer booking field: '+name);
             input.value=value;
+            input.dispatchEvent(new Event('input',{bubbles:true}));
+            input.dispatchEvent(new Event('change',{bubbles:true}));
           }
           document.dispatchEvent(new CustomEvent('swift-haul:locations-confirmed'));
         });
