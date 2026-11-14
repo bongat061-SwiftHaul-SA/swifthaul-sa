@@ -208,17 +208,17 @@ body[data-app="customer"] #booking-form .booking-review-card dt{color:#8fb2d2}
 body[data-app="customer"] #booking-form .booking-review-card dd{color:#f0f8ff}
 body[data-app="customer"] #booking-form .booking-review-card dl>div{border-color:#1e4264}
 body[data-app="customer"] #booking-form .booking-review-note{color:#9ebbd6}
-body[data-app="customer"] #booking-form #delivery-map-stage{background:#07182d!important;border-color:#214b70!important}
-body[data-app="customer"] #booking-form #delivery-map-stage #global-location-map{background:#07182d!important}
-body[data-app="customer"] #booking-form #delivery-map-stage .swift-location-sheet{background:rgba(5,19,38,.97)!important;border:1px solid #245078!important;color:#f1f8ff!important;box-shadow:0 14px 34px #020b18bb!important}
-body[data-app="customer"] #booking-form #delivery-map-stage .swift-sheet-head h3{color:#f5fbff!important}
-body[data-app="customer"] #booking-form #delivery-map-stage .swift-sheet-head p,body[data-app="customer"] #booking-form #delivery-map-stage #loc-status,body[data-app="customer"] #booking-form #delivery-map-stage .swift-geocoder-credit{color:#a8c3de!important}
-body[data-app="customer"] #booking-form #delivery-map-stage .swift-route-steps,body[data-app="customer"] #booking-form #delivery-map-stage .swift-pin-meta{background:#102d4b!important;border:1px solid #28577e!important;color:#b9d5ed!important}
-body[data-app="customer"] #booking-form #delivery-map-stage .swift-pin-meta strong{color:#f3fbff!important}
-body[data-app="customer"] #booking-form #delivery-map-stage .swift-location-fields input{background:#06172b!important;border:1px solid #2b5b82!important;color:#f5fbff!important}
-body[data-app="customer"] #booking-form #delivery-map-stage .swift-sheet-tools button,body[data-app="customer"] #booking-form #delivery-map-stage .swift-pin-button,body[data-app="customer"] #booking-form #delivery-map-stage .address-search-button{background:#102b49!important;border:1px solid #2b628d!important;color:#dff3ff!important}
-body[data-app="customer"] #booking-form #delivery-map-stage .swift-more-options{background:#0b2038!important;border:1px solid #245078!important}
-body[data-app="customer"] #booking-form #delivery-map-stage .swift-more-options>summary,body[data-app="customer"] #booking-form #delivery-map-stage .swift-more-content{color:#dceeff!important}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage{background:#07182d!important;border-color:#214b70!important}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage #global-location-map{background:#07182d!important}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-location-sheet{background:rgba(5,19,38,.97)!important;border:1px solid #245078!important;color:#f1f8ff!important;box-shadow:0 14px 34px #020b18bb!important}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-sheet-head h3{color:#f5fbff!important}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-sheet-head p,body[data-app="customer"] #booking-form .booking-step #delivery-map-stage #loc-status,body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-geocoder-credit{color:#a8c3de!important}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-route-steps,body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-pin-meta{background:#102d4b!important;border:1px solid #28577e!important;color:#b9d5ed!important}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-pin-meta strong{color:#f3fbff!important}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-location-fields input{background:#06172b!important;border:1px solid #2b5b82!important;color:#f5fbff!important}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-sheet-tools button,body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-pin-button,body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .address-search-button{background:#102b49!important;border:1px solid #2b628d!important;color:#dff3ff!important}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-more-options{background:#0b2038!important;border:1px solid #245078!important}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-more-options>summary,body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-more-content{color:#dceeff!important}
 body[data-app="customer"] #cargo-estimator{background:linear-gradient(150deg,#0b2038,#07182d)!important;border:1px solid #245078!important;color:#f1f8ff!important}
 body[data-app="customer"] #cargo-estimator h3{color:#f4fbff!important}
 body[data-app="customer"] #cargo-estimator .cargo-intro,body[data-app="customer"] #cargo-estimator label{color:#a9c8e4!important}
@@ -246,3 +246,7 @@ body[data-app="customer"] #booking-form #quote-map{border:1px solid #245078;bord
 body[data-app="customer"] #booking-form #quote-status{color:#a9c8e4!important}
 body[data-app="customer"] #booking-form .customer-terms-acknowledgement{background:#0d2742!important}
 @media(max-width:600px){body[data-app="customer"] #booking-form #quote-result{padding:13px!important}body[data-app="customer"] #booking-form #quote-result .quote-totals{gap:8px;padding:12px!important}body[data-app="customer"] #booking-form #quote-distance{font-size:19px!important}body[data-app="customer"] #booking-form #quote-price{font-size:31px!important}body[data-app="customer"] #booking-form #quote-breakdown .fare-row{font-size:11px;padding:8px 0}}
+
+/* Ensure map picker surfaces win over the legacy location-picker defaults. */
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage{background:#07182d!important;border-color:#214b70!important}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-continue-booking{background:linear-gradient(110deg,#0875f5,#18cbe7)!important;border:1px solid #38d9f2!important;color:#041528!important;box-shadow:0 8px 22px #0875f533!important}
