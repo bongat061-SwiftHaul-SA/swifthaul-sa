@@ -144,7 +144,13 @@ const server = http.createServer((req,res)=>{
             weight:'3'
           };
           for(const [name,value] of Object.entries(values)){
-            const input=form.querySelector('[name="'+name+'"]');
+            let input=form.querySelector('[name="'+name+'"]');
+            if(!input && name.endsWith('_latitude') || !input && name.endsWith('_longitude') || !input && name.endsWith('_plus_code')){
+              input=document.createElement('input');
+              input.type='hidden';
+              input.name=name;
+              form.append(input);
+            }
             if(!input)throw new Error('Missing Customer booking field: '+name);
             input.value=value;
             input.dispatchEvent(new Event('input',{bubbles:true}));
