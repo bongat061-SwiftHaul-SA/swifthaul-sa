@@ -46,12 +46,18 @@ Deno.serve(async req => {
     const {data:offer,error}=await db.from("driver_delivery_offers").select("id,waybill,status,expires_at").eq("id",body.offer_id).eq("driver_user_id",actor).maybeSingle();
     if(error||!offer) return reply(404,{error:"offer_not_found"});
     if(offer.status!=="offered"||new Date(offer.expires_at).getTime()<=Date.now()) return reply(409,{error:"offer_expired_or_closed"});
+    const {data:currentDriver,error:currentDriverError}=await db.from("driver_profiles")
+      .select("verification_status").eq("user_id",actor).maybeSingle();
+    if(currentDriverError) return reply(500,{error:"driver_status_lookup_failed"});
+    if(!currentDriver||currentDriver.verification_status!=="approved") return reply(403,{error:"approved_driver_required"});
     if(body.response==="decline") {
       await db.from("driver_delivery_offers").update({status:"declined",responded_at:new Date().toISOString()}).eq("id",offer.id).eq("status","offered");
       return reply(200,{declined:true});
     }
-    const {data:booking,error:be}=await db.from("customer_bookings").select("waybill,status,driver_user_id,refunded_at").eq("waybill",offer.waybill).maybeSingle();
+    const {data:booking,error:be}=await db.from("customer_bookings").select("waybill,status,driver_user_id,refunded_at,payment_method,paid_at,counter_offer_status").eq("waybill",offer.waybill).maybeSingle();
     if(be||!booking||booking.status!=="pending"||booking.driver_user_id||booking.refunded_at) return reply(409,{error:"delivery_no_longer_available"});
+    if(booking.paid_at==null&&!["cash","dispatch"].includes(String(booking.payment_method))) return reply(409,{error:"payment_confirmation_required"});
+    if(booking.counter_offer_status==="pending") return reply(409,{error:"counter_offer_requires_dispatch_decision"});
     const {data:updated,error:ue}=await db.from("customer_bookings").update({driver_user_id:actor,assigned_driver:actor,status:"assigned"}).eq("waybill",offer.waybill).eq("status","pending").is("driver_user_id",null).select("waybill").maybeSingle();
     if(ue||!updated) return reply(409,{error:"delivery_already_assigned"});
     await db.from("driver_delivery_offers").update({status:"accepted",responded_at:new Date().toISOString()}).eq("id",offer.id);
@@ -61,9 +67,11 @@ Deno.serve(async req => {
   }
   if(body.action==="next_offer") {
     if(!dispatcher||typeof body.waybill!=="string") return reply(403,{error:"dispatcher_access_required"});
-    const {data:booking,error:be}=await db.from("customer_bookings").select("waybill,status,driver_user_id,refunded_at,vehicle,pickup_latitude,pickup_longitude").eq("waybill",body.waybill).maybeSingle();
+    const {data:booking,error:be}=await db.from("customer_bookings").select("waybill,status,driver_user_id,refunded_at,vehicle,pickup_latitude,pickup_longitude,payment_method,paid_at,counter_offer_status").eq("waybill",body.waybill).maybeSingle();
     if(be||!booking) return reply(404,{error:"delivery_not_found"});
     if(booking.status!=="pending"||booking.driver_user_id||booking.refunded_at) return reply(409,{error:"delivery_not_open_for_offers"});
+    if(booking.paid_at==null&&!["cash","dispatch"].includes(String(booking.payment_method))) return reply(409,{error:"payment_confirmation_required"});
+    if(booking.counter_offer_status==="pending") return reply(409,{error:"counter_offer_requires_dispatch_decision"});
     const now=new Date().toISOString();
     await db.from("driver_delivery_offers").update({status:"expired"}).eq("waybill",booking.waybill).eq("status","offered").lte("expires_at",now);
     const {data:sent}=await db.from("driver_delivery_offers").select("driver_user_id,status").eq("waybill",booking.waybill);
@@ -71,7 +79,13 @@ Deno.serve(async req => {
     const excluded=new Set((sent??[]).map(x=>x.driver_user_id));
     const {data:drivers,error:de}=await db.from("driver_profiles").select("user_id,vehicle_type,is_online,verification_status").eq("is_online",true).eq("verification_status","approved");
     if(de) return reply(500,{error:"driver_candidate_lookup_failed"});
-    const eligible=(drivers??[]).filter(d=>!excluded.has(d.user_id)&&(!booking.vehicle||String(d.vehicle_type).toLowerCase()===String(booking.vehicle).toLowerCase()));
+    const onlineIds=(drivers??[]).map(d=>d.user_id);
+    if(!onlineIds.length) return reply(404,{error:"no_eligible_online_drivers"});
+    const {data:activeAccounts,error:activeError}=await db.from("user_profiles")
+      .select("id").in("id",onlineIds).eq("role","driver").eq("account_status","active");
+    if(activeError) return reply(500,{error:"driver_account_lookup_failed"});
+    const activeIds=new Set((activeAccounts??[]).map(x=>x.id));
+    const eligible=(drivers??[]).filter(d=>activeIds.has(d.user_id)&&!excluded.has(d.user_id)&&(!booking.vehicle||String(d.vehicle_type).toLowerCase()===String(booking.vehicle).toLowerCase()));
     if(!eligible.length) return reply(404,{error:"no_eligible_online_drivers"});
     const ids=eligible.map(d=>d.user_id);
     const {data:members,error:me}=await db.from("driver_memberships").select("driver_user_id").in("driver_user_id",ids).eq("status","active").lte("starts_at",now).gt("ends_at",now);

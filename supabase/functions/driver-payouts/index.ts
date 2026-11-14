@@ -23,7 +23,11 @@ Deno.serve(async(req:Request)=>{
     db.from("driver_payout_requests").select("id,amount_cents,status,bank_name,account_holder,account_type,branch_code,created_at,reviewed_at,paid_at").eq("driver_user_id",id).order("created_at",{ascending:false}).limit(30)
    ]);
    if(le||re)return reply(500,{error:"payout_history_failed"});
-   const balance=(ledger??[]).reduce((n,x)=>n+Number(x.amount_cents),0);
+   const {data:rewards,error:rewardError}=await db.from("driver_reward_ledger")
+    .select("amount_cents").eq("driver_user_id",id);
+   if(rewardError)return reply(500,{error:"reward_balance_failed"});
+   const balance=(ledger??[]).reduce((n,x)=>n+Number(x.amount_cents),0)
+    +(rewards??[]).reduce((n,x)=>n+Number(x.amount_cents),0);
    return reply(200,{available_cents:balance,ledger:ledger??[],requests:requests??[]});
   }
   const raw=await req.text();if(raw.length>4096)return reply(413,{error:"request_too_large"});
