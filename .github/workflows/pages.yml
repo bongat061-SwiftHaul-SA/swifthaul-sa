@@ -1,13 +1,8 @@
 name: Publish SwiftHaul platforms to GitHub Pages
 
 on:
-  push:
-    branches:
-      - main
-      - migration/supabase-github-pages
-      - feature/customer-smart-address-estimator
-      - feature/secure-driver-live-location
-      - feature/sa-sms-whatsapp-notifications-staging
+  # Live Pages publication is controlled by the protected main-branch workflow.
+  # Staging pushes run browser validation and previews only.
   workflow_dispatch:
 
 # The existing Pages hostname is shared by the three app paths.
