@@ -1,1 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="104" fill="#173d31"/><path d="M128 160h128v48h-80v32h80v112H128v-48h80v-32h-80zm160 0h48v72h32v-72h48v192h-48v-72h-32v72h-48z" fill="#d1e1bc"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="t d">
+<title id="t">SwiftHaul South Africa delivery emblem</title><desc id="d">A white and cyan delivery van inside a navy circular badge, with a South African flag accent.</desc>
+<defs><linearGradient id="n" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#102d50"/><stop offset="1" stop-color="#061426"/></linearGradient><linearGradient id="c" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#67e8f9"/><stop offset="1" stop-color="#0284c7"/></linearGradient><clipPath id="r"><circle cx="256" cy="256" r="222"/></clipPath></defs>
+<circle cx="256" cy="256" r="244" fill="#020817"/><circle cx="256" cy="256" r="228" fill="url(#n)" stroke="url(#c)" stroke-width="12"/>
+<g clip-path="url(#r)" fill="none" stroke="#38bdf8" stroke-opacity=".14"><path d="M20 350h472M60 110l390 290M80 430l350-350" stroke-width="3"/></g>
+<path d="M92 300h36l26-72c5-14 17-23 32-23h126c13 0 24 6 32 17l46 63h26c18 0 32 14 32 32v47H92z" fill="#f8fafc"/>
+<path d="M178 224c2-7 7-11 15-11h107c6 0 11 3 15 8l39 55H158z" fill="#0b2848"/>
+<path d="M181 228h58v48h-75zM250 228h47c5 0 9 2 12 6l31 42H250z" fill="#67e8f9"/>
+<path d="M92 300h360v48H92z" fill="url(#c)"/><path d="M122 320h55M192 320h55M262 320h55" stroke="#08304e" stroke-width="8" stroke-linecap="round"/>
+<circle cx="184" cy="365" r="35" fill="#061426" stroke="#e2e8f0" stroke-width="10"/><circle cx="184" cy="365" r="13" fill="#38bdf8"/>
+<circle cx="365" cy="365" r="35" fill="#061426" stroke="#e2e8f0" stroke-width="10"/><circle cx="365" cy="365" r="13" fill="#38bdf8"/>
+<path d="M118 405h276" stroke="#38bdf8" stroke-width="7" stroke-linecap="round"/>
+<g transform="translate(166 426)"><path d="M0 0h180" stroke="#007749" stroke-width="10"/><path d="M0 14h180" stroke="#fff" stroke-width="10"/><path d="M0 28h180" stroke="#de3831" stroke-width="10"/><path d="M0 0l30 14-30 28" fill="none" stroke="#ffb612" stroke-width="8"/></g>
+</svg>
