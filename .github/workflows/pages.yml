@@ -7,6 +7,7 @@ on:
   workflow_dispatch:
 
 # Publish the three platform entry points from main only.
+# Release refresh 2026-11-14: consume the approved Customer staging bundle; keep Driver and Company Admin sourced from main.
 
 permissions:
   contents: read
