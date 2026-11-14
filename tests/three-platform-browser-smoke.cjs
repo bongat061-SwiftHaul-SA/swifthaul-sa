@@ -124,6 +124,50 @@ const server = http.createServer((req,res)=>{
         assert.equal(await page.locator('body').getAttribute('data-app'),'company');
         assert.equal(await page.locator('#auth-form input[name="email"]').isVisible(),true,'Company Admin password sign-in remains available');
       }
+      if(app.name==='Customer'){
+        // Exercise the real four-step guest preview navigation, not just the
+        // presence of four hidden sections. Use synthetic pin metadata so the
+        // test does not depend on GPS or third-party map tile availability.
+        await page.locator('#continue-as-guest').click();
+        await page.locator('#workspace').waitFor({state:'visible'});
+        await page.locator('#custPickup').fill('1 Main Road, Sandton, Johannesburg');
+        await page.locator('#custDropoff').fill('10 Rivonia Road, Sandton, Johannesburg');
+        await page.locator('#custRecip').fill('Test recipient · 071 000 0000');
+        await page.evaluate(()=>{
+          const form=document.querySelector('#booking-form');
+          const values={
+            pickup_latitude:'-26.1076',pickup_longitude:'28.0567',pickup_plus_code:'5G5C+X8 Sandton',
+            dropoff_latitude:'-26.1022',dropoff_longitude:'28.0586',dropoff_plus_code:'5G5C+W9 Sandton',
+            weight:'3'
+          };
+          for(const [name,value] of Object.entries(values)){
+            let input=form.querySelector('[name="'+name+'"]');
+            if(!input){input=document.createElement('input');input.type='hidden';input.name=name;form.append(input);}
+            input.value=value;
+          }
+          document.dispatchEvent(new CustomEvent('swift-haul:locations-confirmed'));
+        });
+        await page.locator('[data-wizard-count]').waitFor();
+        await page.waitForFunction(()=>document.querySelector('[data-wizard-count]')?.textContent==='STEP 2 OF 4');
+        const next=page.locator('[data-wizard-next]');
+        await page.locator('[name="length"]').fill('30');
+        await page.locator('[name="width"]').fill('20');
+        await page.locator('[name="height"]').fill('15');
+        await next.click();
+        await page.waitForFunction(()=>document.querySelector('[data-wizard-count]')?.textContent==='STEP 3 OF 4');
+        assert.equal(await page.locator('#booking-form .booking-step').nth(2).isVisible(),true,'Customer must advance to assistance and protection');
+        await page.locator('#booking-terms-accepted').check();
+        await next.click();
+        await page.waitForFunction(()=>document.querySelector('[data-wizard-count]')?.textContent==='STEP 4 OF 4');
+        assert.equal(await page.locator('#booking-form .booking-step').nth(3).isVisible(),true,'Customer must advance to final review');
+        assert.match(await page.locator('[data-review-pickup]').textContent(),/Main Road/,'Review must show the entered pickup');
+        assert.match(await page.locator('[data-review-dropoff]').textContent(),/Rivonia Road/,'Review must show the entered drop-off');
+        assert.equal(await page.locator('#submit').isDisabled(),true,'Guest preview must not submit a live booking');
+        await page.locator('[data-wizard-back]').click();
+        await page.waitForFunction(()=>document.querySelector('[data-wizard-count]')?.textContent==='STEP 3 OF 4');
+        await page.locator('#exit-guest').click();
+        await page.locator('#auth-screen').waitFor({state:'visible'});
+      }
       await page.waitForTimeout(800);
       const scriptErrors=await page.evaluate(()=>window.__smokePageErrors||[]);
       if(scriptErrors.length) failures.push(app.name+' script locations: '+JSON.stringify(scriptErrors));
