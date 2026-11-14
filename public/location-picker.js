@@ -316,7 +316,7 @@
     if(!hasMap()) return;
     const points=['pickup','dropoff'].filter(key=>state[key]).map(key=>[state[key].lng,state[key].lat]);
     if(googleMap){
-      if(points.length===2){const bounds=new google.maps.LatLngBounds();points.forEach(([lng,lat])=>bounds.extend({lat,lng}));googleMap.fitBounds(bounds,{top:38,bottom:230,left:38,right:38});if(googleRoute)googleRoute.setPath(points.map(([lng,lat])=>({lat,lng})));}
+      if(points.length===2){const bounds=new google.maps.LatLngBounds();points.forEach(([lng,lat])=>bounds.extend({lat,lng}));googleMap.fitBounds(bounds,{top:38,bottom:230,left:38,right:38});if(!googleRoute)googleRoute=new google.maps.Polyline({map:googleMap,geodesic:true,strokeColor:'#176b52',strokeOpacity:0.95,strokeWeight:5});googleRoute.setPath(points.map(([lng,lat])=>({lat,lng})));}
       else if(points.length===1){cameraMove(points[0],16);if(googleRoute)googleRoute.setPath([]);}
       return;
     }
