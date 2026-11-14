@@ -91,6 +91,54 @@ Deno.serve(async (req:Request) => {
       }
       return reply(201,{ok:true,invited:invitationEmailSent,linked_existing_account:!invitationEmailSent});
     }
+    if(action==="create_profile"){
+      const email=clean(body.email,254).toLowerCase(), name=clean(body.display_name,160);
+      if(!validEmail(email)||name.length<2) return reply(400,{error:"Enter a valid investor name and email address."});
+
+      // Publish the investor's private portal record without sending any email.
+      // A random, undisclosed password prevents password-based access until the
+      // investor uses the portal's Forgot password flow to set their own password.
+      let userId="", linkedExistingAccount=false;
+      let page=1, existingUser:null|{id:string;email?:string|null}=null;
+      while(!existingUser){
+        const {data:list,error:listError}=await db.auth.admin.listUsers({page,perPage:1000});
+        if(listError) return reply(500,{error:"Could not check whether this email already has a SwiftHaul account."});
+        existingUser=list.users.find((user)=>String(user.email||"").toLowerCase()===email) ?? null;
+        if(existingUser||list.users.length<1000) break;
+        page++;
+        if(page>10) return reply(503,{error:"Too many accounts to safely check this email. Please contact support."});
+      }
+      if(existingUser){
+        userId=existingUser.id;
+        linkedExistingAccount=true;
+      }else{
+        const bytes=new Uint8Array(32);
+        crypto.getRandomValues(bytes);
+        const randomPassword=Array.from(bytes,b=>b.toString(16).padStart(2,"0")).join("")+"aA1!";
+        const {data:created,error:createError}=await db.auth.admin.createUser({
+          email,password:randomPassword,email_confirm:false,
+          user_metadata:{app_type:"investor",full_name:name}
+        });
+        if(createError||!created.user){
+          console.error("Investor account creation failed",createError?.message);
+          return reply(400,{error:"The investor profile could not be created. Check the email address and try again."});
+        }
+        userId=created.user.id;
+      }
+      const {data:existingProfile,error:profileReadError}=await db.from("investor_profiles").select("id").eq("user_id",userId).maybeSingle();
+      if(profileReadError) return reply(500,{error:"Could not check the investor access record."});
+      if(existingProfile) return reply(409,{error:"This account already has an investor profile. Find it in the share register below."});
+      const {error:insertError}=await db.from("investor_profiles").insert({
+        user_id:userId,display_name:name,shares_owned:0,ownership_percentage:0,
+        investment_amount_zar:0,investment_committed_zar:0,investment_received_zar:0,status:"active"
+      });
+      if(insertError){
+        console.error("Investor profile create failed",insertError.message);
+        if(!linkedExistingAccount) await db.auth.admin.deleteUser(userId);
+        return reply(500,{error:"The account was created, but its investor profile could not be saved. Please retry or contact support."});
+      }
+      return reply(201,{ok:true,email_sent:false,linked_existing_account:linkedExistingAccount});
+    }
     if(action==="save_profile"){
       const userId=clean(body.user_id,64);
       const name=clean(body.display_name,160);
