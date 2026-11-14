@@ -34,7 +34,7 @@
   const oldHeading = form.querySelector(':scope > h2');
   oldHeading?.remove();
   const steps = [
-    {title:'Confirm pickup & drop-off',hint:'Choose both addresses, place each pin at the exact entrance and verify the Plus Codes. Continue to the separate Book a delivery page when both pins are confirmed.'},
+    {title:'Confirm pickup & drop-off',hint:'Check the map first, enter or select both addresses below it, and adjust each pin to the exact gate or entrance. Then continue to your parcel details.'},
     {title:'Parcel details',hint:'Describe your load, review the recommended vehicle and calculate your mapped fare.'},
     {title:'Assistance & protection',hint:'Choose payment and optional handling, then review the customer protection terms.'},
     {title:'Review & book',hint:'Check your delivery details, fare and any counteroffer before submitting.'}
@@ -121,11 +121,13 @@
     hint.textContent=(document.body.dataset.guestPreview === 'true' && active===1) ? 'Preview your parcel dimensions and vehicle recommendation. Sign in to calculate a live mapped fare.' : steps[active].hint;
     progress.forEach((bar,i)=>bar.classList.toggle('is-complete',i<=active));
     back.hidden=active===0;
-    next.hidden=active===0 || active===3;
-    next.textContent=active===2?'Review booking':'Continue';
+    next.hidden=active===3;
+    next.disabled=false;
+    next.textContent=active===0?'Continue to parcel details':active===2?'Review booking':'Continue';
+    
     if(active===3)updateReview();
     if(pageHeading)pageHeading.textContent=active===0?'Confirm pickup & drop-off.':'Book a delivery.';
-    if(pageDescription)pageDescription.textContent=active===0?'Choose both addresses and confirm the exact map pins before continuing.':'Add your parcel details, review the fare and complete your booking request.';
+    if(pageDescription)pageDescription.textContent=active===0?'Verify the map pins and address details, then continue to parcel selection.':'Add your parcel details, review the fare and complete your booking request.';
     controls.hidden=false;
     shell.scrollIntoView({behavior:'smooth',block:'start'});
   };
