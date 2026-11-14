@@ -27,7 +27,7 @@
 </main>
 <footer class="border-t border-slate-800 py-6 text-center text-xs text-slate-600">© <span id="year"></span> SwiftHaul South Africa · Private investor information</footer>
 <script type="module">
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/+esm';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm';
 const staging=(location.hostname.endsWith('.netlify.app')&&location.hostname!=='swifthaul-sa.netlify.app')||location.pathname.startsWith('/swifthaul-sa-preview/');
 const supabaseUrl=staging?'https://tagkbropgzthsbjlhyvz.supabase.co':'https://jikstpnvsdjhcibtjilp.supabase.co';
 const publishableKey=staging?'sb_publishable_QWOeGbSVs2nXECI-KsAmWQ_K_Rav892':'sb_publishable_K1USNabR38GFuMqupYAVNA_6gx3rKH2';
