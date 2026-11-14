@@ -38,8 +38,8 @@ for (const [name, html] of [['Customer default entry', indexHtml], ['Customer de
   assert.ok(html.indexOf('customer-simple-estimator.css') < html.indexOf(wizardCss), name + ' must load wizard CSS after estimator CSS.');
 }
 assert.ok(pagesBuilder.includes("if (app === 'customer')") && pagesBuilder.includes("fs.copyFileSync(path.join(source, 'customer.html'), path.join(target, 'index.html'))"), 'GitHub Pages build must generate its Customer directory default from customer.html.');
-assert.ok(customerHtml.includes('customer-simple-estimator.css?v=20261114-navy-booking-v1'), 'Dedicated Customer entry must load the current compact estimator styling.');
-assert.ok(indexHtml.includes('customer-simple-estimator.css?v=20261114-navy-booking-v1'), 'Root Customer entry must load the same current estimator styling.');
+assert.ok(customerHtml.includes('customer-simple-estimator.css?v=20261114-gauteng-tariff-v1'), 'Dedicated Customer entry must load the current compact estimator styling.');
+assert.ok(indexHtml.includes('customer-simple-estimator.css?v=20261114-gauteng-tariff-v1'), 'Root Customer entry must load the same current estimator styling.');
 assert.ok(indexHtml.includes('name="city"') && indexHtml.includes('name="province"'), 'Root Customer entry must preserve required signup location fields.');
 assert.ok(bookingWizardTheme.includes('#071426') && bookingWizardTheme.includes('#3ce3f6') && bookingWizardTheme.includes('#0875f5'), 'Customer booking must retain the approved midnight-navy, cyan-total and blue-action theme.');
 assert.ok(estimatorTheme.includes('#0b2038') && bookingWizardTheme.includes('#102b49'), 'Customer vehicle and parcel estimator must use the same premium navy surfaces.');
@@ -47,4 +47,6 @@ assert.ok(customerHtml.includes('id="fare-callout"') && customerHtml.includes('i
 assert.ok(portal.includes('distanceRate') && portal.includes('callOutFee') && !portal.includes('weightFee'), 'Server quotes must use call-out plus per-kilometre tariffs, with no separate weight fee.');
 assert.ok(customerHtml.includes('value="light_commercial"') && customerHtml.includes('value="one_ton_bakkie"') && customerHtml.includes('value="closed_truck"') && customerHtml.includes('value="freight_truck"'), 'Customers must be able to select each vehicle class.');
 assert.ok(cargo.includes('option.textContent=item.name;') && !cargo.includes("item.name+' · approx.'"), 'Item selection must not display weight as a price.');
-console.log('Customer session restoration, booking pin metadata and navy premium theme regression checks passed.');
+assert.ok(customerHtml.includes('customer.js?v=customer-gauteng-tariffs-20261114') && customerHtml.includes('cargo-estimator.js?v=customer-gauteng-tariffs-20261114'), 'Customer must load refreshed tariff and vehicle recommendation assets.');
+assert.ok(customer.includes("terms_version:'2026-11-14-gauteng-vehicle-tariffs'") && portal.includes('2026-11-14-gauteng-vehicle-tariffs'), 'Customer booking must record acceptance of the updated tariff terms.');
+console.log('Customer session restoration, booking pin metadata and new tariff regression checks passed.');
