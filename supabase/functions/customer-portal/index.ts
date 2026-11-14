@@ -192,7 +192,7 @@ Deno.serve(async (req: Request) => {
   }
 
   if (body.action !== "book" || typeof body.quote_id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.quote_id) ||
-      body.terms_accepted !== true || body.terms_version !== "2026-11-07-dispatch-cover-draft" ||
+      body.terms_accepted !== true || body.terms_version !== "2026-11-14-gauteng-vehicle-tariffs" ||
       typeof body.recipient !== "string" || !body.recipient.trim() || body.recipient.length > 500)
     return reply(400, { error: "calculate_a_quote_and_enter_recipient" });
   const { data: existing } = await admin.from("customer_bookings")
