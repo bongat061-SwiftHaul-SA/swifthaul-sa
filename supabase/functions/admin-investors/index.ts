@@ -31,7 +31,7 @@ Deno.serve(async (req:Request) => {
   try {
     if(req.method==="GET"){
       const [profiles,metrics,updates]=await Promise.all([
-        db.from("investor_profiles").select("id,user_id,display_name,shares_owned,ownership_percentage,investment_amount_zar,share_class,status,created_at,updated_at").order("created_at",{ascending:false}),
+        db.from("investor_profiles").select("id,user_id,display_name,shares_owned,ownership_percentage,investment_amount_zar,investment_committed_zar,investment_received_zar,share_register_reference,share_issue_date,share_class,status,created_at,updated_at").order("created_at",{ascending:false}),
         db.from("investor_company_metrics").select("*").order("display_order").order("created_at",{ascending:false}),
         db.from("investor_updates").select("*").order("created_at",{ascending:false})
       ]);
@@ -52,8 +52,8 @@ Deno.serve(async (req:Request) => {
     }
     if(action==="save_profile"){
       const userId=clean(body.user_id,64), name=clean(body.display_name,160), shares=Number(body.shares_owned), ownership=Number(body.ownership_percentage), amount=Number(body.investment_amount_zar), status=clean(body.status,16), shareClass=clean(body.share_class,80);
-      if(!userId||name.length<2||![shares,ownership,amount].every(Number.isFinite)||shares<0||ownership<0||ownership>100||amount<0||!["active","suspended","closed"].includes(status)) return reply(400,{error:"invalid_investor_profile"});
-      const {error}=await db.from("investor_profiles").update({display_name:name,shares_owned:shares,ownership_percentage:ownership,investment_amount_zar:amount,share_class:shareClass||null,status,updated_at:new Date().toISOString()}).eq("user_id",userId);
+      if(!userId||name.length<2||![shares,ownership,amount,committed,received].every(Number.isFinite)||shares<0||ownership<0||ownership>100||amount<0||committed<0||received<0||received>committed&&committed>0||!["active","suspended","closed"].includes(status)) return reply(400,{error:"invalid_investor_profile"});
+      const {error}=await db.from("investor_profiles").update({display_name:name,shares_owned:shares,ownership_percentage:ownership,investment_amount_zar:amount,investment_committed_zar:committed,investment_received_zar:received,share_register_reference:registerRef||null,share_issue_date:issueDate||null,share_class:shareClass||null,status,updated_at:new Date().toISOString()}).eq("user_id",userId);
       if(error) return reply(500,{error:"investor_profile_save_failed"});
       return reply(200,{ok:true});
     }
