@@ -175,6 +175,16 @@ const server = http.createServer((req,res)=>{
         await next.click();
         await page.waitForFunction(()=>document.querySelector('[data-wizard-count]')?.textContent==='STEP 3 OF 4');
         assert.equal(await page.locator('#booking-form .booking-step').nth(2).isVisible(),true,'Customer must advance to assistance and protection');
+        assert.equal(await page.locator('#assistance-options').isHidden(),true,'Optional assistance details must start collapsed');
+        await page.locator('#assistance-requested').check();
+        assert.equal(await page.locator('#assistance-options').isVisible(),true,'Selecting assistance must reveal duration choices');
+        await page.locator('#assistance-blocks').selectOption('2');
+        assert.match(await page.locator('#assistance-price').textContent(),/Calculate your vehicle quote first/,'Assistance pricing must not be presented as final before a live quote');
+        await page.locator('#assistance-requested').uncheck();
+        assert.equal(await page.locator('#assistance-options').isHidden(),true,'Deselecting assistance must collapse its options');
+        await next.click();
+        await page.waitForTimeout(100);
+        assert.equal(await page.locator('[data-wizard-count]').textContent(),'STEP 3 OF 4','Protection acknowledgement must be required before review');
         await page.locator('#booking-terms-accepted').check();
         await next.click();
         await page.waitForFunction(()=>document.querySelector('[data-wizard-count]')?.textContent==='STEP 4 OF 4');
