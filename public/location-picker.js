@@ -239,6 +239,7 @@
     ensureMapLibre();
   }
   const clearRoute = () => {
+    if(googleRoute) googleRoute.setPath([]);
     if(map && mapLoaded && map.getSource('customer-route')) map.getSource('customer-route').setData({type:'Feature',properties:{},geometry:{type:'LineString',coordinates:[]}});
     routeLine = false;
   };
