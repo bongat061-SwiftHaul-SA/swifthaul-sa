@@ -28,8 +28,8 @@ assert.match(prepareSites, /if \(!fs\.existsSync\(target\)\) fs\.copyFileSync/, 
 assert.ok(prepareSites.includes("const chatSource = path.join(root, 'public', 'order-chat.js')") && prepareSites.includes("const chatTarget = path.join(publicDir, 'order-chat.js')"), 'Driver bundle must include the shared delivery chat asset.');
 for (const [name, source] of [['operations',companyOperations],['driver admin',companyDrivers],['refund admin',companyRefunds]]) assert.ok(source.startsWith('(() => {') && source.trimEnd().endsWith('})();'), 'Company ' + name + ' script must isolate its top-level variables.');
 assert.equal(indexHtml, customerHtml, 'Customer directory default and dedicated entry must remain identical.');
-const wizardJs = 'booking-wizard.js?v=20261114-route-wizard-fix1';
-const wizardCss = 'booking-wizard.css?v=20261114-route-wizard-fix1';
+const wizardJs = 'booking-wizard.js?v=20261114-customer-wizard-flow2';
+const wizardCss = 'booking-wizard.css?v=20261114-customer-wizard-flow2';
 for (const [name, html] of [['Customer default entry', indexHtml], ['Customer dedicated entry', customerHtml]]) {
   assert.ok(html.includes(wizardJs), name + ' must load the current booking wizard script.');
   assert.ok(html.includes(wizardCss), name + ' must load the current booking wizard stylesheet.');
