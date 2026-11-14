@@ -1,4 +1,5 @@
 name: Build SwiftHaul Android APKs
+# Rebuild after fixing Capacitor 7 native-runtime detection for Customer and Driver PIN unlock.
 
 on:
   push:

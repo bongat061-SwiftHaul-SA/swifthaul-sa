@@ -1,8 +1,13 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './supabase-config.js';
+import { createNativePinLock } from './native-pin-lock.js';
 
+const nativePin = await createNativePinLock('customer');
 const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+  auth: {
+    persistSession: true, autoRefreshToken: true, detectSessionInUrl: true,
+    ...(nativePin.storage ? { storage: nativePin.storage } : {})
+  }
 });
 window.swiftHaulSupabase = supabase;
 const authScreen = document.getElementById('auth-screen');
@@ -36,6 +41,7 @@ function setMode(next) {
   status.textContent = '';
 }
 async function validateAccount(session) {
+  await nativePin.requireUnlock();
   // account-me is a GET-only Edge Function; functions.invoke() sends POST by default.
   const response = await fetch(`${SUPABASE_URL}/functions/v1/account-me`, {
     method: 'GET',
@@ -151,10 +157,24 @@ document.querySelectorAll('[data-social-provider]').forEach(button => button.add
     button.disabled = false;
   }
 }));
-document.getElementById('sign-out').addEventListener('click', async () => {
+// On Android, this control locks the app while retaining the encrypted Supabase
+// session so the enrolled PIN can unlock it again. It is deliberately not a
+// Supabase sign-out; a true sign-out would revoke/erase the session and cannot
+// be reversed with a local PIN alone.
+const signOutButton = document.getElementById('sign-out');
+if (nativePin.isNative) signOutButton.textContent = 'Lock app';
+signOutButton.addEventListener('click', async () => {
+  if (nativePin.isNative) {
+    // Present the PIN overlay immediately. Do not depend on a full page reload
+    // and a second auth-validation pass to display the lock screen.
+    await nativePin.lock();
+    await nativePin.requireUnlock();
+    return;
+  }
   const { error } = await supabase.auth.signOut();
   if (error) { status.textContent = 'Unable to finish signing out. Please retry.'; return; }
-  currentUser = null; location.replace(location.pathname);
+  currentUser = null;
+  window.location.replace(window.location.pathname);
 });
 supabase.auth.onAuthStateChange((event, session) => {
   if (event === 'PASSWORD_RECOVERY') { setMode('reset'); authScreen.hidden = false; workspace.hidden = true; return; }
