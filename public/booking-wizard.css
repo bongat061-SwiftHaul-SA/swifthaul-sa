@@ -112,3 +112,76 @@ body[data-app="customer"] #delivery-map-stage .address-suggestions button{backgr
 body[data-app="customer"] #delivery-map-stage .address-suggestions button:hover,
 body[data-app="customer"] #delivery-map-stage .address-suggestions button[aria-selected=true]{background:#202a36}
 body[data-app="customer"] #delivery-map-stage .address-suggestions .suggestion-meta{color:#aeb8c6}
+
+
+/* Approved Customer booking interface: compact graphite surfaces, no legacy green/white picker UI. */
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage{
+  height:340px!important;min-height:310px!important;max-height:380px!important;
+  margin:0 0 4px!important;border:1px solid #35404e!important;
+  border-radius:18px!important;background:#151c26!important;box-shadow:none!important;
+}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage #global-location-map{
+  background:#151c26!important;
+}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-location-sheet{
+  left:10px!important;right:10px!important;bottom:10px!important;
+  max-height:78%!important;padding:12px!important;overflow-y:auto!important;
+  background:rgba(15,21,30,.97)!important;border:1px solid #3b4655!important;
+  border-radius:15px!important;box-shadow:0 12px 32px #0009!important;color:#f4f6f9!important;
+}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-sheet-head h3{
+  color:#f4f6f9!important;font-size:15px!important;letter-spacing:-.2px!important;
+}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-sheet-head p,
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage #loc-status,
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-geocoder-credit{
+  color:#aab4c1!important;
+}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-route-steps,
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-pin-meta{
+  background:#202a36!important;border:1px solid #35404e!important;color:#aab4c1!important;
+}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-pin-meta strong{
+  color:#f4f6f9!important;
+}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-location-fields .field:before{
+  box-shadow:0 0 0 4px #aeb8c622!important;
+}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-location-fields input{
+  background:#0b1017!important;border:1px solid #3a4554!important;
+  border-radius:11px!important;color:#f7f9fc!important;
+}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-pin-button,
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-sheet-tools button,
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .address-search-button{
+  background:#202a36!important;border:1px solid #465364!important;color:#e9edf2!important;
+}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-continue-booking{
+  background:linear-gradient(180deg,#fff,#dce2e9)!important;border:1px solid #f4f6f9!important;
+  color:#11151b!important;border-radius:12px!important;
+}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-more-options{
+  background:#171e28!important;border:1px solid #35404e!important;border-radius:11px!important;
+}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-more-options>summary{
+  color:#e9edf2!important;
+}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-more-content{
+  color:#e9edf2!important;
+}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-sheet-quote #calculate-route{
+  background:linear-gradient(180deg,#fff,#dce2e9)!important;border:1px solid #f4f6f9!important;
+  color:#11151b!important;border-radius:12px!important;
+}
+body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-sheet-quote #quote-result{
+  background:#0d131b!important;border:1px solid #3b4655!important;color:#f4f6f9!important;
+}
+@media(max-width:600px){
+  body[data-app="customer"] #booking-form .booking-step #delivery-map-stage{
+    height:320px!important;min-height:290px!important;max-height:350px!important;
+  }
+  body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-location-sheet{
+    left:8px!important;right:8px!important;bottom:8px!important;padding:10px!important;
+    max-height:80%!important;
+  }
+}
