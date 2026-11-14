@@ -36,7 +36,7 @@ function calculateLoad(input: unknown, selectedClass: unknown) {
   const volumetric = length * width * height / 5000, chargeable = Math.max(weight, volumetric);
   if (chargeable > 8000) throw new InputError("Loads above 8,000 chargeable kg require a manual quote. Contact dispatch.", 422);
   const recommendation = recommendedVehicleClass(chargeable);
-  const vehicleClass = (typeof selectedClass === "string" && selectedClass in tariffClasses ? selectedClass : recommendation) as VehicleClass;
+  const vehicleClass = (typeof selectedClass === "string" && Object.hasOwn(tariffClasses, selectedClass) ? selectedClass : recommendation) as VehicleClass;
   const tariff = tariffClasses[vehicleClass];
   if (chargeable > tariff.capacity)
     throw new InputError("The selected vehicle class is below the estimated payload. Please choose the recommended or a larger vehicle.", 422);
