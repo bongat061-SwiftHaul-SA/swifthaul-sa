@@ -36,11 +36,47 @@ Deno.serve(async (req:Request) => {
         db.from("investor_updates").select("*").order("created_at",{ascending:false})
       ]);
       if(profiles.error||metrics.error||updates.error) throw new Error("investor_data_read_failed");
-      return reply(200,{profiles:profiles.data,metrics:metrics.data,updates:updates.data});
+      const enrichedProfiles=await Promise.all((profiles.data||[]).map(async (profile)=>{const {data:userData}=await db.auth.admin.getUserById(profile.user_id);return {...profile,email:userData?.user?.email||""};}));\n      return reply(200,{profiles:enrichedProfiles,metrics:metrics.data,updates:updates.data});
     }
     const body=await req.json().catch(()=>null);
     if(!body||typeof body!=="object") return reply(400,{error:"invalid_json"});
     const action=clean(body.action,40);
+    if(action==="publish_profile_only"){
+      const email=clean(body.email,254).toLowerCase(), name=clean(body.display_name,160);
+      if(!validEmail(email)||name.length<2) return reply(400,{error:"Enter a valid investor name and email address."});
+      let userId="";
+      let page=1;
+      while(!userId){
+        const {data:list,error:listError}=await db.auth.admin.listUsers({page,perPage:1000});
+        if(listError) return reply(500,{error:"Could not check whether this email already has a SwiftHaul account."});
+        const match=list.users.find((user)=>String(user.email||"").toLowerCase()===email);
+        if(match){userId=match.id;break;}
+        if(list.users.length<1000) break;
+        page++;
+        if(page>10) return reply(503,{error:"Too many accounts to safely check this email. Please contact support."});
+      }
+      let createdAuthUser=false;
+      if(!userId){
+        // Create an account with an unshared random credential. The investor must set their own password via recovery email.
+        const temporarySecret=crypto.randomUUID()+"-"+crypto.randomUUID();
+        const {data,error}=await db.auth.admin.createUser({email,password:temporarySecret,email_confirm:true,user_metadata:{app_type:"investor",full_name:name,investor_activation_pending:true}});
+        if(error||!data.user){
+          console.error("Investor account provision failed",error?.message);
+          return reply(400,{error:"The investor profile could not be created. Check the email address and try again."});
+        }
+        userId=data.user.id;createdAuthUser=true;
+      }
+      const {data:existingProfile,error:profileReadError}=await db.from("investor_profiles").select("id").eq("user_id",userId).maybeSingle();
+      if(profileReadError) return reply(500,{error:"Could not check the investor access record."});
+      if(existingProfile) return reply(409,{error:"This account already has an investor profile. Find it in the share register below."});
+      const {error:insertError}=await db.from("investor_profiles").insert({user_id:userId,display_name:name,shares_owned:0,ownership_percentage:0,investment_amount_zar:0,status:"active"});
+      if(insertError){
+        console.error("Investor profile create failed",insertError.message);
+        if(createdAuthUser) await db.auth.admin.deleteUser(userId);
+        return reply(500,{error:"The investor account exists, but its profile could not be published. Please refresh and try again."});
+      }
+      return reply(201,{ok:true,profile_published:true,email_sent:false,created_auth_user:createdAuthUser});
+    }
     if(action==="invite"){
       const email=clean(body.email,254).toLowerCase(), name=clean(body.display_name,160);
       if(!validEmail(email)||name.length<2) return reply(400,{error:"Enter a valid investor name and email address."});
