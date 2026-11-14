@@ -53,7 +53,7 @@ let loadVersion = 0;
 let refundRequestsByWaybill = new Map();
 const report = (text, error = false) => { message.textContent = text; message.classList.toggle('error', error); };
 form.addEventListener('input', event => {if(['pickup','dropoff'].includes(event.target.name)){for(const suffix of ['latitude','longitude']){const hidden=form.elements.namedItem(event.target.name+'_'+suffix);if(hidden)hidden.value='';}const picker=event.target.nextElementSibling;if(picker?.matches('button'))picker.textContent='Pick / copy pin';}if (['pickup','dropoff','weight','length','width','height'].includes(event.target.name)) resetQuote();});
-form.addEventListener('change', event => {if (['weight','length','width','height'].includes(event.target.name)) resetQuote();});
+form.addEventListener('change', event => {if (['weight','length','width','height','vehicle'].includes(event.target.name)) resetQuote();});
 function whatsapp(order) {
   const text = \`*SWIFTHAUL SA DISPATCH*
 *Order:* \${order.waybill}
@@ -201,12 +201,12 @@ function assistanceQuote(){
   assistanceOptions.hidden=false;
   const blocks=Math.min(4,Math.max(1,Number(assistanceBlocks.value)||1));
   if(!currentQuote){assistancePrice.textContent='Calculate your vehicle quote first.';return {requested:true,minutes:blocks*30,fee:0};}
-  if(currentQuote.vehicle==='bike'){assistancePrice.textContent='Bike deliveries do not offer lifting assistance.';return {requested:true,minutes:blocks*30,fee:0};}
+  
   const van=currentQuote.vehicle==='van',base=van?180:350,extra=van?100:180,fee=base+(blocks-1)*extra;
   assistancePrice.textContent=(van?'1 helper':'2 helpers')+' · '+(blocks*30)+' minutes · '+money(fee)+' proposed assistance fee. Dispatch confirmation required.';
   return {requested:true,minutes:blocks*30,fee};
 }
-assistanceRequested?.addEventListener('change',()=>{const q=assistanceQuote();if(q.requested&&currentQuote?.vehicle==='bike')assistanceRequested.checked=false;});
+assistanceRequested?.addEventListener('change',()=>{assistanceQuote();});
 assistanceBlocks?.addEventListener('change',assistanceQuote);
 form.addEventListener('submit', async event => {
   event.preventDefault();
