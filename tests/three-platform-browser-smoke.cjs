@@ -31,7 +31,7 @@ const server = http.createServer((req,res)=>{
     for (const href of ['./customer/customer.html','./driver/','./company/']) assert.equal(await landing.locator('a[href="'+href+'"]').count(),1,'Landing page link '+href);
     await landing.close();
     for (const app of [
-      {name:'Customer',path:'/customer/customer.html',id:'customer',signup:true},
+      {name:'Customer',path:'/customer/',id:'customer',signup:true},
       {name:'Driver',path:'/driver/',id:'driver',signup:true},
       {name:'Company Admin',path:'/company/',id:'company',signup:false}
     ]) {
@@ -88,6 +88,15 @@ const server = http.createServer((req,res)=>{
         throw new Error(app.name+' auth initialization did not finish: '+JSON.stringify(details)+'; '+error.message);
       });
       assert.equal(await page.locator('body').getAttribute('data-app'),app.id,app.name+' app identity');
+      if(app.name==='Customer'){
+        const wizard=page.locator('#booking-form .booking-wizard');
+        assert.equal(await wizard.count(),1,'Customer default route must initialise the booking wizard.');
+        const steps=page.locator('#booking-form .booking-step');
+        assert.equal(await steps.count(),4,'Customer booking wizard must render four separate steps.');
+        assert.equal(await wizard.locator('[data-wizard-count]').textContent(),'STEP 1 OF 4','Customer booking must start at step one.');
+        assert.equal(await steps.nth(0).getAttribute('hidden'),null,'Customer first booking step must be visible.');
+        assert.notEqual(await steps.nth(1).getAttribute('hidden'),null,'Customer later booking steps must start hidden.');
+      }
       assert.ok((await page.title()).toLowerCase().includes(app.name==='Company Admin'?'company':app.name.toLowerCase()),app.name+' document title');
       assert.equal(await page.locator('#auth-form').count(),1,app.name+' sign-in form');
       assert.equal(await page.locator('#workspace').count(),1,app.name+' workspace shell should be present');
