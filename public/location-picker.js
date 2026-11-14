@@ -174,6 +174,11 @@
   function geohash(lat,lng,precision=9){const alphabet='0123456789bcdefghjkmnpqrstuvwxyz';let latR=[-90,90],lngR=[-180,180],even=true,bits=0,ch=0,out='';while(out.length<precision){const range=even?lngR:latR,mid=(range[0]+range[1])/2;ch<<=1;if((even?lng:lat)>=mid){ch|=1;range[0]=mid;}else range[1]=mid;even=!even;if(++bits===5){out+=alphabet[ch];bits=0;ch=0;}}return out;}
   const state = { pickup: null, dropoff: null };
   let map = null;
+  let googleMap = null;
+  let googleMapLoading = null;
+  let googleRoute = null;
+  const googleMapsApiKey = String(window.SWIFTHAUL_GOOGLE_MAPS_API_KEY || '').trim();
+  const hasMap = () => Boolean(map || googleMap);
   let activeField = pickup;
   let routeLine = false;
   let mapLoaded = false;
@@ -186,7 +191,53 @@
     layers:[{id:'base-raster',type:'raster',source:'base'}]
   });
   const mapStyle = rasterStyle('https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png');
-  const cameraMove = (center, zoom=14) => { if(map) map.flyTo({center,zoom,duration:350}); };
+  const cameraMove = (center, zoom=14) => {
+    if (googleMap) { googleMap.panTo({lat:center[1],lng:center[0]}); googleMap.setZoom(zoom); }
+    else if (map) map.flyTo({center,zoom,duration:350});
+  };
+  const resizeMap = () => {
+    if (map) map.resize();
+    if (googleMap && window.google?.maps?.event) window.google.maps.event.trigger(googleMap,'resize');
+  };
+  function loadGoogleMaps() {
+    if (window.google?.maps?.Map) return Promise.resolve();
+    if (window.__swiftHaulGoogleMapsPromise) return window.__swiftHaulGoogleMapsPromise;
+    window.__swiftHaulGoogleMapsPromise = new Promise((resolve,reject) => {
+      const callbackName='__swiftHaulGoogleMapsReady';
+      const script=document.createElement('script');
+      window[callbackName]=()=>{delete window[callbackName];resolve();};
+      script.src='https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(googleMapsApiKey)+'&callback='+callbackName+'&loading=async&v=weekly&language=en&region=ZA';
+      script.async=true;script.defer=true;
+      script.onerror=()=>{delete window[callbackName];reject(new Error('Google Maps JavaScript API could not be loaded.'));};
+      document.head.appendChild(script);
+    });
+    return window.__swiftHaulGoogleMapsPromise;
+  }
+  function ensureMap() {
+    if (hasMap() || googleMapLoading) return;
+    if (googleMapsApiKey) {
+      $('loc-status').textContent='Loading Google Maps…';
+      googleMapLoading=loadGoogleMaps().then(()=>{
+        googleMap=new google.maps.Map($('global-location-map'),{
+          center:{lat:-26.32516865200042,lng:28.195352552065742},zoom:13.5,mapTypeId:'roadmap',
+          mapTypeControl:false,streetViewControl:false,fullscreenControl:true,clickableIcons:false,
+          gestureHandling:'greedy',controlSize:32
+        });
+        mapLoaded=true;
+        googleMap.addListener('click',event=>{
+          if(activeField&&event.latLng){const lat=event.latLng.lat(),lng=event.latLng.lng();saveLocation(activeField,lat,lng,'Map pin adjusted. Finding the nearest mapped address…');reverseLabel(activeField,lat,lng);}
+        });
+        for(const key of ['pickup','dropoff']) if(state[key]) placeMarker(key,state[key].lat,state[key].lng);
+        fitLocations();resizeMap();
+        $('loc-status').textContent='Google Maps is ready. Tap the map or drag a pin to the exact entrance.';
+      }).catch(()=>{
+        $('loc-status').textContent='Google Maps is unavailable right now. Loading the free backup map…';
+        ensureMapLibre();
+      }).finally(()=>{googleMapLoading=null;});
+      return;
+    }
+    ensureMapLibre();
+  }
   const clearRoute = () => {
     if(map && mapLoaded && map.getSource('customer-route')) map.getSource('customer-route').setData({type:'Feature',properties:{},geometry:{type:'LineString',coordinates:[]}});
     routeLine = false;
@@ -206,7 +257,7 @@
     const label=document.createElement('span');label.textContent=key==='pickup'?'P':'D';label.style.transform='rotate(45deg)';node.append(label);
     return node;
   };
-  function ensureMap() {
+  function ensureMapLibre() {
     if(map || !window.maplibregl) return;
     map=new maplibregl.Map({container:'global-location-map',style:mapStyle,center:[28.195352552065742,-26.32516865200042],zoom:13.5,attributionControl:true,dragRotate:false,pitchWithRotate:false,maxPitch:0});
     map.addControl(new maplibregl.NavigationControl({showCompass:false}),'top-right');
@@ -244,21 +295,30 @@
     requestAnimationFrame(()=>map&&map.resize());
   }
   function placeMarker(key,lat,lng) {
-    if(!map || !mapLoaded) return;
+    if(!hasMap() || !mapLoaded) return;
     const input=key==='pickup'?pickup:dropoff;
+    if(googleMap){
+      if(state[key].marker?.__swiftGoogleMarker){state[key].marker.setPosition({lat,lng});return;}
+      const marker=new google.maps.Marker({map:googleMap,position:{lat,lng},draggable:true,title:key==='pickup'?'Pickup location':'Drop-off location',label:{text:key==='pickup'?'P':'D',color:'#ffffff',fontWeight:'800'}});
+      marker.__swiftGoogleMarker=true;
+      marker.addListener('dragend',event=>{const p=event.latLng;if(!p)return;saveLocation(input,p.lat(),p.lng(),'Pin moved. Updating the nearest mapped address…');reverseLabel(input,p.lat(),p.lng());});
+      state[key].marker=marker;return;
+    }
     if(state[key].marker){state[key].marker.setLngLat([lng,lat]);return;}
     const marker=new maplibregl.Marker({element:markerNode(key),draggable:true,anchor:'bottom'})
       .setLngLat([lng,lat]).addTo(map);
-    marker.on('dragend',()=>{
-      const p=marker.getLngLat();
-      saveLocation(input,p.lat,p.lng,'Pin moved. Updating the nearest mapped address…');
-      reverseLabel(input,p.lat,p.lng);
-    });
+    marker.on('dragend',()=>{const p=marker.getLngLat();saveLocation(input,p.lat,p.lng,'Pin moved. Updating the nearest mapped address…');reverseLabel(input,p.lat,p.lng);});
     state[key].marker=marker;
   }
+  function removeMarker(marker){if(!marker)return;if(marker.__swiftGoogleMarker)marker.setMap(null);else marker.remove();}
   function fitLocations() {
-    if(!map) return;
+    if(!hasMap()) return;
     const points=['pickup','dropoff'].filter(key=>state[key]).map(key=>[state[key].lng,state[key].lat]);
+    if(googleMap){
+      if(points.length===2){const bounds=new google.maps.LatLngBounds();points.forEach(([lng,lat])=>bounds.extend({lat,lng}));googleMap.fitBounds(bounds,{top:38,bottom:230,left:38,right:38});if(googleRoute)googleRoute.setPath(points.map(([lng,lat])=>({lat,lng})));}
+      else if(points.length===1){cameraMove(points[0],16);if(googleRoute)googleRoute.setPath([]);}
+      return;
+    }
     if(points.length===2) {
       map.fitBounds([[Math.min(points[0][0],points[1][0]),Math.min(points[0][1],points[1][1])],[Math.max(points[0][0],points[1][0]),Math.max(points[0][1],points[1][1])]],{padding:{top:38,bottom:230,left:38,right:38},maxZoom:17,duration:350});
       routeData.geometry.coordinates=points;routeLine=true;routeStyle();
@@ -269,8 +329,14 @@
   }
   window.swiftHaulSetRoadRoute = route => {
     ensureMap();
-    if(!map || !route?.coordinates?.length) return false;
+    if(!hasMap() || !route?.coordinates?.length) return false;
     routeData.geometry.coordinates=route.coordinates.map(([longitude,latitude])=>[longitude,latitude]);
+    if(googleMap){
+      const path=routeData.geometry.coordinates.map(([lng,lat])=>({lat,lng}));
+      if(!googleRoute)googleRoute=new google.maps.Polyline({map:googleMap,geodesic:true,strokeColor:'#176b52',strokeOpacity:0.95,strokeWeight:5});
+      googleRoute.setPath(path);const bounds=new google.maps.LatLngBounds();path.forEach(point=>bounds.extend(point));googleMap.fitBounds(bounds,{top:38,bottom:230,left:38,right:38});
+      $('loc-status').textContent='Road route loaded. Adjust either pin if the pickup or drop-off entrance is incorrect.';return true;
+    }
     routeLine=true;
     if(mapLoaded){routeStyle();map.getSource('customer-route').setData(routeData);}
     const coords=routeData.geometry.coordinates;
@@ -308,7 +374,7 @@
     $('loc-coordinates').textContent=lat.toFixed(6)+', '+lng.toFixed(6);
     $('loc-plus-code').textContent=plusCode||'Unavailable';
     $('loc-status').textContent=message||(key==='pickup'?'Pickup pin saved.':'Drop-off pin saved.');
-    if(map){placeMarker(key,lat,lng);fitLocations();}
+    if(hasMap()){placeMarker(key,lat,lng);fitLocations();}
     updateContinueButton();
   }
 
@@ -359,14 +425,14 @@
       }
     }
   }
-  window.swiftHaulGetMapCenter = () => map ? map.getCenter() : null;
+  window.swiftHaulGetMapCenter = () => googleMap ? (()=>{const c=googleMap.getCenter();return c?{lng:c.lng(),lat:c.lat()}:null;})() : map ? map.getCenter() : null;
   window.swiftHaulShowAddressOnMap = (input, lat, lng) => {
     activeField = input;
     ensureMap();
-    if (!map) return;
+    if (!hasMap()) return;
     saveLocation(input, Number(lat), Number(lng), 'Address suggestion selected. The map is centred on its mapped point; adjust to the exact gate or entrance.');
     cameraMove([Number(lng),Number(lat)],18);
-    if(map) map.resize();
+    resizeMap();
   };
 
   for (const [input, label] of [[pickup, 'pickup'], [dropoff, 'drop-off']]) {
@@ -375,12 +441,12 @@
     input.addEventListener('input', () => {
       if (input.dataset.justSelected === 'true') return;
       const previous = state[key];
-      if (previous?.marker) previous.marker.remove();
+      if (previous?.marker) removeMarker(previous.marker);
       delete state[key];
       updateContinueButton();
       clearRoute();
       const remaining = state.pickup || state.dropoff;
-      if (remaining && map) cameraMove([remaining.lng,remaining.lat],15);
+      if (remaining && hasMap()) cameraMove([remaining.lng,remaining.lat],15);
       const pin = input.parentElement.querySelector('.swift-pin-button');
       if (pin) { pin.setAttribute('aria-pressed', 'false'); pin.textContent = '◎ Adjust ' + label + ' pin on map'; }
     });
@@ -418,10 +484,10 @@
 
   $('loc-open').addEventListener('click', () => {
     ensureMap();
-    if (!map) { $('loc-status').textContent = 'Map is still loading. Please try again.'; return; }
+    if (!hasMap()) { $('loc-status').textContent = 'Map is still loading. Please try again.'; return; }
     fitLocations();
     if (!state.pickup && !state.dropoff) cameraMove([28.195352552065742,-26.32516865200042],14);
-    map.resize();
+    resizeMap();
   });
   $('loc-current').addEventListener('click', () => {
     if (!navigator.geolocation) { $('loc-status').textContent = 'This device does not support location sharing. You can still place a pin manually.'; return; }
@@ -440,14 +506,14 @@
     if (!workspace || workspace.hidden) return;
     ensureMap();
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      if (!map || workspace.hidden) return;
-      map.resize();
+      if (!hasMap() || workspace.hidden) return;
+      resizeMap();
       fitLocations();
     }));
   }
   if (workspace && 'ResizeObserver' in window) {
     mapSizeObserver = new ResizeObserver(() => {
-      if (!workspace.hidden && map) map.resize();
+      if (!workspace.hidden && hasMap()) resizeMap();
     });
     mapSizeObserver.observe(stage);
   }
