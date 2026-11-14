@@ -34,6 +34,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      # The static Pages baseline does not use Netlify Identity. Older main
+      # commits may not contain the legacy feature marker, so make that copy
+      # conditional in this runner checkout only (never modify main).
+      - name: Make legacy Netlify Identity marker optional for static build
+        working-directory: production
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const file = 'scripts/prepare-sites.cjs';
+          let source = fs.readFileSync(file, 'utf8');
+          const oldLine = "    fs.copyFileSync(path.join(root, '.netlify/features/netlify-identity'), path.join(features, 'netlify-identity'));";
+          const newLine = "    const identityMarker = path.join(root, '.netlify/features/netlify-identity');\n    if (fs.existsSync(identityMarker)) fs.copyFileSync(identityMarker, path.join(features, 'netlify-identity'));";
+          if (!source.includes(oldLine)) throw new Error('Expected legacy Identity copy line was not found; stopping safely.');
+          fs.writeFileSync(file, source.replace(oldLine, newLine));
+          NODE
       # Build all three platforms from main first. On the approved staging
       # branch, replace ONLY the Customer bundle with the tested staging build.
       - name: Build production baseline platforms
