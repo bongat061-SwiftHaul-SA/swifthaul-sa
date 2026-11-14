@@ -35,7 +35,7 @@ for (const [name, html] of [['Customer default entry', indexHtml], ['Customer de
   assert.ok(html.includes(wizardCss), name + ' must load the current booking wizard stylesheet.');
   assert.ok(html.indexOf('customer-simple-estimator.css') < html.indexOf(wizardCss), name + ' must load wizard CSS after estimator CSS.');
 }
-assert.match(pagesBuilder, /if \(app === 'customer'\)[\\s\\S]*fs\\.copyFileSync\(path\\.join\(source, 'customer\\.html'\), path\\.join\(target, 'index\\.html'\)\)/, 'GitHub Pages build must generate its Customer directory default from customer.html.');
+assert.ok(pagesBuilder.includes("if (app === 'customer')") && pagesBuilder.includes("fs.copyFileSync(path.join(source, 'customer.html'), path.join(target, 'index.html'))"), 'GitHub Pages build must generate its Customer directory default from customer.html.');
 assert.ok(customerHtml.includes('customer-simple-estimator.css?v=20261113-compact-estimator'), 'Dedicated Customer entry must load the current compact estimator styling.');
 assert.ok(indexHtml.includes('customer-simple-estimator.css?v=20261113-compact-estimator'), 'Root Customer entry must load the same current estimator styling.');
 assert.ok(indexHtml.includes('name="city"') && indexHtml.includes('name="province"'), 'Root Customer entry must preserve required signup location fields.');
