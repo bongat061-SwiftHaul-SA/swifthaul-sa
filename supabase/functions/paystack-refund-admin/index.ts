@@ -26,10 +26,7 @@ Deno.serve(async(req:Request)=>{
  if(bookingError||!booking)return reply(503,{error:"booking_lookup_failed"});
  if(booking.payment_source!=="paystack")return reply(409,{error:"original_payment_was_not_paystack"});
  if(booking.refunded_at)return reply(409,{error:"booking_already_refunded"});
- if(request.status==="pending"){
-  const {error}=await db.rpc("review_booking_refund",{p_admin_id:user.user.id,p_request_id:request.id,p_action:"approve",p_provider_reference:null});
-  if(error)return reply(409,{error:"refund_request_could_not_be_approved"});
- }else if(request.status!=="provider_pending")return reply(409,{error:"refund_request_not_approved"});
+ if(!["pending","provider_pending"].includes(request.status))return reply(409,{error:"refund_request_not_approved"});
  const {data:payment,error:paymentError}=await db.from("payment_transactions").select("provider_reference,amount,currency,status").eq("booking_waybill",request.waybill).eq("provider","paystack").eq("status","complete").maybeSingle();
  if(paymentError)return reply(503,{error:"original_payment_lookup_failed"});
  if(!payment?.provider_reference||payment.currency!=="ZAR")return reply(409,{error:"successful_zar_paystack_transaction_not_found"});
@@ -39,6 +36,10 @@ Deno.serve(async(req:Request)=>{
  if(allRefundsError)return reply(503,{error:"refund_total_lookup_failed"});
  const alreadyRefunded=(allRefunds||[]).reduce((n:any,x:any)=>n+Number(x.amount_cents||0),0);
  if(alreadyRefunded+cents>original)return reply(409,{error:"cumulative_refunds_exceed_original_payment"});
+ if(request.status==="pending"){
+  const {error}=await db.rpc("review_booking_refund",{p_admin_id:user.user.id,p_request_id:request.id,p_action:"approve",p_provider_reference:null});
+  if(error)return reply(409,{error:"refund_request_could_not_be_approved"});
+ }
  const {data:records,error:recordsError}=await db.from("paystack_refund_records").select("*").eq("refund_request_id",request.id).order("attempt_number",{ascending:false}).limit(1);
  if(recordsError)return reply(503,{error:"refund_attempt_lookup_failed"});
  let record=records?.[0];
