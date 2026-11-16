@@ -20,9 +20,14 @@ Deno.serve(async (req: Request) => {
   const url = Deno.env.get("SUPABASE_URL");
   const anon = Deno.env.get("SUPABASE_ANON_KEY");
   const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const mode = Deno.env.get("PAYSTACK_MODE");
+  const secret = Deno.env.get("PAYSTACK_SECRET_KEY") || "";
+  const configuredMode = Deno.env.get("PAYSTACK_MODE");
   if (!url || !anon || !service) return reply(500, { error: "server_configuration_error" });
-  if (mode !== "sandbox" && mode !== "live") return reply(503, { error: "paystack_mode_not_configured" });
+  // This branch is staging: refuse live credentials so test pages cannot charge real customers.
+  if (!secret.startsWith("sk_test_") || (configuredMode && configuredMode !== "sandbox")) {
+    return reply(503, { error: "staging_requires_paystack_test_mode" });
+  }
+  const mode = "sandbox";
 
   const auth = createClient(url, anon, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: authData, error: authError } = await auth.auth.getUser(token);
