@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#090d16"><meta name="robots" content="noindex,nofollow">
+<title>Investor Portal | SwiftHaul SA</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={theme:{extend:{colors:{brand:{400:'#38bdf8',500:'#0ea5e9'},darkbg:'#090d16',cardbg:'#111827'}}}};</script>
+<style>html{color-scheme:dark}body{background:#090d16}.field{width:100%;border:1px solid #334155;background:#090d16;border-radius:.75rem;padding:.85rem .95rem;color:white;outline:none}.field:focus{border-color:#38bdf8;box-shadow:0 0 0 3px #38bdf822}.glass{background:rgba(17,24,39,.84);backdrop-filter:blur(16px)}.eyebrow{letter-spacing:.16em}</style>
+</head>
+<body class="min-h-screen font-sans text-slate-100 antialiased">
+<header class="border-b border-slate-800 bg-[#090d16]/90"><div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6"><a href="/" class="flex items-center gap-3"><img src="/icon.svg" alt="" class="h-10 w-10 rounded-full"><span class="text-lg font-black text-white">Swift<span class="text-sky-400">Haul</span> <span class="text-slate-400">Investor Portal</span></span></a><a href="/" class="text-sm font-semibold text-slate-400 hover:text-white">← Back to website</a></div></header>
+<main class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:py-14">
+<section id="loginView" class="mx-auto grid max-w-5xl gap-8 lg:grid-cols-[1fr_420px] lg:items-center">
+<div><p class="eyebrow text-[10px] font-extrabold uppercase text-sky-300">Private investor access</p><h1 class="mt-3 max-w-2xl text-4xl font-black tracking-tight text-white sm:text-5xl">Your SwiftHaul investment, in view.</h1><p class="mt-5 max-w-xl leading-relaxed text-slate-400">Access your individually assigned shareholding record, approved company performance summaries and investor announcements in one secure space.</p>
+<div class="mt-8 grid gap-3 sm:grid-cols-2"><div class="rounded-2xl border border-slate-800 bg-cardbg p-4"><p class="font-bold text-white">Shareholding overview</p><p class="mt-1 text-sm text-slate-400">Your recorded shares, ownership percentage and investment history.</p></div><div class="rounded-2xl border border-slate-800 bg-cardbg p-4"><p class="font-bold text-white">Company performance</p><p class="mt-1 text-sm text-slate-400">Published delivery, customer, driver and financial indicators.</p></div><div class="rounded-2xl border border-slate-800 bg-cardbg p-4"><p class="font-bold text-white">Investor updates</p><p class="mt-1 text-sm text-slate-400">Company milestones, reports and shareholder notices.</p></div><div class="rounded-2xl border border-slate-800 bg-cardbg p-4"><p class="font-bold text-white">Private by design</p><p class="mt-1 text-sm text-slate-400">No public registration. Access is provisioned by SwiftHaul.</p></div></div>
+<p class="mt-6 max-w-xl text-xs leading-relaxed text-slate-500">The portal displays records published or confirmed by SwiftHaul. It does not itself issue shares, confirm an investment or promise returns. Forecasts, where published, will be labelled separately from actual results.</p></div>
+<div class="glass rounded-3xl border border-slate-700 p-6 shadow-2xl shadow-sky-950/30 sm:p-8">
+<div id="loginPanel"><p class="eyebrow text-[10px] font-extrabold uppercase text-sky-300">Investor sign in</p><h2 class="mt-2 text-2xl font-black text-white">Welcome back</h2><p class="mt-2 text-sm text-slate-400">Sign in with the email address and password you set during activation. If your profile was published without an email, select Set / reset password to receive a secure password setup link. You can also activate using the six-digit recovery code in that email.</p>
+<form id="loginForm" class="mt-6 space-y-4"><label class="block text-xs font-semibold text-slate-300">Email address<input class="field mt-2" type="email" id="email" autocomplete="username" required></label><label class="block text-xs font-semibold text-slate-300">Password<input class="field mt-2" type="password" id="password" autocomplete="current-password" required minlength="8"></label><button id="loginButton" class="w-full rounded-xl bg-sky-500 px-4 py-3.5 text-sm font-extrabold text-slate-950 hover:bg-sky-400" type="submit">Sign in securely</button></form>
+<button id="resetButton" class="mt-4 text-sm font-semibold text-sky-300 hover:text-sky-200">Set / reset password</button><p id="loginStatus" role="status" aria-live="polite" class="mt-4 min-h-5 text-sm text-slate-400"></p>
+<div class="mt-6 border-t border-slate-800 pt-5"><p class="text-xs leading-relaxed text-slate-500">Investor accounts are invitation-only. If your profile has been published but you have not activated sign-in, use Set / reset password above. If you still need assistance, contact SwiftHaul through the official <a class="text-sky-300 underline" href="https://wa.me/27615083880?text=Hello%20SwiftHaul%20SA%2C%20I%20need%20assistance%20with%20investor%20portal%20access.">WhatsApp support channel</a>.</p></div></div>
+<div id="recoveryPanel" class="hidden">
+  <p class="eyebrow text-[10px] font-extrabold uppercase text-sky-300">Secure account activation</p>
+  <h2 class="mt-2 text-2xl font-black text-white">Set your password</h2>
+  <p class="mt-2 text-sm text-slate-400">Open the secure email link, or enter the six-digit recovery code sent to your investor email address.</p>
+  <div id="recoveryCodePanel" class="mt-5 space-y-3">
+    <label class="block text-xs font-semibold text-slate-300">Investor email address<input id="recoveryEmail" class="field mt-2" type="email" autocomplete="email"></label>
+    <label class="block text-xs font-semibold text-slate-300">Six-digit recovery code<input id="recoveryCode" class="field mt-2 text-center text-xl tracking-[.35em]" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="••••••" /></label>
+    <button id="verifyRecoveryCode" class="w-full rounded-xl bg-sky-500 px-4 py-3 text-sm font-extrabold text-slate-950 hover:bg-sky-400" type="button">Verify code</button>
+  </div>
+  <form id="newPasswordForm" class="mt-5 hidden space-y-3">
+    <label class="block text-xs font-semibold text-slate-300">New password<input id="newInvestorPassword" class="field mt-2" type="password" autocomplete="new-password" minlength="8" required></label>
+    <label class="block text-xs font-semibold text-slate-300">Confirm new password<input id="confirmInvestorPassword" class="field mt-2" type="password" autocomplete="new-password" minlength="8" required></label>
+    <button id="saveInvestorPassword" class="w-full rounded-xl bg-sky-500 px-4 py-3 text-sm font-extrabold text-slate-950 hover:bg-sky-400" type="submit">Save password</button>
+  </form>
+  <p id="recoveryStatus" role="status" aria-live="polite" class="mt-4 min-h-5 text-sm text-slate-400"></p>
+  <button id="backToInvestorLogin" class="mt-3 text-sm font-semibold text-sky-300 hover:text-sky-200" type="button">Back to investor sign in</button>
+</div>
+<div id="dashboardPanel" class="hidden"><div class="flex items-start justify-between gap-3"><div><p class="eyebrow text-[10px] font-extrabold uppercase text-sky-300">Private account</p><h2 class="mt-2 text-2xl font-black text-white">Investor dashboard</h2><p id="investorName" class="mt-1 text-sm text-slate-400"></p></div><button id="signOutButton" class="rounded-lg border border-slate-700 px-3 py-2 text-xs font-bold text-slate-300 hover:text-white">Sign out</button></div>
+<div class="mt-6 grid gap-3 sm:grid-cols-2"><div class="rounded-xl border border-slate-700 bg-[#090d16] p-4"><p class="text-xs text-slate-400">Shares recorded</p><p id="sharesOwned" class="mt-2 text-2xl font-black text-white">—</p></div><div class="rounded-xl border border-slate-700 bg-[#090d16] p-4"><p class="text-xs text-slate-400">Ownership percentage</p><p id="ownership" class="mt-2 text-2xl font-black text-white">—</p></div><div class="rounded-xl border border-slate-700 bg-[#090d16] p-4"><p class="text-xs text-slate-400">Investment committed</p><p id="investmentCommitted" class="mt-2 text-2xl font-black text-white">—</p></div><div class="rounded-xl border border-slate-700 bg-[#090d16] p-4"><p class="text-xs text-slate-400">Funds received and verified</p><p id="investmentReceived" class="mt-2 text-2xl font-black text-white">—</p></div><div class="rounded-xl border border-slate-700 bg-[#090d16] p-4 sm:col-span-2"><p class="text-xs text-slate-400">Share register reference / issue date</p><p id="shareRegister" class="mt-2 text-sm font-semibold text-white">—</p></div></div>
+<div class="mt-6"><h3 class="font-extrabold text-white">Company performance</h3><div id="metrics" class="mt-3 grid gap-3 sm:grid-cols-2"><p class="text-sm text-slate-500">Loading published metrics…</p></div></div><div class="mt-6"><h3 class="font-extrabold text-white">Investor updates</h3><div id="updates" class="mt-3 space-y-3"><p class="text-sm text-slate-500">Loading updates…</p></div></div><p id="dashboardStatus" role="status" class="mt-4 text-xs text-slate-500"></p></div>
+</div></section>
+</main>
+<footer class="border-t border-slate-800 py-6 text-center text-xs text-slate-600">© <span id="year"></span> SwiftHaul South Africa · Private investor information</footer>
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm';
+const staging=(location.hostname.endsWith('.netlify.app')&&location.hostname!=='swifthaul-sa.netlify.app')||location.pathname.startsWith('/swifthaul-sa-preview/');
+const supabaseUrl=staging?'https://tagkbropgzthsbjlhyvz.supabase.co':'https://jikstpnvsdjhcibtjilp.supabase.co';
+const publishableKey=staging?'sb_publishable_QWOeGbSVs2nXECI-KsAmWQ_K_Rav892':'sb_publishable_K1USNabR38GFuMqupYAVNA_6gx3rKH2';
+const supabase=createClient(supabaseUrl,publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const $=id=>document.getElementById(id), money=value=>new Intl.NumberFormat('en-ZA',{style:'currency',currency:'ZAR',maximumFractionDigits:2}).format(Number(value)||0);
+$('year').textContent=new Date().getFullYear();
+function status(message,error=false){$('loginStatus').textContent=message;$('loginStatus').className='mt-4 min-h-5 text-sm '+(error?'text-rose-300':'text-slate-400')}
+function metricCard(row){const card=document.createElement('article');card.className='rounded-xl border border-slate-700 bg-[#090d16] p-4';const label=document.createElement('p');label.className='text-xs text-slate-400';label.textContent=row.metric_label;const value=document.createElement('p');value.className='mt-2 text-xl font-black text-white';value.textContent=row.value_format==='currency'?money(row.metric_value):row.value_format==='percent'?Number(row.metric_value).toLocaleString('en-ZA',{maximumFractionDigits:2})+'%':Number(row.metric_value).toLocaleString('en-ZA');const period=document.createElement('p');period.className='mt-1 text-[11px] text-slate-500';period.textContent=row.period_label||'Latest published';card.append(label,value,period);return card}
+function updateCard(row){const card=document.createElement('article');card.className='rounded-xl border border-slate-700 bg-[#090d16] p-4';const title=document.createElement('h4');title.className='font-bold text-white';title.textContent=row.title;const date=document.createElement('p');date.className='mt-1 text-[11px] text-sky-300';date.textContent=new Date(row.published_at).toLocaleDateString('en-ZA',{year:'numeric',month:'short',day:'numeric'});const body=document.createElement('p');body.className='mt-2 whitespace-pre-wrap text-sm leading-relaxed text-slate-400';body.textContent=row.body;card.append(title,date,body);return card}
+async function loadDashboard(user){
+  $('dashboardStatus').textContent='Checking your investor access…';
+  const {data:profile,error:profileError}=await supabase.from('investor_profiles').select('display_name,shares_owned,ownership_percentage,investment_amount_zar,investment_committed_zar,investment_received_zar,share_register_reference,share_issue_date,share_class,status').eq('user_id',user.id).maybeSingle();
+  if(profileError) throw profileError;
+  if(!profile||profile.status!=='active'){
+    await supabase.auth.signOut();
+    $('dashboardPanel').classList.add('hidden');
+    $('loginPanel').classList.remove('hidden');
+    status('This account is not yet authorised for investor portal access. Please contact SwiftHaul.',true);
+    return;
+  }
+  $('investorName').textContent=profile.display_name||user.email;
+  $('sharesOwned').textContent=Number(profile.shares_owned||0).toLocaleString('en-ZA')+(profile.share_class?' '+profile.share_class:'');
+  $('ownership').textContent=Number(profile.ownership_percentage||0).toLocaleString('en-ZA',{maximumFractionDigits:4})+'%';
+  $('investmentCommitted').textContent=money(profile.investment_committed_zar);
+  $('investmentReceived').textContent=money(profile.investment_received_zar);
+  $('shareRegister').textContent=[profile.share_register_reference,profile.share_issue_date?'Issued '+profile.share_issue_date:null].filter(Boolean).join(' · ')||'Not yet recorded';
+  const [metrics,updates]=await Promise.all([
+    supabase.from('investor_company_metrics').select('metric_label,metric_value,value_format,period_label,display_order').eq('is_published',true).order('display_order'),
+    supabase.from('investor_updates').select('title,body,published_at').eq('is_published',true).order('published_at',{ascending:false}).limit(20)
+  ]);
+  if(metrics.error) throw metrics.error;
+  if(updates.error) throw updates.error;
+  $('metrics').replaceChildren();$('updates').replaceChildren();
+  if(metrics.data.length) metrics.data.forEach(row=>$('metrics').append(metricCard(row)));
+  else $('metrics').textContent='No company performance reports have been published yet.';
+  if(updates.data.length) updates.data.forEach(row=>$('updates').append(updateCard(row)));
+  else $('updates').textContent='No investor updates have been published yet.';
+  $('loginPanel').classList.add('hidden');
+  $('dashboardPanel').classList.remove('hidden');
+  $('dashboardStatus').textContent='Figures and notices shown here are those formally published by SwiftHaul. Please contact the company if you believe your shareholding record needs correction.';
+}
+$('loginForm').addEventListener('submit',async event=>{event.preventDefault();const button=$('loginButton');button.disabled=true;button.textContent='Signing in…';status('Verifying your account…');try{const {data,error}=await supabase.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;await loadDashboard(data.user)}catch(error){console.error('Investor dashboard load failed',error);$('dashboardPanel').classList.add('hidden');$('loginPanel').classList.remove('hidden');status('We could not load your investor account. Please try again or contact SwiftHaul support.',true)}finally{button.disabled=false;button.textContent='Sign in securely'}});
+function recoveryStatus(message,error=false){$('recoveryStatus').textContent=message;$('recoveryStatus').className='mt-4 min-h-5 text-sm '+(error?'text-rose-300':'text-slate-400')}
+function showRecoveryForm(){ $('loginPanel').classList.add('hidden'); $('dashboardPanel').classList.add('hidden'); $('recoveryPanel').classList.remove('hidden'); }
+function allowPasswordChange(){ showRecoveryForm(); $('recoveryCodePanel').classList.add('hidden'); $('newPasswordForm').classList.remove('hidden'); recoveryStatus('Choose a new password for your investor account.'); }
+$('verifyRecoveryCode').addEventListener('click',async()=>{
+  const email=$('recoveryEmail').value.trim(),token=$('recoveryCode').value.trim();
+  if(!email||!/^[0-9]{6}$/.test(token)){recoveryStatus('Enter the investor email address and the six-digit code.',true);return}
+  const button=$('verifyRecoveryCode');button.disabled=true;button.textContent='Verifying…';
+  try{const {error}=await supabase.auth.verifyOtp({email,token,type:'recovery'});if(error)throw error;allowPasswordChange();}
+  catch(error){recoveryStatus(error.message||'The code could not be verified. Check it and try again.',true)}
+  finally{button.disabled=false;button.textContent='Verify code'}
+});
+$('newPasswordForm').addEventListener('submit',async event=>{
+  event.preventDefault();const password=$('newInvestorPassword').value,confirm=$('confirmInvestorPassword').value;
+  if(password.length<8){recoveryStatus('Use a password with at least 8 characters.',true);return}
+  if(password!==confirm){recoveryStatus('The passwords do not match.',true);return}
+  const button=$('saveInvestorPassword');button.disabled=true;button.textContent='Saving…';
+  try{const {error}=await supabase.auth.updateUser({password});if(error)throw error;recoveryStatus('Password saved. You can now sign in to the investor portal.');await supabase.auth.signOut();$('newPasswordForm').reset();$('newPasswordForm').classList.add('hidden');$('recoveryPanel').classList.add('hidden');$('loginPanel').classList.remove('hidden');status('Password updated. Sign in with your new password.');}
+  catch(error){recoveryStatus(error.message||'Password could not be updated.',true)}
+  finally{button.disabled=false;button.textContent='Save password'}
+});
+$('backToInvestorLogin').addEventListener('click',()=>{$('recoveryPanel').classList.add('hidden');$('loginPanel').classList.remove('hidden');recoveryStatus('')});
+supabase.auth.onAuthStateChange((event,session)=>{if(event==='PASSWORD_RECOVERY'&&session?.user)allowPasswordChange()});
+$('resetButton').addEventListener('click',async()=>{const email=$('email').value.trim();if(!email){status('Enter your investor email address first.',true);return}status('Sending password reset instructions…');const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:location.origin+'/investor-login.html'});status(error?error.message:'If this email belongs to an account, password reset instructions will be sent.');});
+$('signOutButton').addEventListener('click',async()=>{await supabase.auth.signOut();$('dashboardPanel').classList.add('hidden');$('loginPanel').classList.remove('hidden');$('password').value='';status('You have signed out.')});
+const {data:{session}}=await supabase.auth.getSession();if(session?.user){try{await loadDashboard(session.user)}catch(error){console.error('Investor dashboard restore failed',error);$('dashboardPanel').classList.add('hidden');$('loginPanel').classList.remove('hidden');status('We could not load your investor account. Please sign in again or contact SwiftHaul support.',true)}}
+</script>
+</body></html>
