@@ -22,9 +22,10 @@ Deno.serve(async(req:Request)=>{
  const {data:prior,error:priorError}=await db.from("paystack_driver_payout_records").select("*").eq("payout_request_id",id).order("attempt_number",{ascending:false}).limit(1);
  if(priorError)return reply(503,{error:"payout_history_lookup_failed"});
  if(prior?.[0]&&["initiating","pending","success"].includes(prior[0].status))return reply(200,{status:prior[0].status,reference:prior[0].reference,already_submitted:true});
- const {data:driver,error:driverError}=await db.from("driver_profiles").select("paystack_recipient_code").eq("user_id",request.driver_user_id).maybeSingle();
+ const {data:driver,error:driverError}=await db.from("driver_profiles").select("user_id").eq("user_id",request.driver_user_id).maybeSingle();
  if(driverError||!driver)return reply(503,{error:"driver_profile_lookup_failed"});
- let recipient=driver.paystack_recipient_code;
+ // Reuse a recipient only for a retry of this exact payout request. A new payout uses the bank details the driver supplied for that request.
+ let recipient=prior?.[0]?.recipient_code||null;
  if(!recipient){
   const banks=await ps("/bank?country=south%20africa&currency=ZAR&perPage=100",secret);
   if(!banks.ok||!Array.isArray(banks.data))return reply(502,{error:"paystack_bank_list_unavailable"});
