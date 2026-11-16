@@ -41,6 +41,7 @@
     'cash-reconciliation': { title:'Cash reconciliation.', description:'Verify driver cash deposits against company bank records and clear cash-held liabilities.', show:['cash-reconciliation'] },
     offers: { title:'Delivery offer dispatch.', description:'Manage premium-first offers for eligible unassigned deliveries.', show:['offers'] },
     finance: { title:'Financial dashboard.', description:'Review reconciled platform, driver, payment and payout figures.', show:['finance'] },
+    paystack: { title:'Paystack balance & funding.', description:'Fund SwiftHaul’s Paystack balance and reconcile available funds for payouts and refunds.', show:['paystack'] },
     reports: { title:'Monthly reports.', description:'Export a dated CSV snapshot of the current administrator financial summary.', show:['reports'] },
     insurance: { title:'Driver insurance management.', description:'Verify Premium eligibility and manage insurer-issued driver policies.', show:['insurance'] },
     'insurance-claims': { title:'Insurance claims review.', description:'Review dispatch-bound GPS evidence, route compliance and insurer decisions.', show:['insurance-claims'] },
@@ -48,7 +49,7 @@
     notifications: { title:'Notification audit.', description:'Review WhatsApp and SMS delivery receipts, automatic fallback and failed-message retries.', show:['notifications'] },
     account: { title:'Company account.', description:'Company administrator profile and support information.', show:['account'] }
   };
-  const nodes = { stats, dispatches, drivers, account, refunds, payouts, offers, finance, reports, insurance, "insurance-claims": root.querySelector("#insurance-claims-admin"), deletions: root.querySelector("#account-deletions"), notifications: root.querySelector("#notification-audit"), "cash-reconciliation": root.querySelector("#cash-reconciliation") };
+  const nodes = { stats, dispatches, drivers, account, refunds, payouts, offers, finance, paystack: root.querySelector('#paystack-balance'), reports, insurance, "insurance-claims": root.querySelector("#insurance-claims-admin"), deletions: root.querySelector("#account-deletions"), notifications: root.querySelector("#notification-audit"), "cash-reconciliation": root.querySelector("#cash-reconciliation") };
   function render(key, updateUrl) {
     const page = pages[key] || pages.overview;
     Object.entries(nodes).forEach(([name,node]) => { if(node) node.hidden = !page.show.includes(name); });
