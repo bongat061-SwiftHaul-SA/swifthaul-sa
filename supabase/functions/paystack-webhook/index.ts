@@ -28,13 +28,13 @@ Deno.serve(async(req:Request)=>{
    const candidate=field?.value??metadata.swifthaul_waybill??value?.swifthaul_waybill;
    return typeof candidate==="string"&&/^SH-[A-F0-9-]{20,60}$/i.test(candidate.trim())?candidate.trim():null;
   };
-  const {data:byReference,error:refError}=await db.from("payment_transactions").select("id,amount,status,booking_waybill").eq("provider","paystack").eq("provider_reference",ref).maybeSingle();
+  const {data:byReference,error:refError}=await db.from("payment_transactions").select("id,amount,status,booking_waybill,provider_reference").eq("provider","paystack").eq("provider_reference",ref).maybeSingle();
   if(refError)return response(503,"Payment lookup failed");
   let p=byReference;
   if(!p){
    const waybill=waybillOf(event.data);
    if(!waybill)return response(400,"SwiftHaul Waybill custom field is missing or invalid");
-   const {data:pending,error:pendingError}=await db.from("payment_transactions").select("id,amount,status,booking_waybill").eq("provider","paystack").eq("booking_waybill",waybill).eq("status","pending").maybeSingle();
+   const {data:pending,error:pendingError}=await db.from("payment_transactions").select("id,amount,status,booking_waybill,provider_reference").eq("provider","paystack").eq("booking_waybill",waybill).eq("status","pending").maybeSingle();
    if(pendingError)return response(503,"Pending payment lookup failed");
    if(!pending)return response(404,"No pending SwiftHaul payment matches this waybill");
    p=pending;
