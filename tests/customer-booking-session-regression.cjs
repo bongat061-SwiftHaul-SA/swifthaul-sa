@@ -3,6 +3,10 @@ const assert = require('node:assert/strict');
 const read = path => fs.readFileSync(path, 'utf8');
 
 const customer = read('public/customer.js');
+const driverPremium = read('apps/driver/public/premium.js');
+const customerPaystack = read('supabase/functions/paystack-payment-initialize/index.ts');
+const driverPaystack = read('supabase/functions/driver-membership-checkout/index.ts');
+const paystackWebhook = read('supabase/functions/paystack-webhook/index.ts');
 const auth = read('public/auth.js');
 const portal = read('supabase/functions/customer-portal/index.ts');
 const cargo = read('public/cargo-estimator.js');
@@ -22,6 +26,14 @@ for (const field of ['pickup_plus_code','pickup_geohash','dropoff_plus_code','dr
 assert.match(portal, /typeof code !== "string"[\s\S]*?typeof hash !== "string"/, 'Booking API must validate both Plus Code and Geohash metadata.');
 assert.doesNotMatch(auth, /await supabase\.functions\.invoke\('customer-welcome-notify'/, 'Email notification must not block Customer workspace restoration.');
 assert.ok(auth.indexOf('workspace.hidden = false') < auth.indexOf("void supabase.functions.invoke('customer-welcome-notify'"), 'Customer workspace must be shown before best-effort welcome notification starts.');
+assert.ok(customer.includes("functions.invoke('paystack-payment-initialize'") && customer.includes("https://checkout.paystack.com/"), 'Customer Paystack checkout must use a server-initialized transaction URL.');
+assert.ok(driverPremium.includes('d.mode!=="sandbox"') && driverPremium.includes('d.authorization_url'), 'Driver membership checkout must require the sandbox transaction response.');
+for (const [name, source] of [['customer',customerPaystack],['driver',driverPaystack]]) {
+  assert.ok(source.includes('secret.startsWith("sk_test_")') && source.includes('staging_requires_paystack_test_mode'), name + ' Paystack checkout must reject live credentials in staging.');
+  assert.ok(source.includes('https://api.paystack.co/transaction/initialize'), name + ' Paystack checkout must initialize transactions server-side.');
+}
+assert.ok(driverPaystack.includes('amount=plan==="monthly"?25000:180000'), 'Driver membership prices must be fixed server-side in ZAR cents.');
+assert.ok(paystackWebhook.includes('metadata.booking_waybill') && paystackWebhook.includes('metadata.driver_membership_id'), 'Verified Paystack webhook must reconcile both customer bookings and driver memberships.');
 assert.ok(auth.includes('AbortSignal.timeout(12000)'), 'Account validation must have a bounded network wait.');
 assert.ok(auth.includes('form.elements.namedItem(name)') && auth.includes("field('acceptTerms')"), 'Customer auth mode switching must safely resolve named form controls.');
 assert.match(auth, /catch \(error\) \{[\s\S]*?showSignIn\(error\?\.message/, 'Failed session restoration must return customers to a usable sign-in screen.');
