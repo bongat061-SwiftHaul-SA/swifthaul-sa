@@ -142,19 +142,19 @@ function addOrder(order, prepend = false) {
 }
 
 async function startPaystackPageCheckout(order, button) {
-  button.disabled = true; report('Preparing your secure Paystack Payment Page…');
+  button.disabled = true; report('Preparing your secure Paystack checkout…');
   try {
     const client = window.swiftHaulSupabase;
     if (!client) throw new Error('Customer sign-in connection is unavailable.');
-    const { data, error } = await client.functions.invoke('paystack-page-checkout', { body: { waybill: order.waybill } });
+    const { data, error } = await client.functions.invoke('paystack-payment-initialize', { body: { waybill: order.waybill } });
     if (error || !data || data.error) throw new Error(data?.error || error?.message || 'Unable to prepare Paystack checkout.');
-    if (data.provider !== 'paystack' || data.currency !== 'ZAR' || typeof data.payment_url !== 'string' ||
-        !data.payment_url.startsWith('https://paystack.shop/pay/swifthaul_waybill')) {
-      throw new Error('Paystack returned an invalid Payment Page link.');
+    if (data.provider !== 'paystack' || data.currency !== 'ZAR' || data.mode !== 'sandbox' ||
+        typeof data.authorization_url !== 'string' || !data.authorization_url.startsWith('https://checkout.paystack.com/')) {
+      throw new Error('Paystack returned an invalid sandbox checkout response.');
     }
-    report('Opening Paystack. Enter the exact SwiftHaul Waybill ' + order.waybill +
-      ' and pay exactly ' + money(data.amount) + '. Your booking updates only after Paystack verifies payment.');
-    window.location.assign(data.payment_url);
+    report('Opening secure Paystack checkout for ' + order.waybill + ' · ' +
+      money(Number(data.amount_cents) / 100) + '. Your booking updates only after Paystack verifies payment.');
+    window.location.assign(data.authorization_url);
   } catch (error) {
     report(error instanceof Error ? error.message : 'Unable to start Paystack checkout.', true);
     button.disabled = false;
