@@ -41,7 +41,7 @@ Deno.serve(async(req:Request)=>{
  const {data:record,error:recordError}=await db.from("paystack_driver_payout_records").insert({payout_request_id:id,attempt_number:attempt,driver_user_id:request.driver_user_id,reference,recipient_code:recipient,amount_cents:amount,currency:"ZAR",status:"initiating",initiated_by:user.user.id}).select("*").single();
  if(recordError)return reply(409,{error:"payout_attempt_already_created"});
  const transfer=await ps("/transfer",secret,{method:"POST",body:JSON.stringify({source:"balance",amount,recipient,reference,reason:"SwiftHaul completed delivery driver payout",currency:"ZAR"})});
- if(!transfer.ok){await db.from("paystack_driver_payout_records").update({status:"failed",failure_message:transfer.message.slice(0,500),updated_at:new Date().toISOString()}).eq("id",record.id);return reply(502,{error:"paystack_transfer_failed",detail:transfer.message.slice(0,180)});}
+ if(!transfer.ok){await db.from("paystack_driver_payout_records").update({status:"failed",failure_message:transfer.message.slice(0,500),updated_at:new Date().toISOString()}).eq("id",record.id).eq("status","initiating");return reply(502,{error:"paystack_transfer_failed",detail:transfer.message.slice(0,180)});}
  const data=transfer.data||{};const status=String(data.status||"pending").toLowerCase();await db.from("paystack_driver_payout_records").update({status:status==="success"?"success":"pending",transfer_code:data.transfer_code||null,updated_at:new Date().toISOString()}).eq("id",record.id);
  return reply(200,{status,reference,transfer_code:data.transfer_code||null,amount_cents:amount});
 });
