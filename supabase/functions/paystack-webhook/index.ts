@@ -28,24 +28,26 @@ Deno.serve(async(req:Request)=>{
    const candidate=field?.value??metadata.swifthaul_waybill??value?.swifthaul_waybill;
    return typeof candidate==="string"&&/^SH-[A-F0-9-]{20,60}$/i.test(candidate.trim())?candidate.trim():null;
   };
+  const verify=await fetch("https://api.paystack.co/transaction/verify/"+encodeURIComponent(ref),{headers:{Authorization:"Bearer "+secret},signal:AbortSignal.timeout(12000)});
+  const v=await verify.json().catch(()=>null);
+  if(!verify.ok||v?.status!==true||v?.data?.status!=="success"||v?.data?.reference!==ref||v?.data?.currency!=="ZAR"||Number(v.data.amount)!==amount)return response(400,"Transaction verification failed");
+  const eventWaybill=waybillOf(event.data);
+  const verifiedWaybill=waybillOf(v.data);
+  if(eventWaybill&&verifiedWaybill&&eventWaybill!==verifiedWaybill)return response(400,"Webhook and verified waybills do not match");
+  const waybill=eventWaybill||verifiedWaybill;
   const {data:byReference,error:refError}=await db.from("payment_transactions").select("id,amount,status,booking_waybill,provider_reference").eq("provider","paystack").eq("provider_reference",ref).maybeSingle();
   if(refError)return response(503,"Payment lookup failed");
   let p=byReference;
   if(!p){
-   const waybill=waybillOf(event.data);
    if(!waybill)return response(400,"SwiftHaul Waybill custom field is missing or invalid");
    const {data:pending,error:pendingError}=await db.from("payment_transactions").select("id,amount,status,booking_waybill,provider_reference").eq("provider","paystack").eq("booking_waybill",waybill).eq("status","pending").maybeSingle();
    if(pendingError)return response(503,"Pending payment lookup failed");
    if(!pending)return response(404,"No pending SwiftHaul payment matches this waybill");
    p=pending;
   }
+  if(waybill&&waybill!==p.booking_waybill)return response(400,"Verified waybill does not match pending booking");
   if(Math.round(Number(p.amount)*100)!==amount)return response(400,"Payment amount mismatch");
   if(p.status==="complete"){if(p.provider_reference!==ref)return response(409,"A separate payment reference already completed for this booking");const generated=await emitTaxDocument({event:"charge.success",reference:ref,waybill:String(p.booking_waybill)});return generated?response(200,"OK"):response(503,"Payment saved; tax document generation will retry.");}
-  const verify=await fetch("https://api.paystack.co/transaction/verify/"+encodeURIComponent(ref),{headers:{Authorization:"Bearer "+secret},signal:AbortSignal.timeout(12000)});
-  const v=await verify.json().catch(()=>null);
-  if(!verify.ok||v?.status!==true||v?.data?.status!=="success"||v?.data?.reference!==ref||v?.data?.currency!=="ZAR"||Number(v.data.amount)!==amount)return response(400,"Transaction verification failed");
-  const verifiedWaybill=waybillOf(v.data);
-  if(verifiedWaybill&&verifiedWaybill!==p.booking_waybill)return response(400,"Verified waybill does not match pending booking");
   const {data:applied,error}=await db.rpc("apply_paystack_payment",{p_payment_id:p.id,p_reference:ref,p_amount_cents:amount,p_payload:{event:"charge.success",reference:ref,amount,currency}});
   if(error){console.error("Paystack payment apply failed",error.message);return response(503,"Payment confirmation could not be saved");}
   if(applied!==true)return response(409,"Payment is no longer eligible");
