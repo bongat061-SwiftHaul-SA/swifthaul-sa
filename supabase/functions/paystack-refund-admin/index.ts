@@ -32,7 +32,7 @@ Deno.serve(async(req:Request)=>{
  if(!payment?.provider_reference||payment.currency!=="ZAR")return reply(409,{error:"successful_zar_paystack_transaction_not_found"});
  const cents=Number(request.refund_amount_cents),original=Math.round(Number(payment.amount)*100);
  if(!Number.isSafeInteger(cents)||cents<=0||cents>original)return reply(409,{error:"refund_amount_exceeds_original_payment"});
- const {data:allRefunds,error:allRefundsError}=await db.from("paystack_refund_records").select("amount_cents,status").eq("transaction_reference",payment.provider_reference).in("status",["initiating","pending","processing","needs-attention","processed"]);
+ const {data:allRefunds,error:allRefundsError}=await db.from("paystack_refund_records").select("amount_cents,status").eq("transaction_reference",payment.provider_reference).neq("refund_request_id",request.id).in("status",["initiating","pending","processing","needs-attention","processed"]);
  if(allRefundsError)return reply(503,{error:"refund_total_lookup_failed"});
  const alreadyRefunded=(allRefunds||[]).reduce((n:any,x:any)=>n+Number(x.amount_cents||0),0);
  if(alreadyRefunded+cents>original)return reply(409,{error:"cumulative_refunds_exceed_original_payment"});
