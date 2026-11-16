@@ -31,6 +31,30 @@ Deno.serve(async(req:Request)=>{
   const verify=await fetch("https://api.paystack.co/transaction/verify/"+encodeURIComponent(ref),{headers:{Authorization:"Bearer "+secret},signal:AbortSignal.timeout(12000)});
   const v=await verify.json().catch(()=>null);
   if(!verify.ok||v?.status!==true||v?.data?.status!=="success"||v?.data?.reference!==ref||v?.data?.currency!=="ZAR"||Number(v.data.amount)!==amount)return response(400,"Transaction verification failed");
+  const membershipIdOf=(value:any):string|null=>{
+   const metadata=metadataOf(value?.metadata);
+   const fields=Array.isArray(metadata.custom_fields)?metadata.custom_fields:Array.isArray(value?.custom_fields)?value.custom_fields:[];
+   const field=fields.find((item:any)=>item&&String(item.variable_name||"").toLowerCase()==="driver_membership_id");
+   const candidate=field?.value??metadata.driver_membership_id??value?.driver_membership_id;
+   return typeof candidate==="string"&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(candidate.trim())?candidate.trim():null;
+  };
+  const eventMembershipId=membershipIdOf(event.data),verifiedMembershipId=membershipIdOf(v.data);
+  if(eventMembershipId&&verifiedMembershipId&&eventMembershipId!==verifiedMembershipId)return response(400,"Webhook and verified membership IDs do not match");
+  const membershipId=eventMembershipId||verifiedMembershipId;
+  if(membershipId){
+   const {data:m,error:lookupError}=await db.from("driver_memberships").select("id,plan,amount_cents,status,provider,provider_payment_id").eq("id",membershipId).maybeSingle();
+   if(lookupError)return response(503,"Membership lookup failed");
+   if(!m)return response(404,"Membership reference not found");
+   if(m.provider!=="paystack")return response(409,"Membership payment provider mismatch");
+   const expected=m.plan==="monthly"?25000:m.plan==="yearly"?180000:0;
+   if(!expected||Number(m.amount_cents)!==expected||amount!==expected)return response(400,"Membership amount mismatch");
+   if(m.status==="active"&&m.provider_payment_id===ref)return response(200,"OK");
+   if(m.status!=="pending"||m.provider_payment_id)return response(409,"Membership is no longer pending");
+   const {data:applied,error:applyError}=await db.rpc("apply_paystack_driver_membership",{p_membership_id:membershipId,p_reference:ref,p_amount_cents:amount});
+   if(applyError){console.error("Paystack membership activation failed",applyError.message);return response(503,"Membership activation could not be saved");}
+   if(applied!==true)return response(409,"Membership payment is no longer eligible");
+   return response(200,"OK");
+  }
   const eventWaybill=waybillOf(event.data);
   const verifiedWaybill=waybillOf(v.data);
   if(eventWaybill&&verifiedWaybill&&eventWaybill!==verifiedWaybill)return response(400,"Webhook and verified waybills do not match");
