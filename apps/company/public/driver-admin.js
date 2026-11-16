@@ -37,20 +37,22 @@ if(panel){
     }catch(error){if(current===epoch)status.textContent=error.message;}
   }
   async function review(driver,action,button){
-    if(action==='approve'){
-      const required=['id_document','proof_of_address','bank_confirmation','drivers_licence','vehicle_document'];
-      const missing=required.filter(type=>!(driver.documents||[]).some(doc=>doc.document_type===type&&doc.review_status==='accepted'));
-      if(missing.length){status.textContent='Approval blocked. Accept these documents first: '+missing.map(type=>type.replaceAll('_',' ')).join(', ')+'.';return;}
-    }
     button.disabled=true;
-    try{await call('POST',{user_id:driver.user_id,action});await load();status.textContent='Driver status updated.';}
+    try{
+      // The server-side activation action owns the full compliance checklist.
+      // "approve" is a UI label; the API contract is "activate".
+      const apiAction=action==='approve'?'activate':action;
+      const result=await call('POST',{user_id:driver.user_id,action:apiAction});
+      await load();
+      status.textContent=action==='approve'?'Driver approved and activated.':'Driver status updated.';
+    }
     catch(error){status.textContent=error.message;}
     finally{button.disabled=false;}
   }
   async function reviewDocument(driver,doc,reviewStatus,button){
     button.disabled=true;
     try{
-      await call('POST',{action:'review_document',user_id:driver.user_id,document_id:doc.id,review_status:reviewStatus});
+      await call('POST',{action:'review_document',user_id:driver.user_id,document_id:doc.id,review_status:reviewStatus==='accepted'?'approved':reviewStatus});
       await load();status.textContent='Document review saved.';
     }catch(error){status.textContent=error.message;}
     finally{button.disabled=false;}
