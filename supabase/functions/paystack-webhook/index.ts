@@ -108,6 +108,26 @@ Deno.serve(async(req:Request)=>{
  if(["transfer.success","transfer.failed","transfer.reversed"].includes(event.event)){
   const ref=String(event.data?.reference||"");const code=String(event.data?.transfer_code||"");
   if(!ref)return response(400,"Missing transfer reference");
+  const transferStatus=event.event==="transfer.success"?"success":event.event==="transfer.reversed"?"reversed":"failed";
+  const {data:driverTransfer,error:driverTransferError}=await db.from("paystack_driver_payout_records").select("id,payout_request_id,amount_cents,status").eq("reference",ref).maybeSingle();
+  if(driverTransferError)return response(503,"Driver payout lookup failed");
+  if(driverTransfer){
+   if(["success","failed","reversed"].includes(driverTransfer.status))return response(200,"Driver payout event already finalized");
+   const {error:transferUpdateError}=await db.from("paystack_driver_payout_records").update({status:transferStatus,transfer_code:code||null,failure_message:transferStatus==="success"?null:String(event.data?.reason||event.data?.message||"Transfer failed").slice(0,500),updated_at:new Date().toISOString()}).eq("id",driverTransfer.id);
+   if(transferUpdateError)return response(503,"Driver payout event could not be saved");
+   if(transferStatus==="success"){
+    const {error:requestUpdateError}=await db.from("driver_payout_requests").update({status:"paid",admin_reference:ref,paid_at:new Date().toISOString(),reviewed_at:new Date().toISOString()}).eq("id",driverTransfer.payout_request_id).eq("status","approved");
+    if(requestUpdateError)return response(503,"Driver payout request could not be completed");
+   }else{
+    const {data:request,error:requestError}=await db.from("driver_payout_requests").select("driver_user_id").eq("id",driverTransfer.payout_request_id).maybeSingle();
+    if(requestError||!request)return response(503,"Driver payout request lookup failed");
+    const {error:releaseError}=await db.from("driver_earnings_ledger").insert({driver_user_id:request.driver_user_id,event_key:"paystack-payout-release:"+ref,event_type:"payout_released",amount_cents:driverTransfer.amount_cents,payout_request_id:driverTransfer.payout_request_id,description:"Released reserved earnings after Paystack transfer "+transferStatus}).select().maybeSingle();
+    if(releaseError&&!String(releaseError.message||"").toLowerCase().includes("duplicate"))return response(503,"Driver payout reserve could not be released");
+    const {error:requestUpdateError}=await db.from("driver_payout_requests").update({status:"approved"}).eq("id",driverTransfer.payout_request_id).eq("status","approved");
+    if(requestUpdateError)return response(503,"Driver payout retry state could not be saved");
+   }
+   return response(200,"OK");
+  }
   const status=event.event==="transfer.success"?"success":"failed";
   const {data:applied,error}=await db.rpc("apply_paystack_payout_event",{p_reference:ref,p_status:status,p_transfer_code:code||null,p_failure_reason:String(event.data?.reason||event.data?.message||"Transfer failed")});
   if(error){console.error("Paystack payout webhook update failed",error.message);return response(503,"Payout update failed");}
