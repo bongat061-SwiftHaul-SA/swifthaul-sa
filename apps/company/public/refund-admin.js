@@ -34,12 +34,12 @@ if(panel){
     }else if(request.status==='provider_pending' && booking.payment_source==='paystack'){
       const history=request.paystack_refund;
       if(history){const detail=document.createElement('p');detail.textContent='Paystack refund: '+history.status+' · Ref '+history.refund_reference;card.append(detail);if(history.failure_message){const failure=document.createElement('p');failure.textContent='Last attempt: '+history.failure_message;card.append(failure);}}
-      if(!history || ['failed','needs-attention'].includes(history.status)){
+      if(!history || history.status==='failed'){
         const process=document.createElement('button');process.type='button';process.textContent=history?'Retry Paystack refund':'Process Paystack refund';
         process.addEventListener('click',async()=>{process.disabled=true;status.textContent='Submitting refund to Paystack…';try{const client=window.swiftHaulSupabase;if(!client)throw new Error('Secure account connection is unavailable.');const {data,error}=await client.functions.invoke('paystack-refund-admin',{method:'POST',body:{request_id:request.id}});if(error||data?.error)throw new Error(data?.detail||data?.error||error.message||'Paystack refund failed.');status.textContent='Paystack refund submitted · '+(data.status||'pending')+' · '+(data.refund_reference||'');await load();}catch(error){status.textContent=error.message||'Unable to submit Paystack refund.';process.disabled=false;}});
         card.append(process);
       }
-      const note=document.createElement('p');note.textContent='Refund is not marked complete until Paystack confirms refund.processed. Failed refunds remain available for review.';card.append(note);
+      const note=document.createElement('p');note.textContent=history?.status==='needs-attention'?'Paystack requires additional information. Resolve this in the Paystack Dashboard before retrying.':'Refund is not marked complete until Paystack confirms refund.processed. Failed refunds remain available for review.';card.append(note);
     }else if(request.status==='provider_pending'){
       const input=document.createElement('input');input.type='text';input.maxLength=200;input.placeholder='Actual PayFast/provider refund reference';input.setAttribute('aria-label','External refund reference');
       const complete=document.createElement('button');complete.type='button';complete.textContent='Confirm external refund completed';
