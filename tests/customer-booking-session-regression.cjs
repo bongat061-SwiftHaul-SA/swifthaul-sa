@@ -47,6 +47,6 @@ assert.ok(customerHtml.includes('id="fare-callout"') && customerHtml.includes('i
 assert.ok(portal.includes('distanceRate') && portal.includes('callOutFee') && !portal.includes('weightFee'), 'Server quotes must use call-out plus per-kilometre tariffs, with no separate weight fee.');
 assert.ok(customerHtml.includes('value="light_commercial"') && customerHtml.includes('value="one_ton_bakkie"') && customerHtml.includes('value="closed_truck"') && customerHtml.includes('value="freight_truck"'), 'Customers must be able to select each vehicle class.');
 assert.ok(cargo.includes('option.textContent=item.name;') && !cargo.includes("item.name+' · approx.'"), 'Item selection must not display weight as a price.');
-assert.ok(customerHtml.includes('customer.js?v=customer-gauteng-tariffs-20261114') && customerHtml.includes('cargo-estimator.js?v=customer-gauteng-tariffs-20261114'), 'Customer must load refreshed tariff and vehicle recommendation assets.');
+assert.ok(customerHtml.includes('customer.js?v=customer-paystack-page-20261116') && customerHtml.includes('cargo-estimator.js?v=customer-gauteng-tariffs-20261114'), 'Customer must load refreshed tariff and vehicle recommendation assets.');
 assert.ok(customer.includes("terms_version:'2026-11-14-gauteng-vehicle-tariffs'") && portal.includes('2026-11-14-gauteng-vehicle-tariffs'), 'Customer booking must record acceptance of the updated tariff terms.');
 console.log('Customer session restoration, booking pin metadata and new tariff regression checks passed.');
