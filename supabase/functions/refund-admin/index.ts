@@ -42,7 +42,11 @@ Deno.serve(async (req: Request) => {
       console.error("Refund request list failed", error.message);
       return reply(500, { error: "refund_list_failed" });
     }
-    return reply(200, { requests: data ?? [] });
+    const ids=(data??[]).map((item:any)=>item.id);
+    const {data:refundRows,error:refundRowsError}=ids.length?await admin.from("paystack_refund_records").select("refund_request_id,refund_reference,amount_cents,status,failure_message,created_at").in("refund_request_id",ids).order("created_at",{ascending:false}):{data:[],error:null};
+    if(refundRowsError)return reply(500,{error:"paystack_refund_history_failed"});
+    const latest=new Map<string,any>();for(const item of refundRows??[])if(!latest.has(item.refund_request_id))latest.set(item.refund_request_id,item);
+    return reply(200,{requests:(data??[]).map((item:any)=>({...item,paystack_refund:latest.get(item.id)||null}))});
   }
 
   const raw = await req.text();
