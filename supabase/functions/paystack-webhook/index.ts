@@ -83,7 +83,7 @@ Deno.serve(async(req:Request)=>{
   const transactionReference=String(event.data?.transaction_reference||event.data?.transaction?.reference||"");
   const eventAmount=Number(event.data?.amount||0);
   const status=event.event==="refund.pending"?"pending":event.event==="refund.processing"?"processing":event.event==="refund.needs-attention"?"needs-attention":event.event==="refund.processed"?"processed":"failed";
-  let recordQuery=db.from("paystack_refund_records").select("id,refund_request_id,waybill,transaction_reference,amount_cents");
+  let recordQuery=db.from("paystack_refund_records").select("id,refund_request_id,waybill,transaction_reference,amount_cents,refund_reference");
   if(refundReference)recordQuery=recordQuery.eq("refund_reference",refundReference);
   else if(transactionReference&&Number.isSafeInteger(eventAmount)&&eventAmount>0)recordQuery=recordQuery.eq("transaction_reference",transactionReference).eq("amount_cents",eventAmount).in("status",["initiating","pending","processing","needs-attention"]).order("created_at",{ascending:false}).limit(1);
   else return response(400,"Missing refund reference and transaction match");
@@ -92,6 +92,7 @@ Deno.serve(async(req:Request)=>{
   if(!record)return response(200,"Unknown refund reference ignored");
   const {error:updateError}=await db.from("paystack_refund_records").update({status,provider_refund_id:event.data?.id||null,failure_message:status==="failed"?String(event.data?.message||event.data?.reason||"Refund failed").slice(0,500):null,updated_at:new Date().toISOString()}).eq("id",record.id);
   if(updateError)return response(503,"Refund status update failed");
+  const effectiveRefundReference=refundReference||record.refund_reference;
   if(status==="processed"){
    const {data:payment,error:paymentError}=await db.from("payment_transactions").select("amount").eq("booking_waybill",record.waybill).eq("provider","paystack").eq("provider_reference",record.transaction_reference).maybeSingle();
    if(paymentError)return response(503,"Original payment lookup failed");
@@ -99,13 +100,13 @@ Deno.serve(async(req:Request)=>{
    if(full){
     const {error:bookingError}=await db.from("customer_bookings").update({refunded_at:new Date().toISOString()}).eq("waybill",record.waybill).is("refunded_at",null);
     if(bookingError)return response(503,"Booking refund status update failed");
-    const {error:paymentUpdateError}=await db.from("payment_transactions").update({status:"refunded",refunded_at:new Date().toISOString(),refund_reference:refundReference,updated_at:new Date().toISOString()}).eq("booking_waybill",record.waybill).eq("provider","paystack").eq("provider_reference",record.transaction_reference);
+    const {error:paymentUpdateError}=await db.from("payment_transactions").update({status:"refunded",refunded_at:new Date().toISOString(),refund_reference:effectiveRefundReference,updated_at:new Date().toISOString()}).eq("booking_waybill",record.waybill).eq("provider","paystack").eq("provider_reference",record.transaction_reference);
     if(paymentUpdateError)return response(503,"Payment refund status update failed");
    }else{
     const {error:paymentUpdateError}=await db.from("payment_transactions").update({refund_reference:refundReference,updated_at:new Date().toISOString()}).eq("booking_waybill",record.waybill).eq("provider","paystack").eq("provider_reference",record.transaction_reference);
     if(paymentUpdateError)return response(503,"Partial refund audit update failed");
    }
-   const {error:requestUpdateError}=await db.from("booking_refund_requests").update({status:"completed",provider_reference:refundReference,updated_at:new Date().toISOString()}).eq("id",record.refund_request_id);
+   const {error:requestUpdateError}=await db.from("booking_refund_requests").update({status:"completed",provider_reference:effectiveRefundReference,updated_at:new Date().toISOString()}).eq("id",record.refund_request_id);
    if(requestUpdateError)return response(503,"Refund request completion update failed");
   }
   return response(200,"OK");
