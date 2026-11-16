@@ -80,9 +80,14 @@ Deno.serve(async(req:Request)=>{
  }
  if(["refund.pending","refund.processing","refund.needs-attention","refund.processed","refund.failed"].includes(event.event)){
   const refundReference=String(event.data?.refund_reference||event.data?.reference||"");
-  if(!refundReference)return response(400,"Missing refund reference");
+  const transactionReference=String(event.data?.transaction_reference||event.data?.transaction?.reference||"");
+  const eventAmount=Number(event.data?.amount||0);
   const status=event.event==="refund.pending"?"pending":event.event==="refund.processing"?"processing":event.event==="refund.needs-attention"?"needs-attention":event.event==="refund.processed"?"processed":"failed";
-  const {data:record,error:recordError}=await db.from("paystack_refund_records").select("id,refund_request_id,waybill,transaction_reference,amount_cents").eq("refund_reference",refundReference).maybeSingle();
+  let recordQuery=db.from("paystack_refund_records").select("id,refund_request_id,waybill,transaction_reference,amount_cents");
+  if(refundReference)recordQuery=recordQuery.eq("refund_reference",refundReference);
+  else if(transactionReference&&Number.isSafeInteger(eventAmount)&&eventAmount>0)recordQuery=recordQuery.eq("transaction_reference",transactionReference).eq("amount_cents",eventAmount).in("status",["initiating","pending","processing","needs-attention"]).order("created_at",{ascending:false}).limit(1);
+  else return response(400,"Missing refund reference and transaction match");
+  const {data:record,error:recordError}=await recordQuery.maybeSingle();
   if(recordError)return response(503,"Refund record lookup failed");
   if(!record)return response(200,"Unknown refund reference ignored");
   const {error:updateError}=await db.from("paystack_refund_records").update({status,provider_refund_id:event.data?.id||null,failure_message:status==="failed"?String(event.data?.message||event.data?.reason||"Refund failed").slice(0,500):null,updated_at:new Date().toISOString()}).eq("id",record.id);
