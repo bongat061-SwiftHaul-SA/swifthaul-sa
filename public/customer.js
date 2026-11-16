@@ -100,8 +100,8 @@ function addOrder(order, prepend = false) {
     if (document.body.dataset.guestPreview !== 'true') document.dispatchEvent(new CustomEvent('delivery-route', {detail:{waybill:order.waybill,pickup:order.pickup,dropoff:order.dropoff}}));
   });
   if(!order.paid_at&&!order.refunded_at&&!['cancelled','completed'].includes(order.status)){
-    const pay=document.createElement('button');pay.type='button';pay.textContent='Pay with PayFast';pay.addEventListener('click',()=>startPayFastCheckout(order,pay));
-    const cardPay=document.createElement('button');cardPay.type='button';cardPay.textContent='Pay by card · PayFast';cardPay.addEventListener('click',()=>startPayFastCheckout(order,cardPay));
+    const pay=document.createElement('button');pay.type='button';pay.textContent='Pay with Paystack';pay.addEventListener('click',()=>startPaystackPageCheckout(order,pay));
+    const cardPay=document.createElement('button');cardPay.type='button';cardPay.textContent='Pay by card · Paystack';cardPay.addEventListener('click',()=>startPaystackPageCheckout(order,cardPay));
     const eft=document.createElement('button');eft.type='button';eft.textContent='EFT payment instructions';eft.addEventListener('click',()=>{
       const box=document.createElement('div');box.className='eft-instructions';
       const heading=document.createElement('strong');heading.textContent='Pay by EFT';
@@ -139,6 +139,26 @@ function addOrder(order, prepend = false) {
   }
   actions.append(track, pdf, wa); card.append(head, route, meta, actions);
   if (prepend) container.prepend(card); else container.append(card);
+}
+
+async function startPaystackPageCheckout(order, button) {
+  button.disabled = true; report('Preparing your secure Paystack Payment Page…');
+  try {
+    const client = window.swiftHaulSupabase;
+    if (!client) throw new Error('Customer sign-in connection is unavailable.');
+    const { data, error } = await client.functions.invoke('paystack-page-checkout', { body: { waybill: order.waybill } });
+    if (error || !data || data.error) throw new Error(data?.error || error?.message || 'Unable to prepare Paystack checkout.');
+    if (data.provider !== 'paystack' || data.currency !== 'ZAR' || typeof data.payment_url !== 'string' ||
+        !data.payment_url.startsWith('https://paystack.shop/pay/swifthaul_waybill')) {
+      throw new Error('Paystack returned an invalid Payment Page link.');
+    }
+    report('Opening Paystack. Confirm the SwiftHaul Waybill field matches ' + order.waybill +
+      ' and pay exactly ' + money(data.amount) + '. Your booking updates only after Paystack verifies payment.');
+    window.location.assign(data.payment_url);
+  } catch (error) {
+    report(error instanceof Error ? error.message : 'Unable to start Paystack checkout.', true);
+    button.disabled = false;
+  }
 }
 
 async function startPayFastCheckout(order, button) {
