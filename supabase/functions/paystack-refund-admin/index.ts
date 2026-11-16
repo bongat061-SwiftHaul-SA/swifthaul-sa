@@ -9,6 +9,7 @@ Deno.serve(async(req:Request)=>{
  const token=(req.headers.get("Authorization")??"").match(/^Bearer\s+(.+)$/i)?.[1];if(!token)return reply(401,{error:"missing_bearer_token"});
  const url=Deno.env.get("SUPABASE_URL"),anon=Deno.env.get("SUPABASE_ANON_KEY"),service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),secret=Deno.env.get("PAYSTACK_SECRET_KEY");
  if(!url||!anon||!service||!secret)return reply(503,{error:"server_configuration_error"});
+ if(!secret.startsWith("sk_test_"))return reply(403,{error:"staging_test_key_required"});
  const auth=createClient(url,anon,{auth:{persistSession:false,autoRefreshToken:false}});const {data:user,error:authError}=await auth.auth.getUser(token);
  if(authError||!user.user)return reply(401,{error:"invalid_session"});
  const db=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});
@@ -34,6 +35,10 @@ Deno.serve(async(req:Request)=>{
  if(!payment?.provider_reference||payment.currency!=="ZAR")return reply(409,{error:"successful_zar_paystack_transaction_not_found"});
  const cents=Number(request.refund_amount_cents),original=Math.round(Number(payment.amount)*100);
  if(!Number.isSafeInteger(cents)||cents<=0||cents>original)return reply(409,{error:"refund_amount_exceeds_original_payment"});
+ const {data:allRefunds,error:allRefundsError}=await db.from("paystack_refund_records").select("amount_cents,status").eq("transaction_reference",payment.provider_reference).in("status",["initiating","pending","processing","needs-attention","processed"]);
+ if(allRefundsError)return reply(503,{error:"refund_total_lookup_failed"});
+ const alreadyRefunded=(allRefunds||[]).reduce((n:any,x:any)=>n+Number(x.amount_cents||0),0);
+ if(alreadyRefunded+cents>original)return reply(409,{error:"cumulative_refunds_exceed_original_payment"});
  const {data:records,error:recordsError}=await db.from("paystack_refund_records").select("*").eq("refund_request_id",request.id).order("attempt_number",{ascending:false}).limit(1);
  if(recordsError)return reply(503,{error:"refund_attempt_lookup_failed"});
  let record=records?.[0];
