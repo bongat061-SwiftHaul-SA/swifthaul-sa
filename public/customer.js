@@ -152,7 +152,7 @@ async function startPaystackPageCheckout(order, button) {
         !data.payment_url.startsWith('https://paystack.shop/pay/swifthaul_waybill')) {
       throw new Error('Paystack returned an invalid Payment Page link.');
     }
-    report('Opening Paystack. Confirm the SwiftHaul Waybill field matches ' + order.waybill +
+    report('Opening Paystack. Enter the exact SwiftHaul Waybill ' + order.waybill +
       ' and pay exactly ' + money(data.amount) + '. Your booking updates only after Paystack verifies payment.');
     window.location.assign(data.payment_url);
   } catch (error) {
