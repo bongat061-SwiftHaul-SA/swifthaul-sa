@@ -36,7 +36,11 @@ Deno.serve(async(req:Request)=>{
  if(req.method==="GET"){
   const {data,error}=await db.from("driver_payout_requests").select("id,driver_user_id,amount_cents,bank_name,account_holder,account_number,account_type,branch_code,status,admin_reference,created_at,reviewed_at,paid_at").order("created_at",{ascending:false}).limit(200);
   if(error)return reply(500,{error:"payout_list_failed"});
-  return reply(200,{requests:(data??[]).map(x=>({...x,account_number_masked:"•".repeat(Math.max(0,x.account_number.length-4))+x.account_number.slice(-4),account_number:undefined}))});
+  const ids=(data??[]).map(x=>x.id);
+  const {data:records,error:recordsError}=ids.length?await db.from("paystack_driver_payout_records").select("payout_request_id,reference,status,transfer_code,failure_message,created_at").in("payout_request_id",ids).order("created_at",{ascending:false}):{data:[],error:null};
+  if(recordsError)return reply(500,{error:"payout_transfer_history_failed"});
+  const latest=new Map<string,any>();for(const item of records??[])if(!latest.has(item.payout_request_id))latest.set(item.payout_request_id,item);
+  return reply(200,{requests:(data??[]).map(x=>({...x,paystack_transfer:latest.get(x.id)||null,account_number_masked:"•".repeat(Math.max(0,x.account_number.length-4))+x.account_number.slice(-4),account_number:undefined}))});
  }
  const raw=await req.text();if(raw.length>4096)return reply(413,{error:"request_too_large"});
  let b:Record<string,unknown>;try{b=JSON.parse(raw)}catch{return reply(400,{error:"invalid_json"})}
