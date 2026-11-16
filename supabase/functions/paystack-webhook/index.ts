@@ -25,7 +25,7 @@ Deno.serve(async(req:Request)=>{
    const metadata=metadataOf(value?.metadata);
    const fields=Array.isArray(metadata.custom_fields)?metadata.custom_fields:Array.isArray(value?.custom_fields)?value.custom_fields:[];
    const field=fields.find((item:any)=>item&&String(item.variable_name||"").toLowerCase()==="swifthaul_waybill");
-   const candidate=field?.value??metadata.swifthaul_waybill??value?.swifthaul_waybill;
+   const candidate=field?.value??metadata.swifthaul_waybill??metadata.booking_waybill??value?.swifthaul_waybill??value?.booking_waybill;
    return typeof candidate==="string"&&/^SH-[A-F0-9-]{20,60}$/i.test(candidate.trim())?candidate.trim():null;
   };
   const verify=await fetch("https://api.paystack.co/transaction/verify/"+encodeURIComponent(ref),{headers:{Authorization:"Bearer "+secret},signal:AbortSignal.timeout(12000)});
