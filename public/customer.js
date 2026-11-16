@@ -296,7 +296,8 @@ function downloadPDF(order) {
 document.addEventListener('account-ready', () => {
   calculateButton.disabled=false;loadOrders();
   const params=new URLSearchParams(location.search), payment=params.get('payment');
-  if(payment==='return') report('You returned from PayFast. Payment is awaiting server-side notification and verification; refresh your bookings shortly. Returning here does not itself confirm payment.');
+  if(payment==='paystack_return') report('You returned from Paystack. Your card payment is awaiting server-side verification; refresh your bookings shortly. Returning here does not itself confirm payment.');
+  else if(payment==='return') report('You returned from PayFast. Payment is awaiting server-side notification and verification; refresh your bookings shortly. Returning here does not itself confirm payment.');
   else if(payment==='cancel') report('PayFast checkout was cancelled. Your booking remains unpaid.');
   if(payment){history.replaceState({},'',location.pathname+location.hash);}
 });
