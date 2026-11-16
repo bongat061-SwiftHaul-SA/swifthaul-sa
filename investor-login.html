@@ -92,7 +92,7 @@ function showRecoveryForm(){ $('loginPanel').classList.add('hidden'); $('dashboa
 function allowPasswordChange(){ showRecoveryForm(); $('recoveryCodePanel').classList.add('hidden'); $('newPasswordForm').classList.remove('hidden'); recoveryStatus('Choose a new password for your investor account.'); }
 $('verifyRecoveryCode').addEventListener('click',async()=>{
   const email=$('recoveryEmail').value.trim(),token=$('recoveryCode').value.trim();
-  if(!email||!/^\\d{6}$/.test(token)){recoveryStatus('Enter the investor email address and the six-digit code.',true);return}
+  if(!email||!/^[0-9]{6}$/.test(token)){recoveryStatus('Enter the investor email address and the six-digit code.',true);return}
   const button=$('verifyRecoveryCode');button.disabled=true;button.textContent='Verifying…';
   try{const {error}=await supabase.auth.verifyOtp({email,token,type:'recovery'});if(error)throw error;allowPasswordChange();}
   catch(error){recoveryStatus(error.message||'The code could not be verified. Check it and try again.',true)}
