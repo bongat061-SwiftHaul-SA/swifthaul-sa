@@ -14,6 +14,22 @@ for (const app of ['customer', 'driver', 'company']) {
     : path.join(root, 'apps', app, 'public');
   const target = path.join(output, app);
   fs.cpSync(source, target, { recursive: true });
+  // Driver and Company were originally hosted three directory levels below
+  // the site root. In the GitHub Pages preview they live one level below it,
+  // so normalize their root-shared asset and landing-page links in the output.
+  if (app !== 'customer') {
+    const rewriteNestedPaths = (directory) => {
+      for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+        const file = path.join(directory, entry.name);
+        if (entry.isDirectory()) rewriteNestedPaths(file);
+        else if (entry.isFile() && entry.name.endsWith('.html')) {
+          const html = fs.readFileSync(file, 'utf8');
+          fs.writeFileSync(file, html.replaceAll('../../../', '../'));
+        }
+      }
+    };
+    rewriteNestedPaths(target);
+  }
   // The Customer app has a dedicated customer.html entry point. Keep the
   // directory default (index.html) identical so browser visitors cannot land
   // on an older booking form when they open /customer/ instead.
