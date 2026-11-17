@@ -62,8 +62,27 @@ if(panel){
     const title=document.createElement('h3');title.textContent=driver.user_profiles?.full_name||'Driver applicant';
     const details=document.createElement('p');
     details.textContent=[driver.phone,driver.license_number?'Licence '+driver.license_number:'Licence missing',driver.license_expiry?'Expires '+driver.license_expiry:'Expiry missing',String(driver.vehicle_type||'Vehicle missing').toUpperCase(),driver.vehicle_registration||'Registration missing'].join(' · ');
-    const state=document.createElement('p');state.textContent='Verification: '+driver.verification_status;
+    const state=document.createElement('p');state.textContent='Verification: '+driver.verification_status+' · Onboarding: '+(driver.onboarding_status||'not started');
     card.append(title,details,state);
+    const app=driver.application;
+    const profileTitle=document.createElement('strong');profileTitle.textContent='Application profile';card.append(profileTitle);
+    const profileRows=[];
+    if(app){
+      const identity=app.identity_details||{},licence=app.licence_details||{},vehicle=app.vehicle_details||{},bank=app.banking_details||{};
+      const mask=value=>{const s=String(value||'');return s.length>4?'••••'+s.slice(-4):s?'••••':'Not supplied';};
+      profileRows.push('Identity: '+(app.identity_type||identity.citizenship||'Not supplied'));
+      profileRows.push('Date of birth: '+(identity.date_of_birth||'Not supplied'));
+      profileRows.push('Contact: '+(identity.phone||driver.phone||'Not supplied')+' · '+(identity.email||'Email not supplied'));
+      if(identity.id_number)profileRows.push('SA ID: '+mask(identity.id_number));
+      if(identity.passport_number)profileRows.push('Passport: '+mask(identity.passport_number));
+      profileRows.push('Licence: '+(licence.code||driver.licence_code||'Not supplied')+' · Expires '+(licence.expiry||driver.license_expiry||'Not supplied'));
+      profileRows.push('PrDP: '+(licence.prdp_holder?'Yes':'No / not declared')+(licence.prdp_category?' · '+licence.prdp_category:'')+(licence.prdp_expiry?' · Expires '+licence.prdp_expiry:''));
+      profileRows.push('Vehicle: '+[vehicle.make,vehicle.model,vehicle.year,vehicle.type].filter(Boolean).join(' ')+' · Registration '+(vehicle.registration_plate||driver.vehicle_registration||'Not supplied'));
+      profileRows.push('Bank: '+(bank.bank_name||'Not supplied')+' · Account holder '+(bank.account_holder||'Not supplied')+' · '+(bank.account_type||'Type not supplied')+' · Account '+mask(bank.account_number));
+      profileRows.push('Application submitted: '+(app.submitted_at?new Date(app.submitted_at).toLocaleString():'Date unavailable'));
+      if(app.review_note)profileRows.push('Review note: '+app.review_note);
+    }else profileRows.push('No completed onboarding application has been submitted by this driver yet.');
+    for(const value of profileRows){const row=document.createElement('p');row.textContent=value;card.append(row);}
     const docsTitle=document.createElement('strong');docsTitle.textContent='Verification documents';
     card.append(docsTitle);
     const docs=driver.documents||[];
