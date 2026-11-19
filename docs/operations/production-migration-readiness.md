@@ -194,6 +194,7 @@ A read-only review of staging Edge Function `driver-payouts`, the `request_drive
 - The authenticated driver POST handler forwards `b.account_number` directly as `p_account_number` to `request_driver_payout`; it does not call an encryption routine first.
 - The database function validates the supplied number and inserts it into `driver_payout_requests.account_number`. It does not populate `account_number_aesgcm` or `account_number_last4`.
 - The table has both a plaintext `account_number` column and the newer `account_number_aesgcm` / `account_number_last4` columns. The only non-internal trigger found on this table is `guard_driver_payout_cash_liability`; it does not encrypt bank data.
+- The `driver_pii_aes256_gcm_key` Vault secret is configured, and `get_driver_pii_aes256_gcm_key()` is SECURITY DEFINER with an empty search path; its execute ACL is limited to `service_role` (and postgres). This confirms a protected key-access helper exists, but the payout-request RPC does not call it.
 - The admin GET handler selects the plaintext account-number column for internal processing but masks it to the last four digits in its JSON response. The driver GET handler does not select or return the account number. The payout transfer path uses the driver's Paystack recipient code rather than reading the payout-request account number.
 - Aggregate-only staging data check: `driver_payout_requests` currently has 0 rows, 0 populated plaintext account-number values, and 0 populated encrypted account-number values. No bank data was read.
 
