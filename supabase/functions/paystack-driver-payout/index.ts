@@ -17,8 +17,21 @@ Deno.serve(async(req:Request)=>{
  if(pe)return reply(503,{error:"profile_lookup_failed"});if(!profile||profile.role!=="admin"||profile.account_status!=="active")return reply(403,{error:"administrator_access_required"});
  const raw=await req.text();if(raw.length>4096)return reply(413,{error:"request_too_large"});let b:any;try{b=JSON.parse(raw)}catch{return reply(400,{error:"invalid_json"})}
  const id=String(b.request_id||"");if(!/^[0-9a-f-]{36}$/i.test(id))return reply(400,{error:"invalid_payout_request"});
- const {data:request,error:re}=await db.from("driver_payout_requests").select("id,driver_user_id,amount_cents,bank_name,account_holder,account_number,account_type,status").eq("id",id).maybeSingle();
+ const {data:request,error:re}=await db.from("driver_payout_requests").select("id,driver_user_id,amount_cents,bank_name,account_holder,account_number_aesgcm,account_type,status").eq("id",id).maybeSingle();
  if(re)return reply(503,{error:"payout_request_lookup_failed"});if(!request)return reply(404,{error:"payout_request_not_found"});if(request.status!=="approved")return reply(409,{error:"payout_must_be_approved_first"});
+ if(typeof request.account_number_aesgcm!=="string"||!request.account_number_aesgcm.startsWith("v1:"))return reply(409,{error:"encrypted_payout_bank_details_unavailable"});
+ const {data:keyText,error:keyError}=await db.rpc("get_driver_pii_aes256_gcm_key");
+ if(keyError||typeof keyText!=="string")return reply(503,{error:"payout_encryption_key_unavailable"});
+ const fromB64=(v:string)=>Uint8Array.from(atob(v),c=>c.charCodeAt(0));
+ const parts=request.account_number_aesgcm.split(":");
+ if(parts.length!==3||parts[0]!=="v1")return reply(409,{error:"encrypted_payout_bank_details_invalid"});
+ let accountNumber:string;
+ try{
+  const key=await crypto.subtle.importKey("raw",fromB64(keyText),{name:"AES-GCM"},false,["decrypt"]);
+  const plain=await crypto.subtle.decrypt({name:"AES-GCM",iv:fromB64(parts[1]),tagLength:128},key,fromB64(parts[2]));
+  accountNumber=new TextDecoder().decode(plain);
+ }catch{return reply(409,{error:"encrypted_payout_bank_details_invalid"});}
+ if(!/^[0-9]{6,20}$/.test(accountNumber))return reply(409,{error:"decrypted_payout_bank_details_invalid"});
  const {data:prior,error:priorError}=await db.from("paystack_driver_payout_records").select("*").eq("payout_request_id",id).order("attempt_number",{ascending:false}).limit(1);
  if(priorError)return reply(503,{error:"payout_history_lookup_failed"});
  if(prior?.[0]&&["initiating","pending","success"].includes(prior[0].status))return reply(200,{status:prior[0].status,reference:prior[0].reference,already_submitted:true});
@@ -31,7 +44,7 @@ Deno.serve(async(req:Request)=>{
   if(!banks.ok||!Array.isArray(banks.data))return reply(502,{error:"paystack_bank_list_unavailable"});
   const bank=banks.data.find((x:any)=>norm(String(x.name||""))===norm(String(request.bank_name||""))&&String(x.code||"").length>0);
   if(!bank)return reply(409,{error:"bank_name_not_mapped_to_paystack",detail:"Driver bank name must match a Paystack South African bank listing."});
-  const created=await ps("/transferrecipient",secret,{method:"POST",body:JSON.stringify({type:"basa",name:request.account_holder,account_number:request.account_number,bank_code:String(bank.code),currency:"ZAR",description:"SwiftHaul driver "+request.driver_user_id})});
+  const created=await ps("/transferrecipient",secret,{method:"POST",body:JSON.stringify({type:"basa",name:request.account_holder,account_number:accountNumber,bank_code:String(bank.code),currency:"ZAR",description:"SwiftHaul driver "+request.driver_user_id})});
   if(!created.ok||!created.data?.recipient_code)return reply(502,{error:"paystack_recipient_creation_failed",detail:created.message.slice(0,180)});
   recipient=String(created.data.recipient_code);
   const {error:saveError}=await db.from("driver_profiles").update({paystack_recipient_code:recipient,paystack_recipient_created_at:new Date().toISOString()}).eq("user_id",request.driver_user_id);
