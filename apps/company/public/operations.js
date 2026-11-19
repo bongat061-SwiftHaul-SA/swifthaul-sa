@@ -50,6 +50,17 @@ if (app === 'driver' || app === 'company') {
       const drawQuality=()=>{qList.replaceChildren();const filtered=alerts.filter(a=>qFilter.value==='all'||a.priority===qFilter.value);if(!filtered.length){const empty=document.createElement('p');empty.textContent='No quality alerts match this filter.';qList.append(empty);}for(const alert of filtered){const card=document.createElement('article');card.className='admin-quality-card';const score=scores.get(alert.driver_id)||{};const h=document.createElement('strong');h.textContent=alert.priority.toUpperCase()+' · '+alert.reason;const detail=document.createElement('p');detail.textContent='Order '+alert.order_id+' · Driver score '+(score.performance_score??'—')+'/100 · '+(score.performance_tier||'unrated');const tags=document.createElement('p');tags.textContent=(alert.tags||[]).join(' · ');card.append(h,detail,tags);qList.append(card);}};
       qFilter.addEventListener('change',drawQuality);qualityPanel.append(qHead,qFilter,qList);drawQuality();
       list.replaceChildren();
+      if(app==='company'){
+        const waybillInput=document.getElementById('offer-waybill');
+        if(waybillInput){
+          let choices=document.getElementById('offer-waybill-options');
+          if(!choices){choices=document.createElement('datalist');choices.id='offer-waybill-options';waybillInput.setAttribute('list',choices.id);waybillInput.insertAdjacentElement('afterend',choices);}
+          choices.replaceChildren();
+          for(const booking of (data.orders||[]).filter(item=>item.status==='pending'&&!item.driver_user_id&&!item.refunded_at)){
+            const option=document.createElement('option');option.value=booking.waybill;option.label=(booking.pickup||'Pickup')+' → '+(booking.dropoff||'Drop-off');choices.append(option);
+          }
+        }
+      }
       if (app === 'driver' && data.driverProfile?.verification_status !== 'approved') {
         const notice = document.createElement('p');
         notice.textContent = 'Your driver application is awaiting verification. Dispatch access will be enabled after approval.';
