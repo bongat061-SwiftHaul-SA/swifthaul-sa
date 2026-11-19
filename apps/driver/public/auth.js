@@ -320,6 +320,14 @@ form.addEventListener('submit', async event => {
       });
       if (error) throw error;
       form.elements.password.value = '';
+      if (data.user?.id) {
+        // Notify Company Admin as soon as the driver registration is created.
+        // The function validates this as a recent driver registration and is idempotent.
+        const { error: signupNoticeError } = await supabase.functions.invoke('driver-application-notify', {
+          body: { user_id: data.user.id }
+        });
+        if (signupNoticeError) console.warn('New driver application alert is pending:', signupNoticeError.message);
+      }
       if (!data.session) {
         status.textContent = 'Driver account created. Check your email to confirm it, then sign in.';
         setMode('login');
