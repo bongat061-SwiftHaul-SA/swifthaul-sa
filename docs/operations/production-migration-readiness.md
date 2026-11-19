@@ -168,3 +168,20 @@ Read-only checks against staging project `tagkbropgzthsbjlhyvz` found:
 **Security disposition:** encryption plumbing and client privilege restrictions are present in staging, but end-to-end encryption coverage, key lifecycle/rotation, legacy-data conversion, and privileged access auditing are not proven. Do not treat the existence of AES-256 routines or encrypted column names as proof that all driver PII and payout-bank data are encrypted at rest by the application. Recover and review both historical bank-encryption migration definitions and the AES-GCM/storage-audit and payout-bank migrations before any schema change.
 
 No data, SQL, permissions, secrets, migrations, or deployments were changed by this preflight.
+
+
+## 11. Follow-up source-recovery search (2026-11-19)
+
+A further read-only GitHub search was performed for the five unresolved driver-security migration definitions:
+
+- `20261111205837_encrypt_complete_driver_bank_details.sql`
+- `20261111205858_encrypt_complete_driver_bank_details.sql`
+- `20261111210331_driver_secure_storage_aes_gcm_and_access_audit.sql`
+- `20261111210914_secure_driver_payout_bank_details.sql`
+- `20261111210644_driver_trip_arrival_checkpoints.sql`
+
+The exact-path commit-history queries returned no commits for these paths. Commit-message searches and the connected GitHub code-search endpoint also returned no matches. The migrations directory was checked on `feature/driver-account-settings`, `feature/driver-insurance-staging-backend`, `feature/secure-driver-live-location`, and the active staging branch; none of those branch directory listings contained the five target filenames. This extends the earlier sibling-branch scan but is not proof that the original SQL never existed: the source could have been renamed, stored in another repository/branch, or applied outside the currently accessible repository history.
+
+**Disposition:** exact original SQL remains unrecovered. No replacement or reconstructed historical migration was created. Do not infer SQL from the current database schema, and do not mark the ledger entries as source-verified. Keep all five items blocked pending a trusted source or a separately reviewed forward migration. Any forward migration must be designed against the live staging schema and dependencies, include explicit handling for existing rows and rollback/recovery, and receive review before execution.
+
+No database, migration ledger, driver data, secrets, permissions, or deployments were changed by this search.
