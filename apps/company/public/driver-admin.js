@@ -17,7 +17,19 @@ if(panel){
     const client=window.swiftHaulSupabase;
     if(!client)throw new Error('Secure account connection is unavailable.');
     const {data,error}=await client.functions.invoke('driver-admin',{method,...(body?{body}:{})});
-    if(error)throw new Error(data?.error||error.message||'Driver review request failed.');
+    if(error){
+      let details=data;
+      try{if(!details&&error.context&&typeof error.context.json==='function')details=await error.context.json();}catch{}
+      const code=details?.error||error.message||'Driver review request failed.';
+      const missing=Array.isArray(details?.missing_documents)?details.missing_documents:[];
+      const readable={
+        criminal_background_clearance_required:'Background clearance must be confirmed before this driver can be approved.',
+        valid_driver_licence_required:'A current, valid driver licence is required before approval.',
+        required_documents_not_approved:'Approval is blocked until all required documents have been reviewed and accepted.',
+        driver_activation_checks_failed:'The final driver eligibility checks did not pass. The driver has not been activated.'
+      };
+      throw new Error((readable[code]||code)+(missing.length?' Missing or outstanding: '+missing.join(', '):''));
+    }
     if(data?.error)throw new Error(data.error);
     return data;
   }
