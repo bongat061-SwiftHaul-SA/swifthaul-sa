@@ -63,7 +63,13 @@ if(panel){
     const details=document.createElement('p');
     details.textContent=[driver.phone,driver.license_number?'Licence '+driver.license_number:'Licence missing',driver.license_expiry?'Expires '+driver.license_expiry:'Expiry missing',String(driver.vehicle_type||'Vehicle missing').toUpperCase(),driver.vehicle_registration||'Registration missing'].join(' · ');
     const state=document.createElement('p');state.textContent='Verification: '+driver.verification_status+' · Onboarding: '+(driver.onboarding_status||'not started');
-    card.append(title,details,state);
+    const accountId=document.createElement('p');accountId.className='driver-account-id';
+    accountId.textContent='Driver account ID: '+String(driver.user_id||'Unavailable');
+    card.append(title,details,state,accountId);
+    const copyId=document.createElement('button');copyId.type='button';copyId.textContent='Copy driver account ID';
+    copyId.disabled=!driver.user_id;
+    copyId.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(String(driver.user_id));status.textContent='Driver account ID copied.';}catch{status.textContent='Copy unavailable. Select the account ID shown on the driver profile.';}});
+    card.append(copyId);
     const app=driver.application;
     const profileTitle=document.createElement('strong');profileTitle.textContent='Application profile';card.append(profileTitle);
     const profileRows=[];
