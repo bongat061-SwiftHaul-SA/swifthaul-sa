@@ -32,10 +32,25 @@ Deno.serve(async(req:Request)=>{
   const documents=(allDocuments||[]).filter((d:any)=>{if(seenTypes.has(d.document_type))return false;seenTypes.add(d.document_type);const expiring=!!d.expiry_date&&Date.parse(d.expiry_date+"T00:00:00+02:00")<=Date.now()+30*86400000;return ["rejected","expired"].includes(d.verification_status)||expiring;}).map((d:any)=>({...d,action_reason:d.verification_status==="approved"&&d.expiry_date?"Expires on "+d.expiry_date+". Upload a current replacement before it expires.":d.verification_status==="expired"?"This document has expired. Upload a current replacement.":"This document was rejected and must be replaced."}));
   const {data:notifications,error:notificationError}=await db.from("driver_onboarding_notifications").select("id,title,message,notification_type,created_at,read_at").eq("driver_user_id",u.user.id).order("created_at",{ascending:false}).limit(20);
   if(notificationError)return reply(500,{error:"driver_notifications_unavailable"});
-  return reply(200,{application:application||null,rejected_documents:documents,notifications:notifications||[]});
+  const {data:draftRow,error:draftError}=await db.from("driver_onboarding_drafts").select("draft_payload_encrypted,updated_at").eq("driver_user_id",u.user.id).maybeSingle();
+  if(draftError)return reply(500,{error:"driver_onboarding_draft_unavailable"});
+  let draft:Record<string,string>|null=null;
+  if(draftRow?.draft_payload_encrypted){const {data:plain,error:decryptError}=await db.rpc("decrypt_driver_pii",{p_ciphertext:draftRow.draft_payload_encrypted});if(decryptError||typeof plain!=="string")return reply(500,{error:"driver_onboarding_draft_decryption_failed"});try{draft=JSON.parse(plain);}catch{return reply(500,{error:"driver_onboarding_draft_invalid"});}}
+  return reply(200,{application:application||null,rejected_documents:documents,notifications:notifications||[],draft,draft_updated_at:draftRow?.updated_at||null});
  }
  const form=await req.formData();
  const action=text(form.get("action"),50);
+ if(action==="save_draft"){
+  const draft:Record<string,string>={};
+  for(const [key,value] of form.entries()){if(key==="action"||value instanceof File)continue;if(typeof value==="string")draft[key]=value.slice(0,2000);}
+  const serialized=JSON.stringify(draft);
+  if(serialized.length>50000)return reply(413,{error:"draft_too_large"});
+  const {data:cipher,error:encryptError}=await db.rpc("encrypt_driver_pii",{p_plaintext:serialized});
+  if(encryptError||typeof cipher!=="string"||!cipher)return reply(500,{error:"secure_draft_encryption_failed"});
+  const {error:saveDraftError}=await db.from("driver_onboarding_drafts").upsert({driver_user_id:u.user.id,draft_payload_encrypted:cipher,updated_at:new Date().toISOString()},{onConflict:"driver_user_id"});
+  if(saveDraftError)return reply(500,{error:"driver_onboarding_draft_save_failed"});
+  return reply(200,{saved:true,updated_at:new Date().toISOString(),message:"Your form details have been saved securely. Uploaded files must still be selected when you submit."});
+ }
  if(action==="replace_document"){
   const type=text(form.get("document_type"),50),file=form.get("file"),expiry=text(form.get("expiry_date"),10),issued=text(form.get("issued_at"),10);
   if(!docTypes.has(type))return reply(400,{error:"unsupported_document_type"});
@@ -136,6 +151,7 @@ if(!["sa_citizen","foreign_national"].includes(identityType))return reply(400,{e
   if(profileSaveError)throw new Error("driver_profile_onboarding_update_failed");
   await db.from("driver_verification_audit").insert({driver_user_id:u.user.id,event_type:"onboarding_submitted",details:{identity_type:identityType,document_count:files.length}});
   await db.from("driver_onboarding_notifications").insert({driver_user_id:u.user.id,notification_type:"application_submitted",title:"Application received",message:"Your driver onboarding application is pending document and background verification."});
+  await db.from("driver_onboarding_drafts").delete().eq("driver_user_id",u.user.id);
   return reply(201,{submitted:true,status:"pending",message:"Application submitted. You cannot go online until SwiftHaul approves your documents."});
  }catch(e){
   if(uploaded.length){await db.from("driver_documents").delete().eq("driver_user_id",u.user.id).in("storage_path",uploaded);await db.storage.from("driver-application-documents").remove(uploaded);}
