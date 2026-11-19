@@ -29,7 +29,17 @@ Deno.serve(async(req:Request)=>{
   const raw=await req.text();if(raw.length>4096)return reply(413,{error:"request_too_large"});
   let b:Record<string,unknown>;try{b=JSON.parse(raw)}catch{return reply(400,{error:"invalid_json"})}
   if(b.action!=="request"||typeof b.amount_cents!=="number"||!Number.isSafeInteger(b.amount_cents))return reply(400,{error:"invalid_payout_request"});
-  const {data,error}=await db.rpc("request_driver_payout",{p_driver_id:id,p_amount_cents:b.amount_cents,p_bank_name:b.bank_name,p_account_holder:b.account_holder,p_account_number:b.account_number,p_account_type:b.account_type,p_branch_code:b.branch_code||null});
+  const accountNumber=typeof b.account_number==="string"?b.account_number.trim():"";
+  if(!/^[0-9]{6,20}$/.test(accountNumber))return reply(400,{error:"invalid_amount_or_bank_details"});
+  const {data:keyText,error:keyError}=await db.rpc("get_driver_pii_aes256_gcm_key");
+  if(keyError||typeof keyText!=="string")return reply(500,{error:"payout_encryption_unavailable"});
+  const fromB64=(v:string)=>Uint8Array.from(atob(v),c=>c.charCodeAt(0));
+  const toB64=(v:Uint8Array)=>btoa(Array.from(v,c=>String.fromCharCode(c)).join(""));
+  const key=await crypto.subtle.importKey("raw",fromB64(keyText),{name:"AES-GCM"},false,["encrypt"]);
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const encrypted=await crypto.subtle.encrypt({name:"AES-GCM",iv,tagLength:128},key,new TextEncoder().encode(accountNumber));
+  const ciphertext="v1:"+toB64(iv)+":"+toB64(new Uint8Array(encrypted));
+  const {data,error}=await db.rpc("request_driver_payout",{p_driver_id:id,p_amount_cents:b.amount_cents,p_bank_name:b.bank_name,p_account_holder:b.account_holder,p_account_number_aesgcm:ciphertext,p_account_number_last4:accountNumber.slice(-4),p_account_type:b.account_type,p_branch_code:b.branch_code||null});
   if(error){const m=error.message||"";if(/Insufficient|Invalid payout/i.test(m))return reply(400,{error:"invalid_amount_or_bank_details"});if(/open payout/i.test(m))return reply(409,{error:"open_payout_already_exists"});if(/Approved active driver/i.test(m))return reply(403,{error:"driver_not_approved"});return reply(500,{error:"payout_request_failed"})}
   return reply(201,data);
  }
