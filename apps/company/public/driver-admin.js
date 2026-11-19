@@ -82,8 +82,12 @@ if(panel){
     copyId.disabled=!driver.user_id;
     copyId.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(String(driver.user_id));status.textContent='Driver account ID copied.';}catch{status.textContent='Copy unavailable. Select the account ID shown on the driver profile.';}});
     card.append(copyId);
+    const reviewPanel=document.createElement('details');reviewPanel.className='driver-review-details';
+    const reviewSummary=document.createElement('summary');reviewSummary.textContent='View driver details & verification documents';
+    reviewPanel.append(reviewSummary);
+    card.append(reviewPanel);
     const app=driver.application;
-    const profileTitle=document.createElement('strong');profileTitle.textContent='Application profile';card.append(profileTitle);
+    const profileTitle=document.createElement('strong');profileTitle.textContent='Application profile';reviewPanel.append(profileTitle);
     const profileRows=[];
     if(app){
       const identity=app.identity_details||{},licence=app.licence_details||{},vehicle=app.vehicle_details||{},bank=app.banking_details||{};
@@ -100,26 +104,26 @@ if(panel){
       profileRows.push('Application submitted: '+(app.submitted_at?new Date(app.submitted_at).toLocaleString():'Date unavailable'));
       if(app.review_note)profileRows.push('Review note: '+app.review_note);
     }else profileRows.push('No completed onboarding application has been submitted by this driver yet.');
-    for(const value of profileRows){const row=document.createElement('p');row.textContent=value;card.append(row);}
+    for(const value of profileRows){const row=document.createElement('p');row.textContent=value;reviewPanel.append(row);}
     const docsTitle=document.createElement('strong');docsTitle.textContent='Verification documents';
-    card.append(docsTitle);
+    reviewPanel.append(docsTitle);
     const docs=driver.documents||[];
-    if(!docs.length){const missing=document.createElement('p');missing.textContent='No documents uploaded yet.';card.append(missing);}
+    if(!docs.length){const missing=document.createElement('p');missing.textContent='No documents uploaded yet.';reviewPanel.append(missing);}
     for(const doc of docs){
       const row=document.createElement('p');
       row.textContent=doc.document_type.replaceAll('_',' ')+' · '+doc.review_status+' · '+doc.original_name+' ';
       if(doc.signed_url){const link=document.createElement('a');link.href=doc.signed_url;link.target='_blank';link.rel='noopener noreferrer';link.textContent='View securely';row.append(link);}
-      card.append(row);
+      reviewPanel.append(row);
       if(doc.review_status!=='accepted'){
         const accept=document.createElement('button');accept.type='button';accept.textContent='Accept document';
-        accept.addEventListener('click',()=>reviewDocument(driver,doc,'accepted',accept));card.append(accept);
+        accept.addEventListener('click',()=>reviewDocument(driver,doc,'accepted',accept));reviewPanel.append(accept);
       }
       if(doc.review_status!=='rejected'){
         const reject=document.createElement('button');reject.type='button';reject.textContent='Reject document';
-        reject.addEventListener('click',()=>reviewDocument(driver,doc,'rejected',reject));card.append(reject);
+        reject.addEventListener('click',()=>reviewDocument(driver,doc,'rejected',reject));reviewPanel.append(reject);
       }
     }
-    const button=(label,action)=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.addEventListener('click',()=>review(driver,action,b));card.append(b);};
+    const button=(label,action)=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.addEventListener('click',()=>review(driver,action,b));reviewPanel.append(b);};
     if(driver.verification_status!=='approved')button('Approve driver','approve');
     if(driver.verification_status!=='rejected')button('Reject application','reject');
     if(driver.verification_status==='approved')button('Suspend driver','suspend');
