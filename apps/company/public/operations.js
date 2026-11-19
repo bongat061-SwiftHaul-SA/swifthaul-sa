@@ -60,7 +60,7 @@ if (app === 'driver' || app === 'company') {
         empty.textContent = 'No deliveries are currently assigned to this account.';
         list.append(empty);
       }
-      for (const order of data.orders || []) render(order, data.driverOrderCounts || {}, data.orders || [], data.fleetRouteStops || []);
+      for (const order of data.orders || []) render(order, data.driverOrderCounts || {}, data.orders || [], data.fleetRouteStops || [], data.approvedDrivers || []);
       message.textContent = '';
     } catch (error) {
       if (current === requestNumber) message.textContent = error.message || 'Unable to load deliveries.';
@@ -91,7 +91,7 @@ if (app === 'driver' || app === 'company') {
     return button;
   }
 
-  function render(order, driverOrderCounts = {}, allOrders = [], fleetRouteStops = []) {
+  function render(order, driverOrderCounts = {}, allOrders = [], fleetRouteStops = [], approvedDrivers = []) {
     const card = document.createElement('article');
     card.className = 'order';
   card.dataset.deliveryStatus = order.status || '';
@@ -107,6 +107,21 @@ if (app === 'driver' || app === 'company') {
       order.paid_at ? 'Paid' : 'Payment pending'
     ].filter(Boolean).join(' · ');
     card.append(title, route, summary);
+    if(app==='company'&&order.waybill){
+      const waybillRow=document.createElement('p');
+      waybillRow.className='dispatch-waybill-reference';
+      waybillRow.textContent='Waybill reference: '+String(order.waybill);
+      const copyWaybill=document.createElement('button');
+      copyWaybill.type='button';copyWaybill.textContent='Copy waybill';
+      copyWaybill.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(String(order.waybill));message.textContent='Waybill '+order.waybill+' copied.';}catch{message.textContent='Copy unavailable. Select the waybill shown above: '+order.waybill;}});
+      card.append(waybillRow,copyWaybill);
+    }
+    if(app==='company'&&order.driver_user_id){
+      const assigned=document.createElement('p');
+      const selectedDriver=approvedDrivers.find(d=>d.user_id===order.driver_user_id);
+      assigned.textContent='Assigned driver account: '+(selectedDriver?.user_profiles?.full_name||'Driver')+' · '+order.driver_user_id;
+      card.append(assigned);
+    }
     if(app==='company'&&order.driver_user_id&&Number(driverOrderCounts[order.driver_user_id]||0)>1){
       const count=Number(driverOrderCounts[order.driver_user_id]);
       const badge=document.createElement('span');badge.className='driver-multi-order-badge';badge.textContent=count+' Orders';card.append(badge);
@@ -436,15 +451,25 @@ if (app === 'driver' || app === 'company') {
     } else if (!['delivered', 'failed', 'cancelled'].includes(order.status)) {
       const form = document.createElement('form');
       const label = document.createElement('label');
-      label.textContent = 'Approved driver account ID';
-      const id = document.createElement('input');
+      label.textContent = 'Select an approved, cleared driver';
+      const id = document.createElement('select');
       id.required = true;
-      id.maxLength = 36;
-      id.pattern = '[0-9a-fA-F-]{36}';
+      const placeholder=document.createElement('option');
+      placeholder.value='';
+      placeholder.textContent=approvedDrivers.length?'Choose approved driver':'No approved and cleared drivers available';
+      id.append(placeholder);
+      for(const driver of approvedDrivers){
+        const option=document.createElement('option');
+        option.value=driver.user_id;
+        const name=driver.user_profiles?.full_name||'Driver';
+        option.textContent=name+' · '+String(driver.vehicle_type||'Vehicle not recorded')+' · '+driver.user_id;
+        id.append(option);
+      }
       label.append(id);
       const submit = document.createElement('button');
       submit.type = 'submit';
-      submit.textContent = 'Assign driver';
+      submit.textContent = 'Assign selected driver';
+      submit.disabled=approvedDrivers.length===0;
       form.append(label, submit);
       form.addEventListener('submit', event => {
         event.preventDefault();
