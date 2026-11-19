@@ -227,3 +227,20 @@ Pre-application review:
 **Not yet verified:** SQL execution against staging, TypeScript/Deno compilation, deployed Edge Function behavior, ciphertext round-trip against the staging Vault key, and a full admin/driver browser regression. The old RPC must be replaced before the new Edge Function is deployed; deploy both functions only after the migration succeeds. Then run synthetic-only tests (never a real bank account or live transfer) and verify that plaintext writes are rejected.
 
 No migration was applied, no Edge Function was deployed, no bank data or secret values were read, and production was not changed.
+
+
+## 14. Staging migration applied and functions deployed (2026-11-19)
+
+The prepared payout encryption fix was applied to the isolated staging Supabase project `tagkbropgzthsbjlhyvz` and both affected Edge Functions were deployed after the migration succeeded.
+
+- Migration: `encrypt_driver_payout_request_accounts` — Supabase reported success.
+- `driver-payouts` deployed as version 22 with JWT verification enabled.
+- `paystack-driver-payout` deployed as version 8 with JWT verification enabled.
+- Post-migration schema check: the plaintext guard constraint exists (NOT VALID, so it protects new/updated rows without rewriting historical rows); the new eight-argument RPC exists; its execute ACL is limited to `service_role` and postgres.
+- Post-migration aggregate data check: 0 payout requests, 0 plaintext account-number values, 0 encrypted account-number values.
+- Source checks confirm the request Edge Function sends ciphertext and last-four only; the admin listing selects last-four only; the Paystack transfer function decrypts the ciphertext in memory and preserves the test-secret-key-only guard.
+- GitHub Actions run `44570112782` completed successfully for the Customer, Driver, and Company Admin Android debug APK build jobs: https://github.com/bongat061-SwiftHaul-SA/swifthaul-sa/actions/runs/44570112782
+
+**Remaining verification:** no authenticated driver payout request has been submitted, no browser/API integration test with a disposable approved driver has been run, and no Paystack transfer was initiated. The APK build validates the mobile packaging workflow, not the Edge Function runtime. A live or real-bank-account test is not appropriate. Keep actual payouts disabled until synthetic-only staging integration tests confirm the encryption round-trip, masked admin display, and plaintext-write rejection.
+
+Production Supabase and the production SwiftHaul website were not touched.
