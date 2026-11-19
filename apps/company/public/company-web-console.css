@@ -48,3 +48,6 @@ body[data-app="company"] .footer{padding:22px clamp(22px,3vw,48px);background:#f
  body[data-app="company"] .workspace-grid>.panel,body[data-app="company"] .workspace-grid aside>.panel,body[data-app="company"] .page>section.panel{padding:18px;border-radius:14px;margin-top:13px!important}
  body[data-app="company"] .footer{padding:18px 14px}
 }
+
+/* Environment identity: visible on staging Company Admin only. */
+.environment-banner{position:sticky;top:0;z-index:1200;padding:10px 18px;text-align:center;background:#fff4d6;border-bottom:1px solid #e7c66f;color:#714b00;font-size:11px;font-weight:850;letter-spacing:1.1px}.environment-banner span{padding:0 7px;color:#a47720}
