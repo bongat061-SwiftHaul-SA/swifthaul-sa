@@ -130,3 +130,25 @@ A read-only scan of related repository branches found candidate source files for
 The sibling-branch files must not be copied into the staging branch as historical migrations without checking their original order and whether their effects are already represented there. In particular, the staging ledger's two bank-encryption entries, driver eligibility/document rules, secure storage, trip checkpoints, payout-bank encryption, and several dispatch/PayFast functions remain unresolved after this first recovery pass.
 
 The candidate files above are preserved in their source branches. Next step is a semantic review of each candidate's full SQL, dependency order, and schema effects, followed by source recovery for the remaining unresolved ledger rows. Do not cherry-pick or replay these files automatically.
+
+## 9. Driver eligibility and security source/schema review (2026-11-19)
+
+A read-only review compared selected historical source files in `feature/driver-account-settings` with the working staging branch. The following files are present in both branches with identical content/blob SHA:
+
+- `20261103212154_add_auth_driver_dispatch_and_delivery_proof.sql`
+- `20261103221925_secure_driver_portal_signup.sql`
+- `20261103222504_enforce_complete_driver_onboarding.sql`
+- `20261107000100_add_secure_driver_live_locations.sql`
+- `20261107203000_driver_application_documents_notifications.sql`
+
+These are not missing source files in the working branch. The onboarding constraint migration is especially sensitive: it sets driver licence, expiry, vehicle type, and registration columns to NOT NULL and adds nonblank checks. Do not replay it or infer its safety from the current one-row staging sample.
+
+A read-only staging schema inspection confirms that the current database contains driver eligibility fields and routines, private driver-document and payout tables, encrypted-data columns, and document-expiry processing. The current `refresh_driver_online_eligibility` routine checks approved onboarding, criminal-background clearance, current licence expiry, required approved/current documents, recent proof of address, vehicle evidence, and PRDP evidence when applicable. The helper `driver_can_accept_work` refreshes this eligibility before returning the online-work decision. This is evidence that eligibility controls exist in staging, but it does not establish which exact historical migration version introduced each object or prove that the original SQL has been recovered.
+
+Staging sample check (aggregate only): 1 driver profile; no null/blank licence or vehicle fields; no expired licence; 0 profiles currently marked approved; 0 profiles with onboarding status approved; 0 profiles currently eligible to go online. No individual driver data was included in this audit.
+
+The staging database does **not** currently contain `public.driver_trip_arrival_checkpoints`. This remains a concrete schema/source mapping gap for ledger item `20261111210644 driver_trip_arrival_checkpoints`.
+
+The presence of encrypted-column names alone does not prove that encryption is correctly implemented, that keys are configured, or that plaintext legacy values were safely migrated. The exact SQL for both distinct `encrypt_complete_driver_bank_details` versions, `driver_secure_storage_aes_gcm_and_access_audit`, and `secure_driver_payout_bank_details` remains unresolved. Do not inspect or export raw identity/bank values as part of this review.
+
+**Disposition:** no SQL was applied; no migration file was copied or replayed; no driver status was changed; no production resource was touched. Continue recovering the exact source for the remaining eligibility, encryption, storage-audit, payout-bank and arrival-checkpoint ledger entries. Where original SQL cannot be recovered, keep the item blocked and propose a separately reviewed forward migration only after full schema, data and dependency analysis.
