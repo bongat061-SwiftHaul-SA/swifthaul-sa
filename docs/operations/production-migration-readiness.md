@@ -201,3 +201,29 @@ A read-only review of staging Edge Function `driver-payouts`, the `request_drive
 **Security disposition:** the current request path would store a newly submitted payout account number in the plaintext column despite the presence of AES-GCM columns. There are no existing staging payout requests to convert at this time. Do not enable real payouts or collect real bank details through this path until a reviewed forward fix updates the request flow and database function together, verifies ciphertext format/key access and admin compatibility, and removes or retires plaintext storage safely. This is a verified staging code/schema gap, not proof of a production issue; production was not inspected or changed in this step.
 
 No SQL, data, function code, permissions, secrets, or deployments were changed by this review.
+
+
+## 13. Staging payout encryption forward-fix prepared (2026-11-19)
+
+A forward-fix implementation has been committed to the staging branch, but has **not** been applied to the staging database and neither Edge Function has been deployed.
+
+Files changed:
+- `supabase/functions/driver-payouts/index.ts`: validate the submitted account number in memory, obtain the AES-256-GCM key through the service-role-only RPC, encrypt with a fresh 96-bit IV, and send only the versioned ciphertext plus last four digits to the revised RPC. The admin listing now selects the last-four field only and does not select plaintext account numbers.
+- `supabase/functions/paystack-driver-payout/index.ts`: read the encrypted column, decrypt only in memory for the Paystack recipient request, and fail closed when ciphertext or key access is unavailable. Existing test-key-only guard remains in place.
+- `supabase/migrations/20261119090000_encrypt_driver_payout_request_accounts.sql`: adds a NOT VALID check constraint to reject new/updated rows with a non-null plaintext account number, replaces the old payout-request RPC with a ciphertext/last-four signature, stores plaintext as NULL, and grants execution only to `service_role`.
+
+Implementation commits:
+- Driver payout request and admin masking: `871b31bde8b566f44325fe85ac8591eb278dd8b3`
+- Admin payout masking refinement: `7e264f3dbc6b966f2c0e2f1b84b61883c3cd23e3`
+- Paystack test-transfer decryption: `6bde3b2a032202ecb53d23e2f381baa3f024c02b`
+- Forward migration: `8f8834357dfdfaa9473517d5e3b0b138fe7bbb10`
+
+Pre-application review:
+- All three source files were fetched back from the staging branch and their expected encryption/decryption/last-four code paths were confirmed.
+- The existing staging payout table had 0 rows when reviewed, so no current payout records require conversion. The migration does not attempt to rewrite existing bank data.
+- The existing admin UI consumes `account_number_masked`, so the revised response retains that property.
+- The Paystack transfer function already rejects non-test secret keys; this guard is preserved. No transfer was initiated.
+
+**Not yet verified:** SQL execution against staging, TypeScript/Deno compilation, deployed Edge Function behavior, ciphertext round-trip against the staging Vault key, and a full admin/driver browser regression. The old RPC must be replaced before the new Edge Function is deployed; deploy both functions only after the migration succeeds. Then run synthetic-only tests (never a real bank account or live transfer) and verify that plaintext writes are rejected.
+
+No migration was applied, no Edge Function was deployed, no bank data or secret values were read, and production was not changed.
