@@ -107,3 +107,26 @@ The 37 rows requiring source recovery or explicit alternate-source mapping are:
 The two separate `encrypt_complete_driver_bank_details` ledger versions must remain separate records during investigation. Do not collapse or reorder them without recovering both original definitions and understanding their effects.
 
 **Next source-recovery action:** inspect repository history and prior commits/branches for these exact migration definitions and compare candidate SQL to the applied staging schema. Record each mapping with evidence; where no original source can be recovered, mark it as a blocker and design a separately reviewed forward-fix only after schema/data inspection. Do not create guessed historical migration files.
+
+
+## 8. Candidate source recovery from sibling branches
+
+A read-only scan of related repository branches found candidate source files for some unresolved staging ledger names. These are **source leads only**; they are not yet merged into the working branch and have not been proven byte-for-byte equivalent to the SQL originally applied to staging.
+
+| Staging ledger item | Candidate source | Branch containing candidate | Assessment |
+|---|---|---|---|
+| customer_eft_proof_and_admin_verification | `20261108010507_customer_eft_proof_and_admin_verification.sql` | `feature/driver-account-settings` | Name match; review SQL and dependencies |
+| harden_customer_eft_review_and_indexes | `20261108010543_harden_customer_eft_review_and_indexes.sql` | `feature/driver-account-settings` | Name match; review SQL and dependencies |
+| use_booking_reference_for_customer_eft | `20261108010710_use_booking_reference_for_customer_eft.sql` | `feature/driver-account-settings` | Name match; review SQL and dependencies |
+| prevent_eft_confirmation_after_other_payment | `20261108011102_prevent_eft_confirmation_after_other_payment.sql` | `feature/driver-account-settings` | Name match; review SQL and dependencies |
+| driver_premium_insurance_claims_and_gps | `20261108011608_driver_premium_insurance_claims_and_gps.sql` | `feature/driver-account-settings` | Name match; sensitive GPS/insurance review required |
+| revoke_client_access_to_driver_insurance_tables | `20261108011813_revoke_client_access_to_driver_insurance_tables.sql` | `feature/driver-account-settings` | Name match; verify grants/RLS against live schema |
+| customer_nedbank_insurance_interest | `20261108030000_customer_nedbank_insurance_interest.sql` | `feature/driver-account-settings` | Name match; review customer/insurance data effects |
+| paystack_provider_support | `20261108030000_paystack_provider_support.sql` | `feature/driver-account-settings` | Name match; confirm sandbox/live constraints |
+| driver_account_settings | `20261110090000_driver_account_settings.sql` | `feature/driver-account-settings` | Name match, timestamp differs from staging ledger |
+| create_investor_inquiries | `20261113120733_create_investor_inquiries.sql` | `feature/investor-partnership-eoi-staging` | Name match; review investor PII/access controls |
+| expand_investor_capital_records | `20261114160000_expand_investor_capital_records.sql` | `feature/investor-admin-console-staging` | Candidate by name/intent; timestamp differs and requires semantic review |
+
+The sibling-branch files must not be copied into the staging branch as historical migrations without checking their original order and whether their effects are already represented there. In particular, the staging ledger's two bank-encryption entries, driver eligibility/document rules, secure storage, trip checkpoints, payout-bank encryption, and several dispatch/PayFast functions remain unresolved after this first recovery pass.
+
+The candidate files above are preserved in their source branches. Next step is a semantic review of each candidate's full SQL, dependency order, and schema effects, followed by source recovery for the remaining unresolved ledger rows. Do not cherry-pick or replay these files automatically.
