@@ -136,7 +136,13 @@ function showWorkspace(user) {
       approval.className = 'driver-approval-banner';
       approval.setAttribute('role','status');
       const page = workspace.querySelector('main.page');
-      page?.insertBefore(approval, page.querySelector('.section-links'));
+      if (page) {
+        // .section-links is nested inside .workspace-navigation, so it cannot
+        // be used as a direct-child insertBefore anchor on main.page.
+        const anchor = page.querySelector('.workspace-navigation');
+        if (anchor?.parentNode === page) page.insertBefore(approval, anchor);
+        else page.prepend(approval);
+      }
     }
     const verification = user.driverProfile?.verification_status || 'pending';
     approval.hidden = verification === 'approved';
