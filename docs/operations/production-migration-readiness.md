@@ -185,3 +185,18 @@ The exact-path commit-history queries returned no commits for these paths. Commi
 **Disposition:** exact original SQL remains unrecovered. No replacement or reconstructed historical migration was created. Do not infer SQL from the current database schema, and do not mark the ledger entries as source-verified. Keep all five items blocked pending a trusted source or a separately reviewed forward migration. Any forward migration must be designed against the live staging schema and dependencies, include explicit handling for existing rows and rollback/recovery, and receive review before execution.
 
 No database, migration ledger, driver data, secrets, permissions, or deployments were changed by this search.
+
+
+## 12. Payout-request bank account encryption review (2026-11-19)
+
+A read-only review of staging Edge Function `driver-payouts`, the `request_driver_payout` database function, table columns, and triggers found a concrete gap in the payout-request path:
+
+- The authenticated driver POST handler forwards `b.account_number` directly as `p_account_number` to `request_driver_payout`; it does not call an encryption routine first.
+- The database function validates the supplied number and inserts it into `driver_payout_requests.account_number`. It does not populate `account_number_aesgcm` or `account_number_last4`.
+- The table has both a plaintext `account_number` column and the newer `account_number_aesgcm` / `account_number_last4` columns. The only non-internal trigger found on this table is `guard_driver_payout_cash_liability`; it does not encrypt bank data.
+- The admin GET handler selects the plaintext account-number column for internal processing but masks it to the last four digits in its JSON response. The driver GET handler does not select or return the account number. The payout transfer path uses the driver's Paystack recipient code rather than reading the payout-request account number.
+- Aggregate-only staging data check: `driver_payout_requests` currently has 0 rows, 0 populated plaintext account-number values, and 0 populated encrypted account-number values. No bank data was read.
+
+**Security disposition:** the current request path would store a newly submitted payout account number in the plaintext column despite the presence of AES-GCM columns. There are no existing staging payout requests to convert at this time. Do not enable real payouts or collect real bank details through this path until a reviewed forward fix updates the request flow and database function together, verifies ciphertext format/key access and admin compatibility, and removes or retires plaintext storage safely. This is a verified staging code/schema gap, not proof of a production issue; production was not inspected or changed in this step.
+
+No SQL, data, function code, permissions, secrets, or deployments were changed by this review.
