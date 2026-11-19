@@ -152,3 +152,19 @@ The staging database does **not** currently contain `public.driver_trip_arrival_
 The presence of encrypted-column names alone does not prove that encryption is correctly implemented, that keys are configured, or that plaintext legacy values were safely migrated. The exact SQL for both distinct `encrypt_complete_driver_bank_details` versions, `driver_secure_storage_aes_gcm_and_access_audit`, and `secure_driver_payout_bank_details` remains unresolved. Do not inspect or export raw identity/bank values as part of this review.
 
 **Disposition:** no SQL was applied; no migration file was copied or replayed; no driver status was changed; no production resource was touched. Continue recovering the exact source for the remaining eligibility, encryption, storage-audit, payout-bank and arrival-checkpoint ledger entries. Where original SQL cannot be recovered, keep the item blocked and propose a separately reviewed forward migration only after full schema, data and dependency analysis.
+
+## 10. Driver PII encryption and storage access preflight (2026-11-19)
+
+Read-only checks against staging project `tagkbropgzthsbjlhyvz` found:
+
+- The `driver_pii_encryption_key` secret is present in Supabase Vault. Only a boolean presence check was performed; the secret value was not read or returned.
+- `encrypt_driver_pii(text)` and `decrypt_driver_pii(text)` are SECURITY DEFINER routines with an empty search path. Their definitions use `pgp_sym_encrypt` with AES-256 and retrieve the key from Vault. Execute privilege checks show that `anon` and `authenticated` cannot execute either routine; `service_role` can.
+- RLS is enabled on `driver_profiles`, `driver_documents`, `driver_onboarding_applications`, `driver_payout_requests`, and `driver_verification_audit`. The inspected tables deny direct SELECT/INSERT to authenticated clients, with service-role access available. RLS is not FORCE-enabled, so trusted backend/service-role controls remain important.
+- The driver application-document bucket is private. No client storage-object policy for that bucket was found in the driver-policy scan; document access therefore appears to be intended through trusted backend operations. Profile-photo and cash-proof/receipt buckets have explicit owner/admin-scoped policies.
+- The separate `driver_secure_storage_access_audit` table is absent. The general `driver_verification_audit` table exists, but it is not a substitute for a storage-access audit trail.
+- Aggregate coverage check found one staging driver profile and no populated encrypted identity/bank ciphertext fields in the inspected driver profile/onboarding records. This means the configured encryption functions are present, but the data check does not demonstrate successful encryption of real driver records or safe conversion of legacy plaintext. No raw PII, bank values, or Vault secret values were read.
+- The `driver_trip_arrival_checkpoints` table remains absent.
+
+**Security disposition:** encryption plumbing and client privilege restrictions are present in staging, but end-to-end encryption coverage, key lifecycle/rotation, legacy-data conversion, and privileged access auditing are not proven. Do not treat the existence of AES-256 routines or encrypted column names as proof that all driver PII and payout-bank data are encrypted at rest by the application. Recover and review both historical bank-encryption migration definitions and the AES-GCM/storage-audit and payout-bank migrations before any schema change.
+
+No data, SQL, permissions, secrets, migrations, or deployments were changed by this preflight.
