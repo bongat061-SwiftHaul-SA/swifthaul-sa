@@ -155,6 +155,7 @@ function showWorkspace(user) {
   document.body.dataset.authState = 'authenticated';
   authScreen.hidden = true;
   workspace.hidden = false;
+  window.swiftHaulCurrentUser = user;
   document.dispatchEvent(new CustomEvent('account-ready', { detail: user }));
 }
 
