@@ -19,12 +19,12 @@ for(const child of original){
  else if(child.id==="driver-documents-status")continue;
  else stepPanels[5].append(child);
 }
-const wizardHeader=node("div");wizardHeader.className="driver-wizard-header";
+const wizardHeader=node("div");wizardHeader.className="driver-wizard-header";wizardHeader.style.cssText="display:grid!important;visibility:visible!important;opacity:1!important;height:auto!important;min-height:1px!important;position:relative!important;z-index:2!important;";
 const stepCount=node("span","STEP 1 OF "+wizardSteps.length);stepCount.className="driver-wizard-count";
 const progress=node("div");progress.className="driver-wizard-progress";progress.setAttribute("role","progressbar");progress.setAttribute("aria-valuemin","1");progress.setAttribute("aria-valuemax",String(wizardSteps.length));progress.setAttribute("aria-valuenow","1");
 const progressFill=node("span");progress.append(progressFill);
-const stepNav=node("nav");stepNav.className="driver-wizard-steps";stepNav.setAttribute("aria-label","All six application steps");stepNav.style.cssText="display:grid!important;visibility:visible!important;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(44px,auto);gap:8px;width:100%;";const stepButtons=wizardSteps.map((step,index)=>{const button=node("button",String(index+1)+". "+step.title);button.type="button";button.className="driver-wizard-step";button.addEventListener("click",()=>{if(index<currentWizardStep)showWizardStep(index);});stepNav.append(button);return button;});wizardHeader.append(stepCount,progress,stepNav);
-const wizardControls=node("div");wizardControls.className="driver-wizard-controls";
+const stepNav=node("div");stepNav.className="driver-wizard-steps";stepNav.setAttribute("role","group");stepNav.setAttribute("aria-label","All six application steps");stepNav.style.cssText="display:grid!important;visibility:visible!important;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(44px,auto);gap:8px;width:100%;";const stepButtons=wizardSteps.map((step,index)=>{const button=node("button",String(index+1)+". "+step.title);button.type="button";button.className="driver-wizard-step";button.addEventListener("click",()=>{if(index<currentWizardStep)showWizardStep(index);});stepNav.append(button);return button;});wizardHeader.append(stepCount,progress,stepNav);
+const wizardControls=node("div");wizardControls.className="driver-wizard-controls";wizardControls.style.cssText="display:flex!important;visibility:visible!important;opacity:1!important;height:auto!important;min-height:48px!important;position:relative!important;z-index:2!important;";
 const back=node("button","Back");back.type="button";back.className="secondary";back.disabled=true;
 const next=node("button","Continue");next.type="button";next.className="primary";
 wizardControls.append(back,save,next);
