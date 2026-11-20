@@ -28,7 +28,7 @@ const wizardControls=node("div");wizardControls.className="driver-wizard-control
 const back=node("button","Back");back.type="button";back.className="secondary";back.disabled=true;
 const next=node("button","Continue");next.type="button";next.className="primary";
 wizardControls.append(back,save,next);
-form.replaceChildren(wizardHeader,...stepPanels,wizardControls);
+form.replaceChildren(...stepPanels);section.insertBefore(wizardHeader,form);section.insertBefore(wizardControls,form.nextSibling);
 form.noValidate=true;
 let currentWizardStep=0;const reviewNote=node("p","Your details and selected documents will be submitted securely for SwiftHaul review. You can go back to any step to make changes.");reviewNote.className="driver-review-note";
 function showWizardStep(index){currentWizardStep=Math.max(0,Math.min(wizardSteps.length-1,index));stepPanels.forEach((panel,i)=>{panel.hidden=i!==currentWizardStep;});stepButtons.forEach((button,i)=>{button.classList.toggle("is-current",i===currentWizardStep);button.classList.toggle("is-complete",i<currentWizardStep);button.setAttribute("aria-current",i===currentWizardStep?"step":"false");button.disabled=i>=currentWizardStep;});stepCount.textContent="STEP "+(currentWizardStep+1)+" OF "+wizardSteps.length;progress.setAttribute("aria-valuenow",String(currentWizardStep+1));progressFill.style.width=((currentWizardStep+1)/wizardSteps.length*100)+"%";back.disabled=currentWizardStep===0;next.hidden=currentWizardStep===wizardSteps.length-1;next.textContent="Continue";if(currentWizardStep===wizardSteps.length-1&&!reviewNote.isConnected)stepPanels[currentWizardStep].append(reviewNote); }
