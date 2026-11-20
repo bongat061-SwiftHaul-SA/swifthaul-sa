@@ -43,3 +43,6 @@ body[data-app="customer"] #workspace,body[data-app="driver"] #workspace{min-heig
 .premium-dispatch-card{border-top:1px solid var(--premium-line)!important}
 .premium-footer{padding:20px 5vw 120px!important;color:#78818e!important;border-color:var(--premium-line)!important}
 @media(max-width:700px){.premium-topbar{padding:11px 16px!important}.premium-shell .page{padding:18px 14px 120px}.premium-hero{padding:22px 19px!important;border-radius:21px!important}.premium-quick-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.premium-quick-actions>a{padding:13px}.premium-driver-stats{gap:7px}.premium-driver-stats .stat{padding:12px 9px!important}.premium-driver-stats .stat span{font-size:9px}.premium-driver-stats .stat strong{font-size:20px}.premium-bottom-nav a{font-size:9px!important;padding:11px 3px!important}}
+
+/* Keep the session exit control visible on narrow driver screens. */
+@media(max-width:700px){.premium-topbar .account{margin-left:auto;flex:0 0 auto;gap:6px!important}.premium-topbar .account [data-user-name]{display:none!important}.premium-topbar .account #sign-out{display:inline-flex!important;align-items:center;justify-content:center;min-height:40px!important;padding:8px 12px!important;white-space:nowrap}}
