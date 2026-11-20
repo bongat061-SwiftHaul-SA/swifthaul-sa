@@ -402,7 +402,14 @@ async function init() {
   if (restoreScreen) restoreScreen.hidden = true;
   restoreTimer = setTimeout(() => { if (workspace.hidden) showSessionRestore(); }, 450);
   try {
-    const { data: { session }, error } = await supabase.auth.getSession();
+    const sessionCheck = supabase.auth.getSession();
+    let sessionTimeout;
+    const { data: { session }, error } = await Promise.race([
+      sessionCheck,
+      new Promise((_, reject) => {
+        sessionTimeout = setTimeout(() => reject(new Error('Session restoration is taking too long. You can retry or return to sign in.')), 12000);
+      })
+    ]).finally(() => clearTimeout(sessionTimeout));
     if (error) throw error;
     if (session) await validateAccount(session);
     else showSignIn();
