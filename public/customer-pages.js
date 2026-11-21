@@ -4,17 +4,23 @@
   const workspace = document.getElementById('workspace');
   const root = workspace?.querySelector('main.page');
   if (!root) return;
-  const nav = root.querySelector('.section-links');
+  let nav = root.querySelector('.section-links');
   const grid = root.querySelector('.workspace-grid');
   const bookingColumn = root.querySelector('#new-delivery');
-  const activityColumn = root.querySelector('#bookings')?.parentElement;
+  const activityColumn = root.querySelector('#bookings')?.parentElement || null;
   const wallet = root.querySelector('#wallet');
   const account = root.querySelector('#settings');
   const heading = root.querySelector('.page-heading h1');
   const description = root.querySelector('.page-heading .subtle');
   const navCurrent = nav?.closest('.workspace-navigation')?.querySelector('[data-nav-current]');
-  if (!nav || !grid || !bookingColumn || !activityColumn) return;
-
+  if (!nav) {
+    const navigation = document.createElement('details');
+    navigation.className = 'workspace-navigation';
+    nav = document.createElement('nav');
+    nav.className = 'section-links';
+    navigation.append(nav);
+    root.insertBefore(navigation, grid || root.firstChild);
+  }
   nav.classList.add('customer-bottom-nav');
   nav.setAttribute('aria-label', 'Customer main navigation');
   nav.innerHTML = '<a href="?page=home" data-page="home"><span class="customer-nav-icon" aria-hidden="true">⌂</span><span>Home</span></a><a href="?page=activity" data-page="activity"><span class="customer-nav-icon" aria-hidden="true">▤</span><span>Bookings</span></a><a href="?page=tracking" data-page="tracking"><span class="customer-nav-icon" aria-hidden="true">⌖</span><span>Track</span></a><a href="?page=account" data-page="account"><span class="customer-nav-icon" aria-hidden="true">◎</span><span>Account</span></a>';
@@ -23,11 +29,11 @@
   home.className = 'customer-home';
   home.id = 'customer-home';
   home.innerHTML = '<div class="customer-home-intro"><span class="customer-kicker">YOUR CUSTOMER SPACE</span><h2>What can we move for you?</h2><p>Arrange a pickup, follow a delivery and manage everything in one place.</p><a class="customer-book-cta" href="?page=book" data-page="book"><span><small>START A DELIVERY</small><strong>Book a delivery</strong></span><b aria-hidden="true">→</b></a></div><div class="customer-home-actions" aria-label="Customer shortcuts"><a href="?page=activity" data-page="activity"><span class="customer-action-icon">↗</span><strong>My deliveries</strong><small>Track and review orders</small></a><a href="?page=wallet" data-page="wallet"><span class="customer-action-icon">R</span><strong>Wallet &amp; payments</strong><small>Balances and rewards</small></a><a href="?page=account" data-page="account"><span class="customer-action-icon">◎</span><strong>Profile &amp; account</strong><small>PIN, details and photo</small></a><a href="https://wa.me/27615083880" target="_blank" rel="noopener noreferrer"><span class="customer-action-icon">?</span><strong>Customer support</strong><small>Speak to our team</small></a></div><div class="customer-home-note"><span class="customer-note-mark">✓</span><div><strong>Every delivery, clearly managed.</strong><p>Your booking quote, delivery updates and account tools are kept in their own dedicated pages.</p></div></div>';
-  grid.before(home);
+  (grid || root).before ? (grid || root).before(home) : root.append(home);
   const trackingIntro = document.createElement('section');
   trackingIntro.className = 'customer-tracking-intro';
   trackingIntro.innerHTML = '<h2>Track your delivery</h2><p>Choose <strong>Track Delivery</strong> to open the mapped route, or <strong>Track driver live</strong> when the driver has enabled location sharing. Live location refreshes while tracking is active.</p>';
-  grid.before(trackingIntro);
+  (grid || root).before ? (grid || root).before(trackingIntro) : root.append(trackingIntro);
 
   const pages = {
     home: { title: 'Welcome to SwiftHaul.', description: 'Your deliveries, payments and account — all in one place.', current: 'Home' },
@@ -41,11 +47,11 @@
     const selected = pages[key] ? key : 'home';
     const page = pages[selected];
     home.hidden = selected !== 'home';
-    bookingColumn.hidden = selected !== 'book';
-    activityColumn.hidden = !['activity','tracking'].includes(selected);
+    if (bookingColumn) bookingColumn.hidden = selected !== 'book';
+    if (activityColumn) activityColumn.hidden = !['activity','tracking'].includes(selected);
     trackingIntro.hidden = selected !== 'tracking';
-    grid.hidden = !['book','activity','tracking'].includes(selected);
-    wallet.hidden = selected !== 'wallet';
+    if (grid) grid.hidden = !['book','activity','tracking'].includes(selected);
+    if (wallet) wallet.hidden = selected !== 'wallet';
     if (account) account.hidden = selected !== 'account';
     if (heading) heading.textContent = page.title;
     if (description) description.textContent = page.description;
