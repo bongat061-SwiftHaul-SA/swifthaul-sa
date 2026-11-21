@@ -96,3 +96,89 @@ body[data-app="customer"] .customer-nav-icon{
     color:#071b34!important;
   }
 }
+
+
+/* Workspace visual parity with the premium Customer / Driver sign-up screen. */
+:root{
+  --sh-navy:#091a31;
+  --sh-navy2:#12365d;
+  --sh-blue:#24558a;
+  --sh-bg:#f4f7fb;
+  --sh-ink:#17263b;
+  --sh-muted:#66758a;
+  --sh-line:#dce4ee;
+  --sh-card:#ffffff;
+}
+body[data-app="customer"],body[data-app="driver"]{
+  background:var(--sh-bg)!important;
+  color:var(--sh-ink)!important;
+}
+body[data-app="customer"] .page-heading,body[data-app="driver"] .page-heading{
+  background:linear-gradient(145deg,#091a31 0%,#12365d 62%,#24558a 100%)!important;
+  border:1px solid #173b63!important;
+  border-radius:26px!important;
+  box-shadow:0 14px 38px rgba(11,31,58,.12)!important;
+}
+body[data-app="customer"] .panel,body[data-app="driver"] .panel,
+body[data-app="customer"] .stat,body[data-app="driver"] .stat{
+  background:#fff!important;
+  color:#17263b!important;
+  border:1px solid #dce4ee!important;
+  border-radius:20px!important;
+  box-shadow:0 14px 38px rgba(11,31,58,.08)!important;
+}
+body[data-app="customer"] .panel h2,body[data-app="driver"] .panel h2,
+body[data-app="customer"] .panel h3,body[data-app="driver"] .panel h3,
+body[data-app="customer"] .stat strong,body[data-app="driver"] .stat strong{
+  color:#091a31!important;
+}
+body[data-app="customer"] input,body[data-app="customer"] select,body[data-app="customer"] textarea,
+body[data-app="driver"] input,body[data-app="driver"] select,body[data-app="driver"] textarea{
+  background:#fbfcfe!important;
+  color:#17263b!important;
+  border:1px solid #d7e0eb!important;
+  border-radius:12px!important;
+}
+body[data-app="customer"] input:focus,body[data-app="customer"] select:focus,body[data-app="customer"] textarea:focus,
+body[data-app="driver"] input:focus,body[data-app="driver"] select:focus,body[data-app="driver"] textarea:focus{
+  border-color:#4777ad!important;
+  box-shadow:0 0 0 4px rgba(71,119,173,.13)!important;
+}
+body[data-app="customer"] button.primary,body[data-app="driver"] button.primary,
+body[data-app="customer"] .primary,body[data-app="driver"] .primary{
+  background:#091a31!important;
+  border:1px solid #091a31!important;
+  color:#fff!important;
+  border-radius:13px!important;
+  box-shadow:0 7px 18px rgba(11,31,58,.16)!important;
+}
+body[data-app="customer"] button.primary:hover,body[data-app="driver"] button.primary:hover,
+body[data-app="customer"] .primary:hover,body[data-app="driver"] .primary:hover{
+  background:#12365d!important;border-color:#12365d!important;
+}
+body[data-app="customer"] .section-links,body[data-app="driver"] .section-links{
+  background:rgba(255,255,255,.97)!important;
+  border:1px solid #dce4ee!important;
+  box-shadow:0 5px 18px rgba(11,31,58,.05)!important;
+}
+body[data-app="customer"] .section-links a,body[data-app="driver"] .section-links a{
+  color:#52647b!important;
+}
+body[data-app="customer"] .section-links a.is-active,body[data-app="driver"] .section-links a.is-active,
+body[data-app="customer"] .section-links a[aria-current="page"],body[data-app="driver"] .section-links a[aria-current="page"]{
+  background:#091a31!important;color:#fff!important;
+}
+body[data-app="customer"] .customer-home-intro{
+  background:linear-gradient(145deg,#091a31 0%,#12365d 62%,#24558a 100%)!important;
+  border:1px solid #173b63!important;
+  border-radius:26px!important;
+  box-shadow:0 14px 38px rgba(11,31,58,.12)!important;
+}
+body[data-app="customer"] .customer-home-actions>a{
+  background:#fff!important;
+  color:#17263b!important;
+  border:1px solid #dce4ee!important;
+  box-shadow:0 8px 24px rgba(11,31,58,.06)!important;
+}
+body[data-app="customer"] .customer-home-actions strong{color:#091a31!important}
+body[data-app="customer"] .customer-home-actions small{color:#66758a!important}
