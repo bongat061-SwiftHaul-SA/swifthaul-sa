@@ -15,7 +15,9 @@
   const navCurrent = nav?.closest('.workspace-navigation')?.querySelector('[data-nav-current]');
   if (!nav || !grid || !bookingColumn || !activityColumn) return;
 
-  nav.innerHTML = '<a href="?page=home" data-page="home">Home</a><a href="?page=book" data-page="book">Book a delivery</a><a href="?page=activity" data-page="activity">Deliveries</a><a href="?page=tracking" data-page="tracking">Tracking</a><a href="?page=wallet" data-page="wallet">Wallet</a><a href="?page=account" data-page="account">Account</a><a href="https://wa.me/27615083880" target="_blank" rel="noopener noreferrer">Help</a>';
+  nav.classList.add('customer-bottom-nav');
+  nav.setAttribute('aria-label', 'Customer main navigation');
+  nav.innerHTML = '<a href="?page=home" data-page="home"><span class="customer-nav-icon" aria-hidden="true">⌂</span><span>Home</span></a><a href="?page=activity" data-page="activity"><span class="customer-nav-icon" aria-hidden="true">▤</span><span>Bookings</span></a><a href="?page=tracking" data-page="tracking"><span class="customer-nav-icon" aria-hidden="true">⌖</span><span>Track</span></a><a href="?page=account" data-page="account"><span class="customer-nav-icon" aria-hidden="true">◎</span><span>Account</span></a>';
 
   const home = document.createElement('section');
   home.className = 'customer-home';
