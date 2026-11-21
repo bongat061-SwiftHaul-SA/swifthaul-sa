@@ -1,0 +1,25 @@
+/* SwiftHaul Company Admin — navy premium operations console */
+body[data-app="company"]{background:#f2f5f9!important;color:#17283d!important;font-family:'Plus Jakarta Sans',Inter,system-ui,sans-serif}
+body[data-app="company"] #workspace>.topbar{background:#fff!important;border-color:#dce5ef!important;box-shadow:0 4px 18px #071b3410!important}
+body[data-app="company"] .wordmark{color:#071b34!important}
+body[data-app="company"] .page{max-width:1600px!important;margin:0 auto!important;padding:30px clamp(14px,3vw,44px) 70px!important;grid-template-columns:238px minmax(0,1fr)!important;column-gap:28px!important}
+body[data-app="company"] .page-heading{border-color:#dce5ef!important}
+body[data-app="company"] .page-heading h1{color:#071b34!important;font-size:clamp(30px,3vw,42px)!important}
+body[data-app="company"] .page-heading .eyebrow{color:#4777ad!important}
+body[data-app="company"] .section-links{background:#fff!important;border:1px solid #dce5ef!important;border-radius:17px!important;box-shadow:0 8px 24px #071b340c!important}
+body[data-app="company"] .section-links a{color:#52667e!important;border-radius:10px!important}
+body[data-app="company"] .section-links a.is-active,body[data-app="company"] .section-links a[aria-current="page"],body[data-app="company"] .section-links a:hover{background:#071b34!important;color:#fff!important}
+body[data-app="company"] .stats .stat,body[data-app="company"] .panel,body[data-app="company"] .workspace-grid>.panel,body[data-app="company"] .workspace-grid aside>.panel{background:#fff!important;border:1px solid #dce5ef!important;border-radius:17px!important;box-shadow:0 8px 26px #071b340c!important}
+body[data-app="company"] .stat strong,body[data-app="company"] .panel h2{color:#071b34!important}
+body[data-app="company"] button.primary,body[data-app="company"] .primary{background:#071b34!important;border-color:#071b34!important;color:#fff!important}
+body[data-app="company"] table th{background:#f2f6fb!important;color:#304a67!important}
+body[data-app="company"] .environment-banner{background:#fff4d6!important}
+@media(max-width:760px){
+ body[data-app="company"] .page{display:block!important;padding:18px 12px 44px!important}
+ body[data-app="company"] .page-heading{padding:0 2px 18px!important}
+ body[data-app="company"] .section-links{position:sticky!important;top:60px!important;display:flex!important;flex-direction:row!important;overflow-x:auto!important;white-space:nowrap!important;margin:0 0 16px!important}
+ body[data-app="company"] .stats{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ body[data-app="company"] .stat{padding:14px!important}
+ body[data-app="company"] .workspace-grid{grid-template-columns:1fr!important}
+ body[data-app="company"] .page>section.panel{padding:17px!important}
+}
