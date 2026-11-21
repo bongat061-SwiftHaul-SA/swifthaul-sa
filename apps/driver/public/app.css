@@ -342,3 +342,17 @@ body[data-app="driver"] .driver-wizard-step:disabled{opacity:1;cursor:default}
  body[data-app="driver"] .driver-wizard-steps{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
  body[data-app="driver"] .driver-wizard-step{min-height:44px;padding:8px;font-size:10px}
 }
+
+
+/* Driver onboarding: prevent wizard controls and status from colliding on phones. */
+body[data-app="driver"] .driver-wizard-controls{display:flex;flex-wrap:wrap;align-items:stretch;justify-content:space-between;gap:10px;}
+body[data-app="driver"] .driver-wizard-controls button{flex:1 1 0;min-width:0;max-width:100%;white-space:normal;line-height:1.25;padding:11px 9px;}
+body[data-app="driver"] .driver-wizard-controls #driver-documents-status{display:block!important;flex:0 0 100%;width:100%;min-width:100%;margin:2px 0 0!important;line-height:1.65;overflow-wrap:anywhere;}
+body[data-app="driver"] .driver-application-step input[type="file"]{display:block;width:100%;max-width:100%;min-height:48px;padding:9px;border:1px dashed var(--line,#64748b);border-radius:12px;background:rgba(127,145,160,.08);font-size:12px;}
+body[data-app="driver"] .driver-application-step input[type="file"]::file-selector-button{min-height:34px;margin:0 10px 0 0;padding:7px 12px;border:1px solid var(--line,#64748b);border-radius:8px;background:#253044;color:#fff;font-size:12px;font-weight:800;}
+@media(max-width:600px){
+ body[data-app="driver"] .driver-wizard-controls{gap:8px;}
+ body[data-app="driver"] .driver-wizard-controls button{flex:1 1 28%;font-size:12px;padding:11px 7px;}
+ body[data-app="driver"] .driver-wizard-controls #driver-documents-status{font-size:13px;}
+ body[data-app="driver"] .driver-application-step #driver-onboarding-files label{min-width:0;overflow:hidden;}
+}
