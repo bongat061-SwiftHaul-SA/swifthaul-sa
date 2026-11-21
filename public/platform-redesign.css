@@ -182,3 +182,159 @@ body[data-app="customer"] .customer-home-actions>a{
 }
 body[data-app="customer"] .customer-home-actions strong{color:#091a31!important}
 body[data-app="customer"] .customer-home-actions small{color:#66758a!important}
+
+
+/* FINAL staging correction: sign-up visual system must also govern signed-in views.
+   These selectors intentionally outrank legacy graphite overrides in unified-workspace-dark.css. */
+body[data-app="customer"] #workspace,
+body[data-app="driver"] #workspace{
+  background:#f4f7fb!important;color:#17263b!important;color-scheme:light!important;
+}
+body[data-app="customer"] #workspace>.topbar,
+body[data-app="driver"] #workspace>.topbar{
+  background:rgba(255,255,255,.97)!important;color:#17263b!important;
+  border-bottom:1px solid #dce4ee!important;box-shadow:0 4px 18px rgba(11,31,58,.06)!important;
+}
+body[data-app="customer"] #workspace .page,
+body[data-app="driver"] #workspace .page{background:transparent!important;color:#17263b!important}
+body[data-app="customer"] #workspace h1,body[data-app="customer"] #workspace h2,
+body[data-app="customer"] #workspace h3,body[data-app="customer"] #workspace h4,
+body[data-app="driver"] #workspace h1,body[data-app="driver"] #workspace h2,
+body[data-app="driver"] #workspace h3,body[data-app="driver"] #workspace h4{
+  color:#091a31!important;
+}
+body[data-app="customer"] #workspace p,body[data-app="customer"] #workspace label,
+body[data-app="customer"] #workspace small,body[data-app="customer"] #workspace .subtle,
+body[data-app="driver"] #workspace p,body[data-app="driver"] #workspace label,
+body[data-app="driver"] #workspace small,body[data-app="driver"] #workspace .subtle{
+  color:#66758a!important;
+}
+body[data-app="customer"] #workspace .page-heading,
+body[data-app="driver"] #workspace .page-heading{
+  background:linear-gradient(145deg,#091a31 0%,#12365d 62%,#24558a 100%)!important;
+  border:1px solid #173b63!important;border-radius:26px!important;
+  padding:clamp(22px,3vw,34px)!important;box-shadow:0 14px 38px rgba(11,31,58,.12)!important;
+}
+body[data-app="customer"] #workspace .page-heading h1,
+body[data-app="driver"] #workspace .page-heading h1{color:#fff!important}
+body[data-app="customer"] #workspace .page-heading p,
+body[data-app="customer"] #workspace .page-heading .eyebrow,
+body[data-app="driver"] #workspace .page-heading p,
+body[data-app="driver"] #workspace .page-heading .eyebrow{color:#dce8f5!important}
+body[data-app="customer"] #workspace .panel,
+body[data-app="customer"] #workspace .stat,
+body[data-app="customer"] #workspace .empty,
+body[data-app="customer"] #workspace .order,
+body[data-app="customer"] #workspace .help,
+body[data-app="customer"] #workspace .notice,
+body[data-app="customer"] #workspace .callout,
+body[data-app="customer"] #workspace .settings-card,
+body[data-app="customer"] #workspace .quote-result,
+body[data-app="driver"] #workspace .panel,
+body[data-app="driver"] #workspace .stat,
+body[data-app="driver"] #workspace .empty,
+body[data-app="driver"] #workspace .order,
+body[data-app="driver"] #workspace .help,
+body[data-app="driver"] #workspace .notice,
+body[data-app="driver"] #workspace .callout,
+body[data-app="driver"] #workspace .settings-card,
+body[data-app="driver"] #workspace .quote-result{
+  background:#fff!important;color:#17263b!important;border:1px solid #dce4ee!important;
+  border-radius:20px!important;box-shadow:0 14px 38px rgba(11,31,58,.08)!important;
+}
+body[data-app="customer"] #workspace .panel h2,
+body[data-app="customer"] #workspace .panel h3,
+body[data-app="customer"] #workspace .stat strong,
+body[data-app="driver"] #workspace .panel h2,
+body[data-app="driver"] #workspace .panel h3,
+body[data-app="driver"] #workspace .stat strong{color:#091a31!important}
+body[data-app="customer"] #workspace input:not([type=checkbox]):not([type=radio]):not([type=file]),
+body[data-app="customer"] #workspace select,body[data-app="customer"] #workspace textarea,
+body[data-app="driver"] #workspace input:not([type=checkbox]):not([type=radio]):not([type=file]),
+body[data-app="driver"] #workspace select,body[data-app="driver"] #workspace textarea{
+  background:#fbfcfe!important;color:#17263b!important;border:1px solid #d7e0eb!important;border-radius:12px!important;
+}
+body[data-app="customer"] #workspace input::placeholder,
+body[data-app="customer"] #workspace textarea::placeholder,
+body[data-app="driver"] #workspace input::placeholder,
+body[data-app="driver"] #workspace textarea::placeholder{color:#8a97a8!important}
+body[data-app="customer"] #workspace button,
+body[data-app="customer"] #workspace .button,
+body[data-app="driver"] #workspace button,
+body[data-app="driver"] #workspace .button{
+  background:#fff!important;color:#17263b!important;border:1px solid #dce4ee!important;
+}
+body[data-app="customer"] #workspace button.primary,
+body[data-app="customer"] #workspace .primary,
+body[data-app="customer"] #workspace button[type=submit],
+body[data-app="driver"] #workspace button.primary,
+body[data-app="driver"] #workspace .primary,
+body[data-app="driver"] #workspace button[type=submit]{
+  background:#091a31!important;color:#fff!important;border:1px solid #091a31!important;
+  border-radius:13px!important;box-shadow:0 7px 18px rgba(11,31,58,.16)!important;
+}
+body[data-app="customer"] #workspace .workspace-navigation,
+body[data-app="driver"] #workspace .workspace-navigation{
+  position:static!important;margin:0 0 18px!important;padding:0!important;
+  border:0!important;background:transparent!important;box-shadow:none!important;backdrop-filter:none!important;
+}
+body[data-app="customer"] #workspace .workspace-navigation>summary,
+body[data-app="driver"] #workspace .workspace-navigation>summary{display:none!important}
+body[data-app="customer"] #workspace .workspace-navigation .section-links.customer-bottom-nav{
+  display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  position:fixed!important;left:10px!important;right:10px!important;
+  bottom:calc(8px + env(safe-area-inset-bottom))!important;top:auto!important;
+  z-index:10000!important;gap:4px!important;overflow:visible!important;white-space:normal!important;
+  padding:8px!important;margin:0!important;border:1px solid #dce4ee!important;
+  border-radius:17px!important;background:rgba(255,255,255,.98)!important;
+  box-shadow:0 10px 32px rgba(11,31,58,.18)!important;
+}
+body[data-app="customer"] #workspace .workspace-navigation .section-links.customer-bottom-nav a{
+  display:flex!important;min-width:0!important;min-height:48px!important;flex-direction:column!important;
+  align-items:center!important;justify-content:center!important;gap:3px!important;padding:6px 2px!important;
+  border:0!important;border-radius:11px!important;background:transparent!important;
+  color:#52647b!important;font-size:10px!important;line-height:1.1!important;font-weight:800!important;
+}
+body[data-app="customer"] #workspace .workspace-navigation .section-links.customer-bottom-nav a.is-active,
+body[data-app="customer"] #workspace .workspace-navigation .section-links.customer-bottom-nav a[aria-current=page]{
+  background:#eaf1f8!important;color:#091a31!important;
+}
+body[data-app="customer"] #workspace .customer-nav-icon{display:block!important;font-size:19px!important;line-height:1!important}
+body[data-app="customer"] #workspace .customer-home-intro{
+  background:linear-gradient(145deg,#091a31 0%,#12365d 62%,#24558a 100%)!important;
+  border:1px solid #173b63!important;border-radius:26px!important;color:#fff!important;
+}
+body[data-app="customer"] #workspace .customer-home-intro h2,
+body[data-app="customer"] #workspace .customer-home-intro p,
+body[data-app="customer"] #workspace .customer-home-intro .customer-kicker{color:#fff!important}
+body[data-app="customer"] #workspace .customer-home-actions>a,
+body[data-app="customer"] #workspace .customer-home-note{
+  background:#fff!important;color:#17263b!important;border:1px solid #dce4ee!important;
+  box-shadow:0 8px 24px rgba(11,31,58,.06)!important;
+}
+body[data-app="customer"] #workspace .customer-home-actions strong,
+body[data-app="customer"] #workspace .customer-home-note strong{color:#091a31!important}
+body[data-app="customer"] #workspace .customer-home-actions small,
+body[data-app="customer"] #workspace .customer-home-note p{color:#66758a!important}
+body[data-app="customer"] #workspace .customer-settings,
+body[data-app="customer"] #workspace .customer-settings #settings-content>form,
+body[data-app="customer"] #workspace .customer-settings #settings-content>div{
+  background:#fff!important;color:#17263b!important;border:1px solid #dce4ee!important;
+  box-shadow:0 8px 24px rgba(11,31,58,.06)!important;
+}
+body[data-app="customer"] #workspace .customer-settings h2,
+body[data-app="customer"] #workspace .customer-settings h3,
+body[data-app="customer"] #workspace .customer-settings label{color:#091a31!important}
+body[data-app="customer"] #workspace .customer-settings button{background:#fff!important;color:#17263b!important}
+body[data-app="customer"] #workspace .customer-settings button.primary{background:#091a31!important;color:#fff!important}
+body[data-app="customer"] #workspace .customer-tracking-intro{
+  background:#fff!important;color:#17263b!important;border:1px solid #dce4ee!important;
+  box-shadow:0 8px 24px rgba(11,31,58,.06)!important;
+}
+body[data-app="customer"] #workspace .customer-tracking-intro h2,
+body[data-app="customer"] #workspace .customer-tracking-intro strong{color:#091a31!important}
+body[data-app="customer"] #workspace .customer-tracking-intro p{color:#66758a!important}
+@media(max-width:700px){
+ body[data-app="customer"] #workspace .page,
+ body[data-app="driver"] #workspace .page{padding-bottom:calc(108px + env(safe-area-inset-bottom))!important}
+}
