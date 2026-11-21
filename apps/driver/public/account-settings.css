@@ -67,3 +67,47 @@ body[data-app="driver"] #driver-account-status{margin:0;color:#aeb8c6!important;
  body[data-app="driver"] .driver-account-settings #driver-photo-form{grid-template-columns:minmax(0,1fr)}
  body[data-app="driver"] .driver-account-settings .driver-profile-photo{align-items:flex-start;flex-direction:column}
 }
+
+
+/* Premium Driver account: short overview with expandable, task-focused settings. */
+body[data-app="driver"] .driver-account-settings{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;}
+body[data-app="driver"] .driver-account-settings>.driver-profile-photo{grid-column:1;display:grid;grid-template-columns:76px minmax(0,1fr);align-items:center;gap:14px;padding:15px;border:1px solid #303946;border-radius:16px;background:linear-gradient(135deg,#171e29,#10151d);}
+body[data-app="driver"] .driver-account-settings #driver-photo-form{display:grid;grid-template-columns:minmax(0,1fr);gap:9px;min-width:0;padding:0!important;border:0!important;background:transparent!important;}
+body[data-app="driver"] .driver-account-settings #driver-photo-form button{margin:0;min-height:40px;}
+body[data-app="driver"] .driver-account-settings .driver-setting-group{min-width:0;overflow:hidden;border:1px solid #303946;border-radius:15px;background:#111720;}
+body[data-app="driver"] .driver-account-settings .driver-setting-group>summary{display:grid;grid-template-columns:34px minmax(0,1fr) 20px;align-items:center;gap:11px;min-height:68px;padding:12px 14px;cursor:pointer;list-style:none;}
+body[data-app="driver"] .driver-account-settings .driver-setting-group>summary::-webkit-details-marker{display:none;}
+body[data-app="driver"] .driver-account-settings .driver-setting-icon{display:grid;place-items:center;width:32px;height:32px;border:1px solid #3a4656;border-radius:10px;background:#202a38;color:#dce5f0;font-size:10px;font-weight:800;}
+body[data-app="driver"] .driver-account-settings .driver-setting-group>summary strong,body[data-app="driver"] .driver-account-settings .driver-setting-group>summary small{display:block;min-width:0;}
+body[data-app="driver"] .driver-account-settings .driver-setting-group>summary strong{color:#f4f6f8;font-size:12px;font-weight:800;}
+body[data-app="driver"] .driver-account-settings .driver-setting-group>summary small{margin-top:4px;color:#929eae;font-size:10px;line-height:1.45;}
+body[data-app="driver"] .driver-account-settings .driver-setting-group>summary>b{color:#aeb9c8;font-size:18px;font-weight:500;text-align:center;}
+body[data-app="driver"] .driver-account-settings .driver-setting-group[open]>summary{border-bottom:1px solid #303946;background:#171f2a;}
+body[data-app="driver"] .driver-account-settings .driver-setting-group[open]>summary>b{transform:rotate(45deg);}
+body[data-app="driver"] .driver-account-settings .driver-setting-group>form{margin:0 12px 12px!important;padding:14px!important;border:0!important;border-radius:0!important;background:transparent!important;}
+body[data-app="driver"] .driver-account-settings .driver-setting-danger{border-color:#594047;background:#171419;}
+body[data-app="driver"] .driver-account-settings .driver-setting-danger .driver-setting-icon{border-color:#68464b;background:#2a1d23;color:#f0c3c6;}
+body[data-app="driver"] #driver-documents-panel{max-width:none;margin:16px 0 0;padding:18px;border:1px solid #303946;border-radius:18px;background:linear-gradient(155deg,#151c26,#10151d);box-shadow:none;}
+body[data-app="driver"] #driver-documents-panel>h3{color:#f4f6f8;font-size:19px;}
+body[data-app="driver"] #driver-documents-panel>p{color:#a5afbd;}
+body[data-app="driver"] #driver-documents-panel .driver-wizard-header{border-color:#303946;background:#0d131c;}
+body[data-app="driver"] #driver-documents-panel .driver-wizard-step{border-color:#354252;background:#121a25;color:#b7c1cf;}
+body[data-app="driver"] #driver-documents-panel .driver-wizard-step.is-current{border-color:#dce3ec;background:#e9edf2;color:#111720;}
+body[data-app="driver"] #driver-documents-panel .driver-wizard-step.is-complete{border-color:#526273;background:#202b39;color:#e4ebf3;}
+body[data-app="driver"] #driver-documents-panel .driver-wizard-progress{background:#303946;}
+body[data-app="driver"] #driver-documents-panel .driver-wizard-progress span{background:#e7ebf1;}
+body[data-app="driver"] #driver-documents-panel .driver-application-step h4{color:#f4f6f8;}
+body[data-app="driver"] #driver-documents-panel .driver-application-step label{color:#b7c1cf;}
+body[data-app="driver"] #driver-documents-panel .driver-application-step input:not([type="checkbox"]):not([type="file"]),body[data-app="driver"] #driver-documents-panel .driver-application-step select{border-color:#354252;background:#0b1017;color:#f4f6f8;}
+body[data-app="driver"] #driver-documents-panel .driver-application-step #driver-onboarding-files label{border-color:#303946;background:#111923;}
+body[data-app="driver"] #driver-documents-panel .driver-wizard-controls{border-color:#303946;}
+body[data-app="driver"] #driver-documents-panel .driver-review-note{background:#202a38;color:#c5cfdb;}
+body[data-app="driver"] #driver-documents-panel .driver-wizard-controls button{min-height:44px;border:1px solid #3a4656;background:#202a38;color:#f4f6f8;}
+body[data-app="driver"] #driver-documents-panel .driver-wizard-controls button.primary{background:#f4f6f8;color:#10151d;border-color:#f4f6f8;}
+@media(max-width:640px){
+ body[data-app="driver"] .driver-account-settings>.driver-profile-photo{grid-template-columns:64px minmax(0,1fr);padding:12px;}
+ body[data-app="driver"] .driver-account-settings #driver-profile-photo{width:64px;height:64px;}
+ body[data-app="driver"] .driver-account-settings .driver-setting-group>summary{min-height:64px;padding:11px;}
+ body[data-app="driver"] .driver-account-settings .driver-setting-group>form{margin:0 8px 8px!important;padding:11px!important;}
+ body[data-app="driver"] #driver-documents-panel{padding:14px;margin-left:0;margin-right:0;}
+}
