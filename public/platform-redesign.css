@@ -39,3 +39,60 @@ body[data-app="driver"] .driver-home-hero a{border-radius:11px!important}
 @media(min-width:1100px){
  body[data-app="customer"] .section-links,body[data-app="driver"] .section-links{max-width:100%;justify-content:flex-start}
 }
+
+
+/* Customer primary navigation: four clear destinations. */
+body[data-app="customer"] .section-links.customer-bottom-nav{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  align-items:center!important;
+  gap:4px!important;
+  overflow:visible!important;
+  white-space:normal!important;
+  justify-content:stretch!important;
+  padding:8px!important;
+}
+body[data-app="customer"] .section-links.customer-bottom-nav a{
+  display:flex!important;
+  min-width:0!important;
+  min-height:48px!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:3px!important;
+  padding:6px 3px!important;
+  border-radius:11px!important;
+  font-size:11px!important;
+  line-height:1.1!important;
+  text-align:center!important;
+}
+body[data-app="customer"] .customer-nav-icon{
+  display:block!important;
+  font-size:19px!important;
+  line-height:1!important;
+  font-weight:700!important;
+}
+@media(max-width:700px){
+  body[data-app="customer"] .section-links.customer-bottom-nav{
+    position:fixed!important;
+    left:10px!important;
+    right:10px!important;
+    bottom:calc(8px + env(safe-area-inset-bottom))!important;
+    top:auto!important;
+    z-index:1000!important;
+    margin:0!important;
+    border:1px solid #dce5ef!important;
+    border-radius:17px!important;
+    background:#fff!important;
+    box-shadow:0 10px 32px #071b3430!important;
+  }
+  body[data-app="customer"] .section-links.customer-bottom-nav a{
+    font-size:10px!important;
+    padding:7px 2px!important;
+  }
+  body[data-app="customer"] .section-links.customer-bottom-nav a.is-active,
+  body[data-app="customer"] .section-links.customer-bottom-nav a[aria-current="page"]{
+    background:#eaf1f8!important;
+    color:#071b34!important;
+  }
+}
