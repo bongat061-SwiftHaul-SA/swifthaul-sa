@@ -314,3 +314,18 @@ body[data-app="driver"] #workspace .driver-feed-heading{display:flex;align-items
 body[data-app="driver"] #workspace .driver-feed-heading h2{margin:0;color:#fff;font-size:15px}
 body[data-app="driver"] #workspace .driver-feed-heading>span{display:grid;place-items:center;width:23px;height:23px;border-radius:50%;background:#c0c7d1;color:#11151b;font-weight:900}
 @media(max-width:700px){body[data-app="customer"] #workspace .customer-home-intro{min-height:310px!important}body[data-app="driver"] #workspace .driver-profile-card{grid-template-columns:46px minmax(0,1fr)!important}body[data-app="driver"] #workspace .driver-profile-action{grid-column:2;justify-self:start}}
+
+
+/* Cross-platform mode switch: keep the Customer and Driver workspaces connected
+   without merging their separate authentication and permissions. */
+.customer-mode-switch,.driver-mode-switch,.platform-mode-switch{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;min-height:42px;margin:12px 0;padding:11px 14px;
+  border:1px solid var(--ref-line,#566171);border-radius:13px;
+  background:linear-gradient(135deg,#202630,#151a22);
+  color:var(--ref-silver-hi,#e5e9ef);font-size:12px;font-weight:800;
+  letter-spacing:.02em;text-decoration:none;text-align:center;
+}
+.customer-mode-switch:hover,.driver-mode-switch:hover,.platform-mode-switch:hover{
+  border-color:var(--ref-silver-hi,#e5e9ef);background:#272e39;color:#fff;
+}
