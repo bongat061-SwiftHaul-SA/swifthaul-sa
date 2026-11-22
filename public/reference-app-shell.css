@@ -267,3 +267,157 @@ body[data-app] #workspace a:not(.section-links a){color:#ffc400}
     background:#ffc400!important;color:#101216!important;
   }
 }
+
+/* Screen-level polish aligned to the approved three-phone reference.
+   No image assets or map tiles/canvas styling are changed. */
+/* Customer booking: clear step hierarchy and compact mobile form rhythm. */
+body[data-app="customer"] #booking-form{
+  display:grid!important;gap:16px!important;
+  background:linear-gradient(160deg,#1b212b,#11161e)!important;
+  border-color:#424b59!important;
+}
+body[data-app="customer"] #booking-form>h2{
+  display:flex;align-items:center;gap:10px;margin:0 0 2px!important;
+  padding-bottom:13px;border-bottom:1px solid #3a424e;
+}
+body[data-app="customer"] #booking-form .section-number{
+  color:#ffc400!important;font-variant-numeric:tabular-nums;
+}
+body[data-app="customer"] #booking-form .field{
+  display:grid;gap:7px!important;margin:0!important;
+}
+body[data-app="customer"] #booking-form .field>label,
+body[data-app="customer"] #booking-form fieldset>label,
+body[data-app="customer"] #booking-form legend{
+  color:#eef1f5!important;font-weight:750!important;
+}
+body[data-app="customer"] #booking-form fieldset{
+  min-width:0;margin:0!important;padding:15px!important;
+  border:1px solid #3b4552!important;border-radius:15px!important;
+  background:#171d25!important;
+}
+body[data-app="customer"] #booking-form legend{
+  padding:0 7px!important;color:#ffc400!important;letter-spacing:.01em;
+}
+body[data-app="customer"] #booking-form .load-grid{
+  display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:10px!important;
+}
+body[data-app="customer"] #booking-form .load-grid label{
+  display:grid;gap:6px;color:#dce2e9!important;font-size:13px!important;
+}
+body[data-app="customer"] #booking-form .vehicles{
+  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:10px!important;
+}
+body[data-app="customer"] #booking-form .vehicle{
+  display:block!important;min-width:0!important;
+}
+body[data-app="customer"] #booking-form .vehicle>span{
+  display:flex!important;flex-direction:column!important;gap:6px!important;
+  height:100%;padding:14px!important;
+  background:linear-gradient(155deg,#252c37,#171d25)!important;
+  border:1px solid #424b59!important;border-radius:14px!important;
+}
+body[data-app="customer"] #booking-form .vehicle input:checked+span{
+  background:linear-gradient(155deg,#332b12,#201d16)!important;
+  border:2px solid #ffc400!important;box-shadow:0 0 0 2px #ffc4001a!important;
+}
+body[data-app="customer"] #booking-form .vehicle strong{
+  color:#fff!important;font-size:15px!important;
+}
+body[data-app="customer"] #booking-form .vehicle small{
+  color:#c2cad5!important;line-height:1.45!important;
+}
+body[data-app="customer"] #quote-result{
+  padding:18px!important;background:linear-gradient(155deg,#292f39,#151a22)!important;
+  border:1px solid #55503a!important;border-radius:18px!important;
+}
+body[data-app="customer"] #quote-result h3{
+  color:#ffc400!important;margin-top:0!important;
+}
+body[data-app="customer"] #quote-result .quote-totals{
+  display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important;
+}
+body[data-app="customer"] #quote-result .quote-totals>div{
+  padding:13px!important;border:1px solid #414956!important;
+  border-radius:13px!important;background:#11161e!important;
+}
+body[data-app="customer"] #quote-result #quote-price{
+  display:block;color:#ffc400!important;font-size:clamp(24px,5vw,32px)!important;
+  font-weight:900!important;letter-spacing:-.7px;
+}
+body[data-app="customer"] #quote-result .fare-row{
+  display:flex;justify-content:space-between;gap:12px;
+  padding:9px 0;border-bottom:1px solid #343b46;
+}
+body[data-app="customer"] #ordersContainer .order{
+  padding:16px!important;background:linear-gradient(155deg,#242a34,#12161d)!important;
+  border:1px solid #343b46!important;border-radius:16px!important;
+}
+/* Driver home: route-first hero and compact performance summary. */
+body[data-app="driver"] #workspace .driver-home-hero{
+  position:relative;overflow:hidden;display:flex!important;
+  align-items:center!important;justify-content:space-between!important;
+  gap:18px!important;padding:clamp(20px,4vw,34px)!important;
+  border-radius:20px!important;
+}
+body[data-app="driver"] #workspace .driver-home-kicker{
+  color:#ffc400!important;letter-spacing:.12em!important;font-weight:850!important;
+}
+body[data-app="driver"] #workspace .driver-home-hero h2{
+  max-width:620px;font-size:clamp(25px,4vw,38px)!important;
+  line-height:1.08!important;letter-spacing:-1.1px!important;
+}
+body[data-app="driver"] #workspace .driver-home-mark{
+  flex:0 0 104px!important;width:104px!important;height:104px!important;
+  display:grid;place-content:center;text-align:center!important;
+  border:1px solid #ffc40066!important;border-radius:50%!important;
+  background:radial-gradient(circle,#3a3118,#171d25 68%)!important;
+  color:#ffc400!important;
+}
+body[data-app="driver"] #workspace .driver-home-mark>span{
+  font-size:38px!important;line-height:1!important;
+}
+body[data-app="driver"] #workspace .stats .stat{
+  border-top:2px solid #ffc400!important;
+}
+body[data-app="driver"] #workspace .stats .stat strong{
+  font-size:clamp(22px,3vw,30px)!important;font-weight:900!important;
+}
+/* Company operations: make dispatch and financial data easier to scan. */
+body[data-app="company"] #workspace .operations-list,
+body[data-app="company"] #workspace #ordersContainer{
+  display:grid;gap:12px;
+}
+body[data-app="company"] #workspace .operations-list>article,
+body[data-app="company"] #workspace .operations-list>.order,
+body[data-app="company"] #workspace #ordersContainer>.order{
+  padding:16px!important;background:linear-gradient(155deg,#242a34,#12161d)!important;
+  border:1px solid #3a424e!important;border-radius:16px!important;
+}
+body[data-app="company"] #workspace .operations-list h2,
+body[data-app="company"] #workspace .operations-list h3{
+  color:#ffc400!important;
+}
+body[data-app="company"] #workspace .admin-quality-card{
+  padding:14px!important;background:#171d25!important;
+  border:1px solid #3a424e!important;border-radius:14px!important;
+}
+body[data-app="company"] #workspace .admin-quality-card strong{
+  color:#ffc400!important;
+}
+/* Responsive refinements; preserve route map rendering and map controls. */
+@media(max-width:700px){
+  body[data-app="customer"] #booking-form .vehicles{grid-template-columns:1fr!important}
+  body[data-app="customer"] #booking-form .load-grid{grid-template-columns:1fr 1fr!important}
+  body[data-app="customer"] #quote-result .quote-totals{grid-template-columns:1fr 1fr!important}
+  body[data-app="driver"] #workspace .driver-home-hero{align-items:flex-start!important}
+  body[data-app="driver"] #workspace .driver-home-mark{flex-basis:72px!important;width:72px!important;height:72px!important}
+  body[data-app="driver"] #workspace .driver-home-mark>span{font-size:28px!important}
+}
+@media(max-width:390px){
+  body[data-app="customer"] #booking-form .load-grid{grid-template-columns:1fr!important}
+  body[data-app="customer"] #quote-result .quote-totals{grid-template-columns:1fr!important}
+  body[data-app="driver"] #workspace .driver-home-mark{display:none!important}
+}
