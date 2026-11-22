@@ -1,0 +1,36 @@
+/* SwiftHaul Company Admin — shared dark premium visual language.
+   Presentation-only layer: preserves existing admin markup, routes, Supabase calls and permissions. */
+:root{color-scheme:dark;--ca-bg:#080a0e;--ca-surface:#12161d;--ca-raised:#1b212b;--ca-line:#303946;--ca-text:#f5f7fa;--ca-muted:#9da7b5}
+html:has(body[data-app="company"]){background:var(--ca-bg);color-scheme:dark}
+body[data-app="company"]{background:radial-gradient(ellipse at 50% -18%,#252c37 0%,#111720 36%,var(--ca-bg) 78%);color:var(--ca-text);min-height:100vh}
+body[data-app="company"] .topbar{background:#090d13f5;border-color:var(--ca-line);color:var(--ca-text);box-shadow:0 8px 30px #0006;backdrop-filter:blur(18px)}
+body[data-app="company"] .wordmark,body[data-app="company"] .wordmark span{color:#fff}
+body[data-app="company"] .app-tag,body[data-app="company"] .eyebrow,body[data-app="company"] .section-number{color:#cbd2dc;border-color:#465160}
+body[data-app="company"] .page{color:var(--ca-text);max-width:1120px;padding:28px 5vw 110px}
+body[data-app="company"] .page-heading h1,body[data-app="company"] .panel h2,body[data-app="company"] .panel h3{color:#fff}
+body[data-app="company"] .page-heading>p,body[data-app="company"] .subtle,body[data-app="company"] .panel p{color:var(--ca-muted)}
+body[data-app="company"] .panel,body[data-app="company"] .stat,body[data-app="company"] .empty,body[data-app="company"] .help{background:linear-gradient(155deg,#1b222d,#121720);color:var(--ca-text);border:1px solid var(--ca-line);border-radius:18px;box-shadow:0 12px 30px #0005}
+body[data-app="company"] .panel{padding:22px}
+body[data-app="company"] .stat{padding:18px}
+body[data-app="company"] .stat strong{color:#fff}
+body[data-app="company"] label,body[data-app="company"] legend,body[data-app="company"] th{color:#e2e7ed}
+body[data-app="company"] input,body[data-app="company"] select,body[data-app="company"] textarea{background:#0b1017;color:#f7f9fc;border:1px solid #3a4554;border-radius:12px}
+body[data-app="company"] button,body[data-app="company"] .quiet{background:#202733;color:#f4f6f9;border:1px solid #3a4554;border-radius:12px}
+body[data-app="company"] button:hover,body[data-app="company"] .quiet:hover{background:#2b3441;border-color:#687486}
+body[data-app="company"] .primary{background:linear-gradient(180deg,#fff,#dce2e9);border-color:#f1f3f6;color:#11151b;border-radius:14px;font-weight:800}
+body[data-app="company"] a{color:#d6dde6}
+body[data-app="company"] .workspace-navigation{margin:0 0 22px;border:1px solid var(--ca-line);border-radius:16px;background:#111720}
+body[data-app="company"] .workspace-navigation summary{padding:15px 18px;color:#f5f7fa;cursor:pointer;display:flex;justify-content:space-between;gap:12px;list-style:none}
+body[data-app="company"] .workspace-navigation summary::-webkit-details-marker{display:none}
+body[data-app="company"] .section-links{display:flex;gap:8px;flex-wrap:wrap;padding:12px 14px;border:0;border-top:1px solid var(--ca-line);margin:0;background:transparent}
+body[data-app="company"] .section-links a{padding:9px 12px;border-radius:10px;text-decoration:none;color:#c2cad4;font-size:12px}
+body[data-app="company"] .section-links a[aria-current="page"],body[data-app="company"] .section-links a:first-child{background:#e9edf2;color:#11151b}
+body[data-app="company"] table{color:#e2e7ed}
+body[data-app="company"] th,body[data-app="company"] td{border-color:#303946}
+body[data-app="company"] td{color:#aeb8c6}
+body[data-app="company"] .order{border-color:var(--ca-line)}
+body[data-app="company"] .environment-banner{background:#202733;color:#e4e8ee;border-color:#465160}
+body[data-app="company"] .guest-banner{background:#202733;color:#e4e8ee;border-color:#465160}
+body[data-app="company"] .help strong{color:#fff}
+body[data-app="company"] .footer{color:#9ba7b6;border-color:var(--ca-line)}
+@media(max-width:700px){body[data-app="company"] .topbar{padding:12px 16px}body[data-app="company"] .page{padding:18px 14px 100px}body[data-app="company"] .page-heading{display:block;margin-bottom:20px}body[data-app="company"] .page-heading h1{font-size:30px;letter-spacing:-1px}body[data-app="company"] .stats{gap:7px;margin:18px 0}body[data-app="company"] .stat{padding:12px 9px}body[data-app="company"] .stat span{font-size:9px}body[data-app="company"] .stat strong{font-size:20px}body[data-app="company"] .panel{padding:16px}body[data-app="company"] .section-links{gap:6px}body[data-app="company"] .section-links a{padding:8px 10px;font-size:11px}}
