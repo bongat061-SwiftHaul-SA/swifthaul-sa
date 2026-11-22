@@ -88,7 +88,7 @@ Deno.serve(async req => {
     const excluded=new Set((sent??[]).map(x=>x.driver_user_id));
     const {data:drivers,error:de}=await db.from("driver_profiles").select("user_id,vehicle_type,is_online,verification_status,allow_stacked_orders,performance_tier").eq("is_online",true).eq("verification_status","approved");
     if(de) return reply(500,{error:"driver_candidate_lookup_failed"});
-    const vehicleType=(value:string)=>{const v=value.toLowerCase();if(v.includes("motor"))return "motorbike";if(v.includes("bakkie")||v.includes("van")||v.includes("panel"))return "bakkie/panel van";if(v.includes("truck")||v.includes("ton"))return "truck";return "hatchback/sedan";};
+    const vehicleType=(value:string)=>{const v=value.toLowerCase();if(v.includes("motor")||v==="bike")return "motorbike";if(v.includes("light_commercial")||v==="van")return "light_commercial";if(v.includes("bakkie")||v.includes("panel")||v==="bakkie")return "bakkie/panel van";if(v.includes("truck")||v.includes("ton"))return "truck";return "hatchback/sedan";};
     const {data:classes}=await db.from("vehicle_classes").select("vehicle_type,max_concurrent_orders");
     const capacity=new Map((classes??[]).map((v:any)=>[v.vehicle_type,Number(v.max_concurrent_orders)]));
     const allDriverIds=(drivers??[]).map(d=>d.user_id);
