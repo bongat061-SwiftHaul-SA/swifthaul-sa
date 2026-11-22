@@ -2,7 +2,7 @@
   const app = document.body.dataset.app;
   if (!["customer", "company"].includes(app)) return;
   const styles = document.createElement("style");
-  styles.textContent = ".live-driver-view{margin-top:14px;padding:14px;border:1px solid #343b46;border-radius:16px;background:linear-gradient(155deg,#242a34,#12161d);color:#f5f6f8;box-shadow:0 10px 26px rgba(0,0,0,.38)}.live-driver-view button{min-height:42px;border:1px solid #c0c7d1;border-radius:11px;padding:10px 15px;background:linear-gradient(180deg,#e5e9ef,#aeb8c6);color:#101216;font:inherit;font-weight:800}.live-driver-view button:hover{background:#d5dbe3}.live-driver-view .live-driver-map{height:230px;margin-top:12px;border:1px solid #343b46;border-radius:13px;overflow:hidden;background:#eef3f9}.live-driver-view .live-driver-status{font-size:12px;line-height:1.5;color:#c2c9d3}.live-driver-view[hidden]{display:none}";
+  styles.textContent = ".live-driver-view{margin-top:14px;padding:16px;border:1px solid #343d49;border-radius:18px;background:#151a22;color:#f5f6f8;box-shadow:0 10px 26px rgba(0,0,0,.38)}.live-driver-view h3{margin:0 0 5px;font-size:16px;color:#fff}.live-driver-view .tracking-kicker{font-size:10px;letter-spacing:.14em;color:#c0c7d1;font-weight:800}.live-driver-view button{min-height:42px;border:1px solid #c0c7d1;border-radius:11px;padding:10px 15px;background:linear-gradient(180deg,#e5e9ef,#aeb8c6);color:#101216;font:inherit;font-weight:800}.live-driver-view button:hover{background:#d5dbe3}.live-driver-view .live-driver-map{height:300px;margin-top:12px;border:1px solid #343d49;border-radius:13px;overflow:hidden;background:#eef3f9}.live-driver-view .live-driver-status{font-size:12px;line-height:1.5;color:#c2c9d3}.live-driver-view[hidden]{display:none}";
   document.head.append(styles);
   let active = false;
   const viewers = new Map();
@@ -25,13 +25,15 @@
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = "Track driver live";
+    const kicker = document.createElement("span"); kicker.className = "tracking-kicker"; kicker.textContent = "LIVE DELIVERY MAP";
+    const title = document.createElement("h3"); title.textContent = "Track Your Delivery";
     const status = document.createElement("p");
     status.className = "live-driver-status";
     status.textContent = "Driver location appears only while the driver has enabled sharing.";
     const mapNode = document.createElement("div");
     mapNode.className = "live-driver-map";
     mapNode.hidden = true;
-    box.append(button, status, mapNode);
+    box.append(kicker, title, button, status, mapNode);
     card.append(box);
     let map = null, marker = null, timer = null;
     const refresh = async () => {
@@ -51,7 +53,18 @@
               layers: [{ id: "carto-voyager", type: "raster", source: "carto" }]
             }});
             map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
-            map.on("load", () => { if (marker) marker.setLngLat(point); });
+            map.on("load", () => {
+              if (marker) marker.setLngLat(point);
+              const pickup = [Number(card.dataset.pickupLongitude), Number(card.dataset.pickupLatitude)];
+              const dropoff = [Number(card.dataset.dropoffLongitude), Number(card.dataset.dropoffLatitude)];
+              if (pickup.every(Number.isFinite) && dropoff.every(Number.isFinite)) {
+                map.addSource("delivery-route", { type: "geojson", data: { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [pickup, dropoff] } } });
+                map.addLayer({ id: "delivery-route-line", type: "line", source: "delivery-route", paint: { "line-color": "#2878d7", "line-width": 5, "line-opacity": 0.9 } });
+                new maplibregl.Marker({ color: "#16845b" }).setLngLat(pickup).addTo(map);
+                new maplibregl.Marker({ color: "#d64b4b" }).setLngLat(dropoff).addTo(map);
+                map.fitBounds([pickup, dropoff], { padding: 48, maxZoom: 14 });
+              }
+            });
           }
           if (!marker) {
             const el = document.createElement("div");
