@@ -1,10 +1,7 @@
 (() => {
-  const app = document.body.dataset.app;
-  if (app !== 'customer') return;
+  if (document.body.dataset.app !== 'customer') return;
   const form = document.getElementById('booking-form');
   if (!form || form.dataset.wizardReady === 'true') return;
-  // Validate the active wizard pane ourselves so native validation never tries
-  // to focus a required field inside a hidden step.
 
   const byText = (selector, match) => [...form.querySelectorAll(selector)].find(node =>
     (node.querySelector('legend')?.textContent || node.textContent || '').toLowerCase().includes(match)
@@ -29,22 +26,22 @@
   const pageHeading = document.querySelector('#workspace .page-heading h1');
   const pageDescription = document.querySelector('#workspace .page-heading .subtle');
   if (![pickup,dropoff,recipient,parcel,vehicle,payment,assistance,protection,calculate,quote,submit,counterSubmit].every(Boolean)) return;
-  form.dataset.wizardReady = 'true';
 
-  const oldHeading = form.querySelector(':scope > h2');
-  oldHeading?.remove();
+  form.dataset.wizardReady = 'true';
+  form.querySelector(':scope > h2')?.remove();
+
   const steps = [
-    {title:'Confirm pickup & drop-off',hint:'Check the map first, enter or select both addresses below it, and adjust each pin to the exact gate or entrance. Then continue to your parcel details.'},
-    {title:'Parcel details',hint:'Describe your load, review the recommended vehicle and calculate your mapped fare.'},
-    {title:'Assistance & protection',hint:'Choose payment and optional handling, then review the customer protection terms.'},
-    {title:'Review & book',hint:'Check your delivery details, fare and any counteroffer before submitting.'}
+    {title:'Pickup & drop-off',hint:'Set both addresses on the map. Move each pin to the exact pickup or delivery entrance.'},
+    {title:'Your items & fare',hint:'Tell us what you’re sending. We’ll estimate the load, recommend a vehicle and calculate the route fare.'},
+    {title:'Review & book',hint:'Check your delivery, choose how you want to pay and confirm the booking request.'}
   ];
+
   const shell = document.createElement('section');
   shell.className = 'booking-wizard';
-  shell.setAttribute('aria-label','Four-step delivery booking');
+  shell.setAttribute('aria-label','Three-step delivery booking');
   const header = document.createElement('header');
   header.className = 'booking-wizard-header';
-  header.innerHTML = '<div class="booking-wizard-kicker">NEW DELIVERY</div><div class="booking-wizard-heading"><h2 data-wizard-title></h2><span data-wizard-count></span></div><p data-wizard-hint></p><div class="booking-wizard-progress" aria-label="Booking progress"><span></span><span></span><span></span><span></span></div>';
+  header.innerHTML = '<div class="booking-wizard-kicker">NEW DELIVERY</div><div class="booking-wizard-heading"><h2 data-wizard-title></h2><span data-wizard-count></span></div><p data-wizard-hint></p><div class="booking-wizard-progress" aria-label="Booking progress"><span></span><span></span><span></span></div>';
   const content = document.createElement('div');
   content.className = 'booking-wizard-content';
   const panes = steps.map((step,index) => {
@@ -64,30 +61,49 @@
   form.noValidate = true;
 
   const move = (node,index) => { if(node) panes[index].append(node); };
-  // The location picker builds a map stage containing the pickup/drop-off inputs.
-  // Keep that stage intact on step one so the map, address suggestions, draggable
-  // pins and Plus Code readout stay together. The previous implementation moved
-  // the input wrappers out of the map sheet, leaving a large empty map behind.
   const mapStage = form.querySelector('#delivery-map-stage');
   if (mapStage) {
     move(mapStage,0);
-    // Keep the pickup/drop-off map and optional scheduling controls together
-    // on step one. Recipient information belongs with the parcel details, so
-    // an empty recipient field cannot block the map-to-parcel transition.
-    [schedule,returnTrip].forEach(node=>move(node,0));
-    // The location picker initially places the recipient and parcel estimator
-    // in its map sheet. Move them into step two while leaving the map intact.
-    [recipient,parcel,vehicle,vehicleNote,calculate,pricingNote,quote].forEach(node=>move(node,1));
-    [payment,assistance,protection].forEach(node=>move(node,2));
   } else {
-    [pickup,dropoff,schedule,returnTrip].forEach(node=>move(node,0));
-    [recipient,parcel,vehicle,vehicleNote,calculate,pricingNote,quote].forEach(node=>move(node,1));
-    [payment,assistance,protection].forEach(node=>move(node,2));
+    [pickup,dropoff].forEach(node=>move(node,0));
   }
+
+  // Optional trip settings stay available but no longer compete with the two
+  // essential address fields in the normal booking flow.
+  const tripOptions = document.createElement('details');
+  tripOptions.className = 'booking-optional-details';
+  tripOptions.innerHTML = '<summary>Optional trip settings</summary><div class="booking-optional-content"></div>';
+  const tripContent = tripOptions.querySelector('.booking-optional-content');
+  [schedule,returnTrip].forEach(node=>{ if(node) tripContent.append(node); });
+  if (tripContent.childElementCount) panes[0].append(tripOptions);
+
+  [recipient,parcel,vehicle,vehicleNote,calculate,pricingNote,quote].forEach(node=>move(node,1));
+
+  // Keep optional counteroffers and assistance out of the way unless wanted.
+  const counterLabel = form.querySelector('#make-counter-offer')?.closest('label');
+  const counterField = form.querySelector('#counter-offer-field');
+  const counterNote = form.querySelector('#counter-offer-note');
+  if (counterLabel && counterField && counterNote) {
+    const optionalOffer = document.createElement('details');
+    optionalOffer.className = 'booking-optional-details';
+    optionalOffer.innerHTML = '<summary>Make an optional counteroffer</summary><div class="booking-optional-content"></div>';
+    optionalOffer.querySelector('.booking-optional-content').append(counterLabel,counterField,counterNote);
+    const eligibility = payment.querySelector('#payment-eligibility');
+    (eligibility || payment).after(optionalOffer);
+  }
+  move(payment,2);
+
+  const optionalAssistance = document.createElement('details');
+  optionalAssistance.className = 'booking-optional-details';
+  optionalAssistance.innerHTML = '<summary>Request loading or carrying help (optional)</summary>';
+  optionalAssistance.append(assistance);
+  panes[2].append(optionalAssistance,protection);
+
   const review = document.createElement('section');
   review.className = 'booking-review-card';
-  review.innerHTML = '<h3>Delivery summary</h3><dl><div><dt>Pickup</dt><dd data-review-pickup>Not entered</dd></div><div><dt>Drop-off</dt><dd data-review-dropoff>Not entered</dd></div><div><dt>Recipient</dt><dd data-review-recipient>Not entered</dd></div><div><dt>Parcel & vehicle</dt><dd data-review-parcel>Complete parcel details</dd></div><div><dt>Fare</dt><dd data-review-fare>Calculate your route</dd></div><div><dt>Payment</dt><dd data-review-payment>Arrange with dispatch</dd></div><div><dt>Assistance</dt><dd data-review-assistance>Not requested</dd></div></dl><p class="booking-review-note">Your request is only confirmed after SwiftHaul dispatch accepts it. Payment is not confirmed by submitting this request.</p>';
-  panes[3].append(review,submit,counterSubmit,message);
+  review.innerHTML = '<h3>Delivery summary</h3><dl><div><dt>Pickup</dt><dd data-review-pickup>Not entered</dd></div><div><dt>Drop-off</dt><dd data-review-dropoff>Not entered</dd></div><div><dt>Recipient</dt><dd data-review-recipient>Not entered</dd></div><div><dt>Items & vehicle</dt><dd data-review-parcel>Add your items</dd></div><div><dt>Fare</dt><dd data-review-fare>Calculate route</dd></div><div><dt>Pickup time</dt><dd data-review-schedule>As soon as available</dd></div><div><dt>Return trip</dt><dd data-review-return>Not requested</dd></div></dl><p class="booking-review-note">Your booking is a request. Dispatch confirms the driver and delivery, and payment is only confirmed after the selected payment process is completed.</p>';
+  panes[2].prepend(review);
+  panes[2].append(submit,counterSubmit,message);
 
   let active = 0;
   const title = header.querySelector('[data-wizard-title]');
@@ -100,87 +116,97 @@
     const target = form.querySelector('#quote-status') || message;
     if (target) target.textContent = text;
   };
-  const updateReview = () => {
-    const set = (key,value) => { const node=review.querySelector('[data-review-'+key+']'); if(node)node.textContent=value || 'Not entered'; };
-    set('pickup',form.elements.pickup.value.trim());
-    set('dropoff',form.elements.dropoff.value.trim());
-    set('recipient',form.elements.recipient.value.trim());
-    const weight=Number(form.elements.weight.value);
-    const vehicleValue=form.querySelector('[name=vehicle]:checked')?.value;
-    set('parcel',weight>0 ? (vehicleValue||'Vehicle pending').toUpperCase()+' · '+weight+' kg estimated' : 'Complete parcel details');
-    set('fare',quote.hidden ? (document.body.dataset.guestPreview === 'true' ? 'Sign in to calculate your live fare' : 'Calculate your route') : (form.querySelector('#quote-price')?.textContent || 'Quote ready'));
-    set('payment',form.elements.payment_method.selectedOptions[0]?.textContent || 'Arrange with dispatch');
-    set('assistance',form.querySelector('#assistance-requested').checked ? 'Requested · subject to dispatch approval' : 'Not requested');
+  const setReview = (key,value) => {
+    const node=review.querySelector('[data-review-'+key+']');
+    if(node) node.textContent=value || 'Not entered';
   };
+  const updateReview = () => {
+    setReview('pickup',form.elements.pickup?.value.trim());
+    setReview('dropoff',form.elements.dropoff?.value.trim());
+    setReview('recipient',form.elements.recipient?.value.trim());
+    const weight=Number(form.elements.weight?.value);
+    const vehicleValue=form.querySelector('[name=vehicle]:checked');
+    setReview('parcel',weight>0 ? (vehicleValue?.parentElement.querySelector('strong')?.textContent || vehicleValue.value)+' · '+weight+' kg estimated' : 'Add your items');
+    setReview('fare',quote.hidden ? 'Calculate route' : (form.querySelector('#quote-price')?.textContent || 'Quote ready'));
+    const scheduled=form.elements.scheduled_at?.value;
+    setReview('schedule',form.querySelector('#schedule-later')?.checked && scheduled ? new Date(scheduled).toLocaleString() : 'As soon as available');
+    setReview('return',form.querySelector('#request-return')?.checked ? (form.elements.return_address?.value || 'Return requested · dispatch will quote separately') : 'Not requested');
+  };
+
   const show = index => {
-    active=Math.max(0,Math.min(3,index));
+    active=Math.max(0,Math.min(2,index));
     panes.forEach((pane,i)=>pane.hidden=i!==active);
     title.textContent=steps[active].title;
-    count.textContent='STEP '+(active+1)+' OF 4';
-    hint.textContent=(document.body.dataset.guestPreview === 'true' && active===1) ? 'Preview your parcel dimensions and vehicle recommendation. Sign in to calculate a live mapped fare.' : steps[active].hint;
+    count.textContent='STEP '+(active+1)+' OF 3';
+    hint.textContent=steps[active].hint;
     progress.forEach((bar,i)=>bar.classList.toggle('is-complete',i<=active));
     back.hidden=active===0;
-    next.hidden=active===3;
+    next.hidden=active===2;
     next.disabled=false;
-    next.textContent=active===0?'Continue to parcel details':active===2?'Review booking':'Continue';
-    
-    if(active===3)updateReview();
-    if(pageHeading)pageHeading.textContent=active===0?'Confirm pickup & drop-off.':'Book a delivery.';
-    if(pageDescription)pageDescription.textContent=active===0?'Verify the map pins and address details, then continue to parcel selection.':'Add your parcel details, review the fare and complete your booking request.';
+    next.textContent=active===0?'Continue to items':'Review booking';
+    if(active===2) updateReview();
+    if(pageHeading) pageHeading.textContent=active===0?'Where should we collect and deliver?':active===1?'What are you sending?':'Review your delivery.';
+    if(pageDescription) pageDescription.textContent=active===0?'Add your pickup and drop-off locations.':active===1?'Add your items and check the fare.':'Confirm the details before sending your booking request.';
     controls.hidden=false;
     shell.scrollIntoView({behavior:'smooth',block:'start'});
   };
+
   const validateStep = () => {
     const controls=[...panes[active].querySelectorAll('input,select,textarea')].filter(el=>!el.disabled && el.type!=='hidden');
     const invalid=controls.find(el=>!el.checkValidity());
     if(invalid){invalid.reportValidity();return false;}
     if(active===0){
-      const complete = ['pickup','dropoff'].every(key => {
-        const lat = form.querySelector('[name="'+key+'_latitude"]')?.value;
-        const lng = form.querySelector('[name="'+key+'_longitude"]')?.value;
-        const code = form.querySelector('[name="'+key+'_plus_code"]')?.value;
-        return lat && lng && code;
+      const complete=['pickup','dropoff'].every(key=>{
+        const lat=form.querySelector('[name="'+key+'_latitude"]')?.value;
+        const lng=form.querySelector('[name="'+key+'_longitude"]')?.value;
+        const code=form.querySelector('[name="'+key+'_plus_code"]')?.value;
+        return Boolean(lat&&lng&&code);
       });
-      if(!complete){announce('Confirm both exact map pins and Plus Codes before continuing.');return false;}
+      if(!complete){announce('Please confirm both map pins before continuing.');return false;}
     }
     if(active===1){
-      if(!(Number(form.elements.weight.value)>0)){announce('Please estimate your parcel weight and dimensions before continuing.');return false;}
-      if(quote.hidden && document.body.dataset.guestPreview !== 'true'){announce('Calculate the mapped route and fare before continuing.');calculate.focus();return false;}
+      if(!(Number(form.elements.weight?.value)>0)){announce('Please add at least one item to your load.');return false;}
+      if(quote.hidden && document.body.dataset.guestPreview!=='true'){
+        announce('Calculate your delivery fare before continuing.');
+        calculate.focus();
+        return false;
+      }
     }
     return true;
   };
+
   next.addEventListener('click',()=>{
-    if(!validateStep())return;
+    if(!validateStep()) return;
     show(active+1);
   });
   document.addEventListener('swift-haul:locations-confirmed',()=>{
-    if(active!==0)return;
-    // The location picker emits this event only after both pins and Plus Codes
-    // are saved. Do not run the full pane validator again here: it can inspect
-    // controls nested in the map sheet or optional controls moved by the wizard.
-    const routeReady = ['pickup','dropoff'].every(key => {
-      const address = form.querySelector('[name="'+key+'"]')?.value.trim();
-      const lat = form.querySelector('[name="'+key+'_latitude"]')?.value;
-      const lng = form.querySelector('[name="'+key+'_longitude"]')?.value;
-      const code = form.querySelector('[name="'+key+'_plus_code"]')?.value;
-      return Boolean(address && lat && lng && code);
+    if(active!==0) return;
+    const ready=['pickup','dropoff'].every(key=>{
+      const address=form.querySelector('[name="'+key+'"]')?.value.trim();
+      const lat=form.querySelector('[name="'+key+'_latitude"]')?.value;
+      const lng=form.querySelector('[name="'+key+'_longitude"]')?.value;
+      const code=form.querySelector('[name="'+key+'_plus_code"]')?.value;
+      return Boolean(address&&lat&&lng&&code);
     });
-    if(!routeReady){
-      announce('Please confirm both pickup and drop-off addresses and map pins before continuing.');
-      return;
-    }
-    show(1);
+    if(ready) show(1);
+    else announce('Please confirm both addresses and map pins.');
   });
   back.addEventListener('click',()=>show(active-1));
   form.addEventListener('submit',event=>{
-    if(active!==3){event.preventDefault();event.stopImmediatePropagation();if(validateStep())show(active+1);return;}
+    if(active!==2){
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if(validateStep()) show(active+1);
+      return;
+    }
     const required=[...form.querySelectorAll('input,select,textarea')].filter(el=>el.required&&!el.disabled&&el.type!=='hidden');
     const invalid=required.find(el=>!el.checkValidity());
     if(invalid){
-      event.preventDefault();event.stopImmediatePropagation();
+      event.preventDefault();
+      event.stopImmediatePropagation();
       const pane=invalid.closest('.booking-step');
       const index=panes.indexOf(pane);
-      if(index>=0)show(index);
+      if(index>=0) show(index);
       requestAnimationFrame(()=>invalid.reportValidity());
     }
   },true);
