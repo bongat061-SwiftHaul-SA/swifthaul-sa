@@ -7,7 +7,7 @@ body[data-app="customer"] #booking-form .booking-wizard-heading{display:flex;ali
 body[data-app="customer"] #booking-form .booking-wizard-heading h2{margin:0;color:#fff;font-size:clamp(22px,5vw,30px);line-height:1.15}
 body[data-app="customer"] #booking-form [data-wizard-count]{color:#b8c1cd;font-size:11px;font-weight:800;white-space:nowrap}
 body[data-app="customer"] #booking-form [data-wizard-hint]{margin:8px 0 16px;color:#aab4c1;font-size:14px;line-height:1.5}
-body[data-app="customer"] #booking-form .booking-wizard-progress{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+body[data-app="customer"] #booking-form .booking-wizard-progress{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
 body[data-app="customer"] #booking-form .booking-wizard-progress span{height:4px;border-radius:99px;background:#303946}
 body[data-app="customer"] #booking-form .booking-wizard-progress span.is-complete{background:#e7ebf0}
 body[data-app="customer"] #booking-form .booking-step{display:grid;gap:14px;min-width:0}
@@ -262,3 +262,25 @@ body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift
 body[data-app="customer"] #booking-form .booking-wizard-controls{position:sticky;bottom:8px;z-index:30;padding:12px;background:rgba(5,19,38,.97);border:1px solid #285276;border-radius:16px;box-shadow:0 10px 30px #020b18aa}
 body[data-app="customer"] #booking-form .booking-wizard-controls .booking-next{min-height:48px;padding:12px 22px}
 @media(max-width:600px){body[data-app="customer"] #booking-form .booking-step #delivery-map-stage #global-location-map{height:250px!important;min-height:220px!important;max-height:280px!important}body[data-app="customer"] #booking-form .booking-step #delivery-map-stage .swift-location-sheet{padding:13px!important}body[data-app="customer"] #booking-form .booking-wizard-controls{bottom:5px;padding:9px}}
+
+/* Simplified three-step booking flow */
+body[data-app="customer"] #booking-form .booking-wizard-header{margin-bottom:16px;padding-bottom:14px}
+body[data-app="customer"] #booking-form [data-wizard-hint]{font-size:13px;max-width:58ch}
+body[data-app="customer"] #booking-form .booking-optional-details{margin:0;padding:12px 14px;border:1px solid #35404e;border-radius:14px;background:#141a23;color:#edf1f5}
+body[data-app="customer"] #booking-form .booking-optional-details>summary{cursor:pointer;list-style:none;font-size:12px;font-weight:800;color:#dce2e9}
+body[data-app="customer"] #booking-form .booking-optional-details>summary::-webkit-details-marker{display:none}
+body[data-app="customer"] #booking-form .booking-optional-details>summary:after{content:"＋";float:right;color:#c0c7d1}
+body[data-app="customer"] #booking-form .booking-optional-details[open]>summary:after{content:"−"}
+body[data-app="customer"] #booking-form .booking-optional-content{display:grid;gap:12px;padding-top:12px}
+body[data-app="customer"] #booking-form .booking-step .booking-optional-details fieldset{margin:0}
+body[data-app="customer"] #booking-form .booking-step .booking-review-card{order:0}
+body[data-app="customer"] #booking-form .booking-step #payment-method{min-height:48px}
+body[data-app="customer"] #booking-form .booking-step .customer-terms-acknowledgement{padding:14px}
+body[data-app="customer"] #booking-form .booking-step .customer-terms-acknowledgement p{font-size:11px}
+@media(max-width:480px){
+ body[data-app="customer"] #booking-form .booking-wizard-heading h2{font-size:22px}
+ body[data-app="customer"] #booking-form .booking-step>.field,
+ body[data-app="customer"] #booking-form .booking-step>fieldset,
+ body[data-app="customer"] #booking-form .booking-review-card{padding:13px}
+ body[data-app="customer"] #booking-form .booking-step .load-grid{grid-template-columns:1fr}
+}
