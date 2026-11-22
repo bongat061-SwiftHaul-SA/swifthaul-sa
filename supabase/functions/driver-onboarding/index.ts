@@ -100,9 +100,9 @@ if(!["sa_citizen","foreign_national"].includes(identityType))return reply(400,{e
  if(identityType==="foreign_national"&&(!passport||!trn))return reply(400,{error:"passport_and_traffic_register_number_required"});
  if(!/^\+27[0-9]{9}$/.test(phone.replace(/[\s-]/g,"").replace(/^0/,"+27"))&&!/^0[0-9]{9}$/.test(phone.replace(/[\s-]/g,"")))return reply(400,{error:"valid_sa_mobile_required"});
  if(!/^\S+@\S+\.\S+$/.test(email)||!["A1","A","B","EB","C1","C","EC1","EC"].includes(licenceCode)||!validDate(licenceExpiry)||Date.parse(licenceExpiry+"T00:00:00")<=Date.now())return reply(400,{error:"valid_email_licence_code_and_future_expiry_required"});
- if(!["motorbike","hatchback_sedan","bakkie_panel_van","truck"].includes(vehicleType)||!fullName||!plate||year<1980||year>new Date().getFullYear()+1)return reply(400,{error:"complete_vehicle_and_personal_details"});
- const heavy=vehicleType==="truck"||(vehicleType==="bakkie_panel_van"&&gvm>3500);
- if((vehicleType==="bakkie_panel_van"&&(!Number.isFinite(gvm)||gvm<=0))||(heavy&&!prdp)|| (prdp&&(!["goods","passengers","dangerous_goods"].includes(prdpCategory)||!validDate(prdpExpiry)||Date.parse(prdpExpiry+"T00:00:00")<=Date.now())))return reply(400,{error:"valid_prdp_details_required"});
+ if(!["motorbike","light_commercial","one_ton_bakkie","closed_truck","hatchback_sedan","bakkie_panel_van","truck"].includes(vehicleType)||!fullName||!plate||year<1980||year>new Date().getFullYear()+1)return reply(400,{error:"complete_vehicle_and_personal_details"});
+ const heavy=vehicleType==="truck"||vehicleType==="closed_truck"||((vehicleType==="bakkie_panel_van"||vehicleType==="one_ton_bakkie")&&gvm>3500);
+ if(((vehicleType==="bakkie_panel_van"||vehicleType==="one_ton_bakkie")&&(!Number.isFinite(gvm)||gvm<=0))||(heavy&&!prdp)|| (prdp&&(!["goods","passengers","dangerous_goods"].includes(prdpCategory)||!validDate(prdpExpiry)||Date.parse(prdpExpiry+"T00:00:00")<=Date.now())))return reply(400,{error:"valid_prdp_details_required"});
  const proofDate=text(form.get("proof_of_address_date"),10),discExpiry=text(form.get("vehicle_disc_expiry"),10),insuranceExpiry=text(form.get("insurance_expiry"),10);
  if(!validDate(discExpiry)||Date.parse(discExpiry+"T00:00:00")<=Date.now())return reply(400,{error:"vehicle_licence_disc_must_be_current"});if(insuranceExpiry&&(!validDate(insuranceExpiry)||Date.parse(insuranceExpiry+"T00:00:00")<=Date.now()))return reply(400,{error:"vehicle_insurance_expiry_must_be_future"});
  if(!validDate(proofDate)||Date.now()-Date.parse(proofDate+"T00:00:00")>92*86400000||Date.parse(proofDate+"T00:00:00")>Date.now())return reply(400,{error:"proof_of_residence_must_be_under_three_months_old"});
@@ -146,7 +146,7 @@ if(!["sa_citizen","foreign_national"].includes(identityType))return reply(400,{e
   const {error:profileSaveError}=await db.from("driver_profiles").update({
    verification_status:"pending",onboarding_status:"pending_review",can_go_online:false,is_online:false,availability_status:"offline",
    phone,license_expiry:licenceExpiry,
-   vehicle_type:vehicleType==="motorbike"?"bike":vehicleType==="truck"?"truck":vehicleType==="hatchback_sedan"?"car":"van",
+   vehicle_type:vehicleType==="motorbike"?"bike":vehicleType==="light_commercial"?"van":vehicleType==="one_ton_bakkie"||vehicleType==="bakkie_panel_van"?"bakkie":vehicleType==="truck"||vehicleType==="closed_truck"?"truck":vehicleType==="hatchback_sedan"?"car":"van",
    vehicle_registration:plate.toUpperCase(),identity_type:identityType,identity_number_encrypted:null,
    passport_number_encrypted:null,sa_id_number_aesgcm:idCipher,passport_number_aesgcm:passportCipher,account_number_aesgcm:accountCipher,sa_id_hash:saIdHash,identity_last4:identityType==="sa_citizen"?idNumber.slice(-4):passport.slice(-4),
    licence_code:licenceCode,prdp_holder:prdp,prdp_category:prdp?prdpCategory:null,prdp_expiry:prdp?prdpExpiry:null,
