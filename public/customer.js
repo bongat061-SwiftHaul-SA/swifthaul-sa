@@ -366,7 +366,7 @@ previewLoad();
 
 function updatePaymentOptions(){
   const distance=currentQuote?.route.distance;
-  const cash=Number.isFinite(distance)&&distance<12000;
+  const cash=false;
   const counter=Number.isFinite(distance)&&distance<24000;
   document.getElementById('cash-payment-option').disabled=!cash;
   if(form.elements.payment_method.value==='cash'&&!cash)form.elements.payment_method.value='card';
@@ -378,7 +378,7 @@ function updatePaymentOptions(){
   form.elements.counter_offer.disabled=!show;form.elements.counter_offer.required=show;
   if(!show)form.elements.counter_offer.value='';
   updateBookButton();
-  document.getElementById('payment-eligibility').textContent=!currentQuote?'Calculate a route to check cash and counteroffer eligibility.':(cash?'Paystack or cash payment is available.':'Paystack payment is available; cash is unavailable for this distance.')+(counter?' You may submit an optional counteroffer independently of your payment method.':' Counteroffers are available only on routes below 24 km.');
+  document.getElementById('payment-eligibility').textContent=!currentQuote?'Calculate a route to check cash and counteroffer eligibility.':'Paystack online payment is available. Cash is currently paused while the Admin-managed collection workflow is prepared.'+(counter?' You may submit an optional counteroffer independently of your payment method.':' Counteroffers are available only on routes below 24 km.');
 }
 document.getElementById('make-counter-offer').addEventListener('change',updatePaymentOptions);
 form.elements.counter_offer.addEventListener('input',updateBookButton);
