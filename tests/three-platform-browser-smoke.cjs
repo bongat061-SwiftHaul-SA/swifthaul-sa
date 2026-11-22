@@ -168,7 +168,7 @@ const server = http.createServer((req,res)=>{
           // Continue is now the wizard's primary action; it validates both Plus Codes before advancing.
         });
         await page.locator('[data-wizard-next]').click();
-        await page.waitForFunction(()=>document.querySelector('[data-wizard-count]')?.textContent==='STEP 2 OF 4');
+        await page.waitForFunction(()=>document.querySelector('[data-wizard-count]')?.textContent==='STEP 2 OF 3');
         assert.equal(await page.locator('#cargo-estimator').count(),1,'Customer booking must retain the parcel and vehicle estimator');
         assert.equal(await page.locator('#cargo-vehicle-tag').count(),1,'Customer booking must show its recommended vehicle selector');
         assert.equal(await page.locator('#quote-breakdown .fare-row').count(),5,'Customer quote must show the call-out fee, distance rate, distance charge, free loading window and VAT status');
@@ -179,7 +179,7 @@ const server = http.createServer((req,res)=>{
         await page.locator('[name="width"]').fill('20');
         await page.locator('[name="height"]').fill('15');
         await next.click();
-        await page.waitForFunction(()=>document.querySelector('[data-wizard-count]')?.textContent==='STEP 3 OF 4');
+        await page.waitForFunction(()=>document.querySelector('[data-wizard-count]')?.textContent==='STEP 3 OF 3');
         assert.equal(await page.locator('#booking-form .booking-step').nth(2).isVisible(),true,'Customer must advance to assistance and protection');
         assert.equal(await page.locator('#assistance-options').isHidden(),true,'Optional assistance details must start collapsed');
         await page.locator('#assistance-requested').check();
@@ -188,18 +188,14 @@ const server = http.createServer((req,res)=>{
         assert.match(await page.locator('#assistance-price').textContent(),/Calculate your vehicle quote first/,'Assistance pricing must not be presented as final before a live quote');
         await page.locator('#assistance-requested').uncheck();
         assert.equal(await page.locator('#assistance-options').isHidden(),true,'Deselecting assistance must collapse its options');
-        await next.click();
-        await page.waitForTimeout(100);
-        assert.equal(await page.locator('[data-wizard-count]').textContent(),'STEP 3 OF 4','Protection acknowledgement must be required before review');
         await page.locator('#booking-terms-accepted').check();
-        await next.click();
-        await page.waitForFunction(()=>document.querySelector('[data-wizard-count]')?.textContent==='STEP 4 OF 4');
-        assert.equal(await page.locator('#booking-form .booking-step').nth(3).isVisible(),true,'Customer must advance to final review');
+        assert.equal(await page.locator('[data-wizard-count]').textContent(),'STEP 3 OF 3','Protection acknowledgement belongs to the final review step');
+        assert.equal(await page.locator('#booking-form .booking-step').nth(2).isVisible(),true,'Customer must show the final review step');
         assert.match(await page.locator('[data-review-pickup]').textContent(),/Main Road/,'Review must show the entered pickup');
         assert.match(await page.locator('[data-review-dropoff]').textContent(),/Rivonia Road/,'Review must show the entered drop-off');
         assert.equal(await page.locator('#submit').isDisabled(),true,'Guest preview must not submit a live booking');
         await page.locator('[data-wizard-back]').click();
-        await page.waitForFunction(()=>document.querySelector('[data-wizard-count]')?.textContent==='STEP 3 OF 4');
+        await page.waitForFunction(()=>document.querySelector('[data-wizard-count]')?.textContent==='STEP 2 OF 3');
         await page.locator('#exit-guest').click();
         await page.locator('#auth-screen').waitFor({state:'visible'});
       }
