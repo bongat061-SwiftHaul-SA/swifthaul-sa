@@ -77,8 +77,15 @@ Deno.serve(async(req:Request)=>{
  const plate=text(form.get("registration_plate"),20),year=Number(text(form.get("vehicle_year"),4));
  const idNumber=text(form.get("id_number"),13),dob=text(form.get("date_of_birth"),10),passport=text(form.get("passport_number"),30),trn=text(form.get("traffic_register_number"),30);
  const prdp=["on","true"].includes(text(form.get("prdp_holder"),5)),gvm=Number(text(form.get("vehicle_gvm_kg"),8)),prdpCategory=text(form.get("prdp_category"),30),prdpExpiry=text(form.get("prdp_expiry"),10);
- const requiredFiles=identityType==="sa_citizen"?["id_front","id_back","profile_selfie"]:["passport","work_permit"];
- requiredFiles.push("licence_front","licence_back","vehicle_licence_disc","proof_of_address","enatis_certificate");
+ const identityFiles=[...form.getAll("identity_documents")].filter((v):v is File=>v instanceof File&&v.size>0),drivingFiles=[...form.getAll("driving_documents")].filter((v):v is File=>v instanceof File&&v.size>0),vehicleFiles=[...form.getAll("vehicle_documents")].filter((v):v is File=>v instanceof File&&v.size>0),addressFiles=[...form.getAll("proof_of_address_document")].filter((v):v is File=>v instanceof File&&v.size>0);
+ const includeInsurance=text(form.get("vehicle_insurance_included"),5)==="on",includeLease=text(form.get("fleet_lease_agreement_included"),5)==="on";
+ const identityTypes=identityType==="sa_citizen"?["id_front","id_back","profile_selfie"]:["passport","work_permit"],drivingTypes=prdp?["licence_front","licence_back","prdp"]:["licence_front","licence_back"],vehicleTypes=["vehicle_licence_disc","enatis_certificate",...(includeInsurance?["vehicle_insurance"]:[]),...(includeLease?["fleet_lease_agreement"]:[])];
+ if(identityFiles.length!==identityTypes.length)return reply(400,{error:"identity_documents_upload_count_or_order_invalid"});
+ if(drivingFiles.length!==drivingTypes.length)return reply(400,{error:"driving_documents_upload_count_or_order_invalid"});
+ if(vehicleFiles.length!==vehicleTypes.length)return reply(400,{error:"vehicle_documents_upload_count_or_order_invalid"});
+ if(addressFiles.length!==1)return reply(400,{error:"proof_of_address_document_required"});
+ const documentUploads=[...identityTypes.map((type,i)=>[type,identityFiles[i]] as [string,File]),...drivingTypes.map((type,i)=>[type,drivingFiles[i]] as [string,File]),...vehicleTypes.map((type,i)=>[type,vehicleFiles[i]] as [string,File]),["proof_of_address",addressFiles[0]] as [string,File]];
+ for(const [type,file] of documentUploads){if(file.size>10485760||!allowed.has(file.type))return reply(400,{error:"missing_or_invalid_document_"+type});}
 if(!["sa_citizen","foreign_national"].includes(identityType))return reply(400,{error:"valid_identity_type_required"});
  if(text(form.get("background_consent"),5)!=="on")return reply(400,{error:"background_verification_consent_required"});
  if(email.toLowerCase()!==(u.user.email||"").toLowerCase())return reply(400,{error:"application_email_must_match_signed_in_account"});
@@ -95,22 +102,18 @@ if(!["sa_citizen","foreign_national"].includes(identityType))return reply(400,{e
  if((vehicleType==="bakkie_panel_van"&&(!Number.isFinite(gvm)||gvm<=0))||(heavy&&!prdp)|| (prdp&&(!["goods","passengers","dangerous_goods"].includes(prdpCategory)||!validDate(prdpExpiry)||Date.parse(prdpExpiry+"T00:00:00")<=Date.now())))return reply(400,{error:"valid_prdp_details_required"});
  const proofDate=text(form.get("proof_of_address_date"),10),discExpiry=text(form.get("vehicle_disc_expiry"),10),insuranceExpiry=text(form.get("insurance_expiry"),10);
  if(!validDate(discExpiry)||Date.parse(discExpiry+"T00:00:00")<=Date.now())return reply(400,{error:"vehicle_licence_disc_must_be_current"});if(insuranceExpiry&&(!validDate(insuranceExpiry)||Date.parse(insuranceExpiry+"T00:00:00")<=Date.now()))return reply(400,{error:"vehicle_insurance_expiry_must_be_future"});
- const enatisFile=form.get("enatis_certificate"),leaseFile=form.get("fleet_lease_agreement");
- if(!(enatisFile instanceof File&&enatisFile.size>0))return reply(400,{error:"enatis_certificate_required"});
+ const leaseFile=includeLease?vehicleFiles[vehicleTypes.indexOf("fleet_lease_agreement")]:null;
  if(!validDate(proofDate)||Date.now()-Date.parse(proofDate+"T00:00:00")>92*86400000||Date.parse(proofDate+"T00:00:00")>Date.now())return reply(400,{error:"proof_of_residence_must_be_under_three_months_old"});
  if(identityType==="foreign_national"&&(!validDate(text(form.get("passport_expiry"),10))||Date.parse(text(form.get("passport_expiry"),10)+"T00:00:00")<=Date.now()||!validDate(text(form.get("work_permit_expiry"),10))||Date.parse(text(form.get("work_permit_expiry"),10)+"T00:00:00")<=Date.now()))return reply(400,{error:"passport_and_work_permit_must_be_current"});
  if(!validDate(text(form.get("registration_document_expiry"),10))||Date.parse(text(form.get("registration_document_expiry"),10)+"T00:00:00")<=Date.now())return reply(400,{error:"registration_document_must_be_current"});
- for(const t of requiredFiles){const f=form.get(t);if(!(f instanceof File)||f.size<1||f.size>10485760||!allowed.has(f.type))return reply(400,{error:"missing_or_invalid_document_"+t});}
- if(prdp){const f=form.get("prdp");if(!(f instanceof File)||f.size<1||f.size>10485760||!allowed.has(f.type))return reply(400,{error:"prdp_document_required"});}
  if(text(form.get("background_consent"),5)!=="on")return reply(400,{error:"background_verification_consent_required"});
  const bank=text(form.get("bank_name"),40),holder=text(form.get("account_holder"),120),account=text(form.get("account_number"),30),accountType=text(form.get("account_type"),20);
  if(!["FNB","Nedbank","Standard Bank","Absa","Capitec","TymeBank"].includes(bank)||!holder||!/^\d{6,20}$/.test(account)||!["current","cheque","savings","transmission","other"].includes(accountType))return reply(400,{error:"valid_sa_bank_details_required"});
- const files=[...requiredFiles,...(form.get("enatis_certificate") instanceof File&&(form.get("enatis_certificate") as File).size>0?["enatis_certificate"]:[]),...(form.get("fleet_lease_agreement") instanceof File&&(form.get("fleet_lease_agreement") as File).size>0?["fleet_lease_agreement"]:[]),...(prdp?["prdp"]:[])],uploaded:string[]=[];
+ const files=documentUploads,uploaded:string[]=[];
  const expiryFor=(type:string):string|null=>({licence_front:licenceExpiry,licence_back:licenceExpiry,vehicle_licence_disc:discExpiry,vehicle_insurance:insuranceExpiry||null,prdp:prdpExpiry,passport:text(form.get("passport_expiry"),10)||null,work_permit:text(form.get("work_permit_expiry"),10)||null,enatis_certificate:text(form.get("registration_document_expiry"),10)||null,fleet_lease_agreement:text(form.get("registration_document_expiry"),10)||null}[type]??null);
  const issuedFor=(type:string):string|null=>type==="proof_of_address"?proofDate:null;
  try{
-  for(const type of files){
-   const file=form.get(type) as File;
+  for(const [type,file] of files){
    const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,"_").slice(-100)||"document";
    const path=u.user.id+"/onboarding/"+type+"/"+crypto.randomUUID()+"-"+safe;
    const {error}=await db.storage.from("driver-application-documents").upload(path,new Uint8Array(await file.arrayBuffer()),{contentType:file.type,upsert:false});
