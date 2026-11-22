@@ -4,7 +4,7 @@
   const nav = root.querySelector('.section-links');
   if (nav) nav.innerHTML = document.body.dataset.portal === 'true'
     ? '<a href="?page=overview" data-page="overview">Overview</a><a href="?page=dispatch" data-page="dispatch">Dispatch</a><a href="?page=drivers" data-page="drivers">Drivers</a><a href="?page=refunds" data-page="refunds">Refunds</a><a href="?page=payouts" data-page="payouts">Payouts</a><a href="?page=cash-reconciliation" data-page="cash-reconciliation">Cash reconciliation</a><a href="?page=offers" data-page="offers">Delivery offers</a><a href="?page=finance" data-page="finance">Financial dashboard</a><a href="?page=paystack" data-page="paystack">Paystack balance</a><a href="?page=insurance" data-page="insurance">Insurance</a><a href="?page=insurance-claims" data-page="insurance-claims">Insurance claims</a><a href="?page=deletions" data-page="deletions">Deletion requests</a><a href="?page=notifications" data-page="notifications">Notifications</a><a href="?page=reports" data-page="reports">Reports</a><a href="?page=account" data-page="account">Account</a>'
-    : '<a href="?page=overview" data-page="overview">Home</a><a href="?page=dispatch" data-page="dispatch">Dispatch</a><a href="?page=drivers" data-page="drivers">Drivers</a>';
+    : '<a href="?page=overview" data-page="overview">Home</a><a href="?page=dispatch" data-page="dispatch">Dispatch</a><a href="?page=drivers" data-page="drivers">Drivers</a><a href="?page=tracking" data-page="tracking">Tracking</a>';
   nav?.closest('details')?.setAttribute('open','');
   const heading = root.querySelector('.page-heading h1');
   const description = root.querySelector('.page-heading .subtle');
@@ -39,6 +39,7 @@
   const pages = {
     overview: { title:'Operations overview.', description:'A company-wide snapshot of delivery activity and fleet availability.', show:['stats'] },
     dispatch: { title:'Dispatch desk.', description:'Monitor assigned deliveries and inspect planned pickup-to-drop-off routes.', show:['dispatches'] },
+    tracking: { title:'Delivery tracking.', description:'Monitor active dispatches and view live driver locations when drivers enable location sharing.', show:['dispatches'] },
     drivers: { title:'Driver management.', description:'Review driver availability, applications and verification information.', show:['drivers'] },
     refunds: { title:'Cancellations & refunds.', description:'Review customer cancellation requests and refund records.', show:['refunds'] },
     payouts: { title:'Driver payouts.', description:'Review payout requests and record completed manual EFT payments.', show:['payouts'] },
@@ -55,7 +56,7 @@
   };
   const nodes = { stats, dispatches, drivers, account, refunds, payouts, offers, finance, paystack: root.querySelector('#paystack-balance'), reports, insurance, "insurance-claims": root.querySelector("#insurance-claims-admin"), deletions: root.querySelector("#account-deletions"), notifications: root.querySelector("#notification-audit"), "signup-notifications": root.querySelector("#signup-notifications"), "cash-reconciliation": root.querySelector("#cash-reconciliation") };
   function render(key, updateUrl) {
-    const allowedPages = document.body.dataset.portal === 'true' ? Object.keys(pages) : ['overview','dispatch','drivers'];
+    const allowedPages = document.body.dataset.portal === 'true' ? Object.keys(pages) : ['overview','dispatch','drivers','tracking'];
     const selected = allowedPages.includes(key) ? key : 'overview';
     const page = pages[selected];
     Object.entries(nodes).forEach(([name,node]) => { if(node) node.hidden = !page.show.includes(name); });
