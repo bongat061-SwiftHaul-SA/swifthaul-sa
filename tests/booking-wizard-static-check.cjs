@@ -33,7 +33,7 @@ assert(locationPicker.includes('new google.maps.Polyline'), 'Google Maps provide
 
 assert(locationPicker.includes('https://www.google.com/maps/search/?api=1&query=') && locationPicker.includes('encodeURIComponent(query)'), 'Google Maps verification must use keyless Maps URLs with encoded address or saved coordinates.');
 assert(locationPicker.includes('Google Maps opened in a new tab. Return to SwiftHaul to continue your booking.'), 'Google Maps verification must preserve the booking flow and explain how to return.');
-assert(customerPages.includes("title: 'Welcome to SwiftHaul.'") && customerPages.includes("const selected = pages[key] ? key : 'home'") && customerPages.includes('customer-home-actions'), 'Signed-in customer landing must open a dedicated dashboard with separate action destinations.');
+assert(customerPages.includes("title: 'Welcome to SwiftHaul.'") && customerPages.includes("const allowedPages = body.dataset.portal === 'true' ? Object.keys(pages) : ['home','book','activity','tracking'];") && customerPages.includes('customer-home-actions'), 'Signed-in customer app must open its dedicated dashboard while the companion portal retains extended destinations.');
 assert(customerPages.includes("root.addEventListener('click'") && customerPages.includes("link.dataset.page"), 'Customer page links must use delegated in-app navigation.');
 assert(!customerShell.includes('premium-quick-actions') && !customerShell.includes('premium-main-cta'), 'Customer premium shell must not inject duplicate dashboard actions.');
 assert(!customerShell.includes('nav.innerHTML ='), 'Customer premium shell must not replace page links after listeners attach.');
