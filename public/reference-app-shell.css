@@ -157,3 +157,53 @@ body[data-app] .live-location-control button+button{
 @media(prefers-reduced-motion:reduce){
   body[data-app] *,body[data-app] *::before,body[data-app] *::after{scroll-behavior:auto!important;transition:none!important}
 }
+
+/* Final signed-in workspace overrides: intentionally more specific than legacy layers. */
+body[data-app] #workspace .panel,body[data-app] #workspace .stat,
+body[data-app] #workspace .empty,body[data-app] #workspace .help,
+body[data-app] #workspace .quote-result,body[data-app] #workspace .settings-card,
+body[data-app] #workspace .operations-card,body[data-app] #workspace .management-card{
+  background:linear-gradient(155deg,#242a34,#12161d)!important;
+  color:#f5f6f8!important;border:1px solid #343b46!important;
+  border-radius:18px!important;box-shadow:0 12px 30px #0004!important;
+}
+body[data-app] #workspace button,body[data-app] #workspace .button,
+body[data-app] #workspace input[type=button]{
+  background:#242a34!important;color:#f5f6f8!important;
+  border:1px solid #424b59!important;border-radius:12px!important;
+}
+body[data-app] #workspace button:hover:not(:disabled),
+body[data-app] #workspace input[type=button]:hover{
+  background:#303844!important;border-color:#ffc400!important;
+}
+body[data-app] #workspace button.primary,body[data-app] #workspace .primary,
+body[data-app] #workspace button[type=submit],
+body[data-app] #workspace input[type=submit],
+body[data-app] #workspace form>button[type=submit]{
+  background:linear-gradient(180deg,#ffd21a,#f2b600)!important;
+  color:#101216!important;border-color:#ffc400!important;
+  font-weight:850!important;box-shadow:0 7px 18px #ffc40020!important;
+}
+body[data-app] #workspace .section-links a[aria-current=page],
+body[data-app] #workspace .section-links a.is-active,
+body[data-app] #workspace .workspace-navigation .section-links a[aria-current=page],
+body[data-app] #workspace .workspace-navigation .section-links a.is-active{
+  background:#ffc400!important;border-color:#ffc400!important;color:#101216!important;
+}
+body[data-app] #workspace .workspace-navigation .section-links a{
+  background:#242a34!important;border-color:#424b59!important;color:#d2d8e1!important;
+}
+body[data-app] #workspace .workspace-navigation .section-links a:hover{
+  border-color:#ffc400!important;color:#fff!important;
+}
+body[data-app] #workspace input,body[data-app] #workspace select,
+body[data-app] #workspace textarea{
+  background:#10151c!important;color:#f7f8fa!important;border-color:#424b59!important;
+}
+body[data-app] #workspace .page-heading h1,
+body[data-app] #workspace h1,body[data-app] #workspace h2,
+body[data-app] #workspace h3,body[data-app] #workspace h4,
+body[data-app] #workspace strong{color:#fff!important}
+body[data-app] #workspace .eyebrow,
+body[data-app] #workspace .section-number{color:#ffc400!important}
+body[data-app] #workspace a:not(.section-links a){color:#ffc400}
