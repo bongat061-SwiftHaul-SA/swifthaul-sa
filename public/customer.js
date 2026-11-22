@@ -344,19 +344,19 @@ function previewLoad(){
   let vehicle=form.querySelector('[name=vehicle]:checked')?.value||'light_commercial';
   let text='Enter estimated weight and packed dimensions for a suggested vehicle class.';
   let chargeable=0,label='';
-  const labels={light_commercial:'Mini-Van / Light Commercial',one_ton_bakkie:'1-Ton Bakkie / Panel Van',closed_truck:'1.5-Ton – 3-Ton Closed Truck',freight_truck:'4-Ton – 8-Ton Freight Truck'};
-  const capacities={light_commercial:600,one_ton_bakkie:1000,closed_truck:3000,freight_truck:8000};
+  const labels={light_commercial:'Motorbike',one_ton_bakkie:'1-Ton Bakkie / Panel Van',closed_truck:'H1 Truck',freight_truck:'Freight Truck (future option · unavailable)'};
+  const capacities={light_commercial:0,one_ton_bakkie:1000,closed_truck:3000,freight_truck:8000};
   if(values.every(value=>Number.isFinite(value)&&value>0)){
     const [estimatedWeight,length,width,height]=values,volumetric=length*width*height/5000;
     chargeable=Math.max(estimatedWeight,volumetric);
     if(chargeable>8000)text='Above 8,000 chargeable kg: contact dispatch for a manual quote.';
     else{
-      const recommendation=chargeable<=600?'light_commercial':chargeable<=1000?'one_ton_bakkie':chargeable<=3000?'closed_truck':'freight_truck';
+      const recommendation=chargeable<=1000?'one_ton_bakkie':chargeable<=3000?'closed_truck':null;
       label=labels[vehicle];
       text='Suggested vehicle: '+labels[recommendation]+' · estimated payload '+mass(chargeable)+' kg. Your choice: '+label+'. '+(capacities[vehicle]<chargeable?'Your selected vehicle is below the estimated payload, so Company Admin must approve its suitability before dispatch.':'You may choose any listed class; Admin can verify vehicle fit and access during booking review.');
     }
   }
-  form.querySelectorAll('[name=vehicle]').forEach(input=>{input.disabled=false;});
+  form.querySelectorAll('[name=vehicle]').forEach(input=>{input.disabled=input.value==='freight_truck';});
   const summary=document.getElementById('load-summary');
   if(summary)summary.textContent=text;
   window.swiftHaulUpdateVehiclePreview?.(vehicle,chargeable,label);
