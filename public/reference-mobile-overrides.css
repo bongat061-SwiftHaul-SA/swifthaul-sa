@@ -1,0 +1,137 @@
+/* SwiftHaul SA — faithful mobile app shell based on the preserved three-phone reference.
+   Visual layer only: no app logic, routes, API calls, pricing or data are changed.
+   Silver replaces the reference's gold accent per the approved styling change. */
+:root{
+  --ref-bg:#080a0e;--ref-surface:#151a22;--ref-card:#202630;--ref-line:#343d49;
+  --ref-text:#f5f6f8;--ref-muted:#aeb8c6;--ref-silver:#c0c7d1;--ref-silver-hi:#e5e9ef;
+}
+html:has(body[data-app]){background:var(--ref-bg);color-scheme:dark}
+body[data-app="customer"],body[data-app="driver"],body[data-app="company"]{
+  background:var(--ref-bg)!important;color:var(--ref-text)!important;
+  font-family:"Plus Jakarta Sans",Inter,system-ui,sans-serif!important;
+}
+body[data-app] #workspace{min-height:100dvh;background:var(--ref-bg)!important;color:var(--ref-text)!important}
+body[data-app] #workspace>.topbar{
+  min-height:68px;padding:12px 18px!important;background:#0d1118!important;
+  border-bottom:1px solid var(--ref-line)!important;box-shadow:0 8px 24px #0005!important;
+}
+body[data-app] .wordmark{font-size:16px!important;font-weight:850!important;letter-spacing:.02em}
+body[data-app] .wordmark span{color:var(--ref-silver-hi)!important}
+body[data-app] .app-tag{color:var(--ref-silver)!important;border-color:#566170!important}
+body[data-app] #workspace .page{
+  width:min(100% - 32px,1040px);max-width:1040px;margin:0 auto;
+  padding:24px 0 48px!important;
+}
+body[data-app] #workspace .page-heading{margin:0 0 18px!important;gap:8px}
+body[data-app] #workspace .page-heading h1{
+  color:#fff!important;font-size:clamp(25px,4vw,34px)!important;
+  line-height:1.12!important;letter-spacing:-.045em!important;
+}
+body[data-app] #workspace .page-heading .eyebrow,
+body[data-app] #workspace .section-number{color:var(--ref-silver)!important}
+body[data-app] #workspace .page-heading>p,
+body[data-app] #workspace .subtle{color:var(--ref-muted)!important}
+body[data-app] #workspace .panel,body[data-app] #workspace .stat,
+body[data-app] #workspace .empty,body[data-app] #workspace .help,
+body[data-app] #workspace .operations-card,body[data-app] #workspace .management-card{
+  background:linear-gradient(155deg,#242b36,#141920)!important;
+  border:1px solid var(--ref-line)!important;border-radius:18px!important;
+  color:var(--ref-text)!important;box-shadow:0 10px 28px #0004!important;
+}
+body[data-app] #workspace .panel h2,body[data-app] #workspace .panel h3{color:#fff!important}
+body[data-app] #workspace button.primary,body[data-app] #workspace .primary{
+  background:linear-gradient(180deg,var(--ref-silver-hi),#aeb8c4)!important;
+  color:#11151b!important;border:1px solid var(--ref-silver)!important;
+  border-radius:14px!important;font-weight:850!important;
+}
+body[data-app] #workspace a{color:var(--ref-silver-hi)}
+body[data-app] #workspace .workspace-navigation{
+  border:1px solid var(--ref-line)!important;border-radius:15px!important;
+  background:#111720!important;
+}
+body[data-app] #workspace .section-links a[aria-current="page"],
+body[data-app] #workspace .section-links a.is-active{
+  background:var(--ref-silver-hi)!important;color:#11151b!important;
+}
+/* Customer hero and quick-action tiles echo the left reference phone. */
+body[data-app="customer"] #workspace .customer-home-intro{
+  min-height:245px;border-radius:22px!important;
+  background:linear-gradient(110deg,#101720eF,#10172088),linear-gradient(145deg,#303b49,#121820)!important;
+  border:1px solid #3b4654!important;
+}
+body[data-app="customer"] #workspace .customer-book-cta{
+  background:linear-gradient(180deg,var(--ref-silver-hi),#b9c2cc)!important;
+  border-color:var(--ref-silver-hi)!important;color:#11151b!important;
+}
+body[data-app="customer"] #workspace .customer-home-actions>a{
+  background:linear-gradient(155deg,#242b36,#141920)!important;
+  border:1px solid var(--ref-line)!important;border-radius:16px!important;
+}
+body[data-app="customer"] #workspace .customer-action-icon{
+  color:var(--ref-silver-hi)!important;border-color:#596575!important;
+}
+/* Driver profile, earnings, compact metrics and delivery cards echo the centre phone. */
+body[data-app="driver"] #workspace .driver-home-hero{
+  border-radius:20px!important;background:linear-gradient(145deg,#242b36,#121820)!important;
+  border:1px solid #3a4552!important;
+}
+body[data-app="driver"] #workspace .driver-home-hero h2,
+body[data-app="driver"] #workspace .driver-home-hero strong{color:#fff!important}
+body[data-app="driver"] #workspace .driver-home-hero a{color:var(--ref-silver-hi)!important;border-color:var(--ref-silver)!important}
+body[data-app="driver"] #workspace .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px!important}
+body[data-app="driver"] #workspace .stat{min-width:0;text-align:left}
+body[data-app="driver"] #workspace .stat strong{font-size:clamp(18px,3vw,25px)!important;color:#fff!important}
+body[data-app="driver"] #workspace .operations-list>*,
+body[data-app="driver"] #workspace .order,
+body[data-app="driver"] #workspace .delivery-card{border-radius:16px!important}
+/* Company Admin shares the same compact visual language without hiding operations. */
+body[data-app="company"] #workspace .page{max-width:1120px}
+body[data-app="company"] #workspace .environment-banner{
+  background:#1b222c!important;color:var(--ref-silver-hi)!important;border-color:var(--ref-line)!important;
+}
+body[data-app="company"] #workspace .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px!important}
+body[data-app="company"] #workspace .stat{min-width:0}
+@media(max-width:700px){
+  body[data-app] #workspace>.topbar{min-height:60px;padding:10px 14px!important}
+  body[data-app] #workspace .page{
+    width:min(100% - 28px,460px);padding:17px 0 calc(100px + env(safe-area-inset-bottom))!important;
+  }
+  body[data-app] #workspace .page-heading{display:block!important;margin-bottom:14px!important}
+  body[data-app] #workspace .page-heading>p{font-size:12px;line-height:1.5;margin-top:7px}
+  body[data-app] #workspace .panel{padding:15px!important;border-radius:17px!important}
+  body[data-app] #workspace .workspace-grid{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:13px!important}
+  body[data-app] #workspace .workspace-grid>*{min-width:0}
+  body[data-app] #workspace .stats{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:7px!important}
+  body[data-app] #workspace .stat{padding:11px 9px!important}
+  body[data-app] #workspace .stat span{font-size:9px!important;line-height:1.25}
+  body[data-app] #workspace .stat strong{font-size:18px!important}
+  /* Four-item phone-style bottom navigation; full section list remains accessible on desktop. */
+  body[data-app] #workspace .workspace-navigation{
+    position:fixed!important;z-index:1000!important;left:10px!important;right:10px!important;
+    bottom:calc(8px + env(safe-area-inset-bottom))!important;margin:0!important;
+    padding:8px 5px!important;border-radius:20px!important;background:#111720f5!important;
+    box-shadow:0 12px 36px #000b!important;backdrop-filter:blur(18px);
+  }
+  body[data-app] #workspace .workspace-navigation>summary{display:none!important}
+  body[data-app] #workspace .workspace-navigation:not([open])>.section-links,
+  body[data-app] #workspace .workspace-navigation[open]>.section-links{
+    display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;
+    gap:3px!important;padding:0!important;border:0!important;background:transparent!important;
+  }
+  body[data-app] #workspace .workspace-navigation .section-links a{
+    display:flex!important;align-items:center!important;justify-content:center!important;
+    min-height:46px!important;padding:6px 3px!important;text-align:center!important;
+    font-size:10px!important;font-weight:750!important;border-radius:12px!important;
+    white-space:normal!important;
+  }
+  body[data-app="customer"] #workspace .workspace-navigation .section-links a:nth-child(n+5){display:none!important}
+  body[data-app="driver"] #workspace .workspace-navigation .section-links a:nth-child(n+5){display:none!important}
+  body[data-app="company"] #workspace .workspace-navigation .section-links a:nth-child(n+5){display:none!important}
+  body[data-app] #workspace .footer{padding-bottom:110px!important}
+  body[data-app="customer"] #workspace .customer-home-intro{min-height:220px;padding:20px!important}
+  body[data-app="customer"] #workspace .customer-home-actions{gap:8px!important}
+  body[data-app="customer"] #workspace .customer-home-actions>a{min-height:76px;padding:11px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ body[data-app] #workspace *,body[data-app] #workspace *:before,body[data-app] #workspace *:after{transition:none!important;animation:none!important}
+}
