@@ -55,7 +55,9 @@
   };
   const nodes = { stats, dispatches, drivers, account, refunds, payouts, offers, finance, paystack: root.querySelector('#paystack-balance'), reports, insurance, "insurance-claims": root.querySelector("#insurance-claims-admin"), deletions: root.querySelector("#account-deletions"), notifications: root.querySelector("#notification-audit"), "signup-notifications": root.querySelector("#signup-notifications"), "cash-reconciliation": root.querySelector("#cash-reconciliation") };
   function render(key, updateUrl) {
-    const page = pages[key] || pages.overview;
+    const allowedPages = document.body.dataset.portal === 'true' ? Object.keys(pages) : ['overview','dispatch','drivers'];
+    const selected = allowedPages.includes(key) ? key : 'overview';
+    const page = pages[selected];
     Object.entries(nodes).forEach(([name,node]) => { if(node) node.hidden = !page.show.includes(name); });
     if (grid) grid.hidden = ![dispatches,drivers,account].some(node => node && !node.hidden);
     const aside = grid?.querySelector('aside');
@@ -65,12 +67,12 @@
     const navCurrent = nav?.closest('.workspace-navigation')?.querySelector('[data-nav-current]');
     if (navCurrent) navCurrent.textContent = page.title.replace(/\.$/,'');
     nav?.querySelectorAll('a').forEach(link => {
-      const selected = link.dataset.page === key;
-      link.classList.toggle('is-active',selected);
-      if(selected) link.setAttribute('aria-current','page'); else link.removeAttribute('aria-current');
+      const active = link.dataset.page === selected;
+      link.classList.toggle('is-active',active);
+      if(active) link.setAttribute('aria-current','page'); else link.removeAttribute('aria-current');
     });
     document.title = 'SwiftHaul SA · Company · ' + page.title.replace(/\.$/,'');
-    if(updateUrl) history.pushState({page:key},'', '?page='+encodeURIComponent(key));
+    if(updateUrl) history.pushState({page:selected},'', '?page='+encodeURIComponent(selected));
     nav?.closest('details')?.setAttribute('open','');
     window.scrollTo({top:0,behavior:'instant'});
   }
