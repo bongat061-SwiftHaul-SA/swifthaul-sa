@@ -14,6 +14,7 @@ on:
       - "scripts/build-pages.cjs"
       - "scripts/prepare-sites.cjs"
       - "tests/three-platform-browser-smoke.cjs"
+      - "tests/driver-onboarding-dispatch-browser-smoke.cjs"
       - "tests/customer-booking-session-regression.cjs"
       - "tests/booking-wizard-static-check.cjs"
       - ".github/workflows/validate-three-platform-browser.yml"
