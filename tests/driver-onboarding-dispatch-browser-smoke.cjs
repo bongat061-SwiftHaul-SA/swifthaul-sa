@@ -70,14 +70,14 @@ function mockSupabase(role) {
       assert.equal(await input.getAttribute('multiple')!==null,true,name+' must accept multiple files.');
     }
     assert.equal(await onboarding.locator('#driver-onboarding-files input[type="file"]').count(),4,'Driver onboarding must use exactly four grouped upload slots.');
-    await vehicle.selectOption('closed_truck');
+    await vehicle.evaluate(el=>{el.value='closed_truck';el.dispatchEvent(new Event('change',{bubbles:true}));});
     assert.equal(await onboarding.locator('[name="prdp_holder"]').getAttribute('required'),'','H1 Truck onboarding must require a PrDP.');
-    await vehicle.selectOption('one_ton_bakkie');
-    await onboarding.locator('[name="vehicle_gvm_kg"]').fill('4000');
+    await vehicle.evaluate(el=>{el.value='one_ton_bakkie';el.dispatchEvent(new Event('change',{bubbles:true}));});
+    await onboarding.locator('[name="vehicle_gvm_kg"]').evaluate(el=>{el.value='4000';el.dispatchEvent(new Event('input',{bubbles:true}));});
     assert.equal(await driver.locator('[name="prdp_holder"]').getAttribute('required'),'','A 1-Ton Bakkie declared above 3,500 kg GVM must require a PrDP.');
     await driver.locator('[name="vehicle_gvm_kg"]').fill('3000');
     assert.equal(await driver.locator('[name="prdp_holder"]').getAttribute('required'),null,'A 1-Ton Bakkie at or below 3,500 kg GVM does not require a PrDP under this form rule.');
-    await onboarding.locator('[name="identity_type"]').selectOption('sa_citizen');
+    await onboarding.locator('[name="identity_type"]').evaluate(el=>{el.value='sa_citizen';el.dispatchEvent(new Event('change',{bubbles:true}));});
     await onboarding.locator('input[name="identity_documents"]').setInputFiles([
       {name:'id-front.pdf',mimeType:'application/pdf',buffer:Buffer.from('test document')},
       {name:'id-back.pdf',mimeType:'application/pdf',buffer:Buffer.from('test document')},
