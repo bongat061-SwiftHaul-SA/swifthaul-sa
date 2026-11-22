@@ -12,7 +12,8 @@ const reply = (status: number, body: Record<string, unknown>) =>
   new Response(JSON.stringify(body), { status, headers: cors });
 const validText = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0 && v.length <= 500;
 const tariffClasses = {
-  light_commercial: { label: "Motorbike", capacity: 0, callOutFee: 60, distanceRate: 8.5, freeMinutes: 20, vehicle: "van" },
+  motorbike: { label: "Motorbike", capacity: 0, callOutFee: 60, distanceRate: 8.5, freeMinutes: 20, vehicle: "van" },
+  light_commercial: { label: "Mini-Van / Light Commercial", capacity: 600, callOutFee: 150, distanceRate: 8.5, freeMinutes: 20, vehicle: "van" },
   one_ton_bakkie: { label: "1-Ton Bakkie / Panel Van", capacity: 1000, callOutFee: 250, distanceRate: 11, freeMinutes: 30, vehicle: "van" },
   closed_truck: { label: "H1 Truck", capacity: 3000, callOutFee: 450, distanceRate: 16.5, freeMinutes: 45, vehicle: "truck" },
   freight_truck: { label: "4-Ton – 8-Ton Freight Truck", capacity: 8000, callOutFee: 850, distanceRate: 24, freeMinutes: 60, vehicle: "truck" },
@@ -41,7 +42,7 @@ function calculateLoad(input: unknown, selectedClass: unknown) {
   return {
     weight, length, width, height, volumetric, chargeable, vehicle: tariff.vehicle,
     vehicleClass, truckClass: tariff.label, recommendedVehicleClass: recommendation,
-    capacity: tariff.capacity, requiresAdminVehicleApproval: vehicleClass === "light_commercial" || chargeable > tariff.capacity,
+    capacity: tariff.capacity, requiresAdminVehicleApproval: vehicleClass === "motorbike" || chargeable > tariff.capacity,
     callOutFee: tariff.callOutFee, distanceRate: tariff.distanceRate,
     freeMinutes: tariff.freeMinutes, divisor: 5000
   };
