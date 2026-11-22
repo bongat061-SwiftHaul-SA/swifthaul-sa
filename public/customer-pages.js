@@ -14,6 +14,16 @@
   const description = root.querySelector('.page-heading .subtle');
   const navCurrent = nav?.closest('.workspace-navigation')?.querySelector('[data-nav-current]');
   if (!nav || !grid || !bookingColumn || !activityColumn) return;
+  if (body.dataset.portal !== 'true') {
+    const footer = document.querySelector('#workspace .footer');
+    if (footer && !footer.querySelector('.app-website-link')) {
+      const link = document.createElement('a');
+      link.className = 'app-website-link';
+      link.href = '../customer-portal/';
+      link.textContent = 'Open Customer Website Platform';
+      footer.append(link);
+    }
+  }
 
   nav.closest('details')?.setAttribute('open','');
   nav.innerHTML = body.dataset.portal === 'true'
