@@ -6,7 +6,7 @@ const isNetlifyStagingPreview = typeof window !== 'undefined' &&
   window.location.hostname !== 'swifthaul-sa.netlify.app';
 const isGitHubPagesStagingPreview = typeof window !== 'undefined' &&
   window.location.hostname === 'bongat061-swifthaul-sa.github.io' &&
-  window.location.pathname.startsWith('/swifthaul-sa-preview/');
+  window.location.pathname.startsWith('/swifthaul-sa-staging/');
 const isLocalBrowserPreview = typeof window !== 'undefined' && (window.location.protocol === 'file:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 const isStagingPreview = isNetlifyStagingPreview || isGitHubPagesStagingPreview || isLocalBrowserPreview;
 export const SUPABASE_URL = isStagingPreview
