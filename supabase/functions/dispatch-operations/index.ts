@@ -39,7 +39,7 @@ Deno.serve(async (req: Request) => {
 
   if (req.method === "GET") {
     let query = admin.from("customer_bookings")
-      .select("waybill,pickup,dropoff,recipient,vehicle,load,price,payment_method,paid_at,completed_at,scheduled_at,return_address,status,driver_user_id,created_at,failure_reason,arrived_pickup_at,arrived_dropoff_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,tracking_code")
+      .select("waybill,pickup,dropoff,recipient,vehicle,load,vehicle_suitability_status,price,payment_method,paid_at,completed_at,scheduled_at,return_address,status,driver_user_id,created_at,failure_reason,arrived_pickup_at,arrived_dropoff_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,tracking_code")
       .order("created_at", { ascending: false }).limit(100);
     if (isDriver) query = query.eq("driver_user_id", actorId);
     const { data, error } = await query;
@@ -95,10 +95,26 @@ Deno.serve(async (req: Request) => {
   if (typeof body.waybill !== "string" || body.waybill.length > 100) return reply(400, { error: "invalid_waybill" });
 
   const { data: order, error: orderError } = await admin.from("customer_bookings")
-    .select("waybill,owner_hash,recipient_phone,tracking_code,pickup,dropoff,recipient,status,driver_user_id,pin,pin_attempts,pin_locked_until,completed_at,refunded_at,arrived_pickup_at,arrived_dropoff_at,assistance_requested,assistance_status,pickup_latitude,pickup_longitude,dropoff_latitude,dropoff_longitude")
+    .select("waybill,owner_hash,recipient_phone,tracking_code,pickup,dropoff,recipient,status,driver_user_id,pin,pin_attempts,pin_locked_until,completed_at,refunded_at,arrived_pickup_at,arrived_dropoff_at,assistance_requested,assistance_status,load,vehicle_suitability_status,pickup_latitude,pickup_longitude,dropoff_latitude,dropoff_longitude")
     .eq("waybill", body.waybill).maybeSingle();
   if (orderError) return reply(500, { error: "delivery_lookup_failed" });
   if (!order) return reply(404, { error: "delivery_not_found" });
+
+  if (isDispatcher && body.action === "vehicle_suitability_decision") {
+    if (order.vehicle_suitability_status !== "pending_admin_review")
+      return reply(409, { error: "no_pending_vehicle_suitability_review" });
+    if (body.decision !== "approved" && body.decision !== "declined")
+      return reply(400, { error: "choose_approve_or_decline" });
+    const { error } = await admin.from("customer_bookings")
+      .update({ vehicle_suitability_status: body.decision }).eq("waybill", order.waybill);
+    if (error) return reply(500, { error: "vehicle_suitability_decision_save_failed" });
+    await admin.from("delivery_status_events").insert({
+      waybill: order.waybill, actor_user_id: actorId, previous_status: order.status,
+      new_status: order.status, notes: "Admin "+body.decision+" selected vehicle suitability",
+      event_data: { vehicle_suitability_status: body.decision }
+    });
+    return reply(200, { updated: true, vehicle_suitability_status: body.decision });
+  }
 
   if (isDispatcher && body.action === "assistance_decision") {
     if (!order.assistance_requested || order.assistance_status !== "requested_pending_dispatch_confirmation")
@@ -131,6 +147,8 @@ Deno.serve(async (req: Request) => {
   };
 
   if (isDispatcher && body.action === "assign") {
+    if (order.vehicle_suitability_status === "pending_admin_review" || order.vehicle_suitability_status === "declined")
+      return reply(409, { error: "vehicle_suitability_admin_approval_required" });
     if (["delivered", "failed", "cancelled"].includes(order.status) || order.refunded_at)
       return reply(409, { error: "delivery_is_closed" });
     if (typeof body.driver_id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.driver_id))
