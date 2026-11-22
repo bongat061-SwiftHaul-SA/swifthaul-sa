@@ -41,4 +41,16 @@ assert(!driverShell.includes('nav.innerHTML ='), 'Driver premium shell must not 
 assert(driverPages.includes("link.dataset.page || 'home'"), 'Driver section pages must retain their page navigation handler.');
 assert(css.includes('#booking-form .booking-step') && css.includes('background:#10151d'), 'Booking wizard must use the dark premium card layout.');
 assert(css.includes('height:390px!important') && css.includes('swift-location-sheet'), 'Route map must render as a compact preview with its floating location sheet.');
+
+const driverApplication = read('apps/driver/public/driver-application.js');
+const driverOnboarding = read('supabase/functions/driver-onboarding/index.ts');
+const dispatchOffers = read('supabase/functions/dispatch-offers/index.ts');
+assert(['motorbike','light_commercial','one_ton_bakkie','closed_truck'].every(value => html.includes('name="vehicle" value="'+value+'"')), 'Customer booking must offer Motorbike, Mini-Van / Light Commercial, 1-Ton Bakkie / Panel Van and H1 Truck.');
+assert(html.includes('R60 call-out') && html.includes('<strong>H1 Truck</strong>') && html.includes('value="freight_truck" disabled') && html.includes('Freight Truck · future option'), 'Customer tariffs must retain the R60 motorbike call-out, H1 Truck label and disabled future Freight Truck option.');
+assert(driverApplication.includes('["motorbike","Motorbike"]') && driverApplication.includes('["light_commercial","Mini-Van / Light Commercial"]') && driverApplication.includes('["one_ton_bakkie","1-Ton Bakkie / Panel Van"]') && driverApplication.includes('["closed_truck","H1 Truck"]'), 'Driver onboarding vehicle classes must match the active customer fleet options.');
+assert(['identity_documents','driving_documents','vehicle_documents','proof_of_address_document'].every(name => driverApplication.includes('groupedFileField(') && driverApplication.includes('"'+name+'"')), 'Driver onboarding must retain exactly four grouped document upload slots.');
+assert(driverOnboarding.includes('"light_commercial"') && driverOnboarding.includes('"one_ton_bakkie"') && driverOnboarding.includes('"closed_truck"'), 'Driver onboarding API must accept the four active vehicle classes.');
+assert(driverOnboarding.includes('vehicleType==="light_commercial"?"van"') && driverOnboarding.includes('vehicleType==="one_ton_bakkie"||vehicleType==="bakkie_panel_van"?"bakkie"'), 'Driver onboarding must store Mini-Van and 1-Ton Bakkie in their distinct dispatch vehicle categories.');
+assert(dispatchOffers.includes('v.includes("light_commercial")||v==="van"') && dispatchOffers.includes('v==="bike"') && dispatchOffers.includes('v==="bakkie"'), 'Dispatch matching must normalize motorbike, light-commercial and bakkie driver profiles to their corresponding customer booking classes.');
+
 console.log('Customer booking wizard and in-app navigation checks passed.');
