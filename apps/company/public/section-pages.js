@@ -2,6 +2,8 @@
   const root = document.querySelector('body[data-app="company"] #workspace .page');
   if (!root) return;
   const nav = root.querySelector('.section-links');
+  if (nav) nav.innerHTML = '<a href="?page=overview" data-page="overview">Home</a><a href="?page=dispatch" data-page="dispatch">Dispatch</a><a href="?page=drivers" data-page="drivers">Drivers</a><a href="?page=finance" data-page="finance">Finance</a><a href="?page=payouts" data-page="payouts">Payouts</a><a href="?page=refunds" data-page="refunds">Refunds</a><a href="?page=offers" data-page="offers">Offers</a><a href="?page=insurance" data-page="insurance">Insurance</a><a href="?page=reports" data-page="reports">Reports</a><a href="?page=account" data-page="account">Account</a><a href="?page=notifications" data-page="notifications">Notifications</a><a href="?page=deletions" data-page="deletions">Deletion requests</a><a href="?page=cash-reconciliation" data-page="cash-reconciliation">Cash</a><a href="?page=paystack" data-page="paystack">Paystack</a>';
+  nav?.closest('details')?.setAttribute('open','');
   const heading = root.querySelector('.page-heading h1');
   const description = root.querySelector('.page-heading .subtle');
   const stats = root.querySelector('.stats');
@@ -67,7 +69,7 @@
     });
     document.title = 'SwiftHaul SA · Company · ' + page.title.replace(/\.$/,'');
     if(updateUrl) history.pushState({page:key},'', '?page='+encodeURIComponent(key));
-    nav?.closest('details')?.removeAttribute('open');
+    nav?.closest('details')?.setAttribute('open','');
     window.scrollTo({top:0,behavior:'instant'});
   }
   nav?.querySelectorAll('a').forEach(link => link.addEventListener('click',event => {
