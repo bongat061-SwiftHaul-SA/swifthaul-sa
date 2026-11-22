@@ -2,7 +2,7 @@
   if (document.body.dataset.app !== "driver") return;
   const activeStatuses = new Set(["accepted", "picked_up", "in_transit"]);
   const style = document.createElement("style");
-  style.textContent = ".live-location-control{margin-top:14px;padding:14px;border:1px solid #dbe7df;border-radius:16px;background:#f7faf7}.live-location-control strong{display:block;color:#173d31}.live-location-control p{font-size:13px;color:#60746a;line-height:1.5}.live-location-control button{margin:4px 8px 0 0;padding:10px 14px;border:0;border-radius:10px;background:#173d31;color:#fff;font-weight:700}.live-location-control button:disabled{opacity:.5}.live-location-control button+button{background:#e8eeea;color:#173d31}";
+  style.textContent = ".live-location-control{margin-top:14px;padding:14px;border:1px solid #dce4ee;border-radius:16px;background:#ffffff}.live-location-control strong{display:block;color:#0b1f3a}.live-location-control p{font-size:13px;color:#66758a;line-height:1.5}.live-location-control button{margin:4px 8px 0 0;padding:10px 14px;border:0;border-radius:10px;background:#0b1f3a;color:#fff;font-weight:700}.live-location-control button:disabled{opacity:.5}.live-location-control button+button{background:#eef3f9;color:#0b1f3a}";
   document.head.append(style);
   const watches = new Map();
   let enabled = false;
