@@ -463,3 +463,21 @@ body[data-app="customer"] #workspace .customer-mode-switch{
  body[data-app="driver"] #workspace .driver-profile-card{grid-template-columns:42px minmax(0,1fr)!important}
  body[data-app="driver"] #workspace .driver-profile-action{grid-column:2;justify-self:start}
 }
+
+
+/* Navigation stays in normal document flow; it must never cover app content. */
+@media(max-width:700px){
+  body[data-app] #workspace .workspace-navigation{
+    position:relative!important;inset:auto!important;z-index:auto!important;
+    width:100%!important;margin:16px 0 20px!important;
+    box-shadow:none!important;backdrop-filter:none!important;
+  }
+  body[data-app] #workspace .page{
+    padding-bottom:28px!important;
+  }
+  body[data-app] #workspace .footer{padding-bottom:24px!important}
+}
+/* App workspaces are intentionally independent; hide any legacy cross-app switch links. */
+body[data-app] #workspace .platform-mode-switch,
+body[data-app] #workspace .customer-mode-switch,
+body[data-app] #workspace .driver-mode-switch{display:none!important}
