@@ -59,25 +59,26 @@ function mockSupabase(role) {
     await driver.goto(base+'/driver/',{waitUntil:'domcontentloaded'});
     await driver.waitForFunction(()=>document.body.dataset.authState==='authenticated');
     await driver.locator('#driver-onboarding-form').waitFor({state:'attached',timeout:15000});
-    const vehicle=driver.locator('#driver-onboarding-form [name="vehicle_type"]');
+    const onboarding=driver.locator('#driver-onboarding-form');
+    const vehicle=onboarding.locator('[name="vehicle_type"]');
     const options=await vehicle.locator('option').evaluateAll(nodes=>nodes.map(n=>({value:n.value,label:n.textContent.trim()})).filter(n=>n.value));
     assert.deepEqual(options.map(o=>o.value),['motorbike','light_commercial','one_ton_bakkie','closed_truck'],'Driver application vehicle choices must match the active customer fleet. Actual: '+JSON.stringify(options));
     const groups=['identity_documents','driving_documents','vehicle_documents','proof_of_address_document'];
     for(const name of groups){
-      const input=driver.locator('input[name="'+name+'"]');
+      const input=onboarding.locator('input[name="'+name+'"]');
       assert.equal(await input.count(),1,'One '+name+' upload slot must exist.');
       assert.equal(await input.getAttribute('multiple')!==null,true,name+' must accept multiple files.');
     }
-    assert.equal(await driver.locator('#driver-onboarding-files input[type="file"]').count(),4,'Driver onboarding must use exactly four grouped upload slots.');
+    assert.equal(await onboarding.locator('#driver-onboarding-files input[type="file"]').count(),4,'Driver onboarding must use exactly four grouped upload slots.');
     await vehicle.selectOption('closed_truck');
-    assert.equal(await driver.locator('[name="prdp_holder"]').getAttribute('required'),'','H1 Truck onboarding must require a PrDP.');
+    assert.equal(await onboarding.locator('[name="prdp_holder"]').getAttribute('required'),'','H1 Truck onboarding must require a PrDP.');
     await vehicle.selectOption('one_ton_bakkie');
-    await driver.locator('[name="vehicle_gvm_kg"]').fill('4000');
+    await onboarding.locator('[name="vehicle_gvm_kg"]').fill('4000');
     assert.equal(await driver.locator('[name="prdp_holder"]').getAttribute('required'),'','A 1-Ton Bakkie declared above 3,500 kg GVM must require a PrDP.');
     await driver.locator('[name="vehicle_gvm_kg"]').fill('3000');
     assert.equal(await driver.locator('[name="prdp_holder"]').getAttribute('required'),null,'A 1-Ton Bakkie at or below 3,500 kg GVM does not require a PrDP under this form rule.');
-    await driver.locator('[name="identity_type"]').selectOption('sa_citizen');
-    await driver.locator('input[name="identity_documents"]').setInputFiles([
+    await onboarding.locator('[name="identity_type"]').selectOption('sa_citizen');
+    await onboarding.locator('input[name="identity_documents"]').setInputFiles([
       {name:'id-front.pdf',mimeType:'application/pdf',buffer:Buffer.from('test document')},
       {name:'id-back.pdf',mimeType:'application/pdf',buffer:Buffer.from('test document')},
       {name:'profile-selfie.pdf',mimeType:'application/pdf',buffer:Buffer.from('test document')}
@@ -86,7 +87,7 @@ function mockSupabase(role) {
     assert.equal(identityTypes.length,3,'Each identity file must have its own document type selector.');
     assert.ok(identityTypes.every(values=>['id_front','id_back','profile_selfie'].every(value=>values.includes(value))),'South African identity files must map to ID front, ID back and profile selfie.');
     await driver.locator('[name="prdp_holder"]').check();
-    await driver.locator('input[name="driving_documents"]').setInputFiles([
+    await onboarding.locator('input[name="driving_documents"]').setInputFiles([
       {name:'licence-front.pdf',mimeType:'application/pdf',buffer:Buffer.from('test document')},
       {name:'licence-back.pdf',mimeType:'application/pdf',buffer:Buffer.from('test document')},
       {name:'prdp.pdf',mimeType:'application/pdf',buffer:Buffer.from('test document')}
