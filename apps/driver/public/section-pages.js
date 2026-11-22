@@ -3,6 +3,16 @@
   const root = document.querySelector('body[data-app="driver"] #workspace .page');
   if (!root) return;
   const nav = root.querySelector('.section-links');
+  if (body.dataset.portal !== 'true') {
+    const footer = document.querySelector('#workspace .footer');
+    if (footer && !footer.querySelector('.app-website-link')) {
+      const link = document.createElement('a');
+      link.className = 'app-website-link';
+      link.href = '../driver-portal/';
+      link.textContent = 'Open Driver Website Platform';
+      footer.append(link);
+    }
+  }
   if (nav) nav.innerHTML = document.body.dataset.portal === 'true'
     ? '<a href="?page=home" data-page="home">Home</a><a href="?page=deliveries" data-page="deliveries">Deliveries</a><a href="?page=availability" data-page="availability">Availability</a><a href="?page=history" data-page="history">History</a><a href="?page=earnings" data-page="earnings">Earnings</a><a href="?page=payouts" data-page="payouts">Payouts</a><a href="?page=cash" data-page="cash">Cash &amp; deposits</a><a href="?page=membership" data-page="membership">Premium</a><a href="?page=insurance-claims" data-page="insurance-claims">Insurance</a><a href="?page=account" data-page="account">Profile</a><a href="map.html">Driver map</a>'
     : '<a href="?page=home" data-page="home">Home</a><a href="?page=deliveries" data-page="deliveries">Deliveries</a><a href="?page=availability" data-page="availability">Availability</a><a href="?page=account" data-page="account">Profile</a>';
