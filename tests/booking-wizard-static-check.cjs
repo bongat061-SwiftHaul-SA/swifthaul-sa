@@ -52,5 +52,6 @@ assert(['identity_documents','driving_documents','vehicle_documents','proof_of_a
 assert(driverOnboarding.includes('"light_commercial"') && driverOnboarding.includes('"one_ton_bakkie"') && driverOnboarding.includes('"closed_truck"'), 'Driver onboarding API must accept the four active vehicle classes.');
 assert(driverOnboarding.includes('vehicleType==="light_commercial"?"van"') && driverOnboarding.includes('vehicleType==="one_ton_bakkie"||vehicleType==="bakkie_panel_van"?"bakkie"'), 'Driver onboarding must store Mini-Van and 1-Ton Bakkie in their distinct dispatch vehicle categories.');
 assert(dispatchOffers.includes('v.includes("light_commercial")||v==="van"') && dispatchOffers.includes('v==="bike"') && dispatchOffers.includes('v==="bakkie"'), 'Dispatch matching must normalize motorbike, light-commercial and bakkie driver profiles to their corresponding customer booking classes.');
+assert(driverApplication.includes('const vehicleRequiresPrdp=vehicle.value==="closed_truck"||(vehicle.value==="one_ton_bakkie"&&gvmValue>3500)') && driverApplication.includes('prdp.required=vehicleRequiresPrdp'), 'Driver onboarding must require PrDP for H1 trucks and 1-Ton Bakkies above 3,500 kg GVM.');
 
 console.log('Customer booking wizard and in-app navigation checks passed.');
