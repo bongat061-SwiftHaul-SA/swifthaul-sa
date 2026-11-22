@@ -20,6 +20,7 @@ const companyOperations = read('apps/company/public/operations.js');
 const companyDrivers = read('apps/company/public/driver-admin.js');
 const companyRefunds = read('apps/company/public/refund-admin.js');
 const dispatchOperations = read('supabase/functions/dispatch-operations/index.ts');
+const driverCashOperations = read('supabase/functions/driver-cash-operations/index.ts');
 
 for (const field of ['pickup_plus_code','pickup_geohash','dropoff_plus_code','dropoff_geohash']) {
   assert.ok(customer.includes(field + ':data.' + field), 'Customer booking submission must send ' + field + '.');
@@ -43,6 +44,7 @@ assert.match(prepareSites, /if \(!fs\.existsSync\(target\)\) fs\.copyFileSync/, 
 assert.ok(prepareSites.includes("const chatSource = path.join(root, 'public', 'order-chat.js')") && prepareSites.includes("const chatTarget = path.join(publicDir, 'order-chat.js')"), 'Driver bundle must include the shared delivery chat asset.');
 for (const [name, source] of [['operations',companyOperations],['driver admin',companyDrivers],['refund admin',companyRefunds]]) assert.ok(source.startsWith('(() => {') && source.trimEnd().endsWith('})();'), 'Company ' + name + ' script must isolate its top-level variables.');
 assert.ok(dispatchOperations.includes('const vehicleKey=/motor|bike/i.test(driver.vehicle_type||"")?"motorbike"') && dispatchOperations.includes('"bakkie/panel van"') && dispatchOperations.includes('"truck"'), 'Dispatch capacity classification must recognise the persisted bike, van and truck driver vehicle types.');
+assert.ok(driverCashOperations.indexOf('await userClient.auth.getUser(token)') < driverCashOperations.indexOf('admin.from("user_profiles")') && driverCashOperations.includes('admin.from("user_profiles")'), 'Driver cash role lookup must use the server client only after validating the signed-in bearer token.');
 assert.equal(indexHtml, customerHtml, 'Customer directory default and dedicated entry must remain identical.');
 const wizardJs = 'booking-wizard.js?v=customer-simple-three-step-20261122';
 const wizardCss = 'booking-wizard.css?v=delivery-tracking-reference-style-final-20261122';
