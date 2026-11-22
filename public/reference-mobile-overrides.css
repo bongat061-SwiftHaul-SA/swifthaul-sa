@@ -504,3 +504,19 @@ body[data-app="driver"][data-driver-page="home"] #workspace #account-details{dis
   #workspace .section-links > .nav-more{flex:0 0 auto}
   #workspace .section-links > .nav-more > summary{white-space:nowrap}
 }
+
+/* Keep the companion website portal one tap away without adding a fifth mobile nav item. */
+body[data-app] #workspace .footer .app-website-link{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:fit-content;max-width:100%;margin:18px auto 0;padding:12px 18px;
+  border:1px solid #687586;border-radius:14px;
+  background:linear-gradient(145deg,#252e3a,#151b23);
+  color:#e5e9ef!important;text-decoration:none;font-size:12px;font-weight:850;
+  text-align:center;box-shadow:0 8px 22px #0004;
+}
+body[data-app] #workspace .footer .app-website-link:after{content:'↗';font-size:15px;color:#c0c7d1}
+body[data-app] #workspace .footer .app-website-link:focus-visible{outline:2px solid #e5e9ef;outline-offset:3px}
+@media(max-width:700px){
+  body[data-app] #workspace .footer{display:flex;flex-direction:column;align-items:center;gap:8px;padding-bottom:125px!important}
+  body[data-app] #workspace .footer .app-website-link{width:100%;min-height:48px;margin-top:10px}
+}
