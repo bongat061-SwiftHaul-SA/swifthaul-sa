@@ -11,7 +11,7 @@ const auth = read('public/auth.js');
 const portal = read('supabase/functions/customer-portal/index.ts');
 const cargo = read('public/cargo-estimator.js');
 const customerHtml = read('public/customer.html');
-const indexHtml = read('public/index.html');
+const indexHtml = read('dist/customer/index.html');
 const estimatorTheme = read('public/customer-simple-estimator.css');
 const bookingWizardTheme = read('public/booking-wizard.css');
 const prepareSites = read('scripts/prepare-sites.cjs');
@@ -42,8 +42,8 @@ assert.match(prepareSites, /if \(!fs\.existsSync\(target\)\) fs\.copyFileSync/, 
 assert.ok(prepareSites.includes("const chatSource = path.join(root, 'public', 'order-chat.js')") && prepareSites.includes("const chatTarget = path.join(publicDir, 'order-chat.js')"), 'Driver bundle must include the shared delivery chat asset.');
 for (const [name, source] of [['operations',companyOperations],['driver admin',companyDrivers],['refund admin',companyRefunds]]) assert.ok(source.startsWith('(() => {') && source.trimEnd().endsWith('})();'), 'Company ' + name + ' script must isolate its top-level variables.');
 assert.equal(indexHtml, customerHtml, 'Customer directory default and dedicated entry must remain identical.');
-const wizardJs = 'booking-wizard.js?v=20261114-customer-wizard-flow4';
-const wizardCss = 'booking-wizard.css?v=20261114-map-address-continue-v2';
+const wizardJs = 'booking-wizard.js?v=customer-simple-three-step-20261122';
+const wizardCss = 'booking-wizard.css?v=delivery-tracking-reference-style-final-20261122';
 for (const [name, html] of [['Customer default entry', indexHtml], ['Customer dedicated entry', customerHtml]]) {
   assert.ok(html.includes(wizardJs), name + ' must load the current booking wizard script.');
   assert.ok(html.includes(wizardCss), name + ' must load the current booking wizard stylesheet.');
