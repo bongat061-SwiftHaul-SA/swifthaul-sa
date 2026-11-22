@@ -186,7 +186,7 @@ const server = http.createServer((req,res)=>{
         await page.locator('#assistance-requested').check();
         assert.equal(await page.locator('#assistance-options').isVisible(),true,'Selecting assistance must reveal duration choices');
         await page.locator('#assistance-blocks').selectOption('2');
-        assert.match(await page.locator('#assistance-price').textContent(),/Calculate your vehicle quote first/,'Assistance pricing must not be presented as final before a live quote');
+        assert.match(await page.locator('#assistance-price').textContent(),/^Free · 60 minutes requested · subject to Company Admin confirmation\.$/,'Assistance must remain a free, unconfirmed request until Company Admin approval');
         await page.locator('#assistance-requested').uncheck();
         assert.equal(await page.locator('#assistance-options').isHidden(),true,'Deselecting assistance must collapse its options');
         await page.locator('#booking-terms-accepted').check();
