@@ -353,7 +353,8 @@ function previewLoad(){
     else{
       const recommendation=chargeable<=1000?'one_ton_bakkie':chargeable<=3000?'closed_truck':null;
       label=labels[vehicle];
-      text='Suggested vehicle: '+labels[recommendation]+' · estimated payload '+mass(chargeable)+' kg. Your choice: '+label+'. '+(capacities[vehicle]<chargeable?'Your selected vehicle is below the estimated payload, so Company Admin must approve its suitability before dispatch.':'You may choose any listed class; Admin can verify vehicle fit and access during booking review.');
+      if(!recommendation)text='Above 3,000 chargeable kg: contact dispatch for a manual quote. Freight Truck is not available yet.';
+      else text='Suggested vehicle: '+labels[recommendation]+' · estimated payload '+mass(chargeable)+' kg. Your choice: '+label+'. '+(vehicle==='light_commercial'?'Motorbike selections always require Company Admin suitability approval before dispatch.':capacities[vehicle]<chargeable?'Your selected vehicle is below the estimated payload, so Company Admin must approve its suitability before dispatch.':'You may choose any available class; Admin can verify vehicle fit and access during booking review.');
     }
   }
   form.querySelectorAll('[name=vehicle]').forEach(input=>{input.disabled=input.value==='freight_truck';});
