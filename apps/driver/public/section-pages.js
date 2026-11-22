@@ -1,4 +1,5 @@
 (() => {
+  const body = document.body;
   const root = document.querySelector('body[data-app="driver"] #workspace .page');
   if (!root) return;
   const nav = root.querySelector('.section-links');
