@@ -1,6 +1,6 @@
 /* SwiftHaul SA — shared three-app reference design layer.
    Presentation only: preserves existing markup, routes, auth, Supabase calls,
-   dispatch, payment and GPS behaviour. Near-black / charcoal / gold palette. */
+   dispatch, payment and GPS behaviour. Near-black / charcoal / silver palette. */
 :root{
   color-scheme:dark;
   --sh-ref-bg:#080a0e;
@@ -9,8 +9,8 @@
   --sh-ref-line:#343b46;
   --sh-ref-text:#f5f6f8;
   --sh-ref-muted:#b7c0cc;
-  --sh-ref-gold:#ffc400;
-  --sh-ref-gold-bright:#ffd21a;
+  --sh-ref-silver:#c0c7d1;
+  --sh-ref-silver-bright:#e5e9ef;
 }
 html:has(body[data-app]){background:var(--sh-ref-bg);color-scheme:dark}
 body[data-app="customer"],body[data-app="driver"],body[data-app="company"]{
@@ -31,7 +31,7 @@ body[data-app] #auth-screen>.topbar{
 body[data-app] .wordmark,body[data-app] .wordmark span{color:#fff!important}
 body[data-app] .app-tag{color:#d0d5dd!important;border-color:#46505e!important}
 body[data-app] .eyebrow,body[data-app] .section-number,
-body[data-app] .story-bottom{color:var(--sh-ref-gold)!important}
+body[data-app] .story-bottom{color:var(--sh-ref-silver)!important}
 body[data-app] .page-heading h1,
 body[data-app] .panel h2,body[data-app] .panel h3,
 body[data-app] #workspace h1,body[data-app] #workspace h2,
@@ -57,26 +57,26 @@ body[data-app] input,body[data-app] select,body[data-app] textarea{
 }
 body[data-app] input::placeholder,body[data-app] textarea::placeholder{color:#8994a3!important}
 body[data-app] input:focus,body[data-app] select:focus,body[data-app] textarea:focus{
-  outline:2px solid var(--sh-ref-gold)!important;outline-offset:2px;
+  outline:2px solid var(--sh-ref-silver)!important;outline-offset:2px;
 }
 body[data-app] button,body[data-app] .quiet{
   background:#242a34!important;color:#f5f6f8!important;
   border:1px solid #424b59!important;border-radius:12px!important;
 }
 body[data-app] button:hover,body[data-app] .quiet:hover{
-  background:#303844!important;border-color:var(--sh-ref-gold)!important;
+  background:#303844!important;border-color:var(--sh-ref-silver)!important;
 }
 body[data-app] .primary,body[data-app] button.primary,
 body[data-app] input[type=submit]{
-  background:linear-gradient(180deg,var(--sh-ref-gold-bright),#f2b600)!important;
-  color:#101216!important;border:1px solid var(--sh-ref-gold)!important;
+  background:linear-gradient(180deg,var(--sh-ref-silver-bright),#aeb7c2)!important;
+  color:#101216!important;border:1px solid var(--sh-ref-silver)!important;
   border-radius:13px!important;font-weight:850!important;
-  box-shadow:0 7px 18px #ffc40020!important;
+  box-shadow:0 7px 18px #c0c7d120!important;
 }
 body[data-app] .primary:hover,body[data-app] button.primary:hover{
-  background:#ffcf16!important;color:#101216!important;
+  background:#e5e9ef!important;color:#101216!important;
 }
-body[data-app] a{color:var(--sh-ref-gold)}
+body[data-app] a{color:var(--sh-ref-silver)}
 body[data-app] .section-links,
 body[data-app] .workspace-navigation{
   background:#10151c!important;border:1px solid var(--sh-ref-line)!important;
@@ -90,7 +90,7 @@ body[data-app] .section-links a{
 body[data-app] .section-links a[aria-current=page],
 body[data-app] .section-links a.is-active,
 body[data-app] .section-links a:first-child{
-  background:var(--sh-ref-gold)!important;color:#101216!important;
+  background:var(--sh-ref-silver)!important;color:#101216!important;
 }
 body[data-app] .workspace-navigation summary{color:#f5f6f8!important}
 body[data-app] .vehicle>span{
@@ -98,9 +98,9 @@ body[data-app] .vehicle>span{
   color:#f5f6f8!important;border-radius:14px!important;
 }
 body[data-app] .vehicle input:checked+span{
-  background:#302a16!important;border:2px solid var(--sh-ref-gold)!important;
+  background:#302a16!important;border:2px solid var(--sh-ref-silver)!important;
 }
-body[data-app] .vehicle i{color:var(--sh-ref-gold)!important}
+body[data-app] .vehicle i{color:var(--sh-ref-silver)!important}
 body[data-app] .accent-panel,
 body[data-app] .driver-home-hero{
   background:linear-gradient(145deg,#242a34,#11161e)!important;
@@ -112,7 +112,7 @@ body[data-app] .accent-panel strong{color:#fff!important}
 body[data-app] .accent-panel p,
 body[data-app] .driver-home-hero p{color:#d0d6df!important}
 body[data-app] .driver-home-hero a{
-  color:var(--sh-ref-gold)!important;border-color:var(--sh-ref-gold)!important;
+  color:var(--sh-ref-silver)!important;border-color:var(--sh-ref-silver)!important;
 }
 body[data-app] .environment-banner,
 body[data-app] .guest-banner{
@@ -128,18 +128,18 @@ body[data-app] .auth-story{
   background:linear-gradient(145deg,#080a0e,#242a34 72%,#343b46)!important;
   color:#f5f6f8!important;
 }
-body[data-app] .auth-story .eyebrow{color:var(--sh-ref-gold)!important}
+body[data-app] .auth-story .eyebrow{color:var(--sh-ref-silver)!important}
 body[data-app] .auth-story p{color:#d0d6df!important}
 body[data-app] .auth-panel{border-color:var(--sh-ref-line)!important}
-body[data-app] .status-message{color:var(--sh-ref-gold)!important}
+body[data-app] .status-message{color:var(--sh-ref-silver)!important}
 body[data-app] .live-location-control,
 body[data-app] .customer-tracking-intro{
   background:linear-gradient(155deg,#242a34,#12161d)!important;
   border-color:var(--sh-ref-line)!important;color:#f5f6f8!important;
 }
 body[data-app] .live-location-control button:first-of-type{
-  background:linear-gradient(180deg,var(--sh-ref-gold-bright),#f2b600)!important;
-  color:#101216!important;border-color:var(--sh-ref-gold)!important;
+  background:linear-gradient(180deg,var(--sh-ref-silver-bright),#aeb7c2)!important;
+  color:#101216!important;border-color:var(--sh-ref-silver)!important;
 }
 body[data-app] .live-location-control button+button{
   background:#242a34!important;color:#fff!important;border-color:#424b59!important;
@@ -174,27 +174,27 @@ body[data-app] #workspace input[type=button]{
 }
 body[data-app] #workspace button:hover:not(:disabled),
 body[data-app] #workspace input[type=button]:hover{
-  background:#303844!important;border-color:#ffc400!important;
+  background:#303844!important;border-color:#c0c7d1!important;
 }
 body[data-app] #workspace button.primary,body[data-app] #workspace .primary,
 body[data-app] #workspace button[type=submit],
 body[data-app] #workspace input[type=submit],
 body[data-app] #workspace form>button[type=submit]{
-  background:linear-gradient(180deg,#ffd21a,#f2b600)!important;
-  color:#101216!important;border-color:#ffc400!important;
-  font-weight:850!important;box-shadow:0 7px 18px #ffc40020!important;
+  background:linear-gradient(180deg,#e5e9ef,#aeb7c2)!important;
+  color:#101216!important;border-color:#c0c7d1!important;
+  font-weight:850!important;box-shadow:0 7px 18px #c0c7d120!important;
 }
 body[data-app] #workspace .section-links a[aria-current=page],
 body[data-app] #workspace .section-links a.is-active,
 body[data-app] #workspace .workspace-navigation .section-links a[aria-current=page],
 body[data-app] #workspace .workspace-navigation .section-links a.is-active{
-  background:#ffc400!important;border-color:#ffc400!important;color:#101216!important;
+  background:#c0c7d1!important;border-color:#c0c7d1!important;color:#101216!important;
 }
 body[data-app] #workspace .workspace-navigation .section-links a{
   background:#242a34!important;border-color:#424b59!important;color:#d2d8e1!important;
 }
 body[data-app] #workspace .workspace-navigation .section-links a:hover{
-  border-color:#ffc400!important;color:#fff!important;
+  border-color:#c0c7d1!important;color:#fff!important;
 }
 body[data-app] #workspace input,body[data-app] #workspace select,
 body[data-app] #workspace textarea{
@@ -205,8 +205,8 @@ body[data-app] #workspace h1,body[data-app] #workspace h2,
 body[data-app] #workspace h3,body[data-app] #workspace h4,
 body[data-app] #workspace strong{color:#fff!important}
 body[data-app] #workspace .eyebrow,
-body[data-app] #workspace .section-number{color:#ffc400!important}
-body[data-app] #workspace a:not(.section-links a){color:#ffc400}
+body[data-app] #workspace .section-number{color:#c0c7d1!important}
+body[data-app] #workspace a:not(.section-links a){color:#c0c7d1}
 
 /* Mobile app navigation: fixed thumb-friendly tab rail, all existing routes retained. */
 @media(max-width:700px){
@@ -247,14 +247,14 @@ body[data-app] #workspace a:not(.section-links a){color:#ffc400}
   }
   body[data-app] #workspace .workspace-navigation .section-links a[aria-current=page],
   body[data-app] #workspace .workspace-navigation .section-links a.is-active{
-    background:#ffc400!important;border-color:#ffc400!important;
-    color:#101216!important;box-shadow:0 4px 14px #ffc40028!important;
+    background:#c0c7d1!important;border-color:#c0c7d1!important;
+    color:#101216!important;box-shadow:0 4px 14px #c0c7d128!important;
   }
   body[data-app] #workspace .workspace-navigation .section-links a:focus-visible{
     outline:2px solid #fff!important;outline-offset:2px!important;
   }
   body[data-app] #workspace .workspace-navigation .section-links a:hover{
-    border-color:#ffc400!important;
+    border-color:#c0c7d1!important;
   }
   body[data-app] #workspace .footer{padding-bottom:calc(94px + env(safe-area-inset-bottom))!important}
 }
@@ -264,7 +264,7 @@ body[data-app] #workspace a:not(.section-links a){color:#ffc400}
   }
   body[data-app] #workspace .workspace-navigation .section-links a[aria-current=page],
   body[data-app] #workspace .workspace-navigation .section-links a.is-active{
-    background:#ffc400!important;color:#101216!important;
+    background:#c0c7d1!important;color:#101216!important;
   }
 }
 
@@ -281,7 +281,7 @@ body[data-app="customer"] #booking-form>h2{
   padding-bottom:13px;border-bottom:1px solid #3a424e;
 }
 body[data-app="customer"] #booking-form .section-number{
-  color:#ffc400!important;font-variant-numeric:tabular-nums;
+  color:#c0c7d1!important;font-variant-numeric:tabular-nums;
 }
 body[data-app="customer"] #booking-form .field{
   display:grid;gap:7px!important;margin:0!important;
@@ -297,7 +297,7 @@ body[data-app="customer"] #booking-form fieldset{
   background:#171d25!important;
 }
 body[data-app="customer"] #booking-form legend{
-  padding:0 7px!important;color:#ffc400!important;letter-spacing:.01em;
+  padding:0 7px!important;color:#c0c7d1!important;letter-spacing:.01em;
 }
 body[data-app="customer"] #booking-form .load-grid{
   display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
@@ -320,8 +320,8 @@ body[data-app="customer"] #booking-form .vehicle>span{
   border:1px solid #424b59!important;border-radius:14px!important;
 }
 body[data-app="customer"] #booking-form .vehicle input:checked+span{
-  background:linear-gradient(155deg,#332b12,#201d16)!important;
-  border:2px solid #ffc400!important;box-shadow:0 0 0 2px #ffc4001a!important;
+  background:linear-gradient(155deg,#303844,#242a34)!important;
+  border:2px solid #c0c7d1!important;box-shadow:0 0 0 2px #c0c7d11a!important;
 }
 body[data-app="customer"] #booking-form .vehicle strong{
   color:#fff!important;font-size:15px!important;
@@ -331,10 +331,10 @@ body[data-app="customer"] #booking-form .vehicle small{
 }
 body[data-app="customer"] #quote-result{
   padding:18px!important;background:linear-gradient(155deg,#292f39,#151a22)!important;
-  border:1px solid #55503a!important;border-radius:18px!important;
+  border:1px solid #515b68!important;border-radius:18px!important;
 }
 body[data-app="customer"] #quote-result h3{
-  color:#ffc400!important;margin-top:0!important;
+  color:#c0c7d1!important;margin-top:0!important;
 }
 body[data-app="customer"] #quote-result .quote-totals{
   display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important;
@@ -344,7 +344,7 @@ body[data-app="customer"] #quote-result .quote-totals>div{
   border-radius:13px!important;background:#11161e!important;
 }
 body[data-app="customer"] #quote-result #quote-price{
-  display:block;color:#ffc400!important;font-size:clamp(24px,5vw,32px)!important;
+  display:block;color:#c0c7d1!important;font-size:clamp(24px,5vw,32px)!important;
   font-weight:900!important;letter-spacing:-.7px;
 }
 body[data-app="customer"] #quote-result .fare-row{
@@ -363,7 +363,7 @@ body[data-app="driver"] #workspace .driver-home-hero{
   border-radius:20px!important;
 }
 body[data-app="driver"] #workspace .driver-home-kicker{
-  color:#ffc400!important;letter-spacing:.12em!important;font-weight:850!important;
+  color:#c0c7d1!important;letter-spacing:.12em!important;font-weight:850!important;
 }
 body[data-app="driver"] #workspace .driver-home-hero h2{
   max-width:620px;font-size:clamp(25px,4vw,38px)!important;
@@ -372,15 +372,15 @@ body[data-app="driver"] #workspace .driver-home-hero h2{
 body[data-app="driver"] #workspace .driver-home-mark{
   flex:0 0 104px!important;width:104px!important;height:104px!important;
   display:grid;place-content:center;text-align:center!important;
-  border:1px solid #ffc40066!important;border-radius:50%!important;
-  background:radial-gradient(circle,#3a3118,#171d25 68%)!important;
-  color:#ffc400!important;
+  border:1px solid #c0c7d166!important;border-radius:50%!important;
+  background:radial-gradient(circle,#303844,#171d25 68%)!important;
+  color:#c0c7d1!important;
 }
 body[data-app="driver"] #workspace .driver-home-mark>span{
   font-size:38px!important;line-height:1!important;
 }
 body[data-app="driver"] #workspace .stats .stat{
-  border-top:2px solid #ffc400!important;
+  border-top:2px solid #c0c7d1!important;
 }
 body[data-app="driver"] #workspace .stats .stat strong{
   font-size:clamp(22px,3vw,30px)!important;font-weight:900!important;
@@ -398,14 +398,14 @@ body[data-app="company"] #workspace #ordersContainer>.order{
 }
 body[data-app="company"] #workspace .operations-list h2,
 body[data-app="company"] #workspace .operations-list h3{
-  color:#ffc400!important;
+  color:#c0c7d1!important;
 }
 body[data-app="company"] #workspace .admin-quality-card{
   padding:14px!important;background:#171d25!important;
   border:1px solid #3a424e!important;border-radius:14px!important;
 }
 body[data-app="company"] #workspace .admin-quality-card strong{
-  color:#ffc400!important;
+  color:#c0c7d1!important;
 }
 /* Responsive refinements; preserve route map rendering and map controls. */
 @media(max-width:700px){
@@ -437,11 +437,11 @@ body[data-app="driver"] #workspace .live-location-control{
 body[data-app] #workspace .live-driver-view button,
 body[data-app] #workspace .live-location-control button{
   justify-self:start!important;min-height:46px!important;
-  padding:11px 17px!important;border:1px solid #ffc400!important;
+  padding:11px 17px!important;border:1px solid #c0c7d1!important;
   border-radius:12px!important;
-  background:linear-gradient(180deg,#ffd21a,#f2b600)!important;
+  background:linear-gradient(180deg,#e5e9ef,#aeb7c2)!important;
   color:#101216!important;font-weight:850!important;
-  box-shadow:0 6px 16px #ffc40020!important;
+  box-shadow:0 6px 16px #c0c7d120!important;
 }
 body[data-app] #workspace .live-location-control button+button{
   background:#242a34!important;color:#f5f6f8!important;
@@ -474,8 +474,8 @@ body[data-app] #workspace #ordersContainer .order .status{
   display:inline-flex!important;align-items:center!important;
   width:max-content!important;max-width:100%!important;
   margin:6px 0!important;padding:6px 10px!important;
-  border:1px solid #6a5720!important;border-radius:999px!important;
-  background:#302914!important;color:#ffd21a!important;
+  border:1px solid #687382!important;border-radius:999px!important;
+  background:#292f38!important;color:#e5e9ef!important;
   font-size:11px!important;font-weight:850!important;letter-spacing:.035em!important;
 }
 @media(max-width:700px){
@@ -513,9 +513,9 @@ body[data-app="driver"] #workspace .tracking-head h4{
   color:#fff!important;font-size:15px!important;font-weight:850!important;
 }
 body[data-app="driver"] #workspace .tracking-state{
-  padding:7px 11px!important;border:1px solid #6a5720!important;
-  border-radius:999px!important;background:#302914!important;
-  color:#ffd21a!important;font-size:10px!important;font-weight:850!important;
+  padding:7px 11px!important;border:1px solid #687382!important;
+  border-radius:999px!important;background:#292f38!important;
+  color:#e5e9ef!important;font-size:10px!important;font-weight:850!important;
 }
 body[data-app="driver"] #workspace .tracking-trip-sheet{
   padding:17px 18px!important;background:linear-gradient(155deg,#242a34,#12161d)!important;
@@ -525,7 +525,7 @@ body[data-app="driver"] #workspace .tracking-eta-row{
   padding-bottom:15px!important;border-bottom:1px solid #343b46!important;
 }
 body[data-app="driver"] #workspace .tracking-eta strong{
-  color:#ffc400!important;font-size:clamp(27px,6vw,34px)!important;
+  color:#c0c7d1!important;font-size:clamp(27px,6vw,34px)!important;
 }
 body[data-app="driver"] #workspace .tracking-distance strong{
   color:#fff!important;font-size:18px!important;
@@ -541,8 +541,8 @@ body[data-app="driver"] #workspace .tracking-progress-track{
   height:7px!important;background:#414955!important;border-radius:99px!important;
 }
 body[data-app="driver"] #workspace .tracking-progress-fill{
-  background:linear-gradient(90deg,#d99f00,#ffd21a)!important;
-  box-shadow:0 0 12px #ffc40055!important;
+  background:linear-gradient(90deg,#8793a2,#e5e9ef)!important;
+  box-shadow:0 0 12px #c0c7d155!important;
 }
 body[data-app="driver"] #workspace .tracking-route-labels{
   color:#d1d7df!important;font-size:10px!important;
@@ -556,8 +556,8 @@ body[data-app="driver"] #workspace .tracking-actions button{
   background:#242a34!important;color:#f5f6f8!important;
 }
 body[data-app="driver"] #workspace .tracking-actions button.primary{
-  background:linear-gradient(180deg,#ffd21a,#f2b600)!important;
-  border-color:#ffc400!important;color:#101216!important;
+  background:linear-gradient(180deg,#e5e9ef,#aeb7c2)!important;
+  border-color:#c0c7d1!important;color:#101216!important;
   font-weight:900!important;
 }
 body[data-app="driver"] #workspace .tracking-actions button:disabled{
@@ -569,7 +569,7 @@ body[data-app="driver"] #workspace .tracking-note{
 }
 body[data-app="driver"] #workspace .tracking-updated{
   display:block!important;margin-top:7px!important;
-  color:#ffd21a!important;font-size:10px!important;font-weight:750!important;
+  color:#e5e9ef!important;font-size:10px!important;font-weight:750!important;
 }
 body[data-app="driver"] #workspace .tracking-map-tools .tracking-map-tool{
   border:1px solid #424b59!important;border-radius:999px!important;
