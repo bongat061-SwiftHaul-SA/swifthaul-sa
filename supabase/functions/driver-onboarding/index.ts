@@ -79,11 +79,14 @@ Deno.serve(async(req:Request)=>{
  const prdp=["on","true"].includes(text(form.get("prdp_holder"),5)),gvm=Number(text(form.get("vehicle_gvm_kg"),8)),prdpCategory=text(form.get("prdp_category"),30),prdpExpiry=text(form.get("prdp_expiry"),10);
  const identityFiles=[...form.getAll("identity_documents")].filter((v):v is File=>v instanceof File&&v.size>0),drivingFiles=[...form.getAll("driving_documents")].filter((v):v is File=>v instanceof File&&v.size>0),vehicleFiles=[...form.getAll("vehicle_documents")].filter((v):v is File=>v instanceof File&&v.size>0),addressFiles=[...form.getAll("proof_of_address_document")].filter((v):v is File=>v instanceof File&&v.size>0);
  const includeInsurance=text(form.get("vehicle_insurance_included"),5)==="on",includeLease=text(form.get("fleet_lease_agreement_included"),5)==="on";
- const identityTypes=identityType==="sa_citizen"?["id_front","id_back","profile_selfie"]:["passport","work_permit"],drivingTypes=prdp?["licence_front","licence_back","prdp"]:["licence_front","licence_back"],vehicleTypes=["vehicle_licence_disc","enatis_certificate",...(includeInsurance?["vehicle_insurance"]:[]),...(includeLease?["fleet_lease_agreement"]:[])];
- if(identityFiles.length!==identityTypes.length)return reply(400,{error:"identity_documents_upload_count_or_order_invalid"});
- if(drivingFiles.length!==drivingTypes.length)return reply(400,{error:"driving_documents_upload_count_or_order_invalid"});
- if(vehicleFiles.length!==vehicleTypes.length)return reply(400,{error:"vehicle_documents_upload_count_or_order_invalid"});
- if(addressFiles.length!==1)return reply(400,{error:"proof_of_address_document_required"});
+ const readTypes=(key:string):string[]=>{try{const parsed=JSON.parse(text(form.get(key),2000));return Array.isArray(parsed)&&parsed.every((v:unknown)=>typeof v==="string")?parsed:[];}catch{return[];}};
+ const identityTypes=readTypes("identity_documents_types"),drivingTypes=readTypes("driving_documents_types"),vehicleTypes=readTypes("vehicle_documents_types"),addressTypes=readTypes("proof_of_address_document_types");
+ const expectedIdentity=identityType==="sa_citizen"?["id_front","id_back","profile_selfie"]:["passport","work_permit"],expectedDriving=prdp?["licence_front","licence_back","prdp"]:["licence_front","licence_back"],expectedVehicle=["vehicle_licence_disc","enatis_certificate",...(includeInsurance?["vehicle_insurance"]:[]),...(includeLease?["fleet_lease_agreement"]:[])];
+ const exactTypes=(actual:string[],expected:string[])=>actual.length===expected.length&&new Set(actual).size===actual.length&&expected.every(type=>actual.includes(type));
+ if(identityFiles.length!==identityTypes.length||!exactTypes(identityTypes,expectedIdentity))return reply(400,{error:"identity_documents_type_mapping_invalid"});
+ if(drivingFiles.length!==drivingTypes.length||!exactTypes(drivingTypes,expectedDriving))return reply(400,{error:"driving_documents_type_mapping_invalid"});
+ if(vehicleFiles.length!==vehicleTypes.length||!exactTypes(vehicleTypes,expectedVehicle))return reply(400,{error:"vehicle_documents_type_mapping_invalid"});
+ if(addressFiles.length!==1||!exactTypes(addressTypes,["proof_of_address"]))return reply(400,{error:"proof_of_address_document_required"});
  const documentUploads=[...identityTypes.map((type,i)=>[type,identityFiles[i]] as [string,File]),...drivingTypes.map((type,i)=>[type,drivingFiles[i]] as [string,File]),...vehicleTypes.map((type,i)=>[type,vehicleFiles[i]] as [string,File]),["proof_of_address",addressFiles[0]] as [string,File]];
  for(const [type,file] of documentUploads){if(file.size>10485760||!allowed.has(file.type))return reply(400,{error:"missing_or_invalid_document_"+type});}
 if(!["sa_citizen","foreign_national"].includes(identityType))return reply(400,{error:"valid_identity_type_required"});
