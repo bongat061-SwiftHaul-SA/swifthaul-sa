@@ -24,6 +24,7 @@
   home.className = 'customer-home';
   home.id = 'customer-home';
   home.innerHTML = '<div class="customer-home-intro"><div class="customer-home-copy"><span class="customer-kicker">SWIFTHAUL SA · FAST. RELIABLE. EVERYWHERE.</span><h2>Move What<br><em>Matters.</em></h2><p>Fast, reliable delivery across South Africa.</p></div><a class="customer-book-cta" href="?page=book" data-page="book"><span><small>READY WHEN YOU ARE</small><strong>▣ &nbsp; Book a Delivery</strong></span><b aria-hidden="true">→</b></a></div><div class="customer-home-actions" aria-label="Customer shortcuts"><a href="?page=tracking" data-page="tracking"><span class="customer-action-icon">⌖</span><strong>Track Delivery</strong></a><a href="?page=activity" data-page="activity"><span class="customer-action-icon">▦</span><strong>My Bookings</strong></a><a href="https://wa.me/27615083880" target="_blank" rel="noopener noreferrer"><span class="customer-action-icon">☏</span><strong>Support</strong></a><a href="?page=wallet" data-page="wallet"><span class="customer-action-icon">▤</span><strong>Payments</strong></a></div><section class="customer-active-tracking"><div class="customer-active-tracking-top"><span class="customer-kicker">LIVE TRACKING</span><a href="?page=tracking" data-page="tracking">View All →</a></div><div class="customer-live-card"><span class="customer-van-thumb">▰</span><div><strong>Track your active delivery</strong><p>Driver location and arrival estimate appear when a delivery is assigned and location sharing is active.</p></div><span class="customer-track-arrow">→</span></div></section>';;
+  if (body.dataset.portal !== 'true') home.innerHTML = home.innerHTML.replace('href="?page=wallet" data-page="wallet"', 'href="../customer-portal/?page=wallet"');
   grid.before(home);
   const trackingIntro = document.createElement('section');
   trackingIntro.className = 'customer-tracking-intro';
@@ -39,7 +40,8 @@
     account: { title: 'Your account.', description: 'Manage your profile, picture, sign-in details, PIN and preferences.', current: 'Account' }
   };
   function render(key, updateUrl) {
-    const selected = pages[key] ? key : 'home';
+    const allowedPages = body.dataset.portal === 'true' ? Object.keys(pages) : ['home','book','activity','tracking'];
+    const selected = allowedPages.includes(key) ? key : 'home';
     const page = pages[selected];
     home.hidden = selected !== 'home';
     bookingColumn.hidden = selected !== 'book';
