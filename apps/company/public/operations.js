@@ -176,8 +176,17 @@ if (app === 'driver' || app === 'company') {
     if(order.load){
       const load=order.load;
       const review=document.createElement('p');
-      review.textContent='Load review · '+String(load.truckClass||order.vehicle||'Vehicle')+' selected · estimated chargeable load '+(Number(load.chargeable)||0)+' kg · suggested '+String(load.recommendedVehicleClass||'not available').replaceAll('_',' ')+(load.requiresAdminVehicleApproval?' · ADMIN SUITABILITY APPROVAL REQUIRED':' · within estimated vehicle capacity');
+      review.textContent='Load review · '+String(load.truckClass||order.vehicle||'Vehicle')+' selected · estimated chargeable load '+(Number(load.chargeable)||0)+' kg · suggested '+String(load.recommendedVehicleClass||'not available').replaceAll('_',' ')+' · suitability: '+String(order.vehicle_suitability_status||'not_required').replaceAll('_',' ');
       card.append(review);
+      if(app==='company'&&order.vehicle_suitability_status==='pending_admin_review'){
+        const actions=document.createElement('div');actions.className='order-actions';
+        for(const [decision,label] of [['approved','Approve selected vehicle'],['declined','Decline selected vehicle']]){
+          const control=document.createElement('button');control.type='button';control.textContent=label;
+          control.addEventListener('click',async()=>{control.disabled=true;try{const result=await invoke('POST',{action:'vehicle_suitability_decision',waybill:order.waybill,decision});order.vehicle_suitability_status=result.vehicle_suitability_status;review.textContent='Vehicle suitability reviewed · '+decision;actions.remove();}catch(error){message.textContent=error.message||'Unable to save vehicle suitability decision.';control.disabled=false;}});
+          actions.append(control);
+        }
+        card.append(actions);
+      }
     }
     if(order.assistance_requested){
       const assistance=document.createElement('p');
