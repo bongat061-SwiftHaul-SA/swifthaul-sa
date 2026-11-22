@@ -3,6 +3,23 @@ import { createClient } from "npm:@supabase/supabase-js@2.49.1";
 const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, apikey, content-type, x-client-info","Access-Control-Allow-Methods":"GET, POST, OPTIONS","Content-Type":"application/json","Cache-Control":"no-store"};
 const reply=(status:number,body:Record<string,unknown>)=>new Response(JSON.stringify(body),{status,headers:cors});
 const today=()=>new Date().toISOString().slice(0,10);
+
+// Route driver document-rejection notices through the trusted notification queue.
+// Notification delivery is best-effort: a provider/configuration issue must not
+// turn a successfully recorded admin review into an HTTP failure.
+async function sendNotification(input:{event_type:string;recipient_type:string;recipient_phone:string;payload_json:Record<string,unknown>}){
+ const url=Deno.env.get("SUPABASE_URL"),service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+ if(!url||!service){console.error("Driver rejection notification skipped: server configuration missing");return;}
+ try{
+  const response=await fetch(url+"/functions/v1/notification-dispatch",{
+   method:"POST",
+   headers:{"Authorization":"Bearer "+service,"apikey":service,"Content-Type":"application/json"},
+   body:JSON.stringify({action:"send",...input}),
+   signal:AbortSignal.timeout(12000)
+  });
+  if(!response.ok)console.error("Driver rejection notification queue failed",response.status,(await response.text()).slice(0,300));
+ }catch(error){console.error("Driver rejection notification request failed",error instanceof Error?error.message:"unknown");}
+}
 Deno.serve(async(req:Request)=>{
  if(req.method==="OPTIONS")return new Response("ok",{headers:cors});
  if(!["GET","POST"].includes(req.method))return reply(405,{error:"method_not_allowed"});
