@@ -6,7 +6,6 @@ let quoteRequest;
 let quoteMap;
 let accountEpoch = 0;
 let bookingBusy = false;
-let walletAvailableCents = 0;
 const quoteStatus = document.getElementById('quote-status');
 const calculateButton = document.getElementById('calculate-route');
 const localTime=value=>new Date(value).toLocaleString('en-ZA',{timeZone:'Africa/Johannesburg'})+' SAST';
@@ -16,8 +15,7 @@ function updateBookButton() {
     new Date(currentQuote.expires_at).getTime() > Date.now() &&
     document.body.dataset.guestPreview !== 'true';
   const counterSelected = document.getElementById('make-counter-offer')?.checked === true &&
-    !document.getElementById('make-counter-offer')?.disabled &&
-    form.elements.payment_method.value === 'dispatch';
+    !document.getElementById('make-counter-offer')?.disabled;
   const normalButton = document.getElementById('submit');
   const counterButton = document.getElementById('submit-counter-offer');
   normalButton.hidden = counterSelected;
@@ -88,7 +86,7 @@ function addOrder(order, prepend = false) {
   meta.append(pin, fee);
   if (order.distance_meters != null) {const distance=document.createElement('span');distance.textContent=`${km(order.distance_meters)} km`;meta.append(distance);}
   if(order.assistance_requested){const handling=document.createElement('p');handling.textContent='Optional handling assistance requested · '+(Number(order.assistance_minutes)||0)+' minutes · '+money((Number(order.assistance_fee_cents)||0)/100)+' · '+String(order.assistance_status||'pending dispatch confirmation').replaceAll('_',' ');card.append(handling);}
-  const paymentInfo=document.createElement('p');paymentInfo.textContent=order.paid_at?'Payment confirmed · '+order.payment_source:order.payment_source==='pay_later'?'Pay later · repayment due in 7 days':order.payment_source==='wallet'?'Paid from SwiftHaul wallet · Refund '+money((order.wallet_refund_used||0)/100)+' + promotional '+money((order.wallet_promo_used||0)/100):order.payment_method==='cash'?'Payment: Cash requested · payment unconfirmed':'Payment: Arrange with dispatch · payment unconfirmed';card.append(paymentInfo);
+  const paymentInfo=document.createElement('p');paymentInfo.textContent=order.paid_at?'Payment confirmed · '+order.payment_source:order.payment_method==='cash'?'Payment: Cash selected · awaiting collection confirmation':order.payment_method==='bank'?'Payment: Bank payment selected · awaiting verification':'Payment: Paystack checkout required · unpaid';card.append(paymentInfo);
   if(order.counter_offer){const offer=document.createElement('p');offer.textContent=`Counteroffer: ${money(order.counter_offer)} · ${order.counter_offer_status}. ${order.counter_offer_status==='pending'?'Original fare '+money(order.price)+' remains until company approval.':order.counter_offer_status==='accepted'?'Accepted fare '+money(order.price)+'. Original fare '+money(order.original_price)+'.':'Original fare '+money(order.price)+'.'}`;card.append(offer);}
   if(order.load) {const weight=document.createElement('p');weight.textContent=order.load.freeMinutes!=null?`${order.load.truckClass || order.vehicle.toUpperCase()} · Estimated payload ${mass(order.load.chargeable)} kg · ${order.load.freeMinutes} minutes loading/offloading included`:`${order.load.truckClass || order.vehicle.toUpperCase()} · Original tariff booking · Estimated payload ${mass(order.load.chargeable)} kg`;card.append(weight);}
   if(order.scheduled_at) {const time=document.createElement('p');time.textContent='Requested pickup: '+localTime(order.scheduled_at)+' · Awaiting dispatch confirmation';card.append(time);}
@@ -101,15 +99,7 @@ function addOrder(order, prepend = false) {
   });
   if(!order.paid_at&&!order.refunded_at&&!['cancelled','completed'].includes(order.status)){
     const pay=document.createElement('button');pay.type='button';pay.textContent='Pay with Paystack';pay.addEventListener('click',()=>startPaystackPageCheckout(order,pay));
-    const cardPay=document.createElement('button');cardPay.type='button';cardPay.textContent='Pay by card · Paystack';cardPay.addEventListener('click',()=>startPaystackPageCheckout(order,cardPay));
-    const eft=document.createElement('button');eft.type='button';eft.textContent='EFT payment instructions';eft.addEventListener('click',()=>{
-      const box=document.createElement('div');box.className='eft-instructions';
-      const heading=document.createElement('strong');heading.textContent='Pay by EFT';
-      const info=document.createElement('p');info.textContent='Use your booking reference '+order.waybill+' as the EFT reference. For verified SwiftHaul bank account details, contact dispatch on WhatsApp before transferring. Your booking remains unpaid until the transfer is checked and confirmed.';
-      const contact=document.createElement('a');contact.href='https://wa.me/27615083880?text='+encodeURIComponent('Please send verified EFT payment details for booking '+order.waybill+'.');contact.target='_blank';contact.rel='noopener noreferrer';contact.textContent='Request bank details on WhatsApp';
-      box.append(heading,info,contact);eft.replaceWith(box);
-    });
-    actions.append(pay,cardPay,eft);
+    actions.append(pay);
   }
   const existingRefund = refundRequestsByWaybill.get(order.waybill);
   if (existingRefund) {
@@ -161,32 +151,9 @@ async function startPaystackPageCheckout(order, button) {
   }
 }
 
-async function startPayFastCheckout(order, button) {
-  button.disabled = true; report('Preparing secure PayFast sandbox checkout…');
-  try {
-    const client = window.swiftHaulSupabase;
-    if (!client) throw new Error('Customer sign-in connection is unavailable.');
-    const { data, error } = await client.functions.invoke('payfast-checkout', { body: { action: 'checkout', waybill: order.waybill } });
-    if (error || !data || data.error) throw new Error(data?.error || error?.message || 'Unable to prepare PayFast checkout.');
-    if (data.process_url !== 'https://sandbox.payfast.co.za/eng/process' || data.mode !== 'sandbox' || !data.fields || typeof data.fields !== 'object')
-      throw new Error('PayFast returned an invalid sandbox checkout response.');
-    const checkout = document.createElement('form');
-    checkout.method = 'POST'; checkout.action = data.process_url; checkout.acceptCharset = 'UTF-8'; checkout.hidden = true;
-    for (const [name,value] of Object.entries(data.fields)) {
-      if (typeof value !== 'string' || value.length > 2000) throw new Error('Invalid PayFast checkout field.');
-      const input = document.createElement('input'); input.type = 'hidden'; input.name = name; input.value = value; checkout.append(input);
-    }
-    document.body.append(checkout); checkout.submit();
-  } catch (error) {
-    report(error instanceof Error ? error.message : 'Unable to start PayFast checkout.', true);
-    button.disabled = false;
-  }
-}
-
 async function loadOrders() {
   if (document.body.dataset.guestPreview === 'true') return;
   const version = ++loadVersion;
-  walletAvailableCents = 0;
   updatePaymentOptions();
   document.getElementById('submit').disabled = true;
   document.getElementById('retry').hidden = true;
@@ -197,7 +164,6 @@ async function loadOrders() {
     container.replaceChildren();
     refundRequestsByWaybill = new Map((data.refundRequests || []).map(request => [request.waybill, request]));
     data.orders.forEach(order => addOrder(order));
-    walletAvailableCents = Number(data.wallet?.available_cents) || 0;
     updatePaymentOptions();
     if (!data.orders.length) {
       const empty = document.createElement('p'); empty.className = 'empty'; empty.textContent = 'Your next delivery starts here. Submit a quote to create your first booking.'; container.append(empty);
@@ -238,9 +204,9 @@ form.addEventListener('submit', async event => {
   if(!termsAcknowledgement?.checked){termsAcknowledgement?.focus();report('Please read and acknowledge the customer protection and handling terms before booking.',true);return;}
   const data = Object.fromEntries(new FormData(form));
   const counterSelected=document.getElementById('make-counter-offer').checked;
-  if(counterSelected && (data.payment_method!=='dispatch' || !data.counter_offer ||
+  if(counterSelected && (!data.counter_offer ||
       !Number.isFinite(Number(data.counter_offer)) || Number(data.counter_offer)<=0)) {
-    report('Choose Arrange payment with dispatch and enter a valid counteroffer amount.',true);
+    report('Enter a valid counteroffer amount.',true);
     return;
   }
   const assistance=assistanceQuote();
@@ -252,7 +218,7 @@ form.addEventListener('submit', async event => {
     if (epoch !== accountEpoch) return;
     if (!result.order) throw new Error('Unable to save your booking. Please try again.');
     container.querySelector('.empty')?.remove(); addOrder(result.order, true);
-    report('Booking created. Choose PayFast, card checkout or EFT instructions below. WhatsApp sharing is a separate action.');
+    report('Booking created. Complete Paystack payment from your booking, or use the selected cash option. WhatsApp sharing is a separate action.');
     resetQuote();
   } catch (error) {
     if (epoch!==accountEpoch) return;
@@ -410,22 +376,16 @@ function updatePaymentOptions(){
   const cash=Number.isFinite(distance)&&distance<12000;
   const counter=Number.isFinite(distance)&&distance<24000;
   document.getElementById('cash-payment-option').disabled=!cash;
-  const walletOption=document.getElementById('wallet-payment-option');
-  const walletRequired=currentQuote?Math.round(Number(currentQuote.price)*100):Infinity;
-  const walletEligible=Number.isSafeInteger(walletRequired)&&walletRequired>0&&walletAvailableCents>=walletRequired;
-  walletOption.disabled=!walletEligible;
-  if(form.elements.payment_method.value==='cash'&&!cash)form.elements.payment_method.value='dispatch';
-  if(form.elements.payment_method.value==='wallet'&&!walletEligible)form.elements.payment_method.value='dispatch';
+  if(form.elements.payment_method.value==='cash'&&!cash)form.elements.payment_method.value='card';
   const checkbox=document.getElementById('make-counter-offer');checkbox.disabled=!counter;
   if(!counter)checkbox.checked=false;
-  if(checkbox.checked&&form.elements.payment_method.value!=='dispatch') checkbox.checked=false;
-  const show=counter&&checkbox.checked&&form.elements.payment_method.value==='dispatch';
+  const show=counter&&checkbox.checked;
   document.getElementById('counter-offer-field').hidden=!show;
   document.getElementById('counter-offer-note').hidden=!show;
   form.elements.counter_offer.disabled=!show;form.elements.counter_offer.required=show;
   if(!show)form.elements.counter_offer.value='';
   updateBookButton();
-  document.getElementById('payment-eligibility').textContent=!currentQuote?'Calculate a route to check cash, wallet and counteroffer eligibility.':walletEligible?'Wallet balance '+money(walletAvailableCents/100)+' is sufficient for this booking. Refund credits are used before promotional credits.': 'Wallet available '+money(walletAvailableCents/100)+'; '+money(walletRequired/100)+' required. '+(cash?'Cash or payment through dispatch is also available.':'Arrange payment through dispatch. Cash is unavailable for this distance.')+(counter?' Counteroffers are available only when paying by dispatch.':'');
+  document.getElementById('payment-eligibility').textContent=!currentQuote?'Calculate a route to check cash and counteroffer eligibility.':(cash?'Paystack or cash payment is available.':'Paystack payment is available; cash is unavailable for this distance.')+(counter?' You may submit an optional counteroffer independently of your payment method.':' Counteroffers are available only on routes below 24 km.');
 }
 document.getElementById('make-counter-offer').addEventListener('change',updatePaymentOptions);
 form.elements.counter_offer.addEventListener('input',updateBookButton);
