@@ -98,8 +98,8 @@ const server = http.createServer((req,res)=>{
         const wizard=page.locator('#booking-form .booking-wizard');
         assert.equal(await wizard.count(),1,'Customer default route must initialise the booking wizard.');
         const steps=page.locator('#booking-form .booking-step');
-        assert.equal(await steps.count(),4,'Customer booking wizard must render four separate steps.');
-        assert.equal(await wizard.locator('[data-wizard-count]').textContent(),'STEP 1 OF 4','Customer booking must start at step one.');
+        assert.equal(await steps.count(),3,'Customer booking wizard must render three separate steps.');
+        assert.equal(await wizard.locator('[data-wizard-count]').textContent(),'STEP 1 OF 3','Customer booking must start at step one.');
         assert.equal(await steps.nth(0).getAttribute('hidden'),null,'Customer first booking step must be visible.');
         assert.notEqual(await steps.nth(1).getAttribute('hidden'),null,'Customer later booking steps must start hidden.');
       }
