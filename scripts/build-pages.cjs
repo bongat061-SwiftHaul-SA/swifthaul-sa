@@ -38,6 +38,17 @@ for (const app of ['customer', 'driver', 'company']) {
   }
 }
  
+// Build three dedicated full-featured websites alongside the focused mobile app bundles.
+for (const app of ['customer', 'driver', 'company']) {
+  const source = path.join(output, app);
+  const portal = path.join(output, app + '-portal');
+  fs.cpSync(source, portal, { recursive: true });
+  const htmlPath = path.join(portal, 'index.html');
+  let html = fs.readFileSync(htmlPath, 'utf8');
+  html = html.replace(/<body([^>]*)>/i, (match, attrs) => '<body' + attrs + ' data-portal="true">');
+  html = html.replace(/<title>SwiftHaul SA · [^<]+<\/title>/, '<title>SwiftHaul SA · ' + app + ' Portal</title>');
+  fs.writeFileSync(htmlPath, html);
+}
 // Driver and Company retain root-relative shared map modules in their HTML entry points.
 fs.cpSync(path.join(root, 'public'), path.join(output, 'public'), { recursive: true });
 const sharedLiveLocation = path.join(root, 'public', 'live-location-view.js');
