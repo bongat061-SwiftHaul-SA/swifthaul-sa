@@ -6,6 +6,7 @@ on:
     branches:
       - feature/dark-premium-customer-driver-staging
       - feature/sa-sms-whatsapp-notifications-staging
+      - feature/reference-image-mobile-apps-staging
     paths:
       - 'public/**'
       - 'apps/driver/public/**'
