@@ -186,11 +186,8 @@ function assistanceQuote(){
   if(!assistanceRequested?.checked){assistanceOptions.hidden=true;return {requested:false,minutes:0,fee:0};}
   assistanceOptions.hidden=false;
   const blocks=Math.min(4,Math.max(1,Number(assistanceBlocks.value)||1));
-  if(!currentQuote){assistancePrice.textContent='Calculate your vehicle quote first.';return {requested:true,minutes:blocks*30,fee:0};}
-  
-  const van=currentQuote.vehicle==='van',base=van?180:350,extra=van?100:180,fee=base+(blocks-1)*extra;
-  assistancePrice.textContent=(van?'1 helper':'2 helpers')+' · '+(blocks*30)+' minutes · '+money(fee)+' proposed assistance fee. Dispatch confirmation required.';
-  return {requested:true,minutes:blocks*30,fee};
+  assistancePrice.textContent='Free · '+(blocks*30)+' minutes requested · subject to Company Admin confirmation.';
+  return {requested:true,minutes:blocks*30,fee:0};
 }
 assistanceRequested?.addEventListener('change',()=>{assistanceQuote();});
 assistanceBlocks?.addEventListener('change',assistanceQuote);
@@ -210,7 +207,6 @@ form.addEventListener('submit', async event => {
     return;
   }
   const assistance=assistanceQuote();
-  if(assistance.requested && !assistance.fee){report('Optional assistance is unavailable for this vehicle/load. Please update your selection or contact dispatch.',true);return;}
   if (['pickup', 'dropoff', 'recipient'].some(key => !data[key].trim())) { report('Enter pickup, drop-off and recipient details.', true); return; }
   const submit = document.getElementById('submit'); bookingBusy=true; submit.disabled = true; report('Saving your booking…');
   try {
@@ -218,7 +214,7 @@ form.addEventListener('submit', async event => {
     if (epoch !== accountEpoch) return;
     if (!result.order) throw new Error('Unable to save your booking. Please try again.');
     container.querySelector('.empty')?.remove(); addOrder(result.order, true);
-    report('Booking created. Complete Paystack payment from your booking, or use the selected cash option. WhatsApp sharing is a separate action.');
+    report('Booking submitted. Company Admin will review any vehicle-suitability or assistance request. Customer payment is collected by SwiftHaul; driver earnings are credited only after verified payment and delivery completion.');
     resetQuote();
   } catch (error) {
     if (epoch!==accountEpoch) return;
@@ -345,23 +341,22 @@ toggleBookingOptions();
 
 function previewLoad(){
   const values=['weight','length','width','height'].map(key=>Number(form.elements.namedItem(key).value));
-  let vehicle='',text='Choose your items to estimate the load and recommended vehicle.';
+  let vehicle=form.querySelector('[name=vehicle]:checked')?.value||'light_commercial';
+  let text='Enter estimated weight and packed dimensions for a suggested vehicle class.';
   let chargeable=0,label='';
+  const labels={light_commercial:'Mini-Van / Light Commercial',one_ton_bakkie:'1-Ton Bakkie / Panel Van',closed_truck:'1.5-Ton – 3-Ton Closed Truck',freight_truck:'4-Ton – 8-Ton Freight Truck'};
+  const capacities={light_commercial:600,one_ton_bakkie:1000,closed_truck:3000,freight_truck:8000};
   if(values.every(value=>Number.isFinite(value)&&value>0)){
     const [estimatedWeight,length,width,height]=values,volumetric=length*width*height/5000;
     chargeable=Math.max(estimatedWeight,volumetric);
     if(chargeable>8000)text='Above 8,000 chargeable kg: contact dispatch for a manual quote.';
     else{
       const recommendation=chargeable<=600?'light_commercial':chargeable<=1000?'one_ton_bakkie':chargeable<=3000?'closed_truck':'freight_truck';
-      const labels={light_commercial:'Mini-Van / Light Commercial',one_ton_bakkie:'1-Ton Bakkie / Panel Van',closed_truck:'1.5-Ton – 3-Ton Closed Truck',freight_truck:'4-Ton – 8-Ton Freight Truck'};
-      const capacities={light_commercial:600,one_ton_bakkie:1000,closed_truck:3000,freight_truck:8000};
-      const checked=form.querySelector('[name=vehicle]:checked')?.value;
-      vehicle=checked && capacities[checked]>=chargeable ? checked : recommendation;
       label=labels[vehicle];
-      text=label+' recommended · estimated payload '+mass(chargeable)+' kg. You may choose this class or a larger suitable vehicle; dispatch confirms physical fit and access.';
+      text='Suggested vehicle: '+labels[recommendation]+' · estimated payload '+mass(chargeable)+' kg. Your choice: '+label+'. '+(capacities[vehicle]<chargeable?'Your selected vehicle is below the estimated payload, so Company Admin must approve its suitability before dispatch.':'You may choose any listed class; Admin can verify vehicle fit and access during booking review.');
     }
   }
-  form.querySelectorAll('[name=vehicle]').forEach(input=>{input.checked=input.value===vehicle;input.disabled=chargeable>0 && ({light_commercial:600,one_ton_bakkie:1000,closed_truck:3000,freight_truck:8000})[input.value]<chargeable;});
+  form.querySelectorAll('[name=vehicle]').forEach(input=>{input.disabled=false;});
   const summary=document.getElementById('load-summary');
   if(summary)summary.textContent=text;
   window.swiftHaulUpdateVehiclePreview?.(vehicle,chargeable,label);
