@@ -19,6 +19,9 @@
   driverHome.id = 'driver-home-screen';
   driverHome.className = 'driver-home-screen';
   driverHome.innerHTML = '<div class="driver-profile-card"><div class="driver-avatar" aria-hidden="true">SH</div><div class="driver-profile-copy"><span class="driver-home-kicker">DRIVER DASHBOARD</span><h2><strong data-driver-home-name>Driver</strong></h2><p data-driver-id>SwiftHaul approved driver</p><span class="driver-rating-placeholder">★ &nbsp; Rating shown from completed trips</span></div><a class="driver-profile-action" href="?page=account" data-page="account">Profile ↗</a></div><div class="driver-earnings-card"><div><span class="driver-home-kicker">TODAY’S EARNINGS</span><strong data-driver-today-earnings>—</strong><p>75% driver share on completed, paid deliveries</p></div><a href="?page=earnings" data-page="earnings">View Details →</a></div><div class="driver-metric-row"><div><span>▣</span><strong data-driver-today-count>—</strong><small>Deliveries</small></div><div><span>⌁</span><strong data-driver-distance>—</strong><small>Travelled</small></div><div><span>◷</span><strong data-driver-online-time>—</strong><small>Online Time</small></div></div><div class="driver-feed-heading"><h2>Available Deliveries</h2><span data-driver-offer-count>•</span></div><div class="driver-home-shortcuts"><a href="?page=deliveries" data-page="deliveries"><span>↗</span><strong>Open Deliveries</strong><small>View assigned and available work</small></a><a href="?page=availability" data-page="availability"><span>◉</span><strong>Availability</strong><small>Manage online status</small></a><a href="?page=history" data-page="history"><span>▤</span><strong>History</strong><small>Past deliveries</small></a><a href="?page=payouts" data-page="payouts"><span>R</span><strong>Payouts</strong><small>Wallet &amp; bank</small></a></div>';
+  if (document.body.dataset.portal !== 'true') {
+    driverHome.innerHTML = driverHome.innerHTML.replace('href="?page=earnings"', 'href="../driver-portal/?page=earnings"').replace('href="?page=history" data-page="history"', 'href="../driver-portal/?page=history"').replace('href="?page=payouts" data-page="payouts"', 'href="../driver-portal/?page=payouts"');
+  }
   root.querySelector('.page-heading')?.insertAdjacentElement('afterend', driverHome);
   const account = root.querySelector('#account-details');
   const availability = root.querySelector('#availability');
@@ -45,8 +48,10 @@
   root.insertBefore(earningsNote, grid.nextSibling);
   pageNodes['earnings-note'] = earningsNote;
   function render(key, updateUrl) {
-    const page = pages[key] || pages.home;
-    body.dataset.driverPage = pages[key] ? key : 'home';
+    const allowedPages = document.body.dataset.portal === 'true' ? Object.keys(pages) : ['home','deliveries','availability','account'];
+    const selected = allowedPages.includes(key) ? key : 'home';
+    const page = pages[selected];
+    body.dataset.driverPage = selected;
     Object.entries(pageNodes).forEach(([name,node]) => { if (node) node.hidden = !page.show.includes(name); });
     if (grid) {
       const visibleChild = [dispatches, account].some(node => node && !node.hidden);
@@ -57,12 +62,12 @@
     const navCurrent = nav?.closest('.workspace-navigation')?.querySelector('[data-nav-current]');
     if (navCurrent) navCurrent.textContent = page.title.replace(/\.$/,'');
     nav?.querySelectorAll('a').forEach(link => {
-      const selected = link.dataset.page === key;
+      const selected = link.dataset.page === selected;
       link.classList.toggle('is-active', selected);
       if (selected) link.setAttribute('aria-current','page'); else link.removeAttribute('aria-current');
     });
     document.title = 'SwiftHaul SA · Driver · ' + page.title.replace(/\.$/,'');
-    if (updateUrl) history.pushState({ page:key }, '', '?page=' + encodeURIComponent(key));
+    if (updateUrl) history.pushState({ page:selected }, '', '?page=' + encodeURIComponent(selected));
     nav?.closest('details')?.setAttribute('open','');
     window.scrollTo({ top:0, behavior:'instant' });
   }
