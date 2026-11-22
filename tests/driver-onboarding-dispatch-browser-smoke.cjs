@@ -74,25 +74,25 @@ function mockSupabase(role) {
     assert.equal(await onboarding.locator('[name="prdp_holder"]').getAttribute('required'),'','H1 Truck onboarding must require a PrDP.');
     await vehicle.evaluate(el=>{el.value='one_ton_bakkie';el.dispatchEvent(new Event('change',{bubbles:true}));});
     await onboarding.locator('[name="vehicle_gvm_kg"]').evaluate(el=>{el.value='4000';el.dispatchEvent(new Event('input',{bubbles:true}));});
-    assert.equal(await driver.locator('[name="prdp_holder"]').getAttribute('required'),'','A 1-Ton Bakkie declared above 3,500 kg GVM must require a PrDP.');
-    await driver.locator('[name="vehicle_gvm_kg"]').fill('3000');
-    assert.equal(await driver.locator('[name="prdp_holder"]').getAttribute('required'),null,'A 1-Ton Bakkie at or below 3,500 kg GVM does not require a PrDP under this form rule.');
+    assert.equal(await onboarding.locator('[name="prdp_holder"]').getAttribute('required'),'','A 1-Ton Bakkie declared above 3,500 kg GVM must require a PrDP.');
+    await onboarding.locator('[name="vehicle_gvm_kg"]').evaluate(el=>{el.value='3000';el.dispatchEvent(new Event('input',{bubbles:true}));});
+    assert.equal(await onboarding.locator('[name="prdp_holder"]').getAttribute('required'),null,'A 1-Ton Bakkie at or below 3,500 kg GVM does not require a PrDP under this form rule.');
     await onboarding.locator('[name="identity_type"]').evaluate(el=>{el.value='sa_citizen';el.dispatchEvent(new Event('change',{bubbles:true}));});
     await onboarding.locator('input[name="identity_documents"]').setInputFiles([
       {name:'id-front.pdf',mimeType:'application/pdf',buffer:Buffer.from('test document')},
       {name:'id-back.pdf',mimeType:'application/pdf',buffer:Buffer.from('test document')},
       {name:'profile-selfie.pdf',mimeType:'application/pdf',buffer:Buffer.from('test document')}
     ]);
-    const identityTypes=await driver.locator('input[name="identity_documents"]').evaluate(input=>[...input.parentElement.querySelectorAll('.document-file-type-map select')].map(s=>[...s.options].map(o=>o.value)));
+    const identityTypes=await onboarding.locator('input[name="identity_documents"]').evaluate(input=>[...input.parentElement.querySelectorAll('.document-file-type-map select')].map(s=>[...s.options].map(o=>o.value)));
     assert.equal(identityTypes.length,3,'Each identity file must have its own document type selector.');
     assert.ok(identityTypes.every(values=>['id_front','id_back','profile_selfie'].every(value=>values.includes(value))),'South African identity files must map to ID front, ID back and profile selfie.');
-    await driver.locator('[name="prdp_holder"]').check();
+    await onboarding.locator('[name="prdp_holder"]').check();
     await onboarding.locator('input[name="driving_documents"]').setInputFiles([
       {name:'licence-front.pdf',mimeType:'application/pdf',buffer:Buffer.from('test document')},
       {name:'licence-back.pdf',mimeType:'application/pdf',buffer:Buffer.from('test document')},
       {name:'prdp.pdf',mimeType:'application/pdf',buffer:Buffer.from('test document')}
     ]);
-    const drivingTypes=await driver.locator('input[name="driving_documents"]').evaluate(input=>[...input.parentElement.querySelectorAll('.document-file-type-map select')].map(s=>[...s.options].map(o=>o.value)));
+    const drivingTypes=await onboarding.locator('input[name="driving_documents"]').evaluate(input=>[...input.parentElement.querySelectorAll('.document-file-type-map select')].map(s=>[...s.options].map(o=>o.value)));
     assert.equal(drivingTypes.length,3,'Each driving credential file must have its own document type selector.');
     assert.ok(drivingTypes.every(values=>values.includes('prdp')),'PrDP document type must be available when the driver declares a PrDP.');
     assert.deepEqual(driverErrors,[],'Driver onboarding screen must not throw uncaught JavaScript errors.');
