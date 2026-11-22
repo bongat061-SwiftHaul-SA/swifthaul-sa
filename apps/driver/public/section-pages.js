@@ -2,7 +2,9 @@
   const root = document.querySelector('body[data-app="driver"] #workspace .page');
   if (!root) return;
   const nav = root.querySelector('.section-links');
-  if (nav) nav.innerHTML = '<a href="?page=home" data-page="home">Home</a><a href="?page=deliveries" data-page="deliveries">Deliveries</a><a href="?page=availability" data-page="availability">Availability</a><a href="?page=account" data-page="account">Profile</a><details class="nav-more"><summary>More</summary><div><a href="?page=history" data-page="history">History</a><a href="?page=earnings" data-page="earnings">Earnings summary</a><a href="?page=payouts" data-page="payouts">Payout details</a><a href="?page=cash" data-page="cash">Cash &amp; deposits</a><a href="?page=membership" data-page="membership">Premium</a><a href="?page=insurance-claims" data-page="insurance-claims">Insurance claims</a><a href="map.html">Driver map</a></div></details>';
+  if (nav) nav.innerHTML = document.body.dataset.portal === 'true'
+    ? '<a href="?page=home" data-page="home">Home</a><a href="?page=deliveries" data-page="deliveries">Deliveries</a><a href="?page=availability" data-page="availability">Availability</a><a href="?page=history" data-page="history">History</a><a href="?page=earnings" data-page="earnings">Earnings</a><a href="?page=payouts" data-page="payouts">Payouts</a><a href="?page=cash" data-page="cash">Cash &amp; deposits</a><a href="?page=membership" data-page="membership">Premium</a><a href="?page=insurance-claims" data-page="insurance-claims">Insurance</a><a href="?page=account" data-page="account">Profile</a><a href="map.html">Driver map</a>'
+    : '<a href="?page=home" data-page="home">Home</a><a href="?page=deliveries" data-page="deliveries">Deliveries</a><a href="?page=availability" data-page="availability">Availability</a><a href="?page=account" data-page="account">Profile</a>';
   const heading = root.querySelector('.page-heading h1');
   const description = root.querySelector('.page-heading .subtle');
   const stats = root.querySelector('#earnings');
