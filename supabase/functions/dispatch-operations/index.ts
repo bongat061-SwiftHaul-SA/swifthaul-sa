@@ -110,8 +110,7 @@ Deno.serve(async (req: Request) => {
     if (error) return reply(500, { error: "vehicle_suitability_decision_save_failed" });
     await admin.from("delivery_status_events").insert({
       waybill: order.waybill, actor_user_id: actorId, previous_status: order.status,
-      new_status: order.status, notes: "Admin "+body.decision+" selected vehicle suitability",
-      event_data: { vehicle_suitability_status: body.decision }
+      new_status: order.status, notes: "Admin "+body.decision+" selected vehicle suitability"
     });
     return reply(200, { updated: true, vehicle_suitability_status: body.decision });
   }
