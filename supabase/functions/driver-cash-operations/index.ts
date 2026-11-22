@@ -29,13 +29,14 @@ Deno.serve(async (req: Request) => {
   const { data: authData, error: authError } = await userClient.auth.getUser(token);
   if (authError || !authData.user) return reply(401, { error: "invalid_or_expired_session" });
   const user = authData.user;
-  const { data: profile, error: profileError } = await userClient.from("user_profiles")
+  const admin = createClient(url, service, { auth: { persistSession: false, autoRefreshToken: false } });
+  // user_profiles intentionally denies direct authenticated SELECT. The bearer
+  // token is verified above, so use the server client only for this scoped role lookup.
+  const { data: profile, error: profileError } = await admin.from("user_profiles")
     .select("role,account_status").eq("id", user.id).maybeSingle();
   if (profileError) return reply(503, { error: "profile_lookup_failed" });
   if (!profile || profile.account_status !== "active" || !["driver", "admin"].includes(profile.role))
     return reply(403, { error: "active_driver_or_admin_required" });
-
-  const admin = createClient(url, service, { auth: { persistSession: false, autoRefreshToken: false } });
   if (req.method === "GET") {
     if (profile.role === "admin") {
       const [depositResult, receiptResult, balanceResult] = await Promise.all([
