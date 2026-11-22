@@ -12,7 +12,7 @@ const reply = (status: number, body: Record<string, unknown>) =>
   new Response(JSON.stringify(body), { status, headers: cors });
 const validText = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0 && v.length <= 500;
 const tariffClasses = {
-  motorbike: { label: "Motorbike", capacity: 0, callOutFee: 60, distanceRate: 8.5, freeMinutes: 20, vehicle: "van" },
+  motorbike: { label: "Motorbike", capacity: 0, callOutFee: 60, distanceRate: 8.5, freeMinutes: 20, vehicle: "bike" },
   light_commercial: { label: "Mini-Van / Light Commercial", capacity: 600, callOutFee: 150, distanceRate: 8.5, freeMinutes: 20, vehicle: "van" },
   one_ton_bakkie: { label: "1-Ton Bakkie / Panel Van", capacity: 1000, callOutFee: 250, distanceRate: 11, freeMinutes: 30, vehicle: "bakkie" },
   closed_truck: { label: "H1 Truck", capacity: 3000, callOutFee: 450, distanceRate: 16.5, freeMinutes: 45, vehicle: "truck" },
