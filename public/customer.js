@@ -60,7 +60,7 @@ function whatsapp(order) {
 *Recipient & notes:* ${order.recipient}
 *Vehicle:* ${order.load?.truckClass || order.vehicle.toUpperCase()}${order.load ? '\n*Estimated payload:* '+mass(order.load.chargeable)+' kg\n*Distance charge:* '+money(order.distance_fee) : ''}
 *Outbound fee:* ${money(order.price)}
-*Payment:* ${order.paid_at?'Confirmed via '+order.payment_source:order.payment_source==='pay_later'?'Pay later':order.payment_method==='cash'?'Cash requested (unconfirmed)':'Arrange with dispatch'}${order.counter_offer?'\n*Counteroffer:* '+money(order.counter_offer)+' · '+order.counter_offer_status:''}${order.scheduled_at?'\n*Scheduled pickup:* '+localTime(order.scheduled_at):''}${order.return_address?'\n*Return request (separate quote):* '+order.return_address:''}${order.return_at?'\n*Requested return:* '+localTime(order.return_at):''}`;
+*Payment:* ${order.paid_at?'Confirmed via '+order.payment_source:order.payment_method==='cash'?'Cash selected (unconfirmed)':'Paystack payment pending'}${order.counter_offer?'\n*Counteroffer:* '+money(order.counter_offer)+' · '+order.counter_offer_status:''}${order.scheduled_at?'\n*Scheduled pickup:* '+localTime(order.scheduled_at):''}${order.return_address?'\n*Return request (separate quote):* '+order.return_address:''}${order.return_at?'\n*Requested return:* '+localTime(order.return_at):''}`;
   return `https://wa.me/27615083880?text=${encodeURIComponent(text)}`;
 }
 function addOrder(order, prepend = false) {
@@ -250,7 +250,7 @@ function downloadPDF(order) {
     if(order.scheduled_at) line('Requested pickup: '+localTime(order.scheduled_at));
     if(order.return_address) line('Return request (separate quote, excluded from total): '+order.return_address+(order.return_at?' at '+localTime(order.return_at):''));
     line(`Acceptance PIN: ${order.pin}`); line(`Fare: ${money(order.price)} ZAR`, 13);
-    line('Payment option: '+(order.payment_method==='cash'?'Cash requested':'Arrange with dispatch'));
+    line('Payment option: '+(order.payment_method==='cash'?'Cash':'Paystack'));
     if(order.counter_offer)line('Counteroffer: '+money(order.counter_offer)+'; status: '+order.counter_offer_status+(order.counter_offer_status==='pending'?'. Original fare remains pending company approval.':'.'));
     line('Payment status: '+(order.paid_at?'Confirmed via '+order.payment_source:order.payment_source==='pay_later'?'Pay later; repayment due':'Not confirmed'));
     if(order.original_price)line('Original quoted fare before accepted counteroffer: '+money(order.original_price));
@@ -263,8 +263,6 @@ document.addEventListener('account-ready', () => {
   calculateButton.disabled=false;loadOrders();
   const params=new URLSearchParams(location.search), payment=params.get('payment');
   if(payment==='paystack_return') report('You returned from Paystack. Your card payment is awaiting server-side verification; refresh your bookings shortly. Returning here does not itself confirm payment.');
-  else if(payment==='return') report('You returned from PayFast. Payment is awaiting server-side notification and verification; refresh your bookings shortly. Returning here does not itself confirm payment.');
-  else if(payment==='cancel') report('PayFast checkout was cancelled. Your booking remains unpaid.');
   if(payment){history.replaceState({},'',location.pathname+location.hash);}
 });
 document.addEventListener('account-cleared', () => {accountEpoch++;loadVersion++; ready = false;form.reset();toggleBookingOptions();previewLoad();resetQuote(); container.replaceChildren(); document.getElementById('legacy-import').hidden=true; document.getElementById('submit').disabled = true;});
@@ -392,4 +390,3 @@ form.elements.counter_offer.addEventListener('input',updateBookButton);
 form.elements.payment_method.addEventListener('change',updatePaymentOptions);
 updatePaymentOptions();
 
-document.addEventListener('wallet-updated',loadOrders);
