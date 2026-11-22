@@ -229,20 +229,18 @@ Deno.serve(async (req: Request) => {
     const expectedFee = (isTruckClass ? 35000 : 18000) + ((assistanceMinutes / 30) - 1) * (isTruckClass ? 18000 : 10000);
     if (assistanceFeeCents !== expectedFee) return reply(400, { error: "assistance_quote_changed_recalculate_and_review" });
   } else if ((body.assistance_minutes ?? 0) !== 0 || (body.assistance_fee_cents ?? 0) !== 0) return reply(400, { error: "unexpected_assistance_amount" });
-  const method = body.payment_method ?? "dispatch";
-  if (method !== "cash" && method !== "dispatch" && method !== "wallet" && method !== "card") return reply(400, { error: "choose_a_valid_payment_method" });
+  const method = body.payment_method ?? "card";
+  if (method !== "cash" && method !== "card") return reply(400, { error: "choose_a_valid_payment_method" });
   if (method === "cash" && distance >= 12000) return reply(400, { error: "cash_available_only_below_12km" });
   let offer: number | null = null;
   let offerStatus = "none";
   if (body.counter_offer !== undefined && body.counter_offer !== null && body.counter_offer !== "") {
     if (typeof body.counter_offer !== "string" || !/^\d{1,10}(?:\.\d{1,2})?$/.test(body.counter_offer) ||
-        Number(body.counter_offer) <= 0 || distance >= 24000 || method !== "dispatch")
-      return reply(400, { error: "counter_offer_requires_dispatch_payment_and_valid_amount" });
+        Number(body.counter_offer) <= 0 || distance >= 24000)
+      return reply(400, { error: "counter_offer_requires_an_eligible_route_and_valid_amount" });
     offer = Number(body.counter_offer);
     offerStatus = "pending";
   }
-  if (method === "wallet" && assistanceRequested) return reply(400, { error: "wallet_payment_not_available_with_optional_assistance_yet_choose_dispatch_or_cash" });
-  if (method === "wallet" && offer !== null) return reply(400, { error: "wallet_payment_not_available_with_counteroffers" });
   let pickup, dropoff;
   try { pickup = parseLocation(body, "pickup"); dropoff = parseLocation(body, "dropoff"); }
   catch (e) { return reply(400, { error: e instanceof Error ? e.message : "invalid_location_pin" }); }
@@ -267,40 +265,6 @@ Deno.serve(async (req: Request) => {
     pickup_latitude: pickup.latitude, pickup_longitude: pickup.longitude, pickup_plus_code: pickup.plus_code, pickup_geohash: pickup.geohash,
     dropoff_latitude: dropoff.latitude, dropoff_longitude: dropoff.longitude, dropoff_plus_code: dropoff.plus_code, dropoff_geohash: dropoff.geohash,
   };
-  if (method === "wallet") {
-    const walletBooking = {
-      recipient: insert.recipient,
-      scheduled_at: scheduled,
-      return_address: returnAddress || null,
-      return_at: returnAt,
-      counter_offer: offer,
-      counter_offer_status: offerStatus,
-      pickup_latitude: pickup.latitude,
-      pickup_longitude: pickup.longitude,
-      pickup_plus_code: pickup.plus_code,
-      pickup_geohash: pickup.geohash,
-      dropoff_latitude: dropoff.latitude,
-      dropoff_longitude: dropoff.longitude,
-      dropoff_plus_code: dropoff.plus_code,
-      dropoff_geohash: dropoff.geohash,
-    };
-    const { data: result, error: walletBookingError } = await admin.rpc("create_wallet_funded_booking", {
-      p_owner_hash: owner,
-      p_quote_id: quote.id,
-      p_waybill: waybill,
-      p_pin: pinCode,
-      p_booking: walletBooking,
-    });
-    if (walletBookingError || !result?.order) {
-      const message = walletBookingError?.message || "wallet_booking_failed";
-      if (/Insufficient wallet balance/i.test(message)) return reply(409, { error: "insufficient_wallet_balance" });
-      if (/Quote expired or not found/i.test(message)) return reply(409, { error: "quote_expired_recalculate_route" });
-      console.error("Wallet booking failed", message);
-      return reply(503, { error: "wallet_booking_failed" });
-    }
-    return reply(result.already_created ? 200 : 201, { order: result.order });
-  }
-
   const { data: order, error: insertError } = await admin.from("customer_bookings").insert(insert).select("*").single();
   if (insertError) {
     const { data: retry } = await admin.from("customer_bookings")
