@@ -182,6 +182,7 @@ const server = http.createServer((req,res)=>{
         await page.waitForFunction(()=>document.querySelector('[data-wizard-count]')?.textContent==='STEP 3 OF 3');
         assert.equal(await page.locator('#booking-form .booking-step').nth(2).isVisible(),true,'Customer must advance to assistance and protection');
         assert.equal(await page.locator('#assistance-options').isHidden(),true,'Optional assistance details must start collapsed');
+        await page.locator('.booking-step[data-step="2"] details.booking-optional-details summary').click();
         await page.locator('#assistance-requested').check();
         assert.equal(await page.locator('#assistance-options').isVisible(),true,'Selecting assistance must reveal duration choices');
         await page.locator('#assistance-blocks').selectOption('2');
