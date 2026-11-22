@@ -16,7 +16,9 @@
   if (!nav || !grid || !bookingColumn || !activityColumn) return;
 
   nav.closest('details')?.setAttribute('open','');
-  nav.innerHTML = '<a href="?page=home" data-page="home">Home</a><a href="?page=book" data-page="book">Book</a><a href="?page=activity" data-page="activity">Deliveries</a><a href="?page=tracking" data-page="tracking">Tracking</a><details class="nav-more"><summary>More</summary><div><a href="?page=wallet" data-page="wallet">Payments &amp; wallet</a><a href="?page=account" data-page="account">Account</a><a href="https://wa.me/27615083880" target="_blank" rel="noopener noreferrer">Help</a></div></details>';
+  nav.innerHTML = body.dataset.portal === 'true'
+    ? '<a href="?page=home" data-page="home">Home</a><a href="?page=book" data-page="book">Book</a><a href="?page=activity" data-page="activity">Deliveries</a><a href="?page=tracking" data-page="tracking">Tracking</a><a href="?page=wallet" data-page="wallet">Payments &amp; wallet</a><a href="?page=account" data-page="account">Account</a><a href="https://wa.me/27615083880" target="_blank" rel="noopener noreferrer">Help</a>'
+    : '<a href="?page=home" data-page="home">Home</a><a href="?page=book" data-page="book">Book</a><a href="?page=activity" data-page="activity">Deliveries</a><a href="?page=tracking" data-page="tracking">Tracking</a>';
 
   const home = document.createElement('section');
   home.className = 'customer-home';
