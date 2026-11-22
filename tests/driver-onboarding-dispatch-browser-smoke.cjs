@@ -59,9 +59,9 @@ function mockSupabase(role) {
     await driver.goto(base+'/driver/',{waitUntil:'domcontentloaded'});
     await driver.waitForFunction(()=>document.body.dataset.authState==='authenticated');
     await driver.locator('#driver-onboarding-form').waitFor({state:'attached',timeout:15000});
-    const vehicle=driver.locator('[name="vehicle_type"]');
+    const vehicle=driver.locator('#driver-onboarding-form [name="vehicle_type"]');
     const options=await vehicle.locator('option').evaluateAll(nodes=>nodes.map(n=>({value:n.value,label:n.textContent.trim()})).filter(n=>n.value));
-    assert.deepEqual(options.map(o=>o.value),['motorbike','light_commercial','one_ton_bakkie','closed_truck'],'Driver application vehicle choices must match the active customer fleet.');
+    assert.deepEqual(options.map(o=>o.value),['motorbike','light_commercial','one_ton_bakkie','closed_truck'],'Driver application vehicle choices must match the active customer fleet. Actual: '+JSON.stringify(options));
     const groups=['identity_documents','driving_documents','vehicle_documents','proof_of_address_document'];
     for(const name of groups){
       const input=driver.locator('input[name="'+name+'"]');
