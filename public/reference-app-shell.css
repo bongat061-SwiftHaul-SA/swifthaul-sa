@@ -1,0 +1,159 @@
+/* SwiftHaul SA — shared three-app reference design layer.
+   Presentation only: preserves existing markup, routes, auth, Supabase calls,
+   dispatch, payment and GPS behaviour. Near-black / charcoal / gold palette. */
+:root{
+  color-scheme:dark;
+  --sh-ref-bg:#080a0e;
+  --sh-ref-panel:#12161d;
+  --sh-ref-card:#242a34;
+  --sh-ref-line:#343b46;
+  --sh-ref-text:#f5f6f8;
+  --sh-ref-muted:#b7c0cc;
+  --sh-ref-gold:#ffc400;
+  --sh-ref-gold-bright:#ffd21a;
+}
+html:has(body[data-app]){background:var(--sh-ref-bg);color-scheme:dark}
+body[data-app="customer"],body[data-app="driver"],body[data-app="company"]{
+  background:radial-gradient(ellipse at 50% -18%,#202630 0%,#11161e 38%,var(--sh-ref-bg) 80%)!important;
+  color:var(--sh-ref-text)!important;
+}
+body[data-app] #auth-screen,
+body[data-app] #workspace{color:var(--sh-ref-text)}
+body[data-app] .topbar,
+body[data-app] #workspace>.topbar,
+body[data-app] #auth-screen>.topbar{
+  background:rgba(9,12,18,.97)!important;
+  color:var(--sh-ref-text)!important;
+  border-color:var(--sh-ref-line)!important;
+  box-shadow:0 8px 28px #0007!important;
+  backdrop-filter:blur(18px);
+}
+body[data-app] .wordmark,body[data-app] .wordmark span{color:#fff!important}
+body[data-app] .app-tag{color:#d0d5dd!important;border-color:#46505e!important}
+body[data-app] .eyebrow,body[data-app] .section-number,
+body[data-app] .story-bottom{color:var(--sh-ref-gold)!important}
+body[data-app] .page-heading h1,
+body[data-app] .panel h2,body[data-app] .panel h3,
+body[data-app] #workspace h1,body[data-app] #workspace h2,
+body[data-app] #workspace h3{color:#fff!important}
+body[data-app] .subtle,body[data-app] .page-heading>p,
+body[data-app] .auth-note{color:var(--sh-ref-muted)!important}
+body[data-app] .panel,body[data-app] .stat,body[data-app] .empty,
+body[data-app] .help,body[data-app] .auth-panel,
+body[data-app] .settings-card,body[data-app] .operations-card{
+  background:linear-gradient(155deg,var(--sh-ref-card),var(--sh-ref-panel))!important;
+  color:var(--sh-ref-text)!important;
+  border:1px solid var(--sh-ref-line)!important;
+  border-radius:18px!important;
+  box-shadow:0 12px 30px #0004!important;
+}
+body[data-app] .panel{padding:clamp(16px,2.4vw,26px)}
+body[data-app] .stat{padding:18px}
+body[data-app] .stat span,body[data-app] .stat small{color:var(--sh-ref-muted)!important}
+body[data-app] .stat strong{color:#fff!important}
+body[data-app] input,body[data-app] select,body[data-app] textarea{
+  background:#10151c!important;color:#f7f8fa!important;
+  border:1px solid #424b59!important;border-radius:12px!important;
+}
+body[data-app] input::placeholder,body[data-app] textarea::placeholder{color:#8994a3!important}
+body[data-app] input:focus,body[data-app] select:focus,body[data-app] textarea:focus{
+  outline:2px solid var(--sh-ref-gold)!important;outline-offset:2px;
+}
+body[data-app] button,body[data-app] .quiet{
+  background:#242a34!important;color:#f5f6f8!important;
+  border:1px solid #424b59!important;border-radius:12px!important;
+}
+body[data-app] button:hover,body[data-app] .quiet:hover{
+  background:#303844!important;border-color:var(--sh-ref-gold)!important;
+}
+body[data-app] .primary,body[data-app] button.primary,
+body[data-app] input[type=submit]{
+  background:linear-gradient(180deg,var(--sh-ref-gold-bright),#f2b600)!important;
+  color:#101216!important;border:1px solid var(--sh-ref-gold)!important;
+  border-radius:13px!important;font-weight:850!important;
+  box-shadow:0 7px 18px #ffc40020!important;
+}
+body[data-app] .primary:hover,body[data-app] button.primary:hover{
+  background:#ffcf16!important;color:#101216!important;
+}
+body[data-app] a{color:var(--sh-ref-gold)}
+body[data-app] .section-links,
+body[data-app] .workspace-navigation{
+  background:#10151c!important;border:1px solid var(--sh-ref-line)!important;
+  border-radius:16px!important;
+}
+body[data-app] .section-links{gap:8px}
+body[data-app] .section-links a{
+  color:#d2d8e1!important;border-radius:11px!important;
+  text-decoration:none!important;
+}
+body[data-app] .section-links a[aria-current=page],
+body[data-app] .section-links a.is-active,
+body[data-app] .section-links a:first-child{
+  background:var(--sh-ref-gold)!important;color:#101216!important;
+}
+body[data-app] .workspace-navigation summary{color:#f5f6f8!important}
+body[data-app] .vehicle>span{
+  background:#171d25!important;border:1px solid #424b59!important;
+  color:#f5f6f8!important;border-radius:14px!important;
+}
+body[data-app] .vehicle input:checked+span{
+  background:#302a16!important;border:2px solid var(--sh-ref-gold)!important;
+}
+body[data-app] .vehicle i{color:var(--sh-ref-gold)!important}
+body[data-app] .accent-panel,
+body[data-app] .driver-home-hero{
+  background:linear-gradient(145deg,#242a34,#11161e)!important;
+  border:1px solid var(--sh-ref-line)!important;color:#f5f6f8!important;
+}
+body[data-app] .accent-panel h2,
+body[data-app] .driver-home-hero h2,
+body[data-app] .accent-panel strong{color:#fff!important}
+body[data-app] .accent-panel p,
+body[data-app] .driver-home-hero p{color:#d0d6df!important}
+body[data-app] .driver-home-hero a{
+  color:var(--sh-ref-gold)!important;border-color:var(--sh-ref-gold)!important;
+}
+body[data-app] .environment-banner,
+body[data-app] .guest-banner{
+  background:#242a34!important;color:#f1f3f6!important;
+  border-color:#424b59!important;
+}
+body[data-app] table,body[data-app] tbody,body[data-app] tr{background:transparent!important}
+body[data-app] th{background:#1b212b!important;color:#e3e7ed!important;border-color:var(--sh-ref-line)!important}
+body[data-app] td{background:transparent!important;color:#c5ccd6!important;border-color:var(--sh-ref-line)!important}
+body[data-app] .order{border-color:var(--sh-ref-line)!important}
+body[data-app] .footer{color:#aeb8c6!important;border-color:var(--sh-ref-line)!important}
+body[data-app] .auth-story{
+  background:linear-gradient(145deg,#080a0e,#242a34 72%,#343b46)!important;
+  color:#f5f6f8!important;
+}
+body[data-app] .auth-story .eyebrow{color:var(--sh-ref-gold)!important}
+body[data-app] .auth-story p{color:#d0d6df!important}
+body[data-app] .auth-panel{border-color:var(--sh-ref-line)!important}
+body[data-app] .status-message{color:var(--sh-ref-gold)!important}
+body[data-app] .live-location-control,
+body[data-app] .customer-tracking-intro{
+  background:linear-gradient(155deg,#242a34,#12161d)!important;
+  border-color:var(--sh-ref-line)!important;color:#f5f6f8!important;
+}
+body[data-app] .live-location-control button:first-of-type{
+  background:linear-gradient(180deg,var(--sh-ref-gold-bright),#f2b600)!important;
+  color:#101216!important;border-color:var(--sh-ref-gold)!important;
+}
+body[data-app] .live-location-control button+button{
+  background:#242a34!important;color:#fff!important;border-color:#424b59!important;
+}
+@media(max-width:700px){
+  body[data-app] .topbar{padding:12px 16px}
+  body[data-app] .page{padding:18px 14px calc(110px + env(safe-area-inset-bottom))!important}
+  body[data-app] .page-heading h1{font-size:clamp(28px,8vw,35px)!important;letter-spacing:-1.2px!important}
+  body[data-app] .panel{padding:16px!important;border-radius:16px!important}
+  body[data-app] .stats{gap:8px}
+  body[data-app] .stat{padding:13px 10px}
+  body[data-app] .stat strong{font-size:22px}
+  body[data-app] button,body[data-app] .primary{min-height:44px}
+}
+@media(prefers-reduced-motion:reduce){
+  body[data-app] *,body[data-app] *::before,body[data-app] *::after{scroll-behavior:auto!important;transition:none!important}
+}
