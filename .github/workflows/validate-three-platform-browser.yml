@@ -5,6 +5,7 @@ on:
     branches:
       - feature/sa-sms-whatsapp-notifications-staging
       - feature/customer-simple-estimator-driver-account
+      - feature/reference-image-mobile-apps-staging
     paths:
       - "public/**"
       - "apps/driver/public/**"
