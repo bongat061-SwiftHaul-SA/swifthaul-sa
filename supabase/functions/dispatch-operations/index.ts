@@ -159,7 +159,7 @@ Deno.serve(async (req: Request) => {
     const {data:eligible,error:eligibilityError}=await admin.rpc("driver_can_accept_work",{p_driver_user_id:driver.user_id});
     if(eligibilityError||eligible!==true) return reply(409,{error:"driver_onboarding_documents_or_background_clearance_incomplete"});
     const {data:activeCount}=await admin.rpc("driver_active_order_count",{p_driver_id:driver.user_id});
-    const vehicleKey=/motor/i.test(driver.vehicle_type||"")?"motorbike":/bakkie|van|panel/i.test(driver.vehicle_type||"")?"bakkie/panel van":/truck|ton/i.test(driver.vehicle_type||"")?"truck":"hatchback/sedan";
+    const vehicleKey=/motor|bike/i.test(driver.vehicle_type||"")?"motorbike":/bakkie|van|panel/i.test(driver.vehicle_type||"")?"bakkie/panel van":/truck|ton/i.test(driver.vehicle_type||"")?"truck":"hatchback/sedan";
     const {data:vehicleClass}=await admin.from("vehicle_classes").select("max_concurrent_orders").eq("vehicle_type",vehicleKey).maybeSingle();
     if(Number(activeCount||0)>=Number(vehicleClass?.max_concurrent_orders||1))return reply(409,{error:"driver_capacity_reached"});
     if(Number(activeCount||0)>0&&!driver.allow_stacked_orders)return reply(409,{error:"stacked_orders_disabled"});
