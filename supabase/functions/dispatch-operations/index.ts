@@ -10,6 +10,15 @@ const cors = {
 const reply = (status: number, body: Record<string, unknown>) =>
   new Response(JSON.stringify(body), { status, headers: cors });
 const validStatuses = ["pending", "assigned", "accepted", "picked_up", "in_transit", "delivered", "failed", "cancelled"];
+const normalizeVehicleClass = (value: unknown): string | null => {
+  const vehicle = String(value ?? "").trim().toLowerCase().replace(/[ _-]+/g, " ");
+  if (vehicle === "bike" || vehicle.includes("motorbike") || vehicle.includes("motorcycle")) return "motorbike";
+  if (vehicle === "van" || vehicle.includes("light commercial") || vehicle.includes("mini van") || vehicle === "light_commercial") return "light_commercial";
+  if (vehicle === "bakkie" || vehicle.includes("panel van") || vehicle.includes("bakkie")) return "bakkie";
+  if (vehicle === "truck" || vehicle.includes("h1 truck") || vehicle.includes("freight truck")) return "truck";
+  if (vehicle === "car" || vehicle.includes("sedan") || vehicle.includes("hatchback")) return "car";
+  return null;
+};
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -95,7 +104,7 @@ Deno.serve(async (req: Request) => {
   if (typeof body.waybill !== "string" || body.waybill.length > 100) return reply(400, { error: "invalid_waybill" });
 
   const { data: order, error: orderError } = await admin.from("customer_bookings")
-    .select("waybill,owner_hash,recipient_phone,tracking_code,pickup,dropoff,recipient,status,driver_user_id,pin,pin_attempts,pin_locked_until,completed_at,refunded_at,arrived_pickup_at,arrived_dropoff_at,assistance_requested,assistance_status,load,vehicle_suitability_status,pickup_latitude,pickup_longitude,dropoff_latitude,dropoff_longitude")
+    .select("waybill,owner_hash,recipient_phone,tracking_code,pickup,dropoff,recipient,vehicle,status,driver_user_id,pin,pin_attempts,pin_locked_until,completed_at,refunded_at,arrived_pickup_at,arrived_dropoff_at,assistance_requested,assistance_status,load,vehicle_suitability_status,pickup_latitude,pickup_longitude,dropoff_latitude,dropoff_longitude")
     .eq("waybill", body.waybill).maybeSingle();
   if (orderError) return reply(500, { error: "delivery_lookup_failed" });
   if (!order) return reply(404, { error: "delivery_not_found" });
@@ -156,6 +165,10 @@ Deno.serve(async (req: Request) => {
       .select("user_id,verification_status,can_go_online,vehicle_type,allow_stacked_orders").eq("user_id", body.driver_id).maybeSingle();
     if (error) return reply(500, { error: "driver_lookup_failed" });
     if (!driver || driver.verification_status !== "approved") return reply(409, { error: "driver_not_approved" });
+    const requestedVehicleClass = normalizeVehicleClass(order.vehicle);
+    const driverVehicleClass = normalizeVehicleClass(driver.vehicle_type);
+    if (!requestedVehicleClass || requestedVehicleClass !== driverVehicleClass)
+      return reply(409, { error: "driver_vehicle_class_mismatch" });
     const {data:eligible,error:eligibilityError}=await admin.rpc("driver_can_accept_work",{p_driver_user_id:driver.user_id});
     if(eligibilityError||eligible!==true) return reply(409,{error:"driver_onboarding_documents_or_background_clearance_incomplete"});
     const {data:activeCount}=await admin.rpc("driver_active_order_count",{p_driver_id:driver.user_id});
