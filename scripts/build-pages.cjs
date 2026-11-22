@@ -39,7 +39,7 @@ for (const app of ['customer', 'driver', 'company']) {
         if (entry.isDirectory()) visit(file);
         else if (entry.isFile() && entry.name.endsWith('.html')) {
           let html = fs.readFileSync(file, 'utf8');
-          html = html.replace(/\\b(href|src)\\s*=\\s*(["'])\\/(?!\\/)([^"']*)\\2/gi, (match, attribute, quote, tail) => {
+          html = html.replace(/\b(href|src)\s*=\s*(["'])\/(?!\/)([^"']*)\2/gi, (match, attribute, quote, tail) => {
             const split = tail.search(/[?#]/);
             const pathname = split < 0 ? tail : tail.slice(0, split);
             const suffix = split < 0 ? '' : tail.slice(split);
