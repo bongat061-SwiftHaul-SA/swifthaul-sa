@@ -2,7 +2,7 @@
   const app = document.body.dataset.app;
   if (!["customer", "company"].includes(app)) return;
   const styles = document.createElement("style");
-  styles.textContent = ".live-driver-view{margin-top:14px;padding:16px;border:1px solid #343d49;border-radius:18px;background:#151a22;color:#f5f6f8;box-shadow:0 10px 26px rgba(0,0,0,.38)}.live-driver-view h3{margin:0 0 5px;font-size:16px;color:#fff}.live-driver-view .tracking-kicker{font-size:10px;letter-spacing:.14em;color:#c0c7d1;font-weight:800}.live-driver-view button{min-height:42px;border:1px solid #c0c7d1;border-radius:11px;padding:10px 15px;background:linear-gradient(180deg,#e5e9ef,#aeb8c6);color:#101216;font:inherit;font-weight:800}.live-driver-view button:hover{background:#d5dbe3}.live-driver-view .live-driver-map{height:300px;margin-top:12px;border:1px solid #343d49;border-radius:13px;overflow:hidden;background:#eef3f9}.live-driver-view .live-driver-status{font-size:12px;line-height:1.5;color:#c2c9d3}.live-driver-view[hidden]{display:none}";
+  styles.textContent = ".live-driver-view{margin-top:14px;padding:16px;border:1px solid #343d49;border-radius:18px;background:#151a22;color:#f5f6f8;box-shadow:0 10px 26px rgba(0,0,0,.38)}.live-driver-view h3{margin:0 0 5px;font-size:16px;color:#fff}.live-driver-view .tracking-kicker{font-size:10px;letter-spacing:.14em;color:#c0c7d1;font-weight:800}.live-driver-view button{min-height:42px;border:1px solid #c0c7d1;border-radius:11px;padding:10px 15px;background:linear-gradient(180deg,#e5e9ef,#aeb8c6);color:#101216;font:inherit;font-weight:800}.live-driver-view button:hover{background:#d5dbe3}.live-driver-view .live-driver-map{height:300px;margin-top:12px;border:1px solid #343d49;border-radius:13px;overflow:hidden;background:#eef3f9}.live-driver-view .live-driver-status{font-size:12px;line-height:1.5;color:#c2c9d3}.live-tracking-details{margin-top:14px;padding:14px;border:1px solid #343d49;border-radius:14px;background:#10151c}.live-tracking-progress{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;list-style:none;padding:0;margin:12px 0 8px}.live-tracking-progress li{position:relative;padding-top:19px;font-size:10px;line-height:1.3;color:#929eac;text-align:center}.live-tracking-progress li:before{content:"";position:absolute;top:0;left:calc(50% - 6px);width:12px;height:12px;border-radius:50%;background:#424b58;border:2px solid #687382}.live-tracking-progress li[data-state="complete"]:before{background:#8c98a7;border-color:#d8dee6}.live-tracking-progress li[data-state="current"]{color:#fff;font-weight:800}.live-tracking-progress li[data-state="current"]:before{background:#d8dee6;border-color:#fff;box-shadow:0 0 0 4px #d8dee633}.live-tracking-note{margin:8px 0 0;color:#aeb8c5;font-size:11px;line-height:1.5}.live-driver-view[hidden]{display:none}";
   document.head.append(styles);
   let active = false;
   const viewers = new Map();
@@ -33,7 +33,31 @@
     const mapNode = document.createElement("div");
     mapNode.className = "live-driver-map";
     mapNode.hidden = true;
-    box.append(kicker, title, button, status, mapNode);
+    const details = document.createElement("div");
+    details.className = "live-tracking-details";
+    const progressTitle = document.createElement("strong");
+    progressTitle.textContent = "Delivery progress";
+    const progress = document.createElement("ol");
+    progress.className = "live-tracking-progress";
+    const stages = [
+      ["accepted", "Driver accepted"],
+      ["picked_up", "Picked up"],
+      ["in_transit", "In transit"],
+      ["delivered", "Delivered"]
+    ];
+    const current = card.dataset.deliveryStatus || "assigned";
+    const currentIndex = stages.findIndex(([key]) => key === current);
+    stages.forEach(([key, label], index) => {
+      const item = document.createElement("li");
+      item.textContent = label;
+      item.dataset.state = index < currentIndex || current === "delivered" ? "complete" : index === currentIndex ? "current" : "upcoming";
+      progress.append(item);
+    });
+    const note = document.createElement("p");
+    note.className = "live-tracking-note";
+    note.textContent = "ETA and driver contact details will appear when dispatch provides verified live trip information.";
+    details.append(progressTitle, progress, note);
+    box.append(kicker, title, button, status, mapNode, details);
     card.append(box);
     let map = null, marker = null, timer = null;
     const refresh = async () => {
