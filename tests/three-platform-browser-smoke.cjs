@@ -31,9 +31,9 @@ const server = http.createServer((req,res)=>{
     for (const href of ['./customer/customer.html','./driver/','./company/']) assert.equal(await landing.locator('a[href="'+href+'"]').count(),1,'Landing page link '+href);
     await landing.close();
     for (const app of [
-      {name:'Customer',path:'/customer/',id:'customer',signup:true},
-      {name:'Driver',path:'/driver/',id:'driver',signup:true},
-      {name:'Company Admin',path:'/company/',id:'company',signup:false}
+      {name:'Customer',path:'/customer/',id:'customer',signup:true,websitePath:'../customer-portal/',websiteLabel:'Open Customer Website Platform'},
+      {name:'Driver',path:'/driver/',id:'driver',signup:true,websitePath:'../driver-portal/',websiteLabel:'Open Driver Website Platform'},
+      {name:'Company Admin',path:'/company/',id:'company',signup:false,websitePath:'../company-portal/',websiteLabel:'Open Company Administration Website'}
     ]) {
       const page=await browser.newPage();
       page.on('pageerror',e=>{failures.push(app.name+' JavaScript: '+e.message);console.error('PAGE ERROR '+app.name+': '+e.message+' '+(e.stack||''));});
@@ -88,6 +88,12 @@ const server = http.createServer((req,res)=>{
         throw new Error(app.name+' auth initialization did not finish: '+JSON.stringify(details)+'; '+error.message);
       });
       assert.equal(await page.locator('body').getAttribute('data-app'),app.id,app.name+' app identity');
+      const mobileLinks=page.locator('#workspace .section-links a');
+      assert.equal(await mobileLinks.count(),4,app.name+' mobile app must keep exactly four primary navigation options');
+      const websiteLink=page.locator('#workspace .footer .app-website-link');
+      assert.equal(await websiteLink.count(),1,app.name+' app must provide one companion website link in its footer');
+      assert.equal(await websiteLink.getAttribute('href'),app.websitePath,app.name+' website link must open its matching portal');
+      assert.equal((await websiteLink.textContent()).trim(),app.websiteLabel,app.name+' website link label');
       if(app.name==='Customer'){
         const wizard=page.locator('#booking-form .booking-wizard');
         assert.equal(await wizard.count(),1,'Customer default route must initialise the booking wizard.');
