@@ -173,9 +173,15 @@ if (app === 'driver' || app === 'company') {
       }
       card.append(offer);
     }
+    if(order.load){
+      const load=order.load;
+      const review=document.createElement('p');
+      review.textContent='Load review · '+String(load.truckClass||order.vehicle||'Vehicle')+' selected · estimated chargeable load '+(Number(load.chargeable)||0)+' kg · suggested '+String(load.recommendedVehicleClass||'not available').replaceAll('_',' ')+(load.requiresAdminVehicleApproval?' · ADMIN SUITABILITY APPROVAL REQUIRED':' · within estimated vehicle capacity');
+      card.append(review);
+    }
     if(order.assistance_requested){
       const assistance=document.createElement('p');
-      assistance.textContent='Customer requested handling assistance · '+Number(order.assistance_minutes||0)+' min · '+money((Number(order.assistance_fee_cents)||0)/100)+' · '+String(order.assistance_status||'pending confirmation').replaceAll('_',' ');
+      assistance.textContent='Customer requested FREE loading/carrying assistance · '+Number(order.assistance_minutes||0)+' min · '+String(order.assistance_status||'pending confirmation').replaceAll('_',' ');
       card.append(assistance);
       if(order.assistance_status==='requested_pending_dispatch_confirmation'){
         const actions=document.createElement('div');actions.className='order-actions';
@@ -186,7 +192,7 @@ if (app === 'driver' || app === 'company') {
             try{
               const result=await invoke('POST',{action:'assistance_decision',waybill:order.waybill,decision});
               order.assistance_status=result.assistance_status;
-              assistance.textContent='Customer requested handling assistance · '+Number(order.assistance_minutes||0)+' min · '+money((Number(order.assistance_fee_cents)||0)/100)+' · '+order.assistance_status;
+              assistance.textContent='Customer requested FREE loading/carrying assistance · '+Number(order.assistance_minutes||0)+' min · '+order.assistance_status;
               actions.remove();
             }catch(error){message.textContent=error.message||'Unable to update assistance request.';control.disabled=false;}
           });
