@@ -488,3 +488,19 @@ body[data-app="driver"] #workspace .driver-home-hero{display:none!important}
 body[data-app="driver"] #workspace #earnings{display:none!important}
 body[data-app="driver"][data-driver-page="earnings"] #workspace #earnings{display:grid!important}
 body[data-app="driver"][data-driver-page="home"] #workspace #account-details{display:none!important}
+
+
+/* Compact primary navigation with secondary destinations grouped under More. */
+#workspace .section-links > .nav-more{position:relative;display:inline-block}
+#workspace .section-links > .nav-more > summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:7px;padding:10px 14px;border-radius:999px;color:inherit;font:inherit}
+#workspace .section-links > .nav-more > summary::-webkit-details-marker{display:none}
+#workspace .section-links > .nav-more > summary::after{content:"⌄";opacity:.75}
+#workspace .section-links > .nav-more[open] > div{position:absolute;z-index:30;top:calc(100% + 8px);right:0;min-width:190px;max-height:min(60vh,420px);overflow:auto;display:grid;gap:4px;padding:8px;border:1px solid rgba(255,255,255,.14);border-radius:14px;background:#111720;box-shadow:0 14px 36px rgba(0,0,0,.38)}
+#workspace .section-links > .nav-more > div > a{display:block;padding:10px 12px;border-radius:9px;white-space:nowrap}
+#workspace .section-links > .nav-more > div > a:hover,#workspace .section-links > .nav-more > div > a.is-active{background:rgba(255,255,255,.09)}
+@media(max-width:700px){
+  #workspace .section-links{display:flex;align-items:center;flex-wrap:nowrap;gap:5px;overflow:visible}
+  #workspace .section-links > a{white-space:nowrap}
+  #workspace .section-links > .nav-more{flex:0 0 auto}
+  #workspace .section-links > .nav-more > summary{white-space:nowrap}
+}
