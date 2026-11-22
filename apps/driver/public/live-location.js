@@ -2,7 +2,7 @@
   if (document.body.dataset.app !== "driver") return;
   const activeStatuses = new Set(["accepted", "picked_up", "in_transit"]);
   const style = document.createElement("style");
-  style.textContent = ".live-location-control{margin-top:14px;padding:14px;border:1px solid #dce4ee;border-radius:16px;background:#ffffff}.live-location-control strong{display:block;color:#0b1f3a}.live-location-control p{font-size:13px;color:#66758a;line-height:1.5}.live-location-control button{margin:4px 8px 0 0;padding:10px 14px;border:0;border-radius:10px;background:#0b1f3a;color:#fff;font-weight:700}.live-location-control button:disabled{opacity:.5}.live-location-control button+button{background:#eef3f9;color:#0b1f3a}";
+  style.textContent = ".live-location-control{margin-top:14px;padding:16px;border:1px solid #dce4ee;border-radius:16px;background:#fff;color:#17263b;box-shadow:0 8px 22px rgba(11,31,58,.07)}.live-location-control strong{display:block;color:#0b1f3a;font-weight:800;letter-spacing:-.2px}.live-location-control p{font-size:13px;color:#66758a;line-height:1.55}.live-location-control button{min-height:42px;margin:4px 8px 0 0;padding:10px 15px;border:1px solid #0b1f3a;border-radius:11px;background:#0b1f3a;color:#fff;font:inherit;font-weight:800}.live-location-control button:hover:not(:disabled){background:#142f52}.live-location-control button:disabled{opacity:.5}.live-location-control button+button{background:#eef3f9;color:#0b1f3a;border-color:#dce4ee}";
   document.head.append(style);
   const watches = new Map();
   let enabled = false;
