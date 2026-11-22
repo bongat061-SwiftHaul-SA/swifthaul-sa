@@ -34,3 +34,19 @@ body[data-app="company"] .guest-banner{background:#202733;color:#e4e8ee;border-c
 body[data-app="company"] .help strong{color:#fff}
 body[data-app="company"] .footer{color:#9ba7b6;border-color:var(--ca-line)}
 @media(max-width:700px){body[data-app="company"] .topbar{padding:12px 16px}body[data-app="company"] .page{padding:18px 14px 100px}body[data-app="company"] .page-heading{display:block;margin-bottom:20px}body[data-app="company"] .page-heading h1{font-size:30px;letter-spacing:-1px}body[data-app="company"] .stats{gap:7px;margin:18px 0}body[data-app="company"] .stat{padding:12px 9px}body[data-app="company"] .stat span{font-size:9px}body[data-app="company"] .stat strong{font-size:20px}body[data-app="company"] .panel{padding:16px}body[data-app="company"] .section-links{gap:6px}body[data-app="company"] .section-links a{padding:8px 10px;font-size:11px}}
+
+
+/* Match the supplied three-phone reference palette: black/charcoal + yellow + white. */
+:root{--ca-bg:#080a0e;--ca-surface:#171b22;--ca-raised:#242a34;--ca-line:#343b46;--ca-text:#f5f6f8;--ca-muted:#b9c0ca}
+html:has(body[data-app="company"]){background:#080a0e}
+body[data-app="company"]{background:#080a0e;color:#f5f6f8}
+body[data-app="company"] .topbar{background:#090c12f5;border-color:#343b46}
+body[data-app="company"] .wordmark,body[data-app="company"] .wordmark span{color:#fff}
+body[data-app="company"] .app-tag,body[data-app="company"] .eyebrow,body[data-app="company"] .section-number{color:#ffc400}
+body[data-app="company"] .panel,body[data-app="company"] .stat,body[data-app="company"] .empty,body[data-app="company"] .help{background:linear-gradient(155deg,#242a34,#12161d);border-color:#343b46;color:#f5f6f8}
+body[data-app="company"] .primary{background:linear-gradient(180deg,#ffd21a,#f5b900);border-color:#ffc400;color:#101216}
+body[data-app="company"] .section-links a[aria-current="page"],body[data-app="company"] .section-links a:first-child{background:#ffc400;color:#101216}
+body[data-app="company"] a{color:#ffc400}
+body[data-app="company"] button,body[data-app="company"] .quiet{background:#242a34;color:#f5f6f8;border-color:#424b59}
+body[data-app="company"] button:hover,body[data-app="company"] .quiet:hover{background:#303844;border-color:#ffc400}
+body[data-app="company"] input,body[data-app="company"] select,body[data-app="company"] textarea{background:#11161e;border-color:#424b59;color:#fff}
