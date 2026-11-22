@@ -2,7 +2,7 @@
   const app = document.body.dataset.app;
   if (!["customer", "company"].includes(app)) return;
   const styles = document.createElement("style");
-  styles.textContent = ".live-driver-view{margin-top:12px;padding:12px;border:1px solid #dce7df;border-radius:14px;background:#f8fbf8}.live-driver-view button{border:0;border-radius:10px;padding:10px 14px;background:#173d31;color:#fff;font-weight:800}.live-driver-view .live-driver-map{height:230px;margin-top:10px;border-radius:12px;overflow:hidden;background:#e7eee8}.live-driver-view .live-driver-status{font-size:12px;color:#60746a}.live-driver-view[hidden]{display:none}";
+  styles.textContent = ".live-driver-view{margin-top:12px;padding:12px;border:1px solid #dce4ee;border-radius:14px;background:#ffffff}.live-driver-view button{border:0;border-radius:10px;padding:10px 14px;background:#0b1f3a;color:#fff;font-weight:800}.live-driver-view .live-driver-map{height:230px;margin-top:10px;border-radius:12px;overflow:hidden;background:#eef3f9}.live-driver-view .live-driver-status{font-size:12px;color:#66758a}.live-driver-view[hidden]{display:none}";
   document.head.append(styles);
   let active = false;
   const viewers = new Map();
@@ -55,7 +55,7 @@
           }
           if (!marker) {
             const el = document.createElement("div");
-            el.style.cssText = "width:20px;height:20px;border:4px solid #fff;border-radius:50%;background:#16845b;box-shadow:0 2px 12px #0006";
+            el.style.cssText = "width:20px;height:20px;border:4px solid #fff;border-radius:50%;background:#24558a;box-shadow:0 2px 12px #0006";
             marker = new maplibregl.Marker({ element: el }).setLngLat(point).addTo(map);
           } else marker.setLngLat(point);
           if (map.loaded()) map.easeTo({ center: point, duration: 500 });
