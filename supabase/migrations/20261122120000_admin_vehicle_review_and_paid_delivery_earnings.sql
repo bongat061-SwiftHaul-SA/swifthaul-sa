@@ -17,6 +17,7 @@ set search_path = public
 as $function$
 declare
   v_gross_cents bigint;
+  v_platform_fee_cents bigint;
   v_driver_cents bigint;
 begin
   if new.status = 'delivered'
@@ -26,7 +27,8 @@ begin
      and new.price is not null
      and new.price > 0 then
     v_gross_cents := round(new.price * 100)::bigint;
-    v_driver_cents := round(v_gross_cents * 0.75)::bigint;
+    v_platform_fee_cents := coalesce(round(nullif(new.load->>'platformFee', '')::numeric * 100)::bigint, 1500);
+    v_driver_cents := round(greatest(v_gross_cents - v_platform_fee_cents, 0) * 0.75)::bigint;
     if v_driver_cents > 0 then
       insert into public.driver_earnings_ledger (
         driver_user_id, event_key, event_type, amount_cents, waybill, description
@@ -36,7 +38,7 @@ begin
         'earning',
         v_driver_cents,
         new.waybill,
-        'Driver share: 75% of paid and completed delivery charge R' || to_char(new.price, 'FM999999990.00')
+        'Driver share: 75% of delivery fare excluding SwiftHaul platform fee R' || to_char((v_gross_cents - v_platform_fee_cents)::numeric / 100, 'FM999999990.00')
       ) on conflict (event_key) do nothing;
     end if;
   end if;
