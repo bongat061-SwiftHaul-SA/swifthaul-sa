@@ -126,20 +126,7 @@ Deno.serve(async (req: Request) => {
       .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,wallet_refund_used,wallet_promo_used,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,tracking_code,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,status")
       .eq("owner_hash", owner).order("created_at", { ascending: false }).limit(100);
     if (error) return reply(500, { error: "booking_list_failed" });
-    const { data: wallet, error: walletError } = await admin.from("wallet_accounts")
-      .select("refund_cents,promo_cents,promo_debt_cents").eq("owner_hash", owner).maybeSingle();
-    const { data: refundRequests, error: refundError } = await admin.from("booking_refund_requests")
-      .select("id,waybill,request_type,reason,refund_amount_cents,refund_source,status,created_at,reviewed_at")
-      .eq("owner_id", owner).order("created_at", { ascending: false }).limit(50);
-    if (refundError) return reply(500, { error: "refund_request_list_failed" });
-    if (walletError) return reply(500, { error: "wallet_balance_lookup_failed" });
-    const walletAvailable = wallet ? Number(wallet.refund_cents) + Math.max(0, Number(wallet.promo_cents) - Number(wallet.promo_debt_cents)) : 0;
-    return reply(200, { orders: data ?? [], refundRequests: refundRequests ?? [], canImport: false, wallet: {
-      refund_cents: wallet ? Number(wallet.refund_cents) : 0,
-      promo_cents: wallet ? Number(wallet.promo_cents) : 0,
-      promo_debt_cents: wallet ? Number(wallet.promo_debt_cents) : 0,
-      available_cents: walletAvailable,
-    } });
+    return reply(200, { orders: data ?? [], refundRequests: refundRequests ?? [], canImport: false });
   }
 
   const raw = await req.text();
