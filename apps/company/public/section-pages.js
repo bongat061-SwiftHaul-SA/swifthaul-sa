@@ -2,6 +2,16 @@
   const root = document.querySelector('body[data-app="company"] #workspace .page');
   if (!root) return;
   const nav = root.querySelector('.section-links');
+  if (document.body.dataset.portal !== 'true') {
+    const footer = document.querySelector('#workspace .footer');
+    if (footer && !footer.querySelector('.app-website-link')) {
+      const link = document.createElement('a');
+      link.className = 'app-website-link';
+      link.href = '../company-portal/';
+      link.textContent = 'Open Company Administration Website';
+      footer.append(link);
+    }
+  }
   if (nav) nav.innerHTML = document.body.dataset.portal === 'true'
     ? '<a href="?page=overview" data-page="overview">Overview</a><a href="?page=dispatch" data-page="dispatch">Dispatch</a><a href="?page=drivers" data-page="drivers">Drivers</a><a href="?page=refunds" data-page="refunds">Refunds</a><a href="?page=payouts" data-page="payouts">Payouts</a><a href="?page=cash-reconciliation" data-page="cash-reconciliation">Cash reconciliation</a><a href="?page=offers" data-page="offers">Delivery offers</a><a href="?page=finance" data-page="finance">Financial dashboard</a><a href="?page=paystack" data-page="paystack">Paystack balance</a><a href="?page=insurance" data-page="insurance">Insurance</a><a href="?page=insurance-claims" data-page="insurance-claims">Insurance claims</a><a href="?page=deletions" data-page="deletions">Deletion requests</a><a href="?page=notifications" data-page="notifications">Notifications</a><a href="?page=reports" data-page="reports">Reports</a><a href="?page=account" data-page="account">Account</a>'
     : '<a href="?page=overview" data-page="overview">Home</a><a href="?page=dispatch" data-page="dispatch">Dispatch</a><a href="?page=drivers" data-page="drivers">Drivers</a><a href="?page=tracking" data-page="tracking">Tracking</a>';
