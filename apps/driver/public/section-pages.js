@@ -12,6 +12,11 @@
   historyPanel.className = 'panel';
   historyPanel.innerHTML = '<h2>Delivery history</h2><p class="subtle">Completed, failed and cancelled deliveries are listed here after your account loads its dispatch records.</p><div id="driver-delivery-history-list" class="operations-list"><p>No completed deliveries yet.</p></div>';
   grid?.insertAdjacentElement('afterend', historyPanel);
+  const driverHome = document.createElement('section');
+  driverHome.id = 'driver-home-screen';
+  driverHome.className = 'driver-home-screen';
+  driverHome.innerHTML = '<div class="driver-profile-card"><div class="driver-avatar" aria-hidden="true">SH</div><div class="driver-profile-copy"><span class="driver-home-kicker">DRIVER WORKSPACE</span><h2>Welcome back, <strong data-driver-home-name>Driver</strong></h2><p>Ready when you are. Manage your availability and see your delivery activity.</p></div><a class="driver-profile-action" href="?page=account" data-page="account" aria-label="Open driver profile">Profile ↗</a></div><div class="driver-earnings-card"><div><span class="driver-home-kicker">YOUR EARNINGS</span><strong>75%</strong><p>Driver share on completed, paid deliveries</p></div><a href="?page=earnings" data-page="earnings">View earnings <b>→</b></a></div><div class="driver-home-shortcuts"><a href="?page=deliveries" data-page="deliveries"><span>↗</span><strong>Deliveries</strong><small>View dispatches</small></a><a href="?page=availability" data-page="availability"><span>◉</span><strong>Go online</strong><small>Manage status</small></a><a href="?page=history" data-page="history"><span>▤</span><strong>History</strong><small>Past deliveries</small></a><a href="?page=payouts" data-page="payouts"><span>R</span><strong>Payouts</strong><small>Wallet &amp; bank</small></a></div>';
+  root.querySelector('.page-heading')?.insertAdjacentElement('afterend', driverHome);
   const account = root.querySelector('#account-details');
   const availability = root.querySelector('#availability');
   const payouts = root.querySelector('#payouts');
@@ -19,7 +24,7 @@
   const insuranceClaims = root.querySelector('#insurance-claims');
   const cash = root.querySelector('#cash-management');
   const pages = {
-    home: { title: 'Ready for the road.', description: 'Your driver home, with a quick view of your delivery activity.', show: ['stats'] },
+    home: { title: 'Your driver home.', description: 'Your profile, earnings and next delivery in one place.', show: ['home','stats','dispatches','account'] },
     deliveries: { title: 'Your deliveries.', description: 'Review assigned work and follow each active route from one focused page.', show: ['dispatches'] },
     history: { title: 'Delivery history.', description: 'Review completed, failed and cancelled deliveries from your dispatch history.', show: ['history'] },
     availability: { title: 'Choose when to drive.', description: 'Manage your online status and delivery offer availability.', show: ['availability'] },
@@ -30,7 +35,7 @@
     'insurance-claims': { title: 'Insurance claims.', description: 'Submit and track accident claims linked to your active assigned dispatches.', show: ['insurance-claims'] },
     account: { title: 'Your account.', description: 'Your driver profile and support details.', show: ['account'] }
   };
-  const pageNodes = { stats, dispatches, history: historyPanel, availability, payouts, cash, premium, account, 'insurance-claims': insuranceClaims };
+  const pageNodes = { home: driverHome, stats, dispatches, history: historyPanel, availability, payouts, cash, premium, account, 'insurance-claims': insuranceClaims };
   const earningsNote = document.createElement('section');
   earningsNote.className = 'panel driver-earnings-note';
   earningsNote.innerHTML = '<h2>How delivery earnings work</h2><p>For completed deliveries, the current standard split is 75% to the driver and 25% to the platform. Vehicle-specific rates may be introduced after operating costs are established.</p>';
@@ -64,6 +69,9 @@
     });
   });
   window.addEventListener('popstate', () => render(new URLSearchParams(location.search).get('page') || 'home', false));
+  const nameTarget = driverHome.querySelector('[data-driver-home-name]');
+  const sourceName = root.querySelector('[data-user-name]');
+  if (nameTarget && sourceName) { const syncName=()=>{ nameTarget.textContent=sourceName.textContent.trim() || 'Driver'; }; syncName(); new MutationObserver(syncName).observe(sourceName,{childList:true,subtree:true,characterData:true}); }
   const key = new URLSearchParams(location.search).get('page') || 'home';
   render(key, false);
 })();
