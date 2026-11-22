@@ -2,6 +2,7 @@
   const root = document.querySelector('body[data-app="driver"] #workspace .page');
   if (!root) return;
   const nav = root.querySelector('.section-links');
+  if (nav) nav.innerHTML = '<a href="?page=home" data-page="home">Home</a><a href="?page=deliveries" data-page="deliveries">Deliveries</a><a href="?page=earnings" data-page="earnings">Earnings</a><a href="?page=account" data-page="account">Profile</a><a href="?page=history" data-page="history">History</a><a href="?page=availability" data-page="availability">Availability</a><a href="?page=payouts" data-page="payouts">Payouts</a><a href="?page=cash" data-page="cash">Cash &amp; deposits</a><a href="?page=membership" data-page="membership">Premium</a><a href="?page=insurance-claims" data-page="insurance-claims">Insurance claims</a><a href="map.html">Map</a>';
   const heading = root.querySelector('.page-heading h1');
   const description = root.querySelector('.page-heading .subtle');
   const stats = root.querySelector('#earnings');
@@ -59,9 +60,10 @@
     });
     document.title = 'SwiftHaul SA · Driver · ' + page.title.replace(/\.$/,'');
     if (updateUrl) history.pushState({ page:key }, '', '?page=' + encodeURIComponent(key));
-    nav?.closest('details')?.removeAttribute('open');
+    nav?.closest('details')?.setAttribute('open','');
     window.scrollTo({ top:0, behavior:'instant' });
   }
+  driverHome.querySelectorAll('a[data-page]').forEach(link => link.addEventListener('click', event => { event.preventDefault(); render(link.dataset.page || 'home', true); }));
   root.querySelectorAll('a[data-page]').forEach(link => {
     link.addEventListener('click', event => {
       event.preventDefault();
