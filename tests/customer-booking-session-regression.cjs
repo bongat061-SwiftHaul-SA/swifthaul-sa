@@ -22,6 +22,7 @@ const companyRefunds = read('apps/company/public/refund-admin.js');
 const dispatchOperations = read('supabase/functions/dispatch-operations/index.ts');
 const dispatchOffers = read('supabase/functions/dispatch-offers/index.ts');
 const driverCashOperations = read('supabase/functions/driver-cash-operations/index.ts');
+const vehicleReviewMigration = read('supabase/migrations/20261122200607_add_vehicle_suitability_review_status.sql');
 
 for (const field of ['pickup_plus_code','pickup_geohash','dropoff_plus_code','dropoff_geohash']) {
   assert.ok(customer.includes(field + ':data.' + field), 'Customer booking submission must send ' + field + '.');
@@ -44,6 +45,7 @@ assert.match(auth, /withTimeout\([\s\S]*?supabase\.auth\.getSession\(\)[\s\S]*?1
 assert.match(prepareSites, /if \(!fs\.existsSync\(target\)\) fs\.copyFileSync/, 'Site preparation must preserve platform-specific auth, theme and configuration files.');
 assert.ok(prepareSites.includes("const chatSource = path.join(root, 'public', 'order-chat.js')") && prepareSites.includes("const chatTarget = path.join(publicDir, 'order-chat.js')"), 'Driver bundle must include the shared delivery chat asset.');
 for (const [name, source] of [['operations',companyOperations],['driver admin',companyDrivers],['refund admin',companyRefunds]]) assert.ok(source.startsWith('(() => {') && source.trimEnd().endsWith('})();'), 'Company ' + name + ' script must isolate its top-level variables.');
+assert.ok(vehicleReviewMigration.includes("add column if not exists vehicle_suitability_status text not null default 'not_required'") && vehicleReviewMigration.includes("'pending_admin_review','approved','declined'"), 'Staging schema must include the vehicle suitability review field and valid decision states.');
 assert.ok(dispatchOperations.includes('const vehicleKey=/motor|bike/i.test(driver.vehicle_type||"")?"motorbike"') && dispatchOperations.includes('"bakkie/panel van"') && dispatchOperations.includes('"truck"'), 'Dispatch capacity classification must recognise the persisted bike, van and truck driver vehicle types.');
 assert.ok(portal.includes('one_ton_bakkie: { label: "1-Ton Bakkie / Panel Van"') && portal.includes('one_ton_bakkie: { label: "1-Ton Bakkie / Panel Van", capacity: 1000, callOutFee: 250, distanceRate: 11, freeMinutes: 30, vehicle: "bakkie" }'), '1-Ton Bakkie bookings must be stored as bakkie jobs, not light-commercial van jobs.');
 assert.ok(dispatchOffers.includes('if(v.includes("bakkie")||v.includes("panel")||v==="bakkie")return "bakkie/panel van"') && dispatchOffers.includes('if(v.includes("light_commercial")||v==="van")return "light_commercial"'), 'Dispatch offer matching must keep 1-Ton Bakkie and Mini-Van drivers in separate vehicle classes.');
