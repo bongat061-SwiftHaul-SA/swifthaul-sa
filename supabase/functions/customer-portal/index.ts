@@ -38,13 +38,12 @@ function calculateLoad(input: unknown, selectedClass: unknown) {
   const recommendation = recommendedVehicleClass(chargeable);
   const vehicleClass = (typeof selectedClass === "string" && Object.hasOwn(tariffClasses, selectedClass) ? selectedClass : recommendation) as VehicleClass;
   const tariff = tariffClasses[vehicleClass];
-  if (chargeable > tariff.capacity)
-    throw new InputError("The selected vehicle class is below the estimated payload. Please choose the recommended or a larger vehicle.", 422);
   return {
     weight, length, width, height, volumetric, chargeable, vehicle: tariff.vehicle,
     vehicleClass, truckClass: tariff.label, recommendedVehicleClass: recommendation,
-    capacity: tariff.capacity, callOutFee: tariff.callOutFee,
-    distanceRate: tariff.distanceRate, freeMinutes: tariff.freeMinutes, divisor: 5000
+    capacity: tariff.capacity, requiresAdminVehicleApproval: chargeable > tariff.capacity,
+    callOutFee: tariff.callOutFee, distanceRate: tariff.distanceRate,
+    freeMinutes: tariff.freeMinutes, divisor: 5000
   };
 }
 function pin(value: unknown) {
@@ -207,15 +206,12 @@ Deno.serve(async (req: Request) => {
   const distance = Number(quote.distance_meters);
   const assistanceRequested = body.assistance_requested === true;
   const assistanceMinutes = assistanceRequested ? Number(body.assistance_minutes) : 0;
-  const assistanceFeeCents = assistanceRequested ? Number(body.assistance_fee_cents) : 0;
+  const assistanceFeeCents = assistanceRequested ? Number(body.assistance_fee_cents ?? 0) : 0;
   if (assistanceRequested) {
     if (!Number.isInteger(assistanceMinutes) || assistanceMinutes < 30 || assistanceMinutes > 120 || assistanceMinutes % 30 !== 0)
       return reply(400, { error: "choose_assistance_duration_between_30_and_120_minutes" });
-    if (quote.vehicle !== "van" && quote.vehicle !== "truck") return reply(400, { error: "assistance_requires_a_supported_vehicle" });
-    const isTruckClass = quote.load?.vehicleClass === "closed_truck" || quote.load?.vehicleClass === "freight_truck";
-    const expectedFee = (isTruckClass ? 35000 : 18000) + ((assistanceMinutes / 30) - 1) * (isTruckClass ? 18000 : 10000);
-    if (assistanceFeeCents !== expectedFee) return reply(400, { error: "assistance_quote_changed_recalculate_and_review" });
-  } else if ((body.assistance_minutes ?? 0) !== 0 || (body.assistance_fee_cents ?? 0) !== 0) return reply(400, { error: "unexpected_assistance_amount" });
+    if (assistanceFeeCents !== 0) return reply(400, { error: "loading_and_carrying_assistance_is_free" });
+  } else if (assistanceMinutes !== 0 || assistanceFeeCents !== 0) return reply(400, { error: "unexpected_assistance_amount" });
   const method = body.payment_method ?? "card";
   if (method !== "cash" && method !== "card") return reply(400, { error: "choose_a_valid_payment_method" });
   if (method === "cash" && distance >= 12000) return reply(400, { error: "cash_available_only_below_12km" });
@@ -247,7 +243,7 @@ Deno.serve(async (req: Request) => {
     load: quote.load, distance_fee: quote.distance_fee, scheduled_at: scheduled,
     return_address: returnAddress || null, return_at: returnAt, payment_method: method,
     assistance_requested: assistanceRequested, assistance_minutes: assistanceMinutes,
-    assistance_fee_cents: assistanceFeeCents, assistance_status: assistanceRequested ? "requested_pending_dispatch_confirmation" : "not_requested",
+    assistance_fee_cents: 0, assistance_status: assistanceRequested ? "requested_pending_dispatch_confirmation" : "not_requested",
     counter_offer: offer, counter_offer_status: offerStatus,
     pickup_latitude: pickup.latitude, pickup_longitude: pickup.longitude, pickup_plus_code: pickup.plus_code, pickup_geohash: pickup.geohash,
     dropoff_latitude: dropoff.latitude, dropoff_longitude: dropoff.longitude, dropoff_plus_code: dropoff.plus_code, dropoff_geohash: dropoff.geohash,
