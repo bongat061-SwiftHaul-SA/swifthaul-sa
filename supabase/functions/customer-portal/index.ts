@@ -213,8 +213,7 @@ Deno.serve(async (req: Request) => {
     if (assistanceFeeCents !== 0) return reply(400, { error: "loading_and_carrying_assistance_is_free" });
   } else if (assistanceMinutes !== 0 || assistanceFeeCents !== 0) return reply(400, { error: "unexpected_assistance_amount" });
   const method = body.payment_method ?? "card";
-  if (method !== "cash" && method !== "card") return reply(400, { error: "choose_a_valid_payment_method" });
-  if (method === "cash" && distance >= 12000) return reply(400, { error: "cash_available_only_below_12km" });
+  if (method !== "card") return reply(400, { error: "online_company_payment_required" });
   let offer: number | null = null;
   let offerStatus = "none";
   if (body.counter_offer !== undefined && body.counter_offer !== null && body.counter_offer !== "") {
@@ -244,6 +243,7 @@ Deno.serve(async (req: Request) => {
     return_address: returnAddress || null, return_at: returnAt, payment_method: method,
     assistance_requested: assistanceRequested, assistance_minutes: assistanceMinutes,
     assistance_fee_cents: 0, assistance_status: assistanceRequested ? "requested_pending_dispatch_confirmation" : "not_requested",
+    vehicle_suitability_status: quote.load?.requiresAdminVehicleApproval ? "pending_admin_review" : "not_required",
     counter_offer: offer, counter_offer_status: offerStatus,
     pickup_latitude: pickup.latitude, pickup_longitude: pickup.longitude, pickup_plus_code: pickup.plus_code, pickup_geohash: pickup.geohash,
     dropoff_latitude: dropoff.latitude, dropoff_longitude: dropoff.longitude, dropoff_plus_code: dropoff.plus_code, dropoff_geohash: dropoff.geohash,
