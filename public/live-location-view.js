@@ -2,7 +2,7 @@
   const app = document.body.dataset.app;
   if (!["customer", "company"].includes(app)) return;
   const styles = document.createElement("style");
-  styles.textContent = ".live-driver-view{margin-top:14px;padding:14px;border:1px solid #343b46;border-radius:16px;background:linear-gradient(155deg,#242a34,#12161d);color:#f5f6f8;box-shadow:0 10px 26px rgba(0,0,0,.38)}.live-driver-view button{min-height:42px;border:1px solid #ffc400;border-radius:11px;padding:10px 15px;background:linear-gradient(180deg,#ffd21a,#f5b900);color:#101216;font:inherit;font-weight:800}.live-driver-view button:hover{background:#ffcf16}.live-driver-view .live-driver-map{height:230px;margin-top:12px;border:1px solid #343b46;border-radius:13px;overflow:hidden;background:#eef3f9}.live-driver-view .live-driver-status{font-size:12px;line-height:1.5;color:#c2c9d3}.live-driver-view[hidden]{display:none}";
+  styles.textContent = ".live-driver-view{margin-top:14px;padding:14px;border:1px solid #343b46;border-radius:16px;background:linear-gradient(155deg,#242a34,#12161d);color:#f5f6f8;box-shadow:0 10px 26px rgba(0,0,0,.38)}.live-driver-view button{min-height:42px;border:1px solid #c0c7d1;border-radius:11px;padding:10px 15px;background:linear-gradient(180deg,#e5e9ef,#aeb8c6);color:#101216;font:inherit;font-weight:800}.live-driver-view button:hover{background:#d5dbe3}.live-driver-view .live-driver-map{height:230px;margin-top:12px;border:1px solid #343b46;border-radius:13px;overflow:hidden;background:#eef3f9}.live-driver-view .live-driver-status{font-size:12px;line-height:1.5;color:#c2c9d3}.live-driver-view[hidden]{display:none}";
   document.head.append(styles);
   let active = false;
   const viewers = new Map();
