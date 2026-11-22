@@ -25,7 +25,7 @@
   const insuranceClaims = root.querySelector('#insurance-claims');
   const cash = root.querySelector('#cash-management');
   const pages = {
-    home: { title: 'Your driver home.', description: 'Your profile, earnings and next delivery in one place.', show: ['home','stats','dispatches','account'] },
+    home: { title: 'Your driver home.', description: 'Your profile, earnings and next delivery in one place.', show: ['home','dispatches'] },
     deliveries: { title: 'Your deliveries.', description: 'Review assigned work and follow each active route from one focused page.', show: ['dispatches'] },
     history: { title: 'Delivery history.', description: 'Review completed, failed and cancelled deliveries from your dispatch history.', show: ['history'] },
     availability: { title: 'Choose when to drive.', description: 'Manage your online status and delivery offer availability.', show: ['availability'] },
@@ -44,6 +44,7 @@
   pageNodes['earnings-note'] = earningsNote;
   function render(key, updateUrl) {
     const page = pages[key] || pages.home;
+    body.dataset.driverPage = pages[key] ? key : 'home';
     Object.entries(pageNodes).forEach(([name,node]) => { if (node) node.hidden = !page.show.includes(name); });
     if (grid) {
       const visibleChild = [dispatches, account].some(node => node && !node.hidden);
@@ -74,6 +75,17 @@
   const nameTarget = driverHome.querySelector('[data-driver-home-name]');
   const sourceName = root.querySelector('[data-user-name]');
   if (nameTarget && sourceName) { const syncName=()=>{ nameTarget.textContent=sourceName.textContent.trim() || 'Driver'; }; syncName(); new MutationObserver(syncName).observe(sourceName,{childList:true,subtree:true,characterData:true}); }
+  // Reuse the live earnings summary as the source for the reference-style home card.
+  const sourceStats = root.querySelectorAll('#earnings .stat strong');
+  const syncHomeMetrics = () => {
+    const completed = driverHome.querySelector('[data-driver-today-count]');
+    const earningsValue = driverHome.querySelector('[data-driver-today-earnings]');
+    if (completed && sourceStats[1]) completed.textContent = sourceStats[1].textContent.trim() || '—';
+    if (earningsValue && sourceStats[2]) earningsValue.textContent = sourceStats[2].textContent.trim() || '—';
+  };
+  syncHomeMetrics();
+  const statsPanel = root.querySelector('#earnings');
+  if (statsPanel) new MutationObserver(syncHomeMetrics).observe(statsPanel,{childList:true,subtree:true,characterData:true});
   const key = new URLSearchParams(location.search).get('page') || 'home';
   render(key, false);
 })();
