@@ -108,3 +108,44 @@ body[data-app="customer"] #auth-screen .auth-panel,body[data-app="driver"] #auth
  body[data-app="customer"] .driver-documents-panel,body[data-app="driver"] .driver-documents-panel{margin-left:0;margin-right:0}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+
+/* Reference-image palette lock: charcoal/black, SwiftHaul yellow, white, green status.
+   Colour-only overrides; preserve existing component geometry and navigation structure. */
+:root{--sh-navy:#080a0e;--sh-navy-2:#171b22;--sh-blue:#ffc400;--sh-ice:#242a34;--sh-ink:#f5f6f8;--sh-muted:#b9c0ca;--sh-line:#343b46;--sh-white:#171b22;--sh-shadow:0 12px 30px rgba(0,0,0,.35)}
+body[data-app="customer"],body[data-app="driver"]{background:#080a0e;color:#f5f6f8}
+body[data-app="customer"] .topbar,body[data-app="driver"] .topbar{background:#090c12;border-color:#343b46;color:#fff}
+body[data-app="customer"] .wordmark,body[data-app="driver"] .wordmark{color:#fff}
+body[data-app="customer"] .wordmark span,body[data-app="driver"] .wordmark span{color:#ffc400}
+body[data-app="customer"] .eyebrow,body[data-app="driver"] .eyebrow{color:#ffc400}
+body[data-app="customer"] .page-heading h1,body[data-app="driver"] .page-heading h1,
+body[data-app="customer"] .panel h2,body[data-app="driver"] .panel h2,
+body[data-app="customer"] .panel h3,body[data-app="driver"] .panel h3{color:#fff}
+body[data-app="customer"] .subtle,body[data-app="driver"] .subtle{color:#b9c0ca}
+body[data-app="customer"] .panel,body[data-app="driver"] .panel,
+body[data-app="customer"] .stat,body[data-app="driver"] .stat,
+body[data-app="customer"] .auth-panel,body[data-app="driver"] .auth-panel{background:linear-gradient(155deg,#242a34,#12161d);border-color:#343b46;color:#f5f6f8;box-shadow:0 12px 30px rgba(0,0,0,.35)}
+body[data-app="customer"] .stat span,body[data-app="driver"] .stat span{color:#b9c0ca}
+body[data-app="customer"] .stat strong,body[data-app="driver"] .stat strong{color:#fff}
+body[data-app="customer"] input,body[data-app="customer"] select,body[data-app="customer"] textarea,
+body[data-app="driver"] input,body[data-app="driver"] select,body[data-app="driver"] textarea{background:#11161e;border-color:#424b59;color:#fff}
+body[data-app="customer"] button.primary,body[data-app="driver"] button.primary,
+body[data-app="customer"] .primary,body[data-app="driver"] .primary{background:linear-gradient(180deg,#ffd21a,#f5b900);border-color:#ffc400;color:#101216;box-shadow:0 7px 18px rgba(255,196,0,.18)}
+body[data-app="customer"] button.primary:hover,body[data-app="driver"] button.primary:hover,
+body[data-app="customer"] .primary:hover,body[data-app="driver"] .primary:hover{background:#ffcf16;border-color:#ffcf16;color:#101216}
+body[data-app="customer"] .section-links,body[data-app="driver"] .section-links{background:#11161e;border-color:#343b46;box-shadow:0 5px 18px rgba(0,0,0,.3)}
+body[data-app="customer"] .section-links a,body[data-app="driver"] .section-links a{color:#d7dce3}
+body[data-app="customer"] .section-links a:hover,body[data-app="driver"] .section-links a:hover,
+body[data-app="customer"] .section-links a[aria-current="page"],body[data-app="driver"] .section-links a[aria-current="page"]{background:#ffc400;color:#101216}
+body[data-app="customer"] .footer,body[data-app="driver"] .footer{background:#090c12;border-color:#343b46;color:#b9c0ca}
+body[data-app="customer"] #auth-screen,body[data-app="driver"] #auth-screen{background:#080a0e}
+body[data-app="customer"] #auth-screen .auth-story,body[data-app="driver"] #auth-screen .auth-story{background:linear-gradient(145deg,#080a0e,#242a34 70%,#343b46)}
+body[data-app="customer"] #auth-screen .auth-story .eyebrow,body[data-app="driver"] #auth-screen .auth-story .eyebrow{color:#ffc400}
+body[data-app="customer"] #auth-screen .auth-panel,body[data-app="driver"] #auth-screen .auth-panel{border-color:#343b46}
+body[data-app="customer"] .vehicle:has(input:checked),body[data-app="driver"] .vehicle:has(input:checked){border-color:#ffc400;background:#242a34}
+body[data-app="customer"] .vehicle,body[data-app="driver"] .vehicle{border-color:#343b46}
+body[data-app="driver"] .accent-panel,body[data-app="driver"] .driver-home-hero{background:linear-gradient(145deg,#242a34,#11161e);border-color:#343b46}
+body[data-app="driver"] .accent-panel h2,body[data-app="driver"] .driver-home-hero h2,
+body[data-app="driver"] .accent-panel strong{color:#fff}
+body[data-app="driver"] .accent-panel p,body[data-app="driver"] .driver-home-hero p{color:#d5dbe4}
+body[data-app="driver"] .driver-home-hero a{border-color:#ffc400;color:#ffc400}
