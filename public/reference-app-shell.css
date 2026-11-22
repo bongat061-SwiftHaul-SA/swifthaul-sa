@@ -421,3 +421,77 @@ body[data-app="company"] #workspace .admin-quality-card strong{
   body[data-app="customer"] #quote-result .quote-totals{grid-template-columns:1fr!important}
   body[data-app="driver"] #workspace .driver-home-mark{display:none!important}
 }
+
+
+/* Live delivery tracking: shared Customer / Driver / Company presentation.
+   Keep map canvases, raster tiles, route colours and GPS behaviour untouched. */
+body[data-app="customer"] #workspace .live-driver-view,
+body[data-app="company"] #workspace .live-driver-view,
+body[data-app="driver"] #workspace .live-location-control{
+  display:grid!important;gap:10px!important;
+  margin-top:16px!important;padding:16px!important;
+  border:1px solid #424b59!important;border-radius:17px!important;
+  background:linear-gradient(150deg,#252c36,#11161e)!important;
+  color:#f5f6f8!important;box-shadow:0 12px 28px #0005!important;
+}
+body[data-app] #workspace .live-driver-view button,
+body[data-app] #workspace .live-location-control button{
+  justify-self:start!important;min-height:46px!important;
+  padding:11px 17px!important;border:1px solid #ffc400!important;
+  border-radius:12px!important;
+  background:linear-gradient(180deg,#ffd21a,#f2b600)!important;
+  color:#101216!important;font-weight:850!important;
+  box-shadow:0 6px 16px #ffc40020!important;
+}
+body[data-app] #workspace .live-location-control button+button{
+  background:#242a34!important;color:#f5f6f8!important;
+  border-color:#424b59!important;box-shadow:none!important;
+}
+body[data-app] #workspace .live-location-control button:disabled{
+  opacity:.48!important;cursor:not-allowed!important;
+}
+body[data-app] #workspace .live-driver-view .live-driver-status,
+body[data-app] #workspace .live-location-control p{
+  margin:0!important;color:#c5ced9!important;
+  font-size:13px!important;line-height:1.55!important;
+}
+body[data-app] #workspace .live-driver-view .live-driver-map{
+  width:100%!important;height:260px!important;min-height:220px!important;
+  margin-top:4px!important;border:1px solid #485362!important;
+  border-radius:14px!important;overflow:hidden!important;
+}
+body[data-app] #workspace .live-driver-view[hidden]{display:none!important}
+body[data-app] #workspace #dispatches .operations-list .order,
+body[data-app] #workspace #ordersContainer .order{
+  position:relative!important;min-width:0!important;
+  margin:12px 0!important;padding:16px!important;
+  border:1px solid #394351!important;border-radius:16px!important;
+  background:linear-gradient(155deg,#242a34,#12161d)!important;
+  color:#f5f6f8!important;box-shadow:0 8px 22px #0003!important;
+}
+body[data-app] #workspace #dispatches .operations-list .order .status,
+body[data-app] #workspace #ordersContainer .order .status{
+  display:inline-flex!important;align-items:center!important;
+  width:max-content!important;max-width:100%!important;
+  margin:6px 0!important;padding:6px 10px!important;
+  border:1px solid #6a5720!important;border-radius:999px!important;
+  background:#302914!important;color:#ffd21a!important;
+  font-size:11px!important;font-weight:850!important;letter-spacing:.035em!important;
+}
+@media(max-width:700px){
+  body[data-app] #workspace .live-driver-view,
+  body[data-app] #workspace .live-location-control{
+    gap:9px!important;margin-top:12px!important;padding:13px!important;
+    border-radius:15px!important;
+  }
+  body[data-app] #workspace .live-driver-view .live-driver-map{
+    height:220px!important;min-height:200px!important;
+  }
+  body[data-app] #workspace .live-location-control button{
+    width:100%!important;justify-self:stretch!important;margin:2px 0!important;
+  }
+  body[data-app] #workspace #dispatches .operations-list .order,
+  body[data-app] #workspace #ordersContainer .order{
+    padding:13px!important;margin:10px 0!important;
+  }
+}
