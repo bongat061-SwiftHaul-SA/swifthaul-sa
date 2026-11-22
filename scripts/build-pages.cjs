@@ -30,6 +30,32 @@ for (const app of ['customer', 'driver', 'company']) {
     };
     rewriteNestedPaths(target);
   }
+  // GitHub Pages hosts this project below a repository prefix. Rewrite legacy
+  // domain-root URLs so offline, terms and fallback pages stay inside each app.
+  const rewriteRootUrls = (directory, bundleRoot) => {
+    const visit = (folder) => {
+      for (const entry of fs.readdirSync(folder, { withFileTypes: true })) {
+        const file = path.join(folder, entry.name);
+        if (entry.isDirectory()) visit(file);
+        else if (entry.isFile() && entry.name.endsWith('.html')) {
+          let html = fs.readFileSync(file, 'utf8');
+          html = html.replace(/\\b(href|src)\\s*=\\s*(["'])\\/(?!\\/)([^"']*)\\2/gi, (match, attribute, quote, tail) => {
+            const split = tail.search(/[?#]/);
+            const pathname = split < 0 ? tail : tail.slice(0, split);
+            const suffix = split < 0 ? '' : tail.slice(split);
+            const target = pathname ? path.join(bundleRoot, pathname) : bundleRoot;
+            let relative = path.relative(path.dirname(file), target).split(path.sep).join('/');
+            if (!relative) relative = './';
+            else if (!relative.startsWith('.')) relative = './' + relative;
+            return attribute + '=' + quote + relative + suffix + quote;
+          });
+          fs.writeFileSync(file, html);
+        }
+      }
+    };
+    visit(directory);
+  };
+  rewriteRootUrls(target, target);
   // The Customer app has a dedicated customer.html entry point. Keep the
   // directory default (index.html) identical so browser visitors cannot land
   // on an older booking form when they open /customer/ instead.
