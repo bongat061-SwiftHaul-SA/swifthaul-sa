@@ -329,3 +329,137 @@ body[data-app="driver"] #workspace .driver-feed-heading>span{display:grid;place-
 .customer-mode-switch:hover,.driver-mode-switch:hover,.platform-mode-switch:hover{
   border-color:var(--ref-silver-hi,#e5e9ef);background:#272e39;color:#fff;
 }
+
+
+/* Reference fidelity pass — make each browser app read like the original phone UI.
+   Keep the three-phone reference artwork itself untouched. */
+body[data-app] #workspace{max-width:100%;margin:0 auto}
+body[data-app] #workspace>.topbar{max-width:430px;margin:0 auto;position:relative}
+body[data-app] #workspace .page{
+  width:min(100% - 24px,430px)!important;max-width:430px!important;
+  padding:18px 0 112px!important;
+}
+body[data-app] #workspace .page-heading{margin:0 0 12px!important}
+body[data-app] #workspace .page-heading h1{font-size:23px!important;letter-spacing:-.8px!important}
+body[data-app] #workspace .page-heading>.subtle{font-size:11px!important}
+body[data-app="customer"] #workspace .page:has(.customer-home:not([hidden]))>.page-heading{display:none!important}
+body[data-app="driver"] #workspace .page:has(#driver-home-screen:not([hidden]))>.page-heading{display:none!important}
+
+/* Customer Home: wide cinematic delivery hero, prominent silver booking CTA,
+   compact two-by-two shortcuts and a distinct live-tracking tile. */
+body[data-app="customer"] #workspace .customer-home-intro{
+  position:relative;isolation:isolate;overflow:hidden;min-height:310px!important;
+  padding:23px 20px 19px!important;border-radius:22px!important;
+  background:
+    radial-gradient(ellipse at 76% 37%,#73809255 0,transparent 34%),
+    linear-gradient(180deg,#1b2532 0%,#121923 54%,#0b1017 100%)!important;
+}
+body[data-app="customer"] #workspace .customer-home-intro:before{
+  content:"";position:absolute;z-index:-1;left:0;right:0;top:0;height:67%;
+  opacity:.56;background:
+    linear-gradient(90deg,transparent 0 9%,#7c8998 9% 10%,transparent 10% 20%,#69798b 20% 21%,transparent 21% 33%,#8592a0 33% 34%,transparent 34% 49%,#6e7d8e 49% 50%,transparent 50% 64%,#8995a3 64% 65%,transparent 65%),
+    linear-gradient(0deg,#111923 0 15%,transparent 15%);
+  clip-path:polygon(0 34%,8% 34%,8% 18%,16% 18%,16% 38%,24% 38%,24% 5%,34% 5%,34% 30%,43% 30%,43% 12%,53% 12%,53% 37%,63% 37%,63% 0,75% 0,75% 33%,85% 33%,85% 13%,96% 13%,96% 36%,100% 36%,100% 100%,0 100%);
+}
+body[data-app="customer"] #workspace .customer-home-intro:after{
+  content:"";position:absolute;z-index:-1;right:13px;top:105px;width:190px;height:86px;
+  border-radius:18px 22px 12px 12px;
+  background:linear-gradient(180deg,#d8dde4,#818d9b 72%,#343d49);
+  box-shadow:inset 0 -12px #4b5664,0 18px 22px #0008;
+  clip-path:polygon(12% 0,72% 0,88% 19%,100% 25%,100% 82%,0 82%,0 24%);
+  opacity:.84;
+}
+body[data-app="customer"] #workspace .customer-home-copy{max-width:78%;margin-top:100px}
+body[data-app="customer"] #workspace .customer-home-copy h2{font-size:34px!important}
+body[data-app="customer"] #workspace .customer-home-copy>p{font-size:11px!important}
+body[data-app="customer"] #workspace .customer-book-cta{min-height:60px!important;border-radius:14px!important}
+body[data-app="customer"] #workspace .customer-home-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}
+body[data-app="customer"] #workspace .customer-home-actions>a{
+  min-height:88px!important;padding:13px!important;grid-template-columns:36px 1fr!important;
+  background:linear-gradient(145deg,#242b36,#141920)!important;border:1px solid #343d49!important;
+}
+body[data-app="customer"] #workspace .customer-action-icon{width:34px;height:34px;border-radius:50%;background:#c0c7d11a!important}
+body[data-app="customer"] #workspace .customer-active-tracking{
+  display:block!important;padding:15px!important;border-radius:18px!important;
+  background:linear-gradient(145deg,#202a36,#111720)!important;
+}
+body[data-app="customer"] #workspace .customer-live-card{
+  display:grid;grid-template-columns:42px minmax(0,1fr) 18px;align-items:center;gap:10px;
+  padding:13px 0 0;border-top:1px solid #394452;
+}
+body[data-app="customer"] #workspace .customer-van-thumb{
+  display:grid;place-items:center;width:40px;height:40px;border-radius:12px;
+  background:#c0c7d11b;color:#e5e9ef;font-size:22px;
+}
+body[data-app="customer"] #workspace .customer-live-card p{margin:4px 0 0;font-size:10px;line-height:1.45}
+body[data-app="customer"] #workspace .customer-track-arrow{color:#e5e9ef}
+
+/* Booking: single-column phone flow, spacious touch targets and silver step state. */
+body[data-app="customer"] #workspace #booking-form{max-width:100%!important;padding:14px!important;border-radius:20px!important}
+body[data-app="customer"] #workspace #booking-form .booking-step .vehicles{grid-template-columns:1fr!important}
+body[data-app="customer"] #workspace #booking-form .booking-step .vehicle{min-height:62px;align-items:center}
+body[data-app="customer"] #workspace #booking-form .booking-wizard-progress span.is-complete{background:#e5e9ef!important}
+body[data-app="customer"] #workspace #booking-form .booking-next{background:linear-gradient(180deg,#e5e9ef,#aeb8c6)!important;color:#101216!important}
+
+/* Tracking: the route map is the hero, with progress and trip details below it. */
+body[data-app="customer"] #workspace .live-driver-view{padding:14px!important;border-radius:20px!important}
+body[data-app="customer"] #workspace .live-driver-view .live-driver-map{height:300px!important;min-height:260px!important;border-radius:15px!important}
+body[data-app="customer"] #workspace .live-tracking-details{background:#0e141c!important}
+body[data-app="customer"] #workspace .live-tracking-progress li{font-size:9px!important}
+
+/* Driver Dashboard: restore the reference's profile, earnings, three metrics and offer feed. */
+body[data-app="driver"] #workspace .page-heading{
+  background:transparent!important;box-shadow:none!important;padding:0!important;
+}
+body[data-app="driver"] #workspace .page-heading:after{display:none!important}
+body[data-app="driver"] #workspace .driver-home-screen{gap:11px!important}
+body[data-app="driver"] #workspace .driver-profile-card{
+  grid-template-columns:48px minmax(0,1fr) auto!important;padding:14px!important;
+  background:linear-gradient(145deg,#252d39,#121820)!important;border:1px solid #3b4654!important;
+}
+body[data-app="driver"] #workspace .driver-earnings-card{
+  padding:19px!important;border-radius:18px!important;
+  background:linear-gradient(135deg,#dce2e9,#aeb8c6)!important;color:#10151c!important;
+}
+body[data-app="driver"] #workspace .driver-earnings-card strong,
+body[data-app="driver"] #workspace .driver-earnings-card p,
+body[data-app="driver"] #workspace .driver-earnings-card a{color:#10151c!important}
+body[data-app="driver"] #workspace .driver-metric-row{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important}
+body[data-app="driver"] #workspace .driver-metric-row>div{
+  min-width:0;padding:12px 9px!important;border:1px solid #343d49!important;
+  border-radius:15px!important;background:linear-gradient(145deg,#222a35,#141a22)!important;
+}
+body[data-app="driver"] #workspace .driver-metric-row strong{font-size:20px!important;color:#fff!important}
+body[data-app="driver"] #workspace .driver-feed-heading{display:flex;align-items:center;justify-content:space-between;margin:4px 0 0}
+body[data-app="driver"] #workspace .driver-feed-heading h2{font-size:17px!important}
+body[data-app="driver"] #workspace #dispatches{border-top:0!important}
+body[data-app="driver"] #workspace .driver-stacked-offers .order,
+body[data-app="driver"] #workspace .driver-offer-card{
+  padding:14px!important;background:linear-gradient(145deg,#252d39,#141a22)!important;
+  border:1px solid #3b4654!important;border-radius:17px!important;
+}
+body[data-app="driver"] #workspace .driver-offer-actions button:first-child{
+  background:linear-gradient(180deg,#e5e9ef,#aeb8c6)!important;color:#101216!important;
+  border-color:#e5e9ef!important;font-weight:850!important;
+}
+body[data-app="driver"] #workspace .driver-home-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+body[data-app="driver"] #workspace .driver-home-shortcuts>a{
+  background:linear-gradient(145deg,#242b36,#141920)!important;border:1px solid #343d49!important;
+  border-radius:15px!important;
+}
+body[data-app="driver"] #workspace .driver-mode-switch,
+body[data-app="customer"] #workspace .customer-mode-switch{
+  min-height:36px!important;margin:4px 0!important;border-radius:12px!important;
+}
+@media(min-width:700px){
+ body[data-app] #workspace{max-width:460px!important;border-left:1px solid #202833;border-right:1px solid #202833;box-shadow:0 0 70px #0008}
+ body[data-app] #workspace>.topbar{width:100%!important}
+}
+@media(max-width:480px){
+ body[data-app] #workspace .page{width:calc(100% - 22px)!important;padding-top:13px!important}
+ body[data-app="customer"] #workspace .customer-home-intro{min-height:285px!important}
+ body[data-app="customer"] #workspace .customer-home-copy{margin-top:88px!important}
+ body[data-app="customer"] #workspace .customer-home-copy h2{font-size:31px!important}
+ body[data-app="driver"] #workspace .driver-profile-card{grid-template-columns:42px minmax(0,1fr)!important}
+ body[data-app="driver"] #workspace .driver-profile-action{grid-column:2;justify-self:start}
+}
