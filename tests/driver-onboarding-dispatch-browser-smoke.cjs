@@ -86,7 +86,7 @@ function mockSupabase(role) {
     const identityTypes=await onboarding.locator('input[name="identity_documents"]').evaluate(input=>[...input.parentElement.querySelectorAll('.document-file-type-map select')].map(s=>[...s.options].map(o=>o.value)));
     assert.equal(identityTypes.length,3,'Each identity file must have its own document type selector.');
     assert.ok(identityTypes.every(values=>['id_front','id_back','profile_selfie'].every(value=>values.includes(value))),'South African identity files must map to ID front, ID back and profile selfie.');
-    await onboarding.locator('[name="prdp_holder"]').check();
+    await onboarding.locator('[name="prdp_holder"]').evaluate(el=>{el.checked=true;el.dispatchEvent(new Event('change',{bubbles:true}));});
     await onboarding.locator('input[name="driving_documents"]').setInputFiles([
       {name:'licence-front.pdf',mimeType:'application/pdf',buffer:Buffer.from('test document')},
       {name:'licence-back.pdf',mimeType:'application/pdf',buffer:Buffer.from('test document')},
