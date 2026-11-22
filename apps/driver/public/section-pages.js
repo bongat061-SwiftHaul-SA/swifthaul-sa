@@ -62,9 +62,9 @@
     const navCurrent = nav?.closest('.workspace-navigation')?.querySelector('[data-nav-current]');
     if (navCurrent) navCurrent.textContent = page.title.replace(/\.$/,'');
     nav?.querySelectorAll('a').forEach(link => {
-      const selected = link.dataset.page === selected;
-      link.classList.toggle('is-active', selected);
-      if (selected) link.setAttribute('aria-current','page'); else link.removeAttribute('aria-current');
+      const active = link.dataset.page === selected;
+      link.classList.toggle('is-active', active);
+      if (active) link.setAttribute('aria-current','page'); else link.removeAttribute('aria-current');
     });
     document.title = 'SwiftHaul SA · Driver · ' + page.title.replace(/\.$/,'');
     if (updateUrl) history.pushState({ page:selected }, '', '?page=' + encodeURIComponent(selected));
