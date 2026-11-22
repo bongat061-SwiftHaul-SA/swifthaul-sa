@@ -481,3 +481,10 @@ body[data-app="customer"] #workspace .customer-mode-switch{
 body[data-app] #workspace .platform-mode-switch,
 body[data-app] #workspace .customer-mode-switch,
 body[data-app] #workspace .driver-mode-switch{display:none!important}
+
+
+/* Remove the previous dashboard hero; the reference-style home is the sole driver hero. */
+body[data-app="driver"] #workspace .driver-home-hero{display:none!important}
+body[data-app="driver"] #workspace #earnings{display:none!important}
+body[data-app="driver"][data-driver-page="earnings"] #workspace #earnings{display:grid!important}
+body[data-app="driver"][data-driver-page="home"] #workspace #account-details{display:none!important}
