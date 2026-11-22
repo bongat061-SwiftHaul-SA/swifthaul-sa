@@ -242,7 +242,7 @@ function downloadPDF(order) {
     line(`Pickup: ${order.pickup}`); line(`Drop-off: ${order.dropoff}`);
     if (order.distance_meters != null) line(`Mapped driving distance: ${km(order.distance_meters)} km`);
     line(`Recipient and notes: ${order.recipient}`); line(`Vehicle: ${order.load?.truckClass || order.vehicle.toUpperCase()}`);
-    if(order.load) {line(`Estimated payload: ${mass(order.load.chargeable)} kg (used for vehicle recommendation)`);line(`Packed dimensions: ${order.load.length} x ${order.load.width} x ${order.load.height} cm; divisor 5000`);if(order.load.callOutFee!=null) {line(`Call-out fee: ${money(order.load.callOutFee)}; distance rate: ${money(order.load.distanceRate)}/km; distance charge: ${money(order.distance_fee)}`);line(`Free loading/offloading window: ${order.load.freeMinutes} minutes`);} else line('Original booking tariff retained; see the saved fare total.');}
+    if(order.load) {line(`Estimated payload: ${mass(order.load.chargeable)} kg (used for vehicle recommendation)`);line(`Packed dimensions: ${order.load.length} x ${order.load.width} x ${order.load.height} cm; divisor 5000`);if(order.load.callOutFee!=null) {line(`Call-out fee: ${money(order.load.callOutFee)}; distance rate: ${money(order.load.distanceRate)}/km; distance charge: ${money(order.distance_fee)}`);line(`Platform / booking fee: ${money(order.load.platformFee??15)} (SwiftHaul)`);line(`Free loading/offloading window: ${order.load.freeMinutes} minutes`);} else line('Original booking tariff retained; see the saved fare total.');}
     if(order.scheduled_at) line('Requested pickup: '+localTime(order.scheduled_at));
     if(order.return_address) line('Return request (separate quote, excluded from total): '+order.return_address+(order.return_at?' at '+localTime(order.return_at):''));
     line(`Acceptance PIN: ${order.pin}`); line(`Fare: ${money(order.price)} ZAR`, 13);
@@ -306,7 +306,7 @@ calculateButton.addEventListener('click', async () => {
     document.getElementById('quote-distance').textContent=`${km(route.distance)} km`;
     document.getElementById('quote-price').textContent=money(currentQuote.price);
     document.getElementById('priceBadge').textContent=money(currentQuote.price);
-    document.getElementById('quote-band').textContent=`Indicative Gauteng tariff · VAT excluded · ${currentQuote.freeMinutes} minutes loading/offloading included.`;
+    document.getElementById('quote-band').textContent=`Includes R${Number(currentQuote.platformFee||15).toFixed(2)} platform fee · VAT excluded · ${currentQuote.freeMinutes} minutes loading/offloading included.`;
     document.getElementById('quote-locations').textContent=`Pickup: ${route.pickup.label}. Drop-off: ${route.dropoff.label}.`;
     document.getElementById('truck-route-note').hidden=currentQuote.vehicle!=='truck';
     document.getElementById('quote-load').textContent=`${currentQuote.load.truckClass} selected · Estimated payload ${mass(currentQuote.load.chargeable)} kg. Vehicle recommendation uses item weight and packed dimensions; no separate weight fee applies.`;
