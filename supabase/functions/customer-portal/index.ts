@@ -12,9 +12,9 @@ const reply = (status: number, body: Record<string, unknown>) =>
   new Response(JSON.stringify(body), { status, headers: cors });
 const validText = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0 && v.length <= 500;
 const tariffClasses = {
-  light_commercial: { label: "Mini-Van / Light Commercial", capacity: 600, callOutFee: 150, distanceRate: 8.5, freeMinutes: 20, vehicle: "van" },
+  light_commercial: { label: "Motorbike", capacity: 0, callOutFee: 60, distanceRate: 8.5, freeMinutes: 20, vehicle: "van" },
   one_ton_bakkie: { label: "1-Ton Bakkie / Panel Van", capacity: 1000, callOutFee: 250, distanceRate: 11, freeMinutes: 30, vehicle: "van" },
-  closed_truck: { label: "1.5-Ton – 3-Ton Closed Truck", capacity: 3000, callOutFee: 450, distanceRate: 16.5, freeMinutes: 45, vehicle: "truck" },
+  closed_truck: { label: "H1 Truck", capacity: 3000, callOutFee: 450, distanceRate: 16.5, freeMinutes: 45, vehicle: "truck" },
   freight_truck: { label: "4-Ton – 8-Ton Freight Truck", capacity: 8000, callOutFee: 850, distanceRate: 24, freeMinutes: 60, vehicle: "truck" },
 } as const;
 type VehicleClass = keyof typeof tariffClasses;
@@ -22,10 +22,9 @@ type Vehicle = "van" | "truck";
 class InputError extends Error { status: number; constructor(message: string, status = 400) { super(message); this.status = status; } }
 
 function recommendedVehicleClass(chargeable: number): VehicleClass {
-  if (chargeable <= 600) return "light_commercial";
   if (chargeable <= 1000) return "one_ton_bakkie";
   if (chargeable <= 3000) return "closed_truck";
-  return "freight_truck";
+  throw new InputError("Loads above 3,000 chargeable kg require a manual quote. Freight Truck is not available yet.", 422);
 }
 function calculateLoad(input: unknown, selectedClass: unknown) {
   const p = input as Record<string, unknown> | null;
@@ -36,12 +35,13 @@ function calculateLoad(input: unknown, selectedClass: unknown) {
   const volumetric = length * width * height / 5000, chargeable = Math.max(weight, volumetric);
   if (chargeable > 8000) throw new InputError("Loads above 8,000 chargeable kg require a manual quote. Contact dispatch.", 422);
   const recommendation = recommendedVehicleClass(chargeable);
+  if (selectedClass === "freight_truck") throw new InputError("Freight Truck is a future option and is not available for booking yet.", 422);
   const vehicleClass = (typeof selectedClass === "string" && Object.hasOwn(tariffClasses, selectedClass) ? selectedClass : recommendation) as VehicleClass;
   const tariff = tariffClasses[vehicleClass];
   return {
     weight, length, width, height, volumetric, chargeable, vehicle: tariff.vehicle,
     vehicleClass, truckClass: tariff.label, recommendedVehicleClass: recommendation,
-    capacity: tariff.capacity, requiresAdminVehicleApproval: chargeable > tariff.capacity,
+    capacity: tariff.capacity, requiresAdminVehicleApproval: vehicleClass === "light_commercial" || chargeable > tariff.capacity,
     callOutFee: tariff.callOutFee, distanceRate: tariff.distanceRate,
     freeMinutes: tariff.freeMinutes, divisor: 5000
   };
