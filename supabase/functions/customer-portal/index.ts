@@ -196,6 +196,7 @@ Deno.serve(async (req: Request) => {
           .in("status", ["assigned", "accepted", "picked_up", "in_transit"]).is("completed_at", null);
         if (activeError) throw new Error("Unable to check driver availability.");
         const busyIds = new Set((activeOrders ?? []).map((x: any) => x.driver_user_id));
+        await admin.from("driver_online_locations").delete().lt("updated_at", new Date(Date.now() - 90000).toISOString());
         const { data: locations, error: locationError } = await admin.from("driver_online_locations")
           .select("driver_user_id,latitude,longitude,updated_at").in("driver_user_id", ids)
           .gte("updated_at", new Date(Date.now() - 90000).toISOString());
@@ -257,7 +258,7 @@ Deno.serve(async (req: Request) => {
         pickup_approach_distance_meters: approachDistanceMeters,
         pickup_approach_fee: approachFee,
         pickup_approach_quoted_at: approachDriverId ? new Date().toISOString() : null,
-        expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+        expires_at: new Date(Date.now() + (approachDriverId ? 5 : 30) * 60 * 1000).toISOString(),
       }) .select("id,expires_at").single();
       if (error || !quote) return reply(503, { error: "quote_save_failed" });
       return reply(200, { quote: { id: quote.id, expires_at: quote.expires_at, price: cents / 100, band, vehicle: load.vehicle, vehicleClass: load.vehicleClass, route, load, callOutFee, distanceFee, distanceRate: load.distanceRate, freeMinutes: load.freeMinutes, pickupApproach: { distanceMeters: approachDistanceMeters, fee: approachFee, includedKm: 8, driverMatched: Boolean(approachDriverId), requiresApproval: approachFee > 0 } } });
@@ -286,7 +287,7 @@ Deno.serve(async (req: Request) => {
     return reply(409, { error: "pickup_approach_charge_requires_customer_approval" });
   if (["motorbike","light_commercial"].includes(String(quote.load?.vehicleClass)) &&
       (!quote.pickup_approach_driver_user_id || !quote.pickup_approach_quoted_at ||
-       Date.now() - Date.parse(quote.pickup_approach_quoted_at) > 90000))
+       Date.now() - Date.parse(quote.pickup_approach_quoted_at) > 300000))
     return reply(409, { error: "pickup_driver_match_expired_recalculate_quote" });
 
   const { error: termsAcceptanceError } = await admin.from("customer_booking_terms_acceptances").upsert({
