@@ -42,6 +42,34 @@ Deno.serve(async (req: Request) => {
     if (raw.length > 2048) return reply(413, { error: "request_too_large" });
     let body: Record<string, unknown>;
     try { body = JSON.parse(raw); } catch { return reply(400, { error: "invalid_json" }); }
+    if (body.action === "online_presence") {
+      const { data: currentDriver, error: currentDriverError } = await admin.from("driver_profiles")
+        .select("is_online,verification_status").eq("user_id", actorId).maybeSingle();
+      if (currentDriverError) return reply(500, { error: "driver_status_lookup_failed" });
+      if (!currentDriver || currentDriver.verification_status !== "approved" || currentDriver.is_online !== true)
+        return reply(409, { error: "driver_must_be_approved_and_online" });
+      if (body.sharing === false) {
+        const { error } = await admin.from("driver_online_locations").delete().eq("driver_user_id", actorId);
+        if (error) return reply(500, { error: "online_location_clear_failed" });
+        return reply(200, { sharing: false });
+      }
+      const lat = body.latitude, lng = body.longitude, accuracy = body.accuracy_m;
+      if (typeof lat !== "number" || !Number.isFinite(lat) || Math.abs(lat) > 90 ||
+          typeof lng !== "number" || !Number.isFinite(lng) || Math.abs(lng) > 180 ||
+          (accuracy !== undefined && (typeof accuracy !== "number" || !Number.isFinite(accuracy) || accuracy < 0 || accuracy > 100000)))
+        return reply(400, { error: "invalid_location" });
+      const { data: previous, error: previousError } = await admin.from("driver_online_locations")
+        .select("updated_at").eq("driver_user_id", actorId).maybeSingle();
+      if (previousError) return reply(500, { error: "online_location_rate_check_failed" });
+      if (previous && Date.now() - Date.parse(previous.updated_at) < 5000)
+        return reply(429, { error: "location_update_too_frequent" });
+      const updatedAt = new Date().toISOString();
+      const { error } = await admin.from("driver_online_locations").upsert({
+        driver_user_id: actorId, latitude: lat, longitude: lng, accuracy_m: accuracy ?? null, updated_at: updatedAt
+      }, { onConflict: "driver_user_id" });
+      if (error) return reply(500, { error: "online_location_update_failed" });
+      return reply(200, { sharing: true, updated_at: updatedAt });
+    }
     if (typeof body.waybill !== "string" || !body.waybill.trim() || body.waybill.length > 100)
       return reply(400, { error: "invalid_waybill" });
     const { data: booking, error: bookingError } = await admin.from("customer_bookings")
