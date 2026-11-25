@@ -60,6 +60,7 @@ Deno.serve(async req => {
     if(!profile||profile.verification_status!=="approved") return reply(403,{error:"approved_driver_required"});
     const {error}=await db.from("driver_profiles").update({is_online:body.online,online_updated_at:new Date().toISOString()}).eq("user_id",actor);
     if(error) return reply(500,{error:"online_status_update_failed"});
+    if(!body.online){const {error:clearError}=await db.from("driver_online_locations").delete().eq("driver_user_id",actor);if(clearError)return reply(500,{error:"online_location_clear_failed"});}
     return reply(200,{is_online:body.online});
   }
   if(body.action==="respond_offer") {
