@@ -264,7 +264,17 @@ form.addEventListener('submit', async event => {
       });
       if (error) throw error;
       form.elements.password.value = '';
-      if (!data.session) { setMode('login'); status.textContent = 'Customer account created. Check your email to confirm it, then sign in.'; return; }
+      if (!data.session) {
+        if (data.user?.id) {
+          const { error: signupNoticeError } = await supabase.functions.invoke('customer-welcome-notify', {
+            body: { user_id: data.user.id }
+          });
+          if (signupNoticeError) console.warn('Customer signup notifications are pending:', signupNoticeError.message);
+        }
+        setMode('login');
+        status.textContent = 'Customer account created. Check your email to confirm it, then sign in.';
+        return;
+      }
       await validateAccount(data.session); return;
     }
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
