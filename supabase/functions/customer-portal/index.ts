@@ -174,6 +174,64 @@ Deno.serve(async (req: Request) => {
     try {
       const pickupPin = pin(body.pickup_location), dropoffPin = pin(body.dropoff_location), load = calculateLoad(body.parcel, body.selected_vehicle);
       const route = await routeFor(body.pickup.trim(), body.dropoff.trim(), pickupPin, dropoffPin);
+      let approachDriverId: string | null = null;
+      let approachDistanceMeters = 0;
+      let approachFee = 0;
+      const approachRate = load.vehicleClass === "motorbike" ? 5 : load.vehicleClass === "light_commercial" ? 8 : 0;
+      if (approachRate > 0) {
+        const now = new Date().toISOString();
+        const { data: onlineDrivers, error: onlineError } = await admin.from("driver_profiles")
+          .select("user_id,vehicle_type,is_online,verification_status")
+          .eq("is_online", true).eq("verification_status", "approved");
+        if (onlineError) throw new Error("Unable to check nearby available drivers.");
+        const matching = (onlineDrivers ?? []).filter((d: any) => {
+          const type = String(d.vehicle_type || "").toLowerCase();
+          return load.vehicleClass === "motorbike" ? type.includes("motor") :
+            (type.includes("van") || type.includes("bakkie") || type.includes("panel") || type.includes("light_commercial"));
+        });
+        const ids = matching.map((d: any) => d.user_id);
+        if (!ids.length) throw new InputError("No suitable driver is currently online with GPS sharing enabled. Please try again shortly.", 409);
+        const { data: activeOrders, error: activeError } = await admin.from("customer_bookings")
+          .select("driver_user_id").in("driver_user_id", ids)
+          .in("status", ["assigned", "accepted", "picked_up", "in_transit"]).is("completed_at", null);
+        if (activeError) throw new Error("Unable to check driver availability.");
+        const busyIds = new Set((activeOrders ?? []).map((x: any) => x.driver_user_id));
+        const { data: locations, error: locationError } = await admin.from("driver_online_locations")
+          .select("driver_user_id,latitude,longitude,updated_at").in("driver_user_id", ids)
+          .gte("updated_at", new Date(Date.now() - 90000).toISOString());
+        if (locationError) throw new Error("Unable to check fresh driver GPS locations.");
+        const fresh = (locations ?? []).filter((x: any) => !busyIds.has(x.driver_user_id) &&
+          Number.isFinite(Number(x.latitude)) && Number.isFinite(Number(x.longitude)));
+        if (!fresh.length) throw new InputError("No suitable available driver has a recent GPS location. Please try again shortly.", 409);
+        const haversine = (a: number, b: number, c: number, d: number) => {
+          const rad = Math.PI / 180, dl = (c-a)*rad, dg = (d-b)*rad;
+          const q = Math.sin(dl/2)**2 + Math.cos(a*rad)*Math.cos(c*rad)*Math.sin(dg/2)**2;
+          return 6371000 * 2 * Math.atan2(Math.sqrt(q), Math.sqrt(1-q));
+        };
+        const pickupLat = route.pickup.latitude, pickupLng = route.pickup.longitude;
+        const nearestFirst = fresh.map((x: any) => ({...x, approx: haversine(Number(x.latitude),Number(x.longitude),pickupLat,pickupLng)}))
+          .sort((a: any,b: any) => a.approx-b.approx).slice(0, 12);
+        const routed = await Promise.all(nearestFirst.map(async (d: any) => {
+          try {
+            const url = new URL(`https://router.project-osrm.org/route/v1/driving/${d.longitude},${d.latitude};${pickupLng},${pickupLat}`);
+            url.search = new URLSearchParams({overview:"false",alternatives:"false",steps:"false"}).toString();
+            const response = await fetch(url, {signal:AbortSignal.timeout(8000),headers:{Accept:"application/json"}});
+            if (!response.ok) return null;
+            const data = await response.json(), meters = Number(data.routes?.[0]?.distance);
+            return data.code === "Ok" && Number.isFinite(meters) && meters >= 0 ? {driverId:d.driver_user_id,meters} : null;
+          } catch { return null; }
+        }));
+        const ranked = routed.filter((x: any) => x && Number.isFinite(x.meters))
+          .sort((a: any,b: any) => a.meters-b.meters);
+        const waitForCloser = body.wait_for_closer_driver === true;
+        const chosen = waitForCloser ? ranked.find((x: any) => x.meters <= 8000) : ranked[0];
+        if (!chosen && waitForCloser)
+          throw new InputError("No suitable driver is currently within the included 8 km. You can keep waiting and check again.", 409);
+        if (!chosen) throw new InputError("We could not calculate a reliable pickup route to an available driver. Please try again.", 502);
+        approachDriverId = chosen.driverId;
+        approachDistanceMeters = chosen.meters;
+        approachFee = Math.round((Math.max(0, approachDistanceMeters / 1000 - 8) * approachRate + Number.EPSILON) * 100) / 100;
+      }
       const band = 0;
       let callOutFee = load.callOutFee;
       let distanceFee = 0;
@@ -188,17 +246,21 @@ Deno.serve(async (req: Request) => {
         distanceFee = Math.round((route.distance / 1000 * load.distanceRate + Number.EPSILON) * 100) / 100;
       }
       load.callOutFee = callOutFee;
-      const cents = Math.round((callOutFee + distanceFee + Number.EPSILON) * 100);
+      const cents = Math.round((callOutFee + distanceFee + approachFee + Number.EPSILON) * 100);
       if (!Number.isSafeInteger(cents) || cents <= 0) throw new InputError("This route requires a manual quote. Contact dispatch.", 422);
       const id = crypto.randomUUID();
       const { data: quote, error } = await admin.from("delivery_quotes").insert({
         id, owner_hash: owner, pickup: body.pickup.trim(), dropoff: body.dropoff.trim(),
         vehicle: load.vehicle, distance_meters: route.distance, price_band: band, price: cents / 100,
         route, load, distance_fee: distanceFee,
+        pickup_approach_driver_user_id: approachDriverId,
+        pickup_approach_distance_meters: approachDistanceMeters,
+        pickup_approach_fee: approachFee,
+        pickup_approach_quoted_at: approachDriverId ? new Date().toISOString() : null,
         expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-      }).select("id,expires_at").single();
+      }) .select("id,expires_at").single();
       if (error || !quote) return reply(503, { error: "quote_save_failed" });
-      return reply(200, { quote: { id: quote.id, expires_at: quote.expires_at, price: cents / 100, band, vehicle: load.vehicle, vehicleClass: load.vehicleClass, route, load, callOutFee, distanceFee, distanceRate: load.distanceRate, freeMinutes: load.freeMinutes } });
+      return reply(200, { quote: { id: quote.id, expires_at: quote.expires_at, price: cents / 100, band, vehicle: load.vehicle, vehicleClass: load.vehicleClass, route, load, callOutFee, distanceFee, distanceRate: load.distanceRate, freeMinutes: load.freeMinutes, pickupApproach: { distanceMeters: approachDistanceMeters, fee: approachFee, includedKm: 8, driverMatched: Boolean(approachDriverId), requiresApproval: approachFee > 0 } } });
     } catch (e) {
       return reply(e instanceof InputError ? e.status : 502, { error: e instanceof Error ? e.message : "route_quote_failed" });
     }
@@ -213,12 +275,19 @@ Deno.serve(async (req: Request) => {
     .eq("quote_id", body.quote_id).eq("owner_hash", owner).maybeSingle();
   if (existing) return reply(200, { order: existing });
   const { data: quote, error: quoteError } = await admin.from("delivery_quotes")
-    .select("id,pickup,dropoff,vehicle,distance_meters,price_band,price,load,distance_fee,expires_at")
+    .select("id,pickup,dropoff,vehicle,distance_meters,price_band,price,load,distance_fee,expires_at,pickup_approach_driver_user_id,pickup_approach_distance_meters,pickup_approach_fee,pickup_approach_quoted_at")
     .eq("id", body.quote_id).eq("owner_hash", owner).maybeSingle();
   if (quoteError) return reply(503, { error: "quote_lookup_failed" });
   if (!quote) return reply(409, { error: "quote_not_found_recalculate_route" });
   if (Date.parse(quote.expires_at) <= Date.now()) return reply(409, { error: "quote_expired_recalculate_route" });
   if (!quote.load) return reply(409, { error: "quote_incomplete_recalculate_route" });
+  const approachFee = Number(quote.pickup_approach_fee || 0);
+  if (approachFee > 0 && body.pickup_approach_approved !== true)
+    return reply(409, { error: "pickup_approach_charge_requires_customer_approval" });
+  if (["motorbike","light_commercial"].includes(String(quote.load?.vehicleClass)) &&
+      (!quote.pickup_approach_driver_user_id || !quote.pickup_approach_quoted_at ||
+       Date.now() - Date.parse(quote.pickup_approach_quoted_at) > 90000))
+    return reply(409, { error: "pickup_driver_match_expired_recalculate_quote" });
 
   const { error: termsAcceptanceError } = await admin.from("customer_booking_terms_acceptances").upsert({
     owner_id: owner,
@@ -273,6 +342,10 @@ Deno.serve(async (req: Request) => {
     recipient: body.recipient.trim(), vehicle: quote.vehicle, price: quote.price,
     distance_meters: distance, price_band: quote.price_band, quote_id: quote.id,
     load: quote.load, distance_fee: quote.distance_fee, scheduled_at: scheduled,
+    pickup_approach_driver_user_id: quote.pickup_approach_driver_user_id || null,
+    pickup_approach_distance_meters: quote.pickup_approach_distance_meters || 0,
+    pickup_approach_fee: approachFee,
+    pickup_approach_approved: approachFee === 0 || body.pickup_approach_approved === true,
     return_address: returnAddress || null, return_at: returnAt, payment_method: method,
     assistance_requested: assistanceRequested, assistance_minutes: assistanceMinutes,
     assistance_fee_cents: assistanceFeeCents, assistance_status: assistanceRequested ? "requested_pending_dispatch_confirmation" : "not_requested",
