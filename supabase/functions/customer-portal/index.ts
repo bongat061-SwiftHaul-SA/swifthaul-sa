@@ -12,13 +12,14 @@ const reply = (status: number, body: Record<string, unknown>) =>
   new Response(JSON.stringify(body), { status, headers: cors });
 const validText = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0 && v.length <= 500;
 const tariffClasses = {
+  motorbike: { label: "Motorbike", capacity: 0, callOutFee: 60, distanceRate: 5, freeMinutes: 0, vehicle: "bike" },
   light_commercial: { label: "Mini-Van / Light Commercial", capacity: 600, callOutFee: 250, distanceRate: 8.5, freeMinutes: 20, vehicle: "van" },
   one_ton_bakkie: { label: "1-Ton Bakkie / Panel Van", capacity: 1000, callOutFee: 220, distanceRate: 11, freeMinutes: 30, vehicle: "van" },
   closed_truck: { label: "1.5-Ton – 3-Ton Closed Truck", capacity: 3000, callOutFee: 450, distanceRate: 16.5, freeMinutes: 45, vehicle: "truck" },
   freight_truck: { label: "4-Ton – 8-Ton Freight Truck", capacity: 8000, callOutFee: 850, distanceRate: 24, freeMinutes: 60, vehicle: "truck" },
 } as const;
 type VehicleClass = keyof typeof tariffClasses;
-type Vehicle = "van" | "truck";
+type Vehicle = "bike" | "van" | "truck";
 class InputError extends Error { status: number; constructor(message: string, status = 400) { super(message); this.status = status; } }
 
 function recommendedVehicleClass(chargeable: number): VehicleClass {
@@ -38,7 +39,7 @@ function calculateLoad(input: unknown, selectedClass: unknown) {
   const recommendation = recommendedVehicleClass(chargeable);
   const vehicleClass = (typeof selectedClass === "string" && Object.hasOwn(tariffClasses, selectedClass) ? selectedClass : recommendation) as VehicleClass;
   const tariff = tariffClasses[vehicleClass];
-  if (chargeable > tariff.capacity)
+  if (vehicleClass !== "motorbike" && chargeable > tariff.capacity)
     throw new InputError("The selected vehicle class is below the estimated payload. Please choose the recommended or a larger vehicle.", 422);
   return {
     weight, length, width, height, volumetric, chargeable, vehicle: tariff.vehicle,
@@ -174,8 +175,20 @@ Deno.serve(async (req: Request) => {
       const pickupPin = pin(body.pickup_location), dropoffPin = pin(body.dropoff_location), load = calculateLoad(body.parcel, body.selected_vehicle);
       const route = await routeFor(body.pickup.trim(), body.dropoff.trim(), pickupPin, dropoffPin);
       const band = 0;
-      const distanceFee = Math.round((route.distance / 1000 * load.distanceRate + Number.EPSILON) * 100) / 100;
-      const callOutFee = load.vehicleClass === "light_commercial" && route.distance > 8000 ? 350 : load.callOutFee;\n      load.callOutFee = callOutFee;\n      const cents = Math.round((callOutFee + distanceFee + Number.EPSILON) * 100);
+      let callOutFee = load.callOutFee;
+      let distanceFee = 0;
+      if (load.vehicleClass === "motorbike") {
+        const distanceTotal = route.distance / 1000 * load.distanceRate;
+        const total = Math.max(load.callOutFee, distanceTotal);
+        distanceFee = Math.round((total - load.callOutFee + Number.EPSILON) * 100) / 100;
+      } else {
+        callOutFee = load.vehicleClass === "light_commercial"
+          ? (route.distance >= 24000 ? 450 : route.distance > 8000 ? 350 : 250)
+          : load.callOutFee;
+        distanceFee = Math.round((route.distance / 1000 * load.distanceRate + Number.EPSILON) * 100) / 100;
+      }
+      load.callOutFee = callOutFee;
+      const cents = Math.round((callOutFee + distanceFee + Number.EPSILON) * 100);
       if (!Number.isSafeInteger(cents) || cents <= 0) throw new InputError("This route requires a manual quote. Contact dispatch.", 422);
       const id = crypto.randomUUID();
       const { data: quote, error } = await admin.from("delivery_quotes").insert({
