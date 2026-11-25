@@ -389,15 +389,15 @@ function previewLoad(){
     if(chargeable>8000)text='Above 8,000 chargeable kg: contact dispatch for a manual quote.';
     else{
       const recommendation=chargeable<=600?'light_commercial':chargeable<=1000?'one_ton_bakkie':chargeable<=3000?'closed_truck':'freight_truck';
-      const labels={light_commercial:'Mini-Van / Light Commercial',one_ton_bakkie:'1-Ton Bakkie / Panel Van',closed_truck:'1.5-Ton – 3-Ton Closed Truck',freight_truck:'4-Ton – 8-Ton Freight Truck'};
-      const capacities={light_commercial:600,one_ton_bakkie:1000,closed_truck:3000,freight_truck:8000};
+      const labels={motorbike:'Motorbike',light_commercial:'Mini-Van / Light Commercial',one_ton_bakkie:'1-Ton Bakkie / Panel Van',closed_truck:'H1 Truck',freight_truck:'Freight Truck'};
+      const capacities={motorbike:0,light_commercial:600,one_ton_bakkie:1000,closed_truck:3000,freight_truck:8000};
       const checked=form.querySelector('[name=vehicle]:checked')?.value;
-      vehicle=checked && capacities[checked]>=chargeable ? checked : recommendation;
+      vehicle=checked==='motorbike'?'motorbike':(checked && capacities[checked]>=chargeable ? checked : recommendation);
       label=labels[vehicle];
       text=label+' recommended · estimated payload '+mass(chargeable)+' kg. You may choose this class or a larger suitable vehicle; dispatch confirms physical fit and access.';
     }
   }
-  form.querySelectorAll('[name=vehicle]').forEach(input=>{input.checked=input.value===vehicle;input.disabled=chargeable>0 && ({light_commercial:600,one_ton_bakkie:1000,closed_truck:3000,freight_truck:8000})[input.value]<chargeable;});
+  form.querySelectorAll('[name=vehicle]').forEach(input=>{input.checked=input.value===vehicle;input.disabled=input.value!=='motorbike' && chargeable>0 && ({light_commercial:600,one_ton_bakkie:1000,closed_truck:3000,freight_truck:8000})[input.value]<chargeable;});
   const summary=document.getElementById('load-summary');
   if(summary)summary.textContent=text;
   window.swiftHaulUpdateVehiclePreview?.(vehicle,chargeable,label);
