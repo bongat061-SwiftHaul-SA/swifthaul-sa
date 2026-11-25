@@ -64,15 +64,15 @@ Deno.serve(async req => {
     const {error}=await db.from("driver_profiles").update({is_online:body.online,online_updated_at:updatedAt}).eq("user_id",actor);
     if(error) return reply(500,{error:"online_status_update_failed"});
     if(!body.online){const {error:clearError}=await db.from("driver_online_locations").delete().eq("driver_user_id",actor);if(clearError)return reply(500,{error:"online_location_clear_failed"});}
-    let emailSent=false;
+    let emailSent=false,whatsappSent=false;
     const key=Deno.env.get("RESEND_API_KEY");
     const driverEmail=u.user.email||"";
-    const adminRecipients=(Deno.env.get("SWIFTHAUL_SIGNUP_NOTIFY_EMAILS")||"centurionfleetweb@gmail.com,bongzthombeni@gmail.com").split(",").map(x=>x.trim()).filter(x=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x));
+    const adminRecipients=(Deno.env.get("SWIFTHAUL_SIGNUP_NOTIFY_EMAILS")||Deno.env.get("DRIVER_APPLICATION_NOTIFY_EMAIL")||"centurionfleetweb@gmail.com,bongzthombeni@gmail.com").split(",").map(x=>x.trim()).filter(x=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x));
     const recipients=[driverEmail,...adminRecipients.filter(x=>x.toLowerCase()!==driverEmail.toLowerCase())].filter(Boolean);
+    const status=body.online?"ONLINE":"OFFLINE";
+    const name=String(u.user.user_metadata?.full_name||driverEmail||"SwiftHaul driver").replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]||ch));
+    const when=new Date(updatedAt).toLocaleString("en-ZA",{timeZone:"Africa/Johannesburg",dateStyle:"medium",timeStyle:"short"});
     if(changed&&key&&recipients.length){
-      const status=body.online?"ONLINE":"OFFLINE";
-      const name=String(u.user.user_metadata?.full_name||driverEmail||"SwiftHaul driver").replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]||ch));
-      const when=new Date(updatedAt).toLocaleString("en-ZA",{timeZone:"Africa/Johannesburg",dateStyle:"medium",timeStyle:"short"});
       const html="<div style='font-family:Arial,sans-serif;color:#20242a'><h2>Driver is now "+status+"</h2><p>"+name+" has changed availability to "+status+".</p><p><strong>Account:</strong> "+driverEmail+"</p><p><strong>Time:</strong> "+when+" (South Africa)</p></div>";
       try{
         const mail=await fetch("https://api.resend.com/emails",{method:"POST",headers:{"Authorization":"Bearer "+key,"Content-Type":"application/json","Idempotency-Key":"swifthaul-driver-availability-"+actor+"-"+(body.online?"online":"offline")+"-"+updatedAt},body:JSON.stringify({from:Deno.env.get("DRIVER_EMAIL_FROM")||Deno.env.get("AUTH_EMAIL_FROM")||"SwiftHaul SA <onboarding@resend.dev>",to:recipients,subject:"Driver "+status+" — SwiftHaul SA",html})});
@@ -80,7 +80,16 @@ Deno.serve(async req => {
         emailSent=true;
       }catch(error){console.error("Driver availability email failed",String(error));}
     }
-    return reply(200,{is_online:body.online,status_changed:changed,email_sent:emailSent});
+    const waToken=Deno.env.get("WHATSAPP_ACCESS_TOKEN"),phoneId=Deno.env.get("WHATSAPP_PHONE_NUMBER_ID"),adminPhone=Deno.env.get("WHATSAPP_ADMIN_RECIPIENT")||"27615083880";
+    if(changed&&waToken&&phoneId&&adminPhone){
+      const waText="SwiftHaul SA driver availability update\\n"+name+" is now "+status+".\\nAccount: "+driverEmail+"\\nTime: "+when+" (South Africa).";
+      try{
+        const response=await fetch("https://graph.facebook.com/v22.0/"+phoneId+"/messages",{method:"POST",headers:{"Authorization":"Bearer "+waToken,"Content-Type":"application/json"},body:JSON.stringify({messaging_product:"whatsapp",to:adminPhone,type:"text",text:{body:waText}})});
+        if(!response.ok)throw new Error("whatsapp_provider_"+response.status);
+        whatsappSent=true;
+      }catch(error){console.error("Driver availability WhatsApp failed",String(error));}
+    }
+    return reply(200,{is_online:body.online,status_changed:changed,email_sent:emailSent,whatsapp_sent:whatsappSent});
   }
   if(body.action==="respond_offer") {
     if(!driver||typeof body.offer_id!=="string"||!["accept","decline"].includes(String(body.response))) return reply(400,{error:"invalid_offer_response"});
