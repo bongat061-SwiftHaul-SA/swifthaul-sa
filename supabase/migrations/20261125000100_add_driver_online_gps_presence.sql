@@ -25,3 +25,15 @@ drop trigger if exists clear_driver_online_location_on_offline on public.driver_
 create trigger clear_driver_online_location_on_offline
 after update of is_online on public.driver_profiles
 for each row execute function public.clear_driver_online_location_on_offline();
+
+-- Persist the pickup-approach quote and explicit customer approval.
+alter table public.delivery_quotes
+  add column if not exists pickup_approach_driver_user_id uuid references auth.users(id) on delete set null,
+  add column if not exists pickup_approach_distance_meters double precision,
+  add column if not exists pickup_approach_fee numeric(12,2) not null default 0,
+  add column if not exists pickup_approach_quoted_at timestamptz;
+alter table public.customer_bookings
+  add column if not exists pickup_approach_driver_user_id uuid references auth.users(id) on delete set null,
+  add column if not exists pickup_approach_distance_meters double precision,
+  add column if not exists pickup_approach_fee numeric(12,2) not null default 0,
+  add column if not exists pickup_approach_approved boolean not null default false;
