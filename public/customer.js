@@ -340,7 +340,7 @@ calculateButton.addEventListener('click', async () => {
   if(!Number(form.elements.namedItem('weight')?.value)||['length','width','height'].some(key=>!form.elements.namedItem(key).reportValidity())){quoteStatus.textContent='Add a photo or description, estimate your load, then review the suggested dimensions.';return;}
   const data=Object.fromEntries(new FormData(form));
   if (!data.pickup.trim() || !data.dropoff.trim()) {quoteStatus.textContent='Enter both pickup and drop-off addresses.';return;}
-  resetQuote();const active=new AbortController();quoteRequest=active;calculateButton.disabled=true;
+  const requestedWait=waitForCloserDriver;resetQuote();waitForCloserDriver=requestedWait;const active=new AbortController();quoteRequest=active;calculateButton.disabled=true;
   quoteStatus.textContent='Mapping the addresses and calculating your fare…';
   try {
     const result=await customerApi('POST',{action:'quote',pickup:data.pickup,dropoff:data.dropoff,pickup_location:data.pickup_latitude?{latitude:Number(data.pickup_latitude),longitude:Number(data.pickup_longitude)}:null,dropoff_location:data.dropoff_latitude?{latitude:Number(data.dropoff_latitude),longitude:Number(data.dropoff_longitude)}:null,selected_vehicle:form.querySelector('[name=vehicle]:checked')?.value,wait_for_closer_driver:waitForCloserDriver,parcel:Object.fromEntries(['weight','length','width','height'].map(key=>[key,Number(data[key])]))});
