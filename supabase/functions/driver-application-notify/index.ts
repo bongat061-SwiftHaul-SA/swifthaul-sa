@@ -11,27 +11,41 @@ async function sendEmail(key:string,from:string,to:string[],subject:string,html:
 Deno.serve(async(req:Request)=>{
  if(req.method==="OPTIONS")return new Response("ok",{headers:cors});
  if(req.method!=="POST")return reply(405,{error:"method_not_allowed"});
- const token=(req.headers.get("Authorization")||"").match(/^Bearer\s+(.+)$/i)?.[1];if(!token)return reply(401,{error:"missing_bearer_token"});
+ const body=await req.json().catch(()=>({}));
+ const token=(req.headers.get("Authorization")||"").match(/^Bearer\s+(.+)$/i)?.[1]||"";
  const url=Deno.env.get("SUPABASE_URL"),anon=Deno.env.get("SUPABASE_ANON_KEY"),service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
  if(!url||!anon||!service)return reply(500,{error:"server_configuration_error"});
- const auth=createClient(url,anon,{auth:{persistSession:false,autoRefreshToken:false}});
- const {data:a,error:ae}=await auth.auth.getUser(token);if(ae||!a.user)return reply(401,{error:"invalid_or_expired_session"});
  const admin=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});
- const {data:p,error:profileError}=await admin.from("user_profiles").select("role,account_status,full_name,phone").eq("id",a.user.id).maybeSingle();
+ let user:any=null;
+ if(token){
+  const auth=createClient(url,anon,{auth:{persistSession:false,autoRefreshToken:false}});
+  const {data:a,error:ae}=await auth.auth.getUser(token);if(ae||!user)return reply(401,{error:"invalid_or_expired_session"});
+  user=user;
+ }else{
+  const userId=typeof body?.user_id==="string"?body.user_id:"";
+  if(!userId)return reply(401,{error:"missing_bearer_token"});
+  const {data:lookup,error:lookupError}=await admin.auth.admin.getUserById(userId);
+  if(lookupError||!lookup.user)return reply(404,{error:"new_driver_not_found"});
+  const createdAt=Date.parse(lookup.user.created_at||"");
+  if(!Number.isFinite(createdAt)||Date.now()-createdAt>15*60*1000||createdAt>Date.now()+60*1000)
+   return reply(403,{error:"signup_notification_window_expired"});
+  user=lookup.user;
+ }
+ const {data:p,error:profileError}=await admin.from("user_profiles").select("role,account_status,full_name,phone").eq("id",user.id).maybeSingle();
  if(profileError){console.error("Driver profile lookup failed",profileError.message);return reply(500,{error:"driver_profile_lookup_failed"});}
  if(!p||p.role!=="driver"||p.account_status!=="active")return reply(403,{error:"active_driver_account_required"});
- const {data:d,error:driverError}=await admin.from("driver_profiles").select("phone,license_number,license_expiry,vehicle_type,vehicle_registration,verification_status").eq("user_id",a.user.id).maybeSingle();
+ const {data:d,error:driverError}=await admin.from("driver_profiles").select("phone,license_number,license_expiry,vehicle_type,vehicle_registration,verification_status").eq("user_id",user.id).maybeSingle();
  if(driverError){console.error("Driver application lookup failed",driverError.message);return reply(500,{error:"driver_application_lookup_failed"});}
  if(!d)return reply(404,{error:"driver_application_not_found"});
- const {data:docs,error:documentsError}=await admin.from("driver_documents").select("document_type,review_status").eq("driver_user_id",a.user.id);
+ const {data:docs,error:documentsError}=await admin.from("driver_documents").select("document_type,review_status").eq("driver_user_id",user.id);
  if(documentsError){console.error("Driver documents lookup failed",documentsError.message);return reply(500,{error:"driver_documents_lookup_failed"});}
  const docSummary=(docs||[]).map(x=>x.document_type+":"+x.review_status).join(", ")||"No documents uploaded yet";
- const {data:row,error:notificationError}=await admin.from("driver_application_notifications").select("*").eq("driver_user_id",a.user.id).maybeSingle();
+ const {data:row,error:notificationError}=await admin.from("driver_application_notifications").select("*").eq("driver_user_id",user.id).maybeSingle();
  if(notificationError){console.error("Driver notification status lookup failed",notificationError.message);return reply(500,{error:"notification_status_unavailable"});}
  const now=new Date().toISOString();let welcome=!!row?.welcome_email_sent_at,adminEmail=!!row?.admin_email_sent_at,wa=!!row?.admin_whatsapp_sent_at;
- const key=Deno.env.get("RESEND_API_KEY"),from=Deno.env.get("DRIVER_EMAIL_FROM")||Deno.env.get("AUTH_EMAIL_FROM")||"SwiftHaul SA <onboarding@resend.dev>",email=a.user.email||"";
+ const key=Deno.env.get("RESEND_API_KEY"),from=Deno.env.get("DRIVER_EMAIL_FROM")||Deno.env.get("AUTH_EMAIL_FROM")||"SwiftHaul SA <onboarding@resend.dev>",email=user.email||"";
  const appUrl=Deno.env.get("DRIVER_APP_URL")||"https://bongat061-swifthaul-sa.github.io/swifthaul-sa-preview/apps/driver/public/";
- const name=clean(p.full_name||a.user.user_metadata?.full_name,120);
+ const name=clean(p.full_name||user.user_metadata?.full_name,120);
  const details=[["Name",name],["Email",email],["Phone",clean(d.phone,30)],["Licence",clean(d.license_number,80)],["Licence expiry",clean(d.license_expiry,20)],["Vehicle",clean(d.vehicle_type,30)],["Registration",clean(d.vehicle_registration,30)],["Documents",docSummary]];
  const welcomeHtml="<div style='font-family:Arial,sans-serif;color:#173d31'><h2>Welcome to SwiftHaul SA</h2><p>Your driver account is registered. Your application is awaiting administrator approval. You can sign in now, upload your documents and check your application status.</p><p><a href='"+escapeHtml(appUrl)+"'>Open SwiftHaul Driver</a></p><p>For security, SwiftHaul never emails passwords. Sign in with the email address and password you created.</p></div>";
  if(key&&email&&!welcome){try{await sendEmail(key,from,[email],"Welcome to SwiftHaul SA — application received",welcomeHtml);welcome=true;}catch(e){console.error("Driver welcome email failed",String(e));}}
@@ -41,7 +55,7 @@ Deno.serve(async(req:Request)=>{
  const waToken=Deno.env.get("WHATSAPP_ACCESS_TOKEN"),phoneId=Deno.env.get("WHATSAPP_PHONE_NUMBER_ID"),recipient=Deno.env.get("WHATSAPP_ADMIN_RECIPIENT")||"27615083880";
  if(waToken&&phoneId&&recipient&&!wa){const message="New SwiftHaul driver application\n"+name+"\n"+email+"\n"+clean(d.phone,30)+"\nVehicle: "+clean(d.vehicle_type,30)+" "+clean(d.vehicle_registration,30)+"\nDocuments: "+docSummary+"\nReview in Company Admin.";
   try{const r=await fetch("https://graph.facebook.com/v22.0/"+phoneId+"/messages",{method:"POST",headers:{"Authorization":"Bearer "+waToken,"Content-Type":"application/json"},body:JSON.stringify({messaging_product:"whatsapp",to:recipient,type:"text",text:{body:message}})});if(!r.ok)throw new Error("whatsapp_provider_"+r.status);wa=true;}catch(e){console.error("Driver WhatsApp alert failed",String(e));}}
- const {error:trackingError}=await admin.from("driver_application_notifications").upsert({driver_user_id:a.user.id,welcome_email_sent_at:welcome?(row?.welcome_email_sent_at||now):null,admin_email_sent_at:adminEmail?(row?.admin_email_sent_at||now):null,admin_whatsapp_sent_at:wa?(row?.admin_whatsapp_sent_at||now):null,last_attempt_at:now,updated_at:now});
+ const {error:trackingError}=await admin.from("driver_application_notifications").upsert({driver_user_id:user.id,welcome_email_sent_at:welcome?(row?.welcome_email_sent_at||now):null,admin_email_sent_at:adminEmail?(row?.admin_email_sent_at||now):null,admin_whatsapp_sent_at:wa?(row?.admin_whatsapp_sent_at||now):null,last_attempt_at:now,updated_at:now});
  if(trackingError){console.error("Driver notification tracking failed",trackingError.message);return reply(500,{error:"notification_tracking_failed",welcome_email_sent:welcome,admin_email_sent:adminEmail,admin_whatsapp_sent:wa});}
  return reply(200,{success:true,welcome_email_sent:welcome,admin_email_sent:adminEmail,admin_whatsapp_sent:wa});
 });
