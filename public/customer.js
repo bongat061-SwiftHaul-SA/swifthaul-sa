@@ -1,7 +1,7 @@
 const form = document.getElementById('booking-form');
 const message = document.getElementById('message');
 const container = document.getElementById('ordersContainer');
-let currentQuote = null;
+let currentQuote = null;\nlet waitForCloserDriver = false;
 let quoteRequest;
 let quoteMap;
 let accountEpoch = 0;
@@ -14,6 +14,7 @@ const km = value => (Number(value)/1000).toLocaleString('en-ZA',{maximumFraction
 function updateBookButton() {
   const canSubmit = ready && !bookingBusy && !!currentQuote &&
     new Date(currentQuote.expires_at).getTime() > Date.now() &&
+    (Number(currentQuote.pickupApproach?.fee || 0) <= 0 || document.getElementById('pickup-approach-approval')?.checked === true) &&
     document.body.dataset.guestPreview !== 'true';
   const counterSelected = document.getElementById('make-counter-offer')?.checked === true &&
     !document.getElementById('make-counter-offer')?.disabled &&
@@ -30,6 +31,9 @@ function resetQuote() {
   updatePaymentOptions();
   if (quoteMap) {quoteMap.stop();quoteMap.remove();quoteMap=null;}
   document.getElementById('quote-result').hidden=true;
+  const approachBox=document.getElementById('pickup-approach-box');if(approachBox)approachBox.hidden=true;
+  const approachApproval=document.getElementById('pickup-approach-approval');if(approachApproval)approachApproval.checked=false;
+  waitForCloserDriver=false;
   document.getElementById('quote-map').hidden=true;
   document.getElementById('quote-locations').textContent='';
   document.getElementById('quote-directions').removeAttribute('href');
@@ -248,7 +252,7 @@ form.addEventListener('submit', async event => {
   if (['pickup', 'dropoff', 'recipient'].some(key => !data[key].trim())) { report('Enter pickup, drop-off and recipient details.', true); return; }
   const submit = document.getElementById('submit'); bookingBusy=true; submit.disabled = true; report('Saving your booking…');
   try {
-    const result = await customerApi('POST', {action:'book',terms_accepted:true,terms_version:'2026-11-14-gauteng-vehicle-tariffs',quote_id:acceptedQuote.id,assistance_requested:assistance.requested,assistance_minutes:assistance.minutes,assistance_fee_cents:Math.round(assistance.fee*100),recipient:data.recipient,payment_method:data.payment_method,counter_offer:data.counter_offer || null,scheduled_at:data.scheduled_at ? data.scheduled_at+':00+02:00' : null,return_address:data.return_address || null,return_at:data.return_at ? data.return_at+':00+02:00' : null,pickup_latitude:data.pickup_latitude?Number(data.pickup_latitude):null,pickup_longitude:data.pickup_longitude?Number(data.pickup_longitude):null,pickup_plus_code:data.pickup_plus_code||null,pickup_geohash:data.pickup_geohash||null,dropoff_latitude:data.dropoff_latitude?Number(data.dropoff_latitude):null,dropoff_longitude:data.dropoff_longitude?Number(data.dropoff_longitude):null,dropoff_plus_code:data.dropoff_plus_code||null,dropoff_geohash:data.dropoff_geohash||null});
+    const result = await customerApi('POST', {action:'book',terms_accepted:true,terms_version:'2026-11-14-gauteng-vehicle-tariffs',quote_id:acceptedQuote.id,pickup_approach_approved:Number(acceptedQuote.pickupApproach?.fee||0)<=0 || document.getElementById('pickup-approach-approval')?.checked===true,assistance_requested:assistance.requested,assistance_minutes:assistance.minutes,assistance_fee_cents:Math.round(assistance.fee*100),recipient:data.recipient,payment_method:data.payment_method,counter_offer:data.counter_offer || null,scheduled_at:data.scheduled_at ? data.scheduled_at+':00+02:00' : null,return_address:data.return_address || null,return_at:data.return_at ? data.return_at+':00+02:00' : null,pickup_latitude:data.pickup_latitude?Number(data.pickup_latitude):null,pickup_longitude:data.pickup_longitude?Number(data.pickup_longitude):null,pickup_plus_code:data.pickup_plus_code||null,pickup_geohash:data.pickup_geohash||null,dropoff_latitude:data.dropoff_latitude?Number(data.dropoff_latitude):null,dropoff_longitude:data.dropoff_longitude?Number(data.dropoff_longitude):null,dropoff_plus_code:data.dropoff_plus_code||null,dropoff_geohash:data.dropoff_geohash||null});
     if (epoch !== accountEpoch) return;
     if (!result.order) throw new Error('Unable to save your booking. Please try again.');
     container.querySelector('.empty')?.remove(); addOrder(result.order, true);
@@ -329,6 +333,7 @@ document.addEventListener('guest-preview', () => {
   report('Guest preview: sign in to save a booking, send delivery details or download invoices.');
 });
 
+document.getElementById('wait-for-closer-driver')?.addEventListener('click',()=>{waitForCloserDriver=true;document.getElementById('pickup-approach-message').textContent='Checking for a suitable driver within 8 km…';calculateButton.click();});
 calculateButton.addEventListener('click', async () => {
   if (document.body.dataset.guestPreview === 'true') return;
   if (!form.elements.pickup.reportValidity() || !form.elements.dropoff.reportValidity()) return;
@@ -338,13 +343,33 @@ calculateButton.addEventListener('click', async () => {
   resetQuote();const active=new AbortController();quoteRequest=active;calculateButton.disabled=true;
   quoteStatus.textContent='Mapping the addresses and calculating your fare…';
   try {
-    const result=await customerApi('POST',{action:'quote',pickup:data.pickup,dropoff:data.dropoff,pickup_location:data.pickup_latitude?{latitude:Number(data.pickup_latitude),longitude:Number(data.pickup_longitude)}:null,dropoff_location:data.dropoff_latitude?{latitude:Number(data.dropoff_latitude),longitude:Number(data.dropoff_longitude)}:null,selected_vehicle:form.querySelector('[name=vehicle]:checked')?.value,parcel:Object.fromEntries(['weight','length','width','height'].map(key=>[key,Number(data[key])]))});
+    const result=await customerApi('POST',{action:'quote',pickup:data.pickup,dropoff:data.dropoff,pickup_location:data.pickup_latitude?{latitude:Number(data.pickup_latitude),longitude:Number(data.pickup_longitude)}:null,dropoff_location:data.dropoff_latitude?{latitude:Number(data.dropoff_latitude),longitude:Number(data.dropoff_longitude)}:null,selected_vehicle:form.querySelector('[name=vehicle]:checked')?.value,wait_for_closer_driver:waitForCloserDriver,parcel:Object.fromEntries(['weight','length','width','height'].map(key=>[key,Number(data[key])]))});
     if (quoteRequest!==active || active.signal.aborted) return;
     if (!result.quote) throw new Error('Unable to calculate the route.');
     currentQuote=result.quote;assistanceQuote();updatePaymentOptions();window.swiftHaulUpdateVehiclePreview?.(currentQuote.vehicle,currentQuote.load?.chargeable,currentQuote.load?.truckClass || (currentQuote.vehicle||'').toUpperCase());const route=currentQuote.route;window.swiftHaulSetRoadRoute?.(route);
     document.getElementById('quote-result').hidden=false;
     document.getElementById('quote-distance').textContent=`${km(route.distance)} km`;
     document.getElementById('quote-price').textContent=money(currentQuote.price);
+    const approach=currentQuote.pickupApproach||{fee:0,distanceMeters:0,driverMatched:false};
+    const approachBox=document.getElementById('pickup-approach-box');
+    const approachMessage=document.getElementById('pickup-approach-message');
+    const approachApprovalLabel=document.getElementById('pickup-approach-approval-label');
+    const approachApproval=document.getElementById('pickup-approach-approval');
+    const waitButton=document.getElementById('wait-for-closer-driver');
+    document.getElementById('fare-approach').textContent=money(approach.fee||0);
+    approachBox.hidden=!approach.driverMatched;
+    if(approach.driverMatched){
+      const approachKm=(Number(approach.distanceMeters)/1000).toFixed(2);
+      approachMessage.textContent=Number(approach.fee)>0
+        ? `Nearest suitable driver is approximately ${approachKm} km from pickup. First 8 km included; additional pickup-travel charge: ${money(approach.fee)}. Accept this charge or wait for a suitable driver within 8 km.`
+        : `Nearest suitable driver is approximately ${approachKm} km from pickup. This is within the included 8 km; no additional pickup-travel charge applies.`;
+      approachApprovalLabel.hidden=Number(approach.fee)<=0;
+      approachApproval.checked=Number(approach.fee)<=0;
+      waitButton.hidden=Number(approach.fee)<=0;
+    }
+    waitForCloserDriver=false;
+    approachApproval.onchange=updateBookButton;
+
     document.getElementById('priceBadge').textContent=money(currentQuote.price);
     document.getElementById('quote-band').textContent=`Indicative Gauteng tariff · VAT excluded · ${currentQuote.freeMinutes} minutes loading/offloading included.`;
     document.getElementById('quote-locations').textContent=`Pickup: ${route.pickup.label}. Drop-off: ${route.dropoff.label}.`;
