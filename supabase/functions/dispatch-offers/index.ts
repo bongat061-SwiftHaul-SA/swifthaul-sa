@@ -79,7 +79,7 @@ Deno.serve(async req => {
   }
   if(body.action==="next_offer") {
     if(!dispatcher||typeof body.waybill!=="string") return reply(403,{error:"dispatcher_access_required"});
-    const {data:booking,error:be}=await db.from("customer_bookings").select("waybill,status,driver_user_id,refunded_at,vehicle,price,pickup_latitude,pickup_longitude,dropoff_latitude,dropoff_longitude").eq("waybill",body.waybill).maybeSingle();
+    const {data:booking,error:be}=await db.from("customer_bookings").select("waybill,status,driver_user_id,refunded_at,vehicle,price,pickup_latitude,pickup_longitude,dropoff_latitude,dropoff_longitude,pickup_approach_driver_user_id").eq("waybill",body.waybill).maybeSingle();
     if(be||!booking) return reply(404,{error:"delivery_not_found"});
     if(booking.status!=="pending"||booking.driver_user_id||booking.refunded_at) return reply(409,{error:"delivery_not_open_for_offers"});
     const now=new Date().toISOString();
@@ -102,7 +102,7 @@ Deno.serve(async req => {
     for(const stop of routeStops??[]){stopsByDriver.set(stop.driver_id,[...(stopsByDriver.get(stop.driver_id)||[]),stop]);}
     const pointSegmentDistanceKm=(p:any,a:any,b:any)=>{const lat0=p.lat*Math.PI/180,scaleX=Math.cos(lat0)*111.32,scaleY=110.574;const x=(v:any)=>v.lng*scaleX,y=(v:any)=>v.lat*scaleY;const px=x(p),py=y(p),ax=x(a),ay=y(a),bx=x(b),by=y(b);const dx=bx-ax,dy=by-ay,t=Math.max(0,Math.min(1,((px-ax)*dx+(py-ay)*dy)/(dx*dx+dy*dy||1)));return Math.hypot(px-(ax+t*dx),py-(ay+t*dy));};
     const withinCorridor=(driverId:string)=>{const stops=(stopsByDriver.get(driverId)||[]).filter(x=>x.lat!=null&&x.lng!=null);if(stops.length<2)return false;const points=[{lat:Number(booking.pickup_latitude),lng:Number(booking.pickup_longitude)},{lat:Number(booking.dropoff_latitude),lng:Number(booking.dropoff_longitude)}];if(points.some(p=>!Number.isFinite(p.lat)||!Number.isFinite(p.lng)))return false;return points.every(p=>stops.slice(0,-1).some((a,i)=>pointSegmentDistanceKm(p,a,stops[i+1])<=3));};
-    const eligible=(drivers??[]).filter(d=>{
+    let eligible=(drivers??[]).filter(d=>{
       if(excluded.has(d.user_id)||!d.is_online)return false;
       if(booking.vehicle&&vehicleType(String(d.vehicle_type||""))!==vehicleType(String(booking.vehicle)))return false;
       const count=(activeByDriver.get(d.user_id)||[]).length,cap=capacity.get(vehicleType(String(d.vehicle_type||"")))||1;
@@ -110,6 +110,14 @@ Deno.serve(async req => {
       if(count>0&&(!d.allow_stacked_orders||!withinCorridor(d.user_id)))return false;
       return true;
     });
+    if(booking.pickup_approach_driver_user_id) {
+      eligible=eligible.filter(d=>d.user_id===booking.pickup_approach_driver_user_id);
+      const {data:presence,error:presenceError}=await db.from("driver_online_locations")
+        .select("driver_user_id,updated_at").eq("driver_user_id",booking.pickup_approach_driver_user_id)
+        .gte("updated_at",new Date(Date.now()-90000).toISOString()).maybeSingle();
+      if(presenceError)return reply(500,{error:"pickup_driver_presence_check_failed"});
+      if(!presence)return reply(409,{error:"quoted_pickup_driver_location_expired_requote_required"});
+    }
     if(!eligible.length) return reply(404,{error:"no_eligible_online_drivers"});
     const ids=eligible.map(d=>d.user_id);
     const {data:members,error:me}=await db.from("driver_memberships").select("driver_user_id").in("driver_user_id",ids).eq("status","active").lte("starts_at",now).gt("ends_at",now);
