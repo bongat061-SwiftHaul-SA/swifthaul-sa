@@ -12,7 +12,7 @@ const reply = (status: number, body: Record<string, unknown>) =>
   new Response(JSON.stringify(body), { status, headers: cors });
 const validText = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0 && v.length <= 500;
 const tariffClasses = {
-  light_commercial: { label: "Mini-Van / Light Commercial", capacity: 600, callOutFee: 150, distanceRate: 8.5, freeMinutes: 20, vehicle: "van" },
+  light_commercial: { label: "Mini-Van / Light Commercial", capacity: 600, callOutFee: 250, distanceRate: 8.5, freeMinutes: 20, vehicle: "van" },
   one_ton_bakkie: { label: "1-Ton Bakkie / Panel Van", capacity: 1000, callOutFee: 220, distanceRate: 11, freeMinutes: 30, vehicle: "van" },
   closed_truck: { label: "1.5-Ton – 3-Ton Closed Truck", capacity: 3000, callOutFee: 450, distanceRate: 16.5, freeMinutes: 45, vehicle: "truck" },
   freight_truck: { label: "4-Ton – 8-Ton Freight Truck", capacity: 8000, callOutFee: 850, distanceRate: 24, freeMinutes: 60, vehicle: "truck" },
@@ -175,7 +175,7 @@ Deno.serve(async (req: Request) => {
       const route = await routeFor(body.pickup.trim(), body.dropoff.trim(), pickupPin, dropoffPin);
       const band = 0;
       const distanceFee = Math.round((route.distance / 1000 * load.distanceRate + Number.EPSILON) * 100) / 100;
-      const cents = Math.round((load.callOutFee + distanceFee + Number.EPSILON) * 100);
+      const callOutFee = load.vehicleClass === "light_commercial" && route.distance > 8000 ? 350 : load.callOutFee;\n      load.callOutFee = callOutFee;\n      const cents = Math.round((callOutFee + distanceFee + Number.EPSILON) * 100);
       if (!Number.isSafeInteger(cents) || cents <= 0) throw new InputError("This route requires a manual quote. Contact dispatch.", 422);
       const id = crypto.randomUUID();
       const { data: quote, error } = await admin.from("delivery_quotes").insert({
@@ -185,7 +185,7 @@ Deno.serve(async (req: Request) => {
         expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
       }).select("id,expires_at").single();
       if (error || !quote) return reply(503, { error: "quote_save_failed" });
-      return reply(200, { quote: { id: quote.id, expires_at: quote.expires_at, price: cents / 100, band, vehicle: load.vehicle, vehicleClass: load.vehicleClass, route, load, callOutFee: load.callOutFee, distanceFee, distanceRate: load.distanceRate, freeMinutes: load.freeMinutes } });
+      return reply(200, { quote: { id: quote.id, expires_at: quote.expires_at, price: cents / 100, band, vehicle: load.vehicle, vehicleClass: load.vehicleClass, route, load, callOutFee, distanceFee, distanceRate: load.distanceRate, freeMinutes: load.freeMinutes } });
     } catch (e) {
       return reply(e instanceof InputError ? e.status : 502, { error: e instanceof Error ? e.message : "route_quote_failed" });
     }
