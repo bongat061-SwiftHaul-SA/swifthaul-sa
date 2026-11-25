@@ -56,12 +56,31 @@ Deno.serve(async req => {
   }
   if(body.action==="set_online") {
     if(!driver||typeof body.online!=="boolean") return reply(400,{error:"invalid_online_preference"});
-    const {data:profile}=await db.from("driver_profiles").select("verification_status").eq("user_id",actor).maybeSingle();
+    const {data:profile,error:profileError}=await db.from("driver_profiles").select("verification_status,is_online").eq("user_id",actor).maybeSingle();
+    if(profileError) return reply(500,{error:"driver_status_lookup_failed"});
     if(!profile||profile.verification_status!=="approved") return reply(403,{error:"approved_driver_required"});
-    const {error}=await db.from("driver_profiles").update({is_online:body.online,online_updated_at:new Date().toISOString()}).eq("user_id",actor);
+    const changed=profile.is_online!==body.online;
+    const updatedAt=new Date().toISOString();
+    const {error}=await db.from("driver_profiles").update({is_online:body.online,online_updated_at:updatedAt}).eq("user_id",actor);
     if(error) return reply(500,{error:"online_status_update_failed"});
     if(!body.online){const {error:clearError}=await db.from("driver_online_locations").delete().eq("driver_user_id",actor);if(clearError)return reply(500,{error:"online_location_clear_failed"});}
-    return reply(200,{is_online:body.online});
+    let emailSent=false;
+    const key=Deno.env.get("RESEND_API_KEY");
+    const driverEmail=u.user.email||"";
+    const adminRecipients=(Deno.env.get("SWIFTHAUL_SIGNUP_NOTIFY_EMAILS")||"centurionfleetweb@gmail.com,bongzthombeni@gmail.com").split(",").map(x=>x.trim()).filter(x=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x));
+    const recipients=[driverEmail,...adminRecipients.filter(x=>x.toLowerCase()!==driverEmail.toLowerCase())].filter(Boolean);
+    if(changed&&key&&recipients.length){
+      const status=body.online?"ONLINE":"OFFLINE";
+      const name=String(u.user.user_metadata?.full_name||driverEmail||"SwiftHaul driver").replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]||ch));
+      const when=new Date(updatedAt).toLocaleString("en-ZA",{timeZone:"Africa/Johannesburg",dateStyle:"medium",timeStyle:"short"});
+      const html="<div style='font-family:Arial,sans-serif;color:#20242a'><h2>Driver is now "+status+"</h2><p>"+name+" has changed availability to "+status+".</p><p><strong>Account:</strong> "+driverEmail+"</p><p><strong>Time:</strong> "+when+" (South Africa)</p></div>";
+      try{
+        const mail=await fetch("https://api.resend.com/emails",{method:"POST",headers:{"Authorization":"Bearer "+key,"Content-Type":"application/json","Idempotency-Key":"swifthaul-driver-availability-"+actor+"-"+(body.online?"online":"offline")+"-"+updatedAt},body:JSON.stringify({from:Deno.env.get("DRIVER_EMAIL_FROM")||Deno.env.get("AUTH_EMAIL_FROM")||"SwiftHaul SA <onboarding@resend.dev>",to:recipients,subject:"Driver "+status+" — SwiftHaul SA",html})});
+        if(!mail.ok) throw new Error("email_provider_"+mail.status);
+        emailSent=true;
+      }catch(error){console.error("Driver availability email failed",String(error));}
+    }
+    return reply(200,{is_online:body.online,status_changed:changed,email_sent:emailSent});
   }
   if(body.action==="respond_offer") {
     if(!driver||typeof body.offer_id!=="string"||!["accept","decline"].includes(String(body.response))) return reply(400,{error:"invalid_offer_response"});
