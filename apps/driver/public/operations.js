@@ -517,112 +517,64 @@ if (app === 'driver' || app === 'company') {
       tracking.append(trackingHead, tripSheet, mapStage);
       card.append(tracking);
 
-      let map = null, driverMarker = null, accuracyRing = null, routeLine = null, watchId = null;
+      let map = null, driverMarker = null, accuracyRing = null, routeLine = null, watchId = null, mapsApi = null;
       let currentDriverPoint = null, currentDriverPosition = null;
       const points = [];
       if (validPoint(pickup)) points.push([pickup.lat, pickup.lng]);
       if (validPoint(dropoff)) points.push([dropoff.lat, dropoff.lng]);
-      const routeFeature = { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: points.map(([lat,lng]) => [lng,lat]) } };
       let mapLoaded = false;
       const fitRoute = () => {
-        if (!map || !points.length) return;
-        const bounds = [...points, ...(currentDriverPoint ? [currentDriverPoint] : [])].map(([lat,lng]) => [lng,lat]);
-        if (bounds.length > 1) map.fitBounds(bounds, { padding: 52, maxZoom: 15 });
-        else map.setCenter(bounds[0]).setZoom(14);
+        if (!map || !points.length || !mapsApi) return;
+        const all = [...points, ...(currentDriverPoint ? [currentDriverPoint] : [])];
+        if (all.length > 1) { const bounds = new mapsApi.LatLngBounds(); all.forEach(([lat,lng]) => bounds.extend({lat,lng})); map.fitBounds(bounds,52); }
+        else { map.setCenter({lat:all[0][0],lng:all[0][1]}); map.setZoom(14); }
       };
       const updateRoute = async origin => {
         if (!validPoint(dropoff) || !origin) return;
         try {
-          const url = 'https://router.project-osrm.org/route/v1/driving/' +
-            origin[1] + ',' + origin[0] + ';' + dropoff.lng + ',' + dropoff.lat +
-            '?overview=full&geometries=geojson&steps=false';
+          const url = 'https://router.project-osrm.org/route/v1/driving/' + origin[1] + ',' + origin[0] + ';' + dropoff.lng + ',' + dropoff.lat + '?overview=full&geometries=geojson&steps=false';
           const response = await fetch(url, { headers: { Accept: 'application/json' } });
           if (!response.ok) throw new Error('Routing unavailable');
-          const data = await response.json();
-          const route = data.routes?.[0];
+          const data = await response.json(), route = data.routes?.[0];
           if (!route) throw new Error('No road route found');
-          if (map && mapLoaded && map.getSource('driver-route')) map.getSource('driver-route').setData(route.geometry);
+          if (routeLine && mapsApi) routeLine.setPath(route.geometry.coordinates.map(([lng,lat])=>({lat,lng})));
           const km = route.distance / 1000;
           distanceValue.textContent = km < 10 ? km.toFixed(1) + ' km' : Math.round(km) + ' km';
           const mins = Math.max(1, Math.round(route.duration / 60));
           etaValue.textContent = mins >= 60 ? Math.floor(mins / 60) + ' hr ' + (mins % 60) + ' min' : mins + ' min';
-          etaCaption.textContent = 'Estimated driving time';
-          distanceCaption.textContent = 'Road distance · route estimate';
-        } catch {
-          distanceValue.textContent = 'Unavailable';
-          etaValue.textContent = '—';
-          etaCaption.textContent = 'ETA unavailable';
-          distanceCaption.textContent = 'Road routing service unavailable';
-        }
+          etaCaption.textContent = 'Estimated driving time'; distanceCaption.textContent = 'Road distance · route estimate';
+        } catch { distanceValue.textContent = 'Unavailable'; etaValue.textContent = '—'; etaCaption.textContent = 'ETA unavailable'; distanceCaption.textContent = 'Road routing service unavailable'; }
       };
-
-      if (window.maplibregl && points.length) {
-        map = new maplibregl.Map({
-          container: trackingMap,
-          style: {
-            version: 8,
-            sources: { carto: { type: 'raster', tiles: [
-              'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-              'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-              'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png'
-            ], tileSize: 256, attribution: '&copy; OpenStreetMap contributors &copy; CARTO' } },
-            layers: [{ id: 'carto-voyager', type: 'raster', source: 'carto' }]
-          },
-          center: points[0].slice().reverse(), zoom: 12, attributionControl: true
-        });
-        map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
-        const marker = (point, color, title) => {
-          const node = document.createElement('div');
-          node.style.cssText = 'width:18px;height:18px;border:4px solid #fff;border-radius:50%;background:' + color + ';box-shadow:0 1px 8px #0005';
-          return new maplibregl.Marker({ element: node }).setLngLat([point[1],point[0]]).setPopup(new maplibregl.Popup({ offset: 12 }).setText(title)).addTo(map);
-        };
-        if (validPoint(pickup)) marker([pickup.lat,pickup.lng], '#e9edf2', 'Pickup');
-        if (validPoint(dropoff)) marker([dropoff.lat,dropoff.lng], '#9eb6d4', 'Drop-off');
-        map.on('load', () => {
-          mapLoaded = true;
-          map.addSource('driver-route', { type: 'geojson', data: routeFeature });
-          map.addLayer({ id: 'driver-route-casing', type: 'line', source: 'driver-route', paint: { 'line-color': '#fff', 'line-width': 12, 'line-opacity': .95, 'line-cap': 'round', 'line-join': 'round' } });
-          map.addLayer({ id: 'driver-route-line', type: 'line', source: 'driver-route', paint: { 'line-color': '#9eb6d4', 'line-width': 6, 'line-opacity': .98, 'line-cap': 'round', 'line-join': 'round' } });
-          fitRoute();
-          if (points.length === 2) updateRoute(order.status === 'in_transit' && currentDriverPoint ? currentDriverPoint : [pickup.lat,pickup.lng]);
-          if (currentDriverPosition) showPosition(currentDriverPosition);
-        });
-        map.on('error', () => { trackingNote.textContent = 'Map tiles could not be loaded. Your trip details and GPS controls remain available.'; });
-        requestAnimationFrame(() => map && map.resize());
-      } else {
-        trackingMap.hidden = true;
-        trackingNote.textContent = 'A route map needs valid pickup and destination coordinates. GPS can still be checked on this device.';
-      }
       const showPosition = position => {
         currentDriverPosition = position;
         const coords = position.coords;
         currentDriverPoint = [coords.latitude, coords.longitude];
-        if (map && mapLoaded) {
-          if (!driverMarker) {
-            const node = document.createElement('div');
-            node.style.cssText = 'width:20px;height:20px;border:4px solid #fff;border-radius:50%;background:#176b52;box-shadow:0 1px 10px #0006';
-            driverMarker = new maplibregl.Marker({ element: node }).setLngLat([coords.longitude,coords.latitude]).setPopup(new maplibregl.Popup({ offset: 12 }).setText('Your current position')).addTo(map);
-          } else driverMarker.setLngLat([coords.longitude,coords.latitude]);
-          const radius = Math.max(10, coords.accuracy || 10);
-          const latRadius = radius / 111320;
-          const lngRadius = radius / (111320 * Math.max(.01, Math.cos(coords.latitude * Math.PI / 180)));
-          const ringCoordinates = Array.from({length:65},(_,i)=> {
-            const angle = i * Math.PI * 2 / 64;
-            return [coords.longitude + Math.cos(angle)*lngRadius, coords.latitude + Math.sin(angle)*latRadius];
-          });
-          const ringFeature = { type:'Feature', properties:{}, geometry:{type:'Polygon',coordinates:[ringCoordinates]} };
-          if (!map.getSource('driver-accuracy')) {
-            map.addSource('driver-accuracy',{type:'geojson',data:ringFeature});
-            map.addLayer({id:'driver-accuracy-fill',type:'fill',source:'driver-accuracy',paint:{'fill-color':'#176b52','fill-opacity':.10}});
-            map.addLayer({id:'driver-accuracy-outline',type:'line',source:'driver-accuracy',paint:{'line-color':'#176b52','line-width':1,'line-opacity':.7}});
-          } else map.getSource('driver-accuracy').setData(ringFeature);
+        if (map && mapLoaded && mapsApi) {
+          const point={lat:coords.latitude,lng:coords.longitude};
+          if (!driverMarker) driverMarker = new mapsApi.Marker({map,position:point,title:'Your current position',icon:{path:mapsApi.SymbolPath.CIRCLE,scale:10,fillColor:'#176b52',fillOpacity:1,strokeColor:'#fff',strokeWeight:4}});
+          else driverMarker.setPosition(point);
+          if (!accuracyRing) accuracyRing = new mapsApi.Circle({map,center:point,radius:Math.max(10,coords.accuracy||10),strokeColor:'#176b52',strokeOpacity:.7,strokeWeight:1,fillColor:'#176b52',fillOpacity:.10,clickable:false});
+          else {accuracyRing.setCenter(point);accuracyRing.setRadius(Math.max(10,coords.accuracy||10));}
         }
         trackingState.textContent = '● GPS active';
-        trackingUpdated.textContent = 'Updated ' + new Date(position.timestamp).toLocaleTimeString('en-ZA') +
-          ' · accuracy ±' + Math.round(coords.accuracy || 0) + ' m';
+        trackingUpdated.textContent = 'Updated ' + new Date(position.timestamp).toLocaleTimeString('en-ZA') + ' · accuracy ±' + Math.round(coords.accuracy || 0) + ' m';
         progressFill.style.width = order.status === 'in_transit' ? '68%' : order.status === 'picked_up' ? '45%' : '18%';
         if (order.status === 'in_transit') updateRoute([coords.latitude, coords.longitude]);
       };
+      if (window.SwiftHaulGoogleMaps && points.length) {
+        window.SwiftHaulGoogleMaps.load().then(maps => {
+          if (!trackingMap.isConnected) return;
+          mapsApi=maps;
+          map=new maps.Map(trackingMap,{center:{lat:points[0][0],lng:points[0][1]},zoom:12,mapTypeControl:false,streetViewControl:false,fullscreenControl:false,zoomControl:true,gestureHandling:'greedy',backgroundColor:'#111720'});
+          const addPin=(point,title,color)=>new maps.Marker({map,position:{lat:point[0],lng:point[1]},title,icon:{path:maps.SymbolPath.CIRCLE,scale:10,fillColor:color,fillOpacity:1,strokeColor:'#fff',strokeWeight:3}});
+          if(validPoint(pickup))addPin([pickup.lat,pickup.lng],'Pickup','#e9edf2');
+          if(validPoint(dropoff))addPin([dropoff.lat,dropoff.lng],'Drop-off','#9eb6d4');
+          routeLine=new maps.Polyline({map,path:points.map(([lat,lng])=>({lat,lng})),strokeColor:'#9eb6d4',strokeOpacity:.98,strokeWeight:5});
+          mapLoaded=true;fitRoute();if(points.length===2)updateRoute(order.status==='in_transit'&&currentDriverPoint?currentDriverPoint:[pickup.lat,pickup.lng]);
+          if(currentDriverPosition)showPosition(currentDriverPosition);
+          maps.event.addListener(map,'tilesloaded',()=>{trackingMap.dataset.googleMapReady='true';});
+        }).catch(error=>{trackingNote.textContent=error.message+' Pickup and drop-off details remain available.';});
+      } else { trackingMap.hidden=true; trackingNote.textContent='A route map needs valid pickup and destination coordinates. GPS can still be checked on this device.'; }
       startTracking.addEventListener('click', () => {
         if (!navigator.geolocation) {
           trackingState.textContent = 'GPS unavailable';
@@ -661,13 +613,13 @@ if (app === 'driver' || app === 'company') {
         startTracking.disabled = false; stopTracking.disabled = true;
       });
       recenter.addEventListener('click', () => {
-        if (map && currentDriverPoint) map.flyTo({ center: [currentDriverPoint[1],currentDriverPoint[0]], zoom: 16 });
+        if (map && currentDriverPoint) { map.panTo({lat:currentDriverPoint[0],lng:currentDriverPoint[1]}); map.setZoom(16); }
         else fitRoute();
       });
       const cleanupTracking = () => {
         if (watchId !== null && navigator.geolocation) navigator.geolocation.clearWatch(watchId);
         watchId = null;
-        if (map) { map.remove(); map = null; }
+        if (map && mapsApi) mapsApi.event.clearInstanceListeners(map); if (driverMarker) driverMarker.setMap(null); if (accuracyRing) accuracyRing.setMap(null); if (routeLine) routeLine.setMap(null); map = null;
         activeTrackingCleanups.delete(cleanupTracking);
       };
       activeTrackingCleanups.add(cleanupTracking);
