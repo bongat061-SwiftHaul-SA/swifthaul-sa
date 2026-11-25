@@ -26,8 +26,10 @@ Deno.serve(async(req:Request)=>{
  if(!key)return reply(200,{success:true,email_sent:false,reason:"email_provider_not_configured"});
  const role=p.role==="admin"||p.role==="dispatcher"?"Company Admin":p.role.charAt(0).toUpperCase()+p.role.slice(1);
  const when=new Date().toLocaleString("en-ZA",{timeZone:"Africa/Johannesburg",dateStyle:"medium",timeStyle:"short"});
+ const adminRecipients=["customer","driver"].includes(p.role)?(Deno.env.get("SWIFTHAUL_SIGNUP_NOTIFY_EMAILS")||"centurionfleetweb@gmail.com,bongzthombeni@gmail.com").split(",").map(x=>x.trim()).filter(x=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x)):[];
+ const recipients=[a.user.email,...adminRecipients.filter(x=>x.toLowerCase()!==a.user.email!.toLowerCase())];
  const html="<div style='font-family:Arial,sans-serif;color:#20242a'><h2>New sign-in to SwiftHaul SA</h2><p>Hello "+esc(p.full_name||"there")+",</p><p>Your "+esc(role)+" account was just signed in successfully.</p><p><strong>Time:</strong> "+esc(when)+" (South Africa)</p><p>If this was you, no action is needed. If you do not recognise this activity, change your password and contact SwiftHaul support.</p><p>SwiftHaul will never email your password or PIN.</p></div>";
- try{const r=await fetch("https://api.resend.com/emails",{method:"POST",headers:{"Authorization":"Bearer "+key,"Content-Type":"application/json","Idempotency-Key":"swifthaul-signin-"+sid},body:JSON.stringify({from,to:[a.user.email],subject:"New sign-in to your SwiftHaul SA account",html})});if(!r.ok)throw new Error("email_provider_"+r.status);}
+ try{const r=await fetch("https://api.resend.com/emails",{method:"POST",headers:{"Authorization":"Bearer "+key,"Content-Type":"application/json","Idempotency-Key":"swifthaul-signin-"+sid},body:JSON.stringify({from,to:recipients,subject:"New sign-in to your SwiftHaul SA account",html})});if(!r.ok)throw new Error("email_provider_"+r.status);}
  catch(e){console.error("Sign-in email failed",String(e));return reply(200,{success:false,email_sent:false,reason:"email_delivery_failed"});}
  const sentAt=new Date().toISOString();
  const {error:se}=await admin.from("account_signin_notifications").update({email_sent_at:sentAt}).eq("user_id",a.user.id).eq("session_id",sid);
