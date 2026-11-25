@@ -385,7 +385,7 @@ calculateButton.addEventListener('click', async () => {
     const note=document.getElementById('quote-map-note');note.textContent='Planned road route. Live driver location is not included.';
     try {quoteMap=window.renderDeliveryMap(document.getElementById('quote-map'),route,()=>{note.textContent='Some map tiles could not load. Use the directions link to verify your locations.';});}
     catch {document.getElementById('quote-map').hidden=true;note.textContent='The map could not load. Check the matched addresses above or open Google Maps.';}
-    quoteStatus.textContent='Route calculated · quote valid for 15 minutes. Review the locations and fare before booking.';
+    quoteStatus.textContent=currentQuote.pickupApproach?.driverMatched?'Route and nearest-driver pickup quote calculated · valid for 5 minutes. Review the total and approve any additional pickup charge before booking.':'Route calculated · review the locations and fare before booking.';
     updateBookButton();
   } catch(error) {if (!active.signal.aborted && quoteRequest===active) quoteStatus.textContent=error.message || 'Unable to calculate the quote. Please try again.';}
   finally {if (quoteRequest===active) calculateButton.disabled=false;}
