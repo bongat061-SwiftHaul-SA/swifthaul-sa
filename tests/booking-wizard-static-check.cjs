@@ -27,7 +27,7 @@ assert(/SWIFTHAUL_GOOGLE_MAPS_API_KEY\s*=\s*'[^']+'/.test(googleConfig), 'Custom
 assert(googleConfig.includes("SWIFTHAUL_GOOGLE_MAP_ID = 'f99f574d640dd362c9c184e1'"), 'Customer Google Maps must use the supplied Google Map ID.');
 assert(locationPicker.includes('googleMapId ? {mapId:googleMapId} : {}'), 'Google Maps initialization must associate the configured Map ID.');
 assert(locationPicker.includes('loadGoogleMaps') && locationPicker.includes('new google.maps.Map'), 'Customer map picker must support the native Google Maps JavaScript API.');
-assert(locationPicker.includes('new google.maps.Marker') && locationPicker.includes('draggable:true'), 'Google Maps pickup and drop-off markers must be draggable.');
+assert(locationPicker.includes('draggable:false'), 'Pickup and drop-off markers must remain read-only because the selected address suggestion controls their positions.');
 assert(locationPicker.includes('ensureMapLibre') && locationPicker.includes('free backup map'), 'Customer booking must retain the free map provider as a fallback.');
 assert(locationPicker.includes('new google.maps.Polyline'), 'Google Maps provider must support route previews.');
 
