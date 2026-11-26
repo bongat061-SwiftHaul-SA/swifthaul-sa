@@ -8,6 +8,8 @@ let quoteMap;
 let accountEpoch = 0;
 let bookingBusy = false;
 let walletAvailableCents = 0;
+let knownCustomerOrderStates = new Map();
+let firstCustomerOrderLoad = true;
 const quoteStatus = document.getElementById('quote-status');
 const calculateButton = document.getElementById('calculate-route');
 const localTime=value=>new Date(value).toLocaleString('en-ZA',{timeZone:'Africa/Johannesburg'})+' SAST';
@@ -57,6 +59,36 @@ let ready = false;
 let loadVersion = 0;
 let refundRequestsByWaybill = new Map();
 const report = (text, error = false) => { message.textContent = text; message.classList.toggle('error', error); };
+function notifyCustomer(text) {
+  const banner=document.getElementById('customer-alert-banner');
+  const label=banner?.querySelector('[data-customer-alert-text]');
+  if(!banner||!label)return;
+  label.textContent=text;
+  banner.hidden=false;
+  banner.classList.remove('is-flashing');
+  void banner.offsetWidth;
+  banner.classList.add('is-flashing');
+  try {
+    const Audio=window.AudioContext||window.webkitAudioContext;
+    if(Audio){const context=new Audio();const oscillator=context.createOscillator();const gain=context.createGain();oscillator.type='sine';oscillator.frequency.value=880;gain.gain.setValueAtTime(0.0001,context.currentTime);gain.gain.exponentialRampToValueAtTime(0.12,context.currentTime+0.025);gain.gain.exponentialRampToValueAtTime(0.0001,context.currentTime+0.22);oscillator.connect(gain);gain.connect(context.destination);oscillator.start();oscillator.stop(context.currentTime+0.24);oscillator.onended=()=>context.close();}
+  } catch {}
+}
+function observeCustomerOrderUpdates(orders) {
+  const next=new Map();
+  for(const order of orders||[]){
+    const previous=knownCustomerOrderStates.get(order.waybill);
+    const assigned=Boolean(order.assigned_driver)||['assigned','accepted','picked_up','in_transit'].includes(String(order.status||'').toLowerCase());
+    const offerStatus=String(order.counter_offer_status||'').toLowerCase();
+    if(!firstCustomerOrderLoad&&previous){
+      if(!previous.assigned&&assigned)notifyCustomer('A driver has been found for delivery '+order.waybill+'.');
+      if(previous.offerStatus!=='accepted'&&offerStatus==='accepted')notifyCustomer('Your counter-offer for delivery '+order.waybill+' has been accepted.');
+    }
+    next.set(order.waybill,{assigned,offerStatus});
+  }
+  knownCustomerOrderStates=next;
+  firstCustomerOrderLoad=false;
+}
+document.getElementById('customer-alert-banner')?.querySelector('[data-customer-alert-dismiss]')?.addEventListener('click',()=>{const banner=document.getElementById('customer-alert-banner');banner.hidden=true;banner.classList.remove('is-flashing');});
 form.addEventListener('input', event => {if(['pickup','dropoff'].includes(event.target.name)){for(const suffix of ['latitude','longitude']){const hidden=form.elements.namedItem(event.target.name+'_'+suffix);if(hidden)hidden.value='';}const picker=event.target.nextElementSibling;if(picker?.matches('button'))picker.textContent='Pick / copy pin';}if (['pickup','dropoff','weight','length','width','height'].includes(event.target.name)) resetQuote();});
 form.addEventListener('change', event => {if (['weight','length','width','height','vehicle'].includes(event.target.name)) resetQuote();});
 function whatsapp(order) {
@@ -95,6 +127,7 @@ function addOrder(order, prepend = false) {
   if(order.assistance_requested){const handling=document.createElement('p');handling.textContent='Optional handling assistance requested · '+(Number(order.assistance_minutes)||0)+' minutes · '+money((Number(order.assistance_fee_cents)||0)/100)+' · '+String(order.assistance_status||'pending dispatch confirmation').replaceAll('_',' ');card.append(handling);}
   const paymentInfo=document.createElement('p');paymentInfo.textContent=order.paid_at?'Payment confirmed · '+order.payment_source:order.payment_source==='pay_later'?'Pay later · repayment due in 7 days':order.payment_source==='wallet'?'Paid from SwiftHaul wallet · Refund '+money((order.wallet_refund_used||0)/100)+' + promotional '+money((order.wallet_promo_used||0)/100):order.payment_method==='cash'?'Payment: Cash requested · payment unconfirmed':'Payment: Arrange with dispatch · payment unconfirmed';card.append(paymentInfo);
   if(order.counter_offer){const offer=document.createElement('p');offer.textContent=`Counteroffer: ${money(order.counter_offer)} · ${order.counter_offer_status}. ${order.counter_offer_status==='pending'?'Original fare '+money(order.price)+' remains until company approval.':order.counter_offer_status==='accepted'?'Accepted fare '+money(order.price)+'. Original fare '+money(order.original_price)+'.':'Original fare '+money(order.price)+'.'}`;card.append(offer);}
+  if(order.load?.customer_description){const items=document.createElement('p');items.textContent='Customer item description: '+order.load.customer_description;card.append(items);}
   if(order.load) {const weight=document.createElement('p');weight.textContent=order.load.freeMinutes!=null?`${order.load.truckClass || order.vehicle.toUpperCase()} · Estimated payload ${mass(order.load.chargeable)} kg · ${order.load.freeMinutes} minutes loading/offloading included`:`${order.load.truckClass || order.vehicle.toUpperCase()} · Original tariff booking · Estimated payload ${mass(order.load.chargeable)} kg`;card.append(weight);}
   if(order.scheduled_at) {const time=document.createElement('p');time.textContent='Requested pickup: '+localTime(order.scheduled_at)+' · Awaiting dispatch confirmation';card.append(time);}
   if(order.return_address) {const ret=document.createElement('p');ret.textContent='Return requested: '+order.return_address+(order.return_at?' · '+localTime(order.return_at):'')+' · Separate quote pending';card.append(ret);}
@@ -188,7 +221,7 @@ async function startPayFastCheckout(order, button) {
   }
 }
 
-async function loadOrders() {
+async function loadOrders(silent = false) {
   if (document.body.dataset.guestPreview === 'true') return;
   const version = ++loadVersion;
   walletAvailableCents = 0;
@@ -198,6 +231,7 @@ async function loadOrders() {
   try {
     const data = await customerApi('GET');
     if (version !== loadVersion) return;
+    observeCustomerOrderUpdates(data.orders);
     document.getElementById('legacy-import').hidden = !data.canImport;
     container.replaceChildren();
     refundRequestsByWaybill = new Map((data.refundRequests || []).map(request => [request.waybill, request]));
@@ -212,11 +246,12 @@ async function loadOrders() {
     if (version !== loadVersion) return;
     ready = false;
     container.replaceChildren();
-    report('Unable to load bookings. Retry to reconnect.', true);
+    if(!silent) report('Unable to load bookings. Retry to reconnect.', true);
     document.getElementById('retry').hidden = false;
   } finally { if (version === loadVersion) updateBookButton(); }
 }
 document.getElementById('retry').addEventListener('click', loadOrders);
+setInterval(()=>{if(document.visibilityState==='visible'&&ready)loadOrders(true);},15000);
 const assistanceRequested=document.getElementById('assistance-requested');
 const assistanceOptions=document.getElementById('assistance-options');
 const assistanceBlocks=document.getElementById('assistance-blocks');
@@ -344,7 +379,7 @@ calculateButton.addEventListener('click', async () => {
   const requestedWait=waitForCloserDriver;resetQuote();waitForCloserDriver=requestedWait;const active=new AbortController();quoteRequest=active;calculateButton.disabled=true;
   quoteStatus.textContent='Mapping the addresses and calculating your fare…';
   try {
-    const result=await customerApi('POST',{action:'quote',pickup:data.pickup,dropoff:data.dropoff,pickup_location:data.pickup_latitude?{latitude:Number(data.pickup_latitude),longitude:Number(data.pickup_longitude)}:null,dropoff_location:data.dropoff_latitude?{latitude:Number(data.dropoff_latitude),longitude:Number(data.dropoff_longitude)}:null,selected_vehicle:form.querySelector('[name=vehicle]:checked')?.value,wait_for_closer_driver:waitForCloserDriver,parcel:Object.fromEntries(['weight','length','width','height'].map(key=>[key,Number(data[key])]))});
+    const result=await customerApi('POST',{action:'quote',pickup:data.pickup,dropoff:data.dropoff,pickup_location:data.pickup_latitude?{latitude:Number(data.pickup_latitude),longitude:Number(data.pickup_longitude)}:null,dropoff_location:data.dropoff_latitude?{latitude:Number(data.dropoff_latitude),longitude:Number(data.dropoff_longitude)}:null,selected_vehicle:form.querySelector('[name=vehicle]:checked')?.value,item_description:data.item_description||'',wait_for_closer_driver:waitForCloserDriver,parcel:Object.fromEntries(['weight','length','width','height'].map(key=>[key,Number(data[key])]))});
     if (quoteRequest!==active || active.signal.aborted) return;
     if (!result.quote) throw new Error('Unable to calculate the route.');
     currentQuote=result.quote;assistanceQuote();updatePaymentOptions();window.swiftHaulUpdateVehiclePreview?.(currentQuote.vehicle,currentQuote.load?.chargeable,currentQuote.load?.truckClass || (currentQuote.vehicle||'').toUpperCase());const route=currentQuote.route;window.swiftHaulSetRoadRoute?.(route);
