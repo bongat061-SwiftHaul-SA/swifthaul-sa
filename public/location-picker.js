@@ -159,6 +159,7 @@
   let googleMap = null;
   let googleMapLoading = null;
   let googleRoute = null;
+  let nearbyDriverMarkers = [];
   const googleMapsApiKey = String(window.SWIFTHAUL_GOOGLE_MAPS_API_KEY || '').trim();
   const googleMapId = String(window.SWIFTHAUL_GOOGLE_MAP_ID || '').trim();
   const hasMap = () => Boolean(map || googleMap);
@@ -439,6 +440,39 @@
     saveLocation(input, Number(lat), Number(lng), 'Address suggestion selected. The map is centred on its mapped point; adjust to the exact gate or entrance.');
     cameraMove([Number(lng),Number(lat)],18);
     resizeMap();
+  };
+  window.swiftHaulShowNearbyDrivers = drivers => {
+    const clear = () => {
+      nearbyDriverMarkers.forEach(marker => marker?.setMap ? marker.setMap(null) : marker?.remove?.());
+      nearbyDriverMarkers = [];
+    };
+    const draw = () => {
+      clear();
+      const list = Array.isArray(drivers) ? drivers : [];
+      for (const driver of list) {
+        const lat = Number(driver.latitude), lng = Number(driver.longitude);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+        const label = driver.vehicle === 'motorbike' ? '🏍️' : driver.vehicle === 'closed_truck' ? '🚚' : '🚗';
+        if (googleMap) {
+          nearbyDriverMarkers.push(new google.maps.Marker({
+            map: googleMap, position: {lat,lng}, title: 'Nearby available vehicle',
+            label: {text: label, fontSize: '17px'}
+          }));
+        } else if (map && window.maplibregl) {
+          const node = document.createElement('div');
+          node.textContent = label;
+          node.setAttribute('aria-label','Nearby available vehicle');
+          node.title = 'Nearby available vehicle';
+          node.style.cssText = 'width:30px;height:30px;display:grid;place-items:center;background:#fff;border:1px solid #cbd5ce;border-radius:50%;box-shadow:0 2px 8px #0003;font-size:17px';
+          nearbyDriverMarkers.push(new maplibregl.Marker({element:node,anchor:'center'}).setLngLat([lng,lat]).addTo(map));
+        }
+      }
+    };
+    ensureMap();
+    if (googleMap) draw();
+    else if (googleMapLoading) googleMapLoading.then(draw).catch(()=>{});
+    else if (mapLoaded) draw();
+    else if (map) map.once('load',draw);
   };
 
   for (const [input, label] of [[pickup, 'pickup'], [dropoff, 'drop-off']]) {
