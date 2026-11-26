@@ -42,5 +42,13 @@ jobs:
         run: |
           node --check public/customer.js
           node --check public/wallet.js
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check Customer payment Edge Functions
+        run: |
+          deno check --node-modules-dir=auto supabase/functions/customer-portal/index.ts
+          deno check --node-modules-dir=auto supabase/functions/paystack-payment-initialize/index.ts
+          deno check --node-modules-dir=auto supabase/functions/paystack-webhook/index.ts
       - name: Check Customer payment and wallet restrictions
         run: node tests/customer-payment-flow-static-check.cjs
