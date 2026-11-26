@@ -27,6 +27,8 @@ assert.match(portal, /method !== "cash" && method !== "dispatch" && method !== "
 assert.match(portal, /method === "dispatch" && offer === null/, 'Booking API must reject dispatch/admin-review bookings without a counter-offer.');
 assert.doesNotMatch(portal, /create_wallet_funded_booking/, 'Customer booking API must not call the paused wallet-funding RPC.');
 assert.match(initialize, /secret\.startsWith\("sk_test_"/, 'Staging Paystack initialization must reject live secret keys.');
+assert.match(initialize, /const ownerHash=u\\.user\\.id/, 'Paystack initialization must use the same Supabase Auth UUID stored by customer-portal.');
+assert.doesNotMatch(initialize, /identity:/, 'Paystack initialization must not hash the owner ID differently from customer-portal.');
 assert.match(webhook, /x-paystack-signature/, 'Paystack webhook must validate the provider signature.');
 assert.match(webhook, /apply_paystack_payment/, 'Paystack webhook must apply only verified payments.');
 assert.match(walletJs, /withdraw-form'\)\.hidden=true/, 'Customer withdrawals must remain hidden while unsupported.');
