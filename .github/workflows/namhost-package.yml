@@ -1,0 +1,66 @@
+name: Build Namhost app package (no deployment)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: namhost-package
+  cancel-in-progress: true
+
+jobs:
+  package:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out production source
+        uses: actions/checkout@v4
+      - name: Check out approved Customer staging source
+        uses: actions/checkout@v4
+        with:
+          ref: feature/sa-sms-whatsapp-notifications-staging
+          path: staging
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build approved Customer bundle
+        working-directory: staging
+        run: npm run build:pages
+      - name: Assemble Namhost app folders
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf namhost-package
+          mkdir -p namhost-package/customer namhost-package/driver namhost-package/company
+          cp -a staging/dist/customer/. namhost-package/customer/
+          cp -a apps/driver/public/. namhost-package/driver/
+          cp -a apps/company/public/. namhost-package/company/
+          cp -a public namhost-package/public
+          if [ -f public/live-location-view.js ]; then
+            cp public/live-location-view.js namhost-package/live-location-view.js
+          fi
+          # Driver and Company HTML was authored for a deeper directory layout.
+          # Normalize only those HTML references for /driver/ and /company/.
+          find namhost-package/driver namhost-package/company -type f -name '*.html' -print0 |
+            while IFS= read -r -d '' file; do
+              sed -i 's#../../../#../#g' "$file"
+            done
+          touch namhost-package/.nojekyll
+          test -f namhost-package/customer/index.html
+          test -f namhost-package/driver/index.html
+          test -f namhost-package/company/index.html
+          echo "Namhost package structure verified."
+      - name: Create ZIP archive
+        run: |
+          cd namhost-package
+          zip -qr ../swifthaul-namhost-apps.zip .
+      - name: Upload ZIP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: swifthaul-namhost-apps
+          path: swifthaul-namhost-apps.zip
+          if-no-files-found: error
+          retention-days: 7
