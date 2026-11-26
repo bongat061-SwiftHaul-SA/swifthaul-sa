@@ -175,8 +175,9 @@ Deno.serve(async (req: Request) => {
       let approachDriverId: string | null = null;
       let approachDistanceMeters = 0;
       let approachFee = 0;
+      let nearbyDrivers: Array<{ latitude: number; longitude: number; vehicle: string; distanceMeters: number }> = [];
       const approachRate = load.vehicleClass === "motorbike" ? 5 : load.vehicleClass === "light_commercial" ? 8 : 0;
-      if (approachRate > 0) {
+      {
         // A route/fare quote must not depend on a driver being online at this exact moment.
         // When a suitable live driver is available, retain the existing pickup-approach calculation.
         const { data: onlineDrivers, error: onlineError } = await admin.from("driver_profiles")
@@ -185,8 +186,10 @@ Deno.serve(async (req: Request) => {
         if (!onlineError) {
           const matching = (onlineDrivers ?? []).filter((d: any) => {
             const type = String(d.vehicle_type || "").toLowerCase();
-            return load.vehicleClass === "motorbike" ? type.includes("motor") :
-              (type.includes("van") || type.includes("bakkie") || type.includes("panel") || type.includes("light_commercial"));
+            if (load.vehicleClass === "motorbike") return type.includes("motor") || type === "bike";
+            if (load.vehicleClass === "light_commercial" || load.vehicleClass === "one_ton_bakkie")
+              return type.includes("van") || type.includes("bakkie") || type.includes("panel") || type.includes("light_commercial");
+            return type.includes("truck") || type.includes("ton");
           });
           const ids = matching.map((d: any) => d.user_id);
           if (ids.length) {
@@ -209,8 +212,17 @@ Deno.serve(async (req: Request) => {
                     return 6371000 * 2 * Math.atan2(Math.sqrt(q), Math.sqrt(1-q));
                   };
                   const pickupLat = route.pickup.latitude, pickupLng = route.pickup.longitude;
-                  const nearestFirst = fresh.map((x: any) => ({...x, approx: haversine(Number(x.latitude),Number(x.longitude),pickupLat,pickupLng)}))
-                    .sort((a: any,b: any) => a.approx-b.approx).slice(0, 12);
+                  const rankedApprox = fresh.map((x: any) => ({...x, approx: haversine(Number(x.latitude),Number(x.longitude),pickupLat,pickupLng)}))
+                    .filter((x: any) => x.approx <= 30000).sort((a: any,b: any) => a.approx-b.approx);
+                  // Pre-booking map markers are deliberately coarse and anonymous (about 1 km precision).
+                  nearbyDrivers = rankedApprox.slice(0, 30).map((x: any) => ({
+                    latitude: Math.round(Number(x.latitude) * 100) / 100,
+                    longitude: Math.round(Number(x.longitude) * 100) / 100,
+                    vehicle: load.vehicleClass,
+                    distanceMeters: Math.round(x.approx / 100) * 100,
+                  }));
+                  if (approachRate > 0) {
+                  const nearestFirst = rankedApprox.slice(0, 12);
                   const routed = await Promise.all(nearestFirst.map(async (d: any) => {
                     try {
                       const url = new URL(`https://router.project-osrm.org/route/v1/driving/${d.longitude},${d.latitude};${pickupLng},${pickupLat}`);
@@ -231,6 +243,7 @@ Deno.serve(async (req: Request) => {
                     approachDriverId = chosen.driverId;
                     approachDistanceMeters = chosen.meters;
                     approachFee = Math.round((Math.max(0, approachDistanceMeters / 1000 - 8) * approachRate + Number.EPSILON) * 100) / 100;
+                  }
                   }
                 }
               }
@@ -266,7 +279,7 @@ Deno.serve(async (req: Request) => {
         expires_at: new Date(Date.now() + (approachDriverId ? 5 : 30) * 60 * 1000).toISOString(),
       }) .select("id,expires_at").single();
       if (error || !quote) return reply(503, { error: "quote_save_failed" });
-      return reply(200, { quote: { id: quote.id, expires_at: quote.expires_at, price: cents / 100, band, vehicle: load.vehicle, vehicleClass: load.vehicleClass, route, load, callOutFee, distanceFee, distanceRate: load.distanceRate, freeMinutes: load.freeMinutes, pickupApproach: { distanceMeters: approachDistanceMeters, fee: approachFee, includedKm: 8, driverMatched: Boolean(approachDriverId), requiresApproval: approachFee > 0 } } });
+      return reply(200, { quote: { id: quote.id, expires_at: quote.expires_at, price: cents / 100, band, vehicle: load.vehicle, vehicleClass: load.vehicleClass, route, load, callOutFee, distanceFee, distanceRate: load.distanceRate, freeMinutes: load.freeMinutes, pickupApproach: { distanceMeters: approachDistanceMeters, fee: approachFee, includedKm: 8, driverMatched: Boolean(approachDriverId), requiresApproval: approachFee > 0 }, nearbyDrivers, nearbyDriverRadiusKm: 30 } });
     } catch (e) {
       return reply(e instanceof InputError ? e.status : 502, { error: e instanceof Error ? e.message : "route_quote_failed" });
     }
