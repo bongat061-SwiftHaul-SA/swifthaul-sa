@@ -18,6 +18,7 @@
   const vehicle = byText('fieldset', 'choose your vehicle');
   const payment = byText('fieldset', 'payment option');
   const counterToggle = form.querySelector('#make-counter-offer')?.closest('label');
+  const counterCheckbox = form.querySelector('#make-counter-offer');
   const counterField = form.querySelector('#counter-offer-field');
   const counterNote = form.querySelector('#counter-offer-note');
   const assistance = form.querySelector('#handling-assistance');
@@ -38,7 +39,7 @@
   oldHeading?.remove();
   const steps = [
     {title:'Confirm pickup & drop-off',hint:'Type each address and tap the correct suggestion. Then continue to your parcel details.'},
-    {title:'Parcel details',hint:'Describe your load, review the recommended vehicle and calculate your mapped fare.'},
+    {title:'Items & vehicle',hint:'Add preset items or describe your own delivery, then choose the vehicle you want. Fare is based on kilometres and vehicle.'},
     {title:'More options & protection',hint:'Open More options for pickup time, return delivery and payment. You can also make a counter-offer here.'},
     {title:'Review & book',hint:'Check your delivery details, fare and any counteroffer before submitting.'}
   ];
@@ -71,12 +72,27 @@
   moreOptions.className = 'booking-more-options';
   moreOptions.innerHTML = '<summary>More options <span>Pickup time · Return · Payment</span></summary>';
   [schedule,returnTrip,payment].forEach(node=>{if(node)moreOptions.append(node);});
+  moreOptions.open = true;
   const counterPanel = document.createElement('section');
   counterPanel.className = 'customer-counteroffer-panel';
   const counterHeading = document.createElement('h3');
   counterHeading.textContent = 'Make a counter-offer';
   counterPanel.append(counterHeading);
-  [counterToggle,counterField,counterNote].forEach(node=>{if(node)counterPanel.append(node);});
+  const counterButton=document.createElement('button');
+  counterButton.type='button';counterButton.id='customer-counteroffer-button';counterButton.className='customer-counteroffer-button';
+  counterButton.textContent='Make a counter-offer';counterButton.setAttribute('aria-pressed','false');
+  counterButton.disabled=counterCheckbox?.disabled!==false;
+  counterToggle?.setAttribute('hidden','');
+  counterPanel.append(counterButton);
+  const counterHelp=document.createElement('p');counterHelp.className='counter-offer-help';counterHelp.textContent='Available for eligible routes below 24 km when “Arrange payment with dispatch” is selected.';counterPanel.append(counterHelp);
+  [counterField,counterNote].forEach(node=>{if(node)counterPanel.append(node);});
+  counterButton.addEventListener('click',()=>{
+    if(!counterCheckbox||counterButton.disabled)return;
+    counterCheckbox.checked=!counterCheckbox.checked;
+    counterCheckbox.dispatchEvent(new Event('change',{bubbles:true}));
+    counterButton.setAttribute('aria-pressed',String(counterCheckbox.checked));
+    counterButton.textContent=counterCheckbox.checked?'Cancel counter-offer':'Make a counter-offer';
+  });
   // The location picker builds a map stage containing the pickup/drop-off inputs.
   // Keep that stage intact on step one so the map, address suggestions, draggable
   // pins and Plus Code readout stay together. The previous implementation moved
@@ -116,9 +132,11 @@
     set('pickup',form.elements.pickup.value.trim());
     set('dropoff',form.elements.dropoff.value.trim());
     set('recipient',form.elements.recipient.value.trim());
-    const weight=Number(form.elements.weight.value);
-    const vehicleValue=form.querySelector('[name=vehicle]:checked')?.value;
-    set('parcel',weight>0 ? (vehicleValue||'Vehicle pending').toUpperCase()+' · '+weight+' kg estimated' : 'Complete parcel details');
+    const vehicleInput=form.querySelector('[name=vehicle]:checked');
+    const vehicleValue=vehicleInput?.closest('label')?.querySelector('strong')?.textContent || vehicleInput?.value;
+    const customItems=form.querySelector('#customer-item-description')?.value.trim();
+    const presetItems=form.querySelector('[name=preset_items]')?.value.trim();
+    set('parcel',[vehicleValue,customItems||presetItems].filter(Boolean).join(' · ') || 'Add item details and choose a vehicle');
     set('fare',quote.hidden ? (document.body.dataset.guestPreview === 'true' ? 'Sign in to calculate your live fare' : 'Calculate your route') : (form.querySelector('#quote-price')?.textContent || 'Quote ready'));
     set('payment',form.elements.payment_method.selectedOptions[0]?.textContent || 'Arrange with dispatch');
     set('assistance',form.querySelector('#assistance-requested').checked ? 'Requested · subject to dispatch approval' : 'Not requested');
@@ -155,7 +173,8 @@
       if(!complete){announce('Choose a pickup and drop-off address from the suggestions.');return false;}
     }
     if(active===1){
-      if(!(Number(form.elements.weight.value)>0)){announce('Please estimate your parcel weight and dimensions before continuing.');return false;}
+      if(!form.querySelector('[name=vehicle]:checked')){announce('Choose the vehicle you want to use before continuing.');form.querySelector('[name=vehicle]')?.focus();return false;}
+      if(!(form.querySelector('#customer-item-description')?.value.trim()||form.querySelector('[name=preset_items]')?.value.trim())){announce('Describe the items or add at least one preset item before continuing.');form.querySelector('#customer-item-description')?.focus();return false;}
       if(quote.hidden && document.body.dataset.guestPreview !== 'true'){announce('Calculate the mapped route and fare before continuing.');calculate.focus();return false;}
     }
     return true;
