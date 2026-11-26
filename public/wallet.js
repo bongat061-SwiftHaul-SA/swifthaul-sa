@@ -22,7 +22,7 @@ async function load(){
  document.getElementById('promo-balance').textContent=rand(data.wallet.promo_cents);
  document.getElementById('referral-code').textContent=data.wallet.referral_code;
  document.getElementById('promo-adjustment').textContent=Number(data.wallet.promo_debt_cents)>0?'Future promotional credits first offset '+rand(data.wallet.promo_debt_cents)+' reversed after refunds.':'';
- const e=data.eligibility;document.getElementById('pay-later-summary').textContent=`${e.completed} completed deliveries · ${e.verified?'Verified account':'Account verification required'} · Outstanding ${rand(e.outstanding)} / R500.00 · ${e.overdue} overdue balance(s). Repayment is due within 7 days. Eligibility is checked again at payment.`;
+ const e=data.eligibility;document.getElementById('pay-later-summary').textContent='Pay-later borrowing and online repayments are paused. Existing outstanding balance: '+rand(e.outstanding)+' · '+e.overdue+' overdue balance(s). Contact SwiftHaul Admin to reconcile an existing balance.';
  const entries=document.getElementById('wallet-entries');entries.replaceChildren();if(!data.entries.length)entry(entries,'No wallet transactions yet.');
  for(const row of data.entries){entry(entries,`${date(row.created_at)} · ${row.description} · Refund ${rand(row.refund_delta)} · Promotional ${rand(row.promo_delta)}${Number(row.promo_debt_delta)?' · Promotional adjustment '+rand(row.promo_debt_delta):''}`);}
  const loans=document.getElementById('wallet-loans');loans.replaceChildren();
