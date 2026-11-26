@@ -35,17 +35,6 @@ async function load(){
  for(const field of document.querySelectorAll('#withdraw-form input,#withdraw-form select,#withdraw-form button'))field.disabled=true;
  }catch(error){if(current===version)status.textContent=error.message;}
 }
-async function perform(body,button){
- if(!active)return;const current=version;if(button)button.disabled=true;status.textContent='Processing…';
- try{const result=await api(body);if(current!==version)return;
-  if(result.checkout_url){const url=new URL(result.checkout_url);if(url.protocol!=='https:'||url.hostname!=='checkout.paystack.com')throw new Error('Invalid payment address.');window.location.assign(url.href);return;}
-  if(body.action==='withdraw')requestId=crypto.randomUUID();
-  await load();status.textContent=result.withdrawal?'Withdrawal reserved. Track its confirmed status below.':result.pay_later?'Pay later activated. Repayment is due in 7 days.':'Wallet payment saved.';document.dispatchEvent(new Event('wallet-updated'));
- }catch(error){if(current===version)status.textContent=error.message;}finally{if(button)button.disabled=false;}
-}
-document.getElementById('refresh-wallet').addEventListener('click',()=>{load();if(active)document.dispatchEvent(new Event('wallet-updated'));});
-document.getElementById('copy-referral').addEventListener('click',async()=>{try{const code=document.getElementById('referral-code').textContent;if(!code)return;const url=new URL('/',location.href);url.searchParams.set('ref',code);await navigator.clipboard.writeText(url.href);status.textContent='Referral link copied.';}catch{status.textContent='Copy the referral code shown above and share it with a new customer.';}});
-document.addEventListener('wallet-payment',event=>{section.scrollIntoView({behavior:'smooth'});perform(event.detail);});
 document.addEventListener('account-ready',()=>{active=true;load();});
 document.addEventListener('account-cleared',clear);
 document.addEventListener('guest-preview',()=>{clear();status.textContent='Guest preview: sign in to see wallet balances, rewards and repayment options.';});
