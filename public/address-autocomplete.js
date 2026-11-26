@@ -45,6 +45,7 @@
   }
   function addressLabel(properties){
     const p=properties||{};
+    if(p.display_name)return String(p.display_name);
     const house=p.housenumber||p.house_number||p.house_no||p.street_number||'';
     const road=p.street||p.road||p.route||p.pedestrian||p.footway||'';
     const street=[house,road].filter(Boolean).join(' ').trim();
@@ -95,11 +96,39 @@
     wrap.append(status);
     let controller=null,features=[],active=-1,debounce=null,requestNumber=0;
     const close=()=>{list.hidden=true;input.setAttribute('aria-expanded','false');input.removeAttribute('aria-activedescendant');active=-1;};
-    const choose=index=>{
-      const feature=features[index];if(!feature)return;
-      setLocation(input,feature);
-      close();
-      status.textContent='Address selected. The map pin and route will use these exact coordinates.';
+    const choose=async index=>{
+      let feature=features[index];if(!feature)return;
+      try{
+        if(feature.properties?.__googlePrediction){
+          const prediction=feature.properties.__googlePrediction;
+          const place=prediction.toPlace();
+          await place.fetchFields({fields:['location','formattedAddress','displayName','addressComponents']});
+          if(!place.location)throw new Error('Google Maps did not return a map point for this address.');
+          const components={};
+          for(const component of place.addressComponents||[]){
+            const value=component.longText||component.shortText||'';
+            for(const type of component.types||[]){
+              if(type==='street_number')components.street_number=value;
+              if(type==='route')components.route=value;
+              if(type==='sublocality_level_1'||type==='sublocality')components.sublocality=value;
+              if(type==='neighborhood')components.neighbourhood=value;
+              if(type==='locality')components.locality=value;
+              if(type==='administrative_area_level_2')components.district=value;
+              if(type==='administrative_area_level_1')components.province=value;
+              if(type==='postal_code')components.postal_code=value;
+              if(type==='country')components.country=value;
+            }
+          }
+          feature={type:'Feature',geometry:{type:'Point',coordinates:[place.location.lng(),place.location.lat()]},
+            properties:{...components,name:String(place.displayName||''),display_name:String(place.formattedAddress||feature.properties.display_name||''),countrycode:'za'}};
+          googleSessionToken=null;
+        }
+        setLocation(input,feature);
+        close();
+        status.textContent='Google Maps address selected. The map pin uses the selected place coordinates; check the entrance before booking.';
+      }catch(error){
+        status.textContent=error.message||'Could not load the selected Google Maps address. Please choose it again.';
+      }
     };
     const highlight=()=>{
       [...list.querySelectorAll('button')].forEach((button,i)=>button.setAttribute('aria-selected',String(i===active)));
@@ -122,46 +151,29 @@
       if(list.children.length){list.hidden=false;input.setAttribute('aria-expanded','true');}
       else close();
     };
-    function googlePlacesSearch(query,signal){
-      return new Promise((resolve,reject)=>{
-        const places=window.google?.maps?.places;
-        if(!places?.AutocompleteService||!places?.PlacesService){resolve(null);return;}
-        if(signal.aborted){reject(new DOMException('Search cancelled','AbortError'));return;}
-        const autocomplete=new places.AutocompleteService();
-        const host=document.createElement('div');
-        const service=new places.PlacesService(host);
-        autocomplete.getPlacePredictions({
-          input:query,
-          componentRestrictions:{country:'za'},
-          types:['geocode'],
-          locationBias:{north:-22,south:-35,east:33,west:16}
-        },(predictions,statusCode)=>{
-          if(signal.aborted){reject(new DOMException('Search cancelled','AbortError'));return;}
-          if(statusCode!==window.google.maps.places.PlacesServiceStatus.OK||!predictions?.length){resolve([]);return;}
-          const selected=predictions.slice(0,7);
-          Promise.all(selected.map(prediction=>new Promise(done=>{
-            service.getDetails({placeId:prediction.place_id,fields:['place_id','name','formatted_address','geometry','address_components']},(place,detailStatus)=>{
-              if(detailStatus!==window.google.maps.places.PlacesServiceStatus.OK||!place?.geometry?.location){done(null);return;}
-              const components={};
-              for(const component of place.address_components||[]){
-                const value=component.long_name;
-                for(const type of component.types||[]){
-                  if(type==='street_number')components.street_number=value;
-                  if(type==='route')components.route=value;
-                  if(type==='sublocality_level_1'||type==='sublocality')components.sublocality=value;
-                  if(type==='neighborhood')components.neighbourhood=value;
-                  if(type==='locality')components.locality=value;
-                  if(type==='administrative_area_level_2')components.district=value;
-                  if(type==='administrative_area_level_1')components.province=value;
-                  if(type==='postal_code')components.postal_code=value;
-                  if(type==='country')components.country=value;
-                }
-              }
-              const point=place.geometry.location;
-              done({type:'Feature',geometry:{type:'Point',coordinates:[point.lng(),point.lat()]},properties:{...components,name:place.name||'',display_name:place.formatted_address||prediction.description,countrycode:'za'}});
-            });
-          }))).then(items=>resolve(items.filter(Boolean))).catch(reject);
-        });
+    let googleSessionToken=null;
+    async function googlePlacesSearch(query,signal){
+      if(!window.google?.maps?.importLibrary)return null;
+      const places=await window.google.maps.importLibrary('places');
+      if(signal.aborted)throw new DOMException('Search cancelled','AbortError');
+      if(!places?.AutocompleteSuggestion||!places?.AutocompleteSessionToken)return null;
+      googleSessionToken ||= new places.AutocompleteSessionToken();
+      const {suggestions=[]}=await places.AutocompleteSuggestion.fetchAutocompleteSuggestions({
+        input:query,
+        includedRegionCodes:['za'],
+        locationRestriction:{west:16,south:-35,east:33,north:-22},
+        language:'en',
+        region:'za',
+        sessionToken:googleSessionToken
+      });
+      if(signal.aborted)throw new DOMException('Search cancelled','AbortError');
+      return suggestions.slice(0,8).filter(item=>item.placePrediction).map(item=>{
+        const prediction=item.placePrediction;
+        const description=String(prediction.text||'');
+        return {type:'Feature',geometry:null,properties:{
+          name:description.split(',')[0]||'Address suggestion',
+          display_name:description,countrycode:'za',__googlePrediction:prediction
+        }};
       });
     }
     async function search(query,sequence){
@@ -188,7 +200,7 @@
           if(resultCache.size>80)resultCache.delete(resultCache.keys().next().value);
         }
         if(activeController.signal.aborted||sequence!==requestNumber)return;
-        const items=(features||[]).map(asFeature).filter(item=>Number.isFinite(item.geometry.coordinates[0])&&Number.isFinite(item.geometry.coordinates[1]));
+        const items=(features||[]).filter(item=>item?.properties?.__googlePrediction||(Array.isArray(item?.geometry?.coordinates)&&item.geometry.coordinates.length>=2)).map(asFeature).filter(item=>item.properties?.__googlePrediction||(Number.isFinite(item.geometry.coordinates[0])&&Number.isFinite(item.geometry.coordinates[1])));
         render(items);
         status.textContent=items.length?'Choose the matching address. Google Maps coordinates will be used for the map pin and route.':'No matching South African address found. Add the street, suburb and city, or try a nearby landmark.';
       }catch(error){
