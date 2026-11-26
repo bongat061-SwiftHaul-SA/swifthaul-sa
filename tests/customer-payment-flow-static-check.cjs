@@ -37,4 +37,5 @@ assert.match(walletJs, /wallet balances and history are read-only/i, 'Wallet mus
 assert.match(earningsMigration, /new\.paid_at is null/, 'Driver earnings must not be credited before payment is confirmed.');
 assert.match(earningsMigration, /after update of status, paid_at/, 'Earnings trigger must run when either delivery or payment is confirmed.');
 assert.match(earningsMigration, /old\.paid_at is null/, 'The trigger must support cash paid after delivery.');
+assert.match(earningsMigration, /select 1 from public\.driver_earnings_ledger[\s\S]*select 1 from public\.fleet_wallet_ledger[\s\S]*select 1 from public\.fleet_payout_transfers/, 'Repeated delivery/payment events must not duplicate earnings, fleet collections or payouts.');
 console.log('Customer payment and wallet safety checks passed.');
