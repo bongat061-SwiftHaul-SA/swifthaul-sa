@@ -462,6 +462,7 @@ function updatePaymentOptions(){
   const cash=Number.isFinite(distance)&&distance<12000;
   const dispatchSelected=form.elements.payment_method.value==='dispatch';
   const counterEligible=Number.isFinite(distance)&&distance<24000&&dispatchSelected;
+  if(dispatchSelected&&!counterEligible)form.elements.payment_method.value='card';
   document.getElementById('cash-payment-option').disabled=!cash;
   if(form.elements.payment_method.value==='cash'&&!cash)form.elements.payment_method.value='card';
   const checkbox=document.getElementById('make-counter-offer');
