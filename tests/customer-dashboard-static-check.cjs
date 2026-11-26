@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const read = path => fs.readFileSync(path, 'utf8');
 const html = read('public/customer.html');
-const index = read('public/index.html');
+const buildPages = read('scripts/build-pages.cjs');
 const auth = read('public/auth.js');
 const pages = read('public/customer-pages.js');
 const shell = read('public/premium-shell.js');
@@ -11,12 +11,10 @@ const address = read('public/address-autocomplete.js');
 const wizard = read('public/booking-wizard.js');
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
 
-assert(index.includes('customer-dashboard.css') && index.includes('customer-pages.js?v=20261111-dashboard4'), 'Customer default index entry must load the same refreshed dashboard assets.');
-assert(index.includes('booking-wizard.js?v=20261114-route-wizard-fix1') && index.includes('booking-wizard.css?v=20261114-route-wizard-fix1'), 'Customer default index entry must load the current booking wizard assets.');
-assert(index.indexOf('customer-simple-estimator.css') < index.indexOf('booking-wizard.css'), 'Customer default index must load wizard styling after the estimator stylesheet.');
+assert(buildPages.includes("fs.copyFileSync(path.join(source, 'customer.html'), path.join(target, 'index.html'))"), 'Customer browser bundle must use customer.html as its directory index instead of the stale legacy public/index.html.');
 assert(auth.includes("new URL('customer.html', window.location.href)") && auth.includes('emailRedirectTo: customerReturnUrl()') && auth.includes('redirectTo: customerReturnUrl()'), 'Customer signup and password recovery emails must return to the current dashboard entry point.');
 assert(html.includes('customer-dashboard.css') && html.includes('customer-pages.js?v=20261111-dashboard4'), 'Customer HTML must load the refreshed dashboard assets.');
-assert(html.includes('booking-wizard.js?v=20261114-route-wizard-fix1') && html.includes('booking-wizard.css?v=20261114-route-wizard-fix1'), 'Customer HTML must load the current booking wizard assets.');
+assert(html.includes('booking-wizard.js?v=counter-offer-flow-fix-20261126') && html.includes('booking-wizard.css?v=20261114-map-address-continue-v2'), 'Customer HTML must load the current booking wizard assets.');
 assert(html.indexOf('customer-simple-estimator.css') < html.indexOf('booking-wizard.css'), 'Customer HTML must load wizard styling after the estimator stylesheet.');
 assert(pages.includes('className = \'customer-home\'') && pages.includes('What can we move for you?'), 'Customer home dashboard must render its dedicated welcome panel.');
 assert(['home','book','activity','tracking','wallet','account'].every(key => pages.includes(key + ': { title:')), 'Customer dashboard must provide separate Home, Book, Deliveries, Tracking, Wallet and Account pages.');
@@ -29,7 +27,7 @@ assert(css.includes('.workspace-grid[hidden]{display:none!important}'), 'Custome
 assert(css.includes('.customer-home-actions') && css.includes('.customer-book-cta') && css.includes('@media(min-width:760px)'), 'Customer dashboard must include responsive action cards and a prominent booking action.');
 assert(css.includes('body[data-app="customer"]') && !css.includes('body[data-app="driver"]'), 'Customer dashboard styles must be isolated from Driver and Company Admin.');
 assert(location.includes('id="loc-continue-booking"') && location.includes('swift-haul:locations-confirmed'), 'Location selection must offer Continue only after both exact pins are confirmed.');
-assert(wizard.includes('swift-haul:locations-confirmed') && location.includes('Continue to Book a delivery'), 'Pin confirmation must return the customer to the Book a delivery steps.');
+assert(wizard.includes("const complete = ['pickup','dropoff'].every") && wizard.includes('Boolean(address && lat && lng)') && location.includes('Continue to Book a delivery'), 'Pin confirmation must return the customer to the Book a delivery steps.');
 assert(address.includes('nominatim.openstreetmap.org/search') && address.includes('Search address') && !address.includes('photon.komoot.io'), 'Customer address search must use on-demand Nominatim results, not Photon autocomplete.');
 assert(location.includes('nominatim.openstreetmap.org/reverse') && location.includes('plus_code'), 'Map pin reverse geocoding must use Nominatim and retain Plus Codes.');
 assert(pages.includes('customer-tracking-intro') && pages.includes('Tracking'), 'Customer must have a dedicated Tracking page.');
