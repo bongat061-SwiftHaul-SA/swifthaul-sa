@@ -135,7 +135,7 @@
     const vehicleValue=vehicleInput?.closest('label')?.querySelector('strong')?.textContent || vehicleInput?.value;
     const customItems=form.querySelector('#customer-item-description')?.value.trim();
     const presetItems=form.querySelector('[name=preset_items]')?.value.trim();
-    set('parcel',[vehicleValue,customItems||presetItems].filter(Boolean).join(' · ') || 'Add item details and choose a vehicle');
+    set('parcel',[vehicleValue,[customItems,presetItems].filter(Boolean).join(' · ')].filter(Boolean).join(' · ') || 'Add item details and choose a vehicle');
     set('fare',quote.hidden ? (document.body.dataset.guestPreview === 'true' ? 'Sign in to calculate your live fare' : 'Calculate your route') : (form.querySelector('#quote-price')?.textContent || 'Quote ready'));
     set('payment',form.elements.payment_method.selectedOptions[0]?.textContent || 'Arrange with dispatch');
     set('assistance',form.querySelector('#assistance-requested').checked ? 'Requested · subject to dispatch approval' : 'Not requested');
