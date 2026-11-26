@@ -39,6 +39,8 @@ jobs:
           cp -a apps/driver/public/. namhost-package/driver/
           cp -a apps/company/public/. namhost-package/company/
           cp -a public namhost-package/public
+          # These shared modules are referenced from the app folders as ../*.js.
+          if [ -f public/map-context.js ]; then cp public/map-context.js namhost-package/map-context.js; fi
           if [ -f public/live-location-view.js ]; then
             cp public/live-location-view.js namhost-package/live-location-view.js
           fi
