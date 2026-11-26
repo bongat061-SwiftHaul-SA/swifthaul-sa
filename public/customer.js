@@ -138,7 +138,7 @@ function addOrder(order, prepend = false) {
   const track = document.createElement('button'); track.type = 'button'; track.className = 'track-delivery'; track.textContent = 'Track Delivery'; track.addEventListener('click', () => {
     if (document.body.dataset.guestPreview !== 'true') document.dispatchEvent(new CustomEvent('delivery-route', {detail:{waybill:order.waybill,pickup:order.pickup,dropoff:order.dropoff}}));
   });
-  if(!order.paid_at&&!order.refunded_at&&!['cancelled','completed'].includes(order.status)
+  if(!order.paid_at&&!order.refunded_at&&!['cancelled','completed','delivered'].includes(order.status)
       &&order.payment_method!=='cash'&&order.counter_offer_status!=='pending'){
     const pay=document.createElement('button');pay.type='button';pay.textContent='Pay by card · Paystack';pay.addEventListener('click',()=>startPaystackPageCheckout(order,pay));
     actions.append(pay);
