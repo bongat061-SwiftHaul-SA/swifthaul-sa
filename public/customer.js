@@ -101,7 +101,7 @@ function whatsapp(order) {
 *Recipient & notes:* ${order.recipient}
 *Vehicle:* ${order.load?.truckClass || order.vehicle.toUpperCase()}${order.load ? '\n*Estimated payload:* '+mass(order.load.chargeable)+' kg\n*Distance charge:* '+money(order.distance_fee) : ''}
 *Outbound fee:* ${money(order.price)}
-*Payment:* ${order.paid_at?'Confirmed via '+order.payment_source:order.payment_source==='pay_later'?'Pay later':order.payment_method==='cash'?'Cash requested (unconfirmed)':'Arrange with dispatch'}${order.counter_offer?'\n*Counteroffer:* '+money(order.counter_offer)+' · '+order.counter_offer_status:''}${order.scheduled_at?'\n*Scheduled pickup:* '+localTime(order.scheduled_at):''}${order.return_address?'\n*Return request (separate quote):* '+order.return_address:''}${order.return_at?'\n*Requested return:* '+localTime(order.return_at):''}`;
+*Payment:* ${order.paid_at?'Confirmed via '+order.payment_source:order.payment_source==='pay_later'?'Pay later':order.payment_method==='cash'?'Cash requested (unconfirmed)':order.payment_method==='card'?'Paystack card payment pending':'Admin review for counter-offer'}${order.counter_offer?'\n*Counteroffer:* '+money(order.counter_offer)+' · '+order.counter_offer_status:''}${order.scheduled_at?'\n*Scheduled pickup:* '+localTime(order.scheduled_at):''}${order.return_address?'\n*Return request (separate quote):* '+order.return_address:''}${order.return_at?'\n*Requested return:* '+localTime(order.return_at):''}`;
   return `https://wa.me/27615083880?text=${encodeURIComponent(text)}`;
 }
 function addOrder(order, prepend = false) {
@@ -127,7 +127,7 @@ function addOrder(order, prepend = false) {
   meta.append(pin, fee);
   if (order.distance_meters != null) {const distance=document.createElement('span');distance.textContent=`${km(order.distance_meters)} km`;meta.append(distance);}
   if(order.assistance_requested){const handling=document.createElement('p');handling.textContent='Optional handling assistance requested · '+(Number(order.assistance_minutes)||0)+' minutes · '+money((Number(order.assistance_fee_cents)||0)/100)+' · '+String(order.assistance_status||'pending dispatch confirmation').replaceAll('_',' ');card.append(handling);}
-  const paymentInfo=document.createElement('p');paymentInfo.textContent=order.paid_at?'Payment confirmed · '+order.payment_source:order.payment_source==='pay_later'?'Pay later · repayment due in 7 days':order.payment_source==='wallet'?'Paid from SwiftHaul wallet · Refund '+money((order.wallet_refund_used||0)/100)+' + promotional '+money((order.wallet_promo_used||0)/100):order.payment_method==='cash'?'Payment: Cash requested · payment unconfirmed':'Payment: Arrange with dispatch · payment unconfirmed';card.append(paymentInfo);
+  const paymentInfo=document.createElement('p');paymentInfo.textContent=order.paid_at?'Payment confirmed · '+order.payment_source:order.payment_source==='pay_later'?'Pay later · repayment due in 7 days':order.payment_source==='wallet'?'Paid from SwiftHaul wallet · Refund '+money((order.wallet_refund_used||0)/100)+' + promotional '+money((order.wallet_promo_used||0)/100):order.payment_method==='cash'?'Payment: Cash requested · payment unconfirmed':order.payment_method==='card'?'Payment: Paystack card payment pending':'Payment: Admin review for counter-offer';card.append(paymentInfo);
   if(order.counter_offer){const offer=document.createElement('p');offer.textContent=`Counteroffer: ${money(order.counter_offer)} · ${order.counter_offer_status}. ${order.counter_offer_status==='pending'?'Original fare '+money(order.price)+' remains until company approval.':order.counter_offer_status==='accepted'?'Accepted fare '+money(order.price)+'. Original fare '+money(order.original_price)+'.':'Original fare '+money(order.price)+'.'}`;card.append(offer);}
   if(order.load?.customer_description){const items=document.createElement('p');items.textContent='Customer item description: '+order.load.customer_description;card.append(items);}
   if(order.load) {const weight=document.createElement('p');weight.textContent=order.load.freeMinutes!=null?`${order.load.truckClass || order.vehicle.toUpperCase()} · Estimated payload ${mass(order.load.chargeable)} kg · ${order.load.freeMinutes} minutes loading/offloading included`:`${order.load.truckClass || order.vehicle.toUpperCase()} · Original tariff booking · Estimated payload ${mass(order.load.chargeable)} kg`;card.append(weight);}
@@ -139,17 +139,10 @@ function addOrder(order, prepend = false) {
   const track = document.createElement('button'); track.type = 'button'; track.className = 'track-delivery'; track.textContent = 'Track Delivery'; track.addEventListener('click', () => {
     if (document.body.dataset.guestPreview !== 'true') document.dispatchEvent(new CustomEvent('delivery-route', {detail:{waybill:order.waybill,pickup:order.pickup,dropoff:order.dropoff}}));
   });
-  if(!order.paid_at&&!order.refunded_at&&!['cancelled','completed'].includes(order.status)){
-    const pay=document.createElement('button');pay.type='button';pay.textContent='Pay with Paystack';pay.addEventListener('click',()=>startPaystackPageCheckout(order,pay));
-    const cardPay=document.createElement('button');cardPay.type='button';cardPay.textContent='Pay by card · Paystack';cardPay.addEventListener('click',()=>startPaystackPageCheckout(order,cardPay));
-    const eft=document.createElement('button');eft.type='button';eft.textContent='EFT payment instructions';eft.addEventListener('click',()=>{
-      const box=document.createElement('div');box.className='eft-instructions';
-      const heading=document.createElement('strong');heading.textContent='Pay by EFT';
-      const info=document.createElement('p');info.textContent='Use your booking reference '+order.waybill+' as the EFT reference. For verified SwiftHaul bank account details, contact dispatch on WhatsApp before transferring. Your booking remains unpaid until the transfer is checked and confirmed.';
-      const contact=document.createElement('a');contact.href='https://wa.me/27615083880?text='+encodeURIComponent('Please send verified EFT payment details for booking '+order.waybill+'.');contact.target='_blank';contact.rel='noopener noreferrer';contact.textContent='Request bank details on WhatsApp';
-      box.append(heading,info,contact);eft.replaceWith(box);
-    });
-    actions.append(pay,cardPay,eft);
+  if(!order.paid_at&&!order.refunded_at&&!['cancelled','completed'].includes(order.status)
+      &&order.payment_method!=='cash'&&order.counter_offer_status!=='pending'){
+    const pay=document.createElement('button');pay.type='button';pay.textContent='Pay by card · Paystack';pay.addEventListener('click',()=>startPaystackPageCheckout(order,pay));
+    actions.append(pay);
   }
   const existingRefund = refundRequestsByWaybill.get(order.waybill);
   if (existingRefund) {
@@ -308,7 +301,7 @@ function downloadPDF(order) {
     if(order.scheduled_at) line('Requested pickup: '+localTime(order.scheduled_at));
     if(order.return_address) line('Return request (separate quote, excluded from total): '+order.return_address+(order.return_at?' at '+localTime(order.return_at):''));
     line(`Acceptance PIN: ${order.pin}`); line(`Fare: ${money(order.price)} ZAR`, 13);
-    line('Payment option: '+(order.payment_method==='cash'?'Cash requested':'Arrange with dispatch'));
+    line('Payment option: '+(order.payment_method==='cash'?'Cash requested':order.payment_method==='card'?'Paystack card checkout':'Admin review for counter-offer'));
     if(order.counter_offer)line('Counteroffer: '+money(order.counter_offer)+'; status: '+order.counter_offer_status+(order.counter_offer_status==='pending'?'. Original fare remains pending company approval.':'.'));
     line('Payment status: '+(order.paid_at?'Confirmed via '+order.payment_source:order.payment_source==='pay_later'?'Pay later; repayment due':'Not confirmed'));
     if(order.original_price)line('Original quoted fare before accepted counteroffer: '+money(order.original_price));
