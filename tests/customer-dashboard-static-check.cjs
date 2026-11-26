@@ -28,7 +28,7 @@ assert(css.includes('.customer-home-actions') && css.includes('.customer-book-ct
 assert(css.includes('body[data-app="customer"]') && !css.includes('body[data-app="driver"]'), 'Customer dashboard styles must be isolated from Driver and Company Admin.');
 assert(location.includes('id="loc-continue-booking"') && location.includes('swift-haul:locations-confirmed'), 'Location selection must offer Continue only after both exact pins are confirmed.');
 assert(wizard.includes("const complete = ['pickup','dropoff'].every") && wizard.includes('Boolean(address && lat && lng)') && location.includes('Continue to Book a delivery'), 'Pin confirmation must return the customer to the Book a delivery steps.');
-assert(address.includes('nominatim.openstreetmap.org/search') && address.includes('Search address') && !address.includes('photon.komoot.io'), 'Customer address search must use on-demand Nominatim results, not Photon autocomplete.');
+assert(address.includes('googlePlacesSearch(query,activeController.signal)') && address.includes('photon.komoot.io/api'), 'Customer address search must use Google Places first and Photon as the fallback.');
 assert(location.includes('nominatim.openstreetmap.org/reverse') && location.includes('plus_code'), 'Map pin reverse geocoding must use Nominatim and retain Plus Codes.');
 assert(pages.includes('customer-tracking-intro') && pages.includes('Tracking'), 'Customer must have a dedicated Tracking page.');
 console.log('Customer dashboard structure, page navigation and responsive styling checks passed.');
