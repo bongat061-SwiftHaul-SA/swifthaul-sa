@@ -45,11 +45,11 @@
   }
   function addressLabel(properties){
     const p=properties||{};
-    const house=p.housenumber||p.house_number||p.house_no||'';
-    const road=p.street||p.road||p.pedestrian||p.footway||'';
+    const house=p.housenumber||p.house_number||p.house_no||p.street_number||'';
+    const road=p.street||p.road||p.route||p.pedestrian||p.footway||'';
     const street=[house,road].filter(Boolean).join(' ').trim();
     const first=street||p.name||road||p.locality||'';
-    const areas=[p.suburb,p.neighbourhood,p.district,p.city||p.town||p.village,p.county,p.state,p.postcode,p.country||'South Africa'];
+    const areas=[p.suburb||p.sublocality,p.neighbourhood,p.district,p.city||p.locality||p.town||p.village,p.county,p.state||p.province,p.postcode||p.postal_code,p.country||'South Africa'];
     return [...new Set([first,...areas].map(x=>String(x||'').trim()).filter(Boolean))].join(', ')||p.name||'';
   }
   function setLocation(input,feature){
@@ -122,33 +122,78 @@
       if(list.children.length){list.hidden=false;input.setAttribute('aria-expanded','true');}
       else close();
     };
+    function googlePlacesSearch(query,signal){
+      return new Promise((resolve,reject)=>{
+        const places=window.google?.maps?.places;
+        if(!places?.AutocompleteService||!places?.PlacesService){resolve(null);return;}
+        if(signal.aborted){reject(new DOMException('Search cancelled','AbortError'));return;}
+        const autocomplete=new places.AutocompleteService();
+        const host=document.createElement('div');
+        const service=new places.PlacesService(host);
+        autocomplete.getPlacePredictions({
+          input:query,
+          componentRestrictions:{country:'za'},
+          types:['geocode'],
+          locationBias:{north:-22,south:-35,east:33,west:16}
+        },(predictions,statusCode)=>{
+          if(signal.aborted){reject(new DOMException('Search cancelled','AbortError'));return;}
+          if(statusCode!==window.google.maps.places.PlacesServiceStatus.OK||!predictions?.length){resolve([]);return;}
+          const selected=predictions.slice(0,7);
+          Promise.all(selected.map(prediction=>new Promise(done=>{
+            service.getDetails({placeId:prediction.place_id,fields:['place_id','name','formatted_address','geometry','address_components']},(place,detailStatus)=>{
+              if(detailStatus!==window.google.maps.places.PlacesServiceStatus.OK||!place?.geometry?.location){done(null);return;}
+              const components={};
+              for(const component of place.address_components||[]){
+                const value=component.long_name;
+                for(const type of component.types||[]){
+                  if(type==='street_number')components.street_number=value;
+                  if(type==='route')components.route=value;
+                  if(type==='sublocality_level_1'||type==='sublocality')components.sublocality=value;
+                  if(type==='neighborhood')components.neighbourhood=value;
+                  if(type==='locality')components.locality=value;
+                  if(type==='administrative_area_level_2')components.district=value;
+                  if(type==='administrative_area_level_1')components.province=value;
+                  if(type==='postal_code')components.postal_code=value;
+                  if(type==='country')components.country=value;
+                }
+              }
+              const point=place.geometry.location;
+              done({type:'Feature',geometry:{type:'Point',coordinates:[point.lng(),point.lat()]},properties:{...components,name:place.name||'',display_name:place.formatted_address||prediction.description,countrycode:'za'}});
+            });
+          }))).then(items=>resolve(items.filter(Boolean))).catch(reject);
+        });
+      });
+    }
     async function search(query,sequence){
       controller?.abort();const activeController=new AbortController();controller=activeController;
-      status.textContent='Searching South African street addresses…';
-      const cacheKey=query.toLocaleLowerCase();
+      status.textContent='Searching Google Maps for South African addresses…';
+      const cacheKey='google:'+query.toLocaleLowerCase();
       try{
         let features=resultCache.get(cacheKey);
         if(!features){
-          const params=new URLSearchParams({q:query,limit:'8',lang:'en',bbox:'16,-35,33,-22',countrycode:'ZA'});
-          for(const layer of ['house','street','locality','district','city','other'])params.append('layer',layer);
-          const response=await fetch('https://photon.komoot.io/api/?'+params.toString(),{signal:activeController.signal,headers:{Accept:'application/json'}});
-          if(!response.ok)throw new Error('South African address search unavailable ('+response.status+').');
-          const data=await response.json();
-          features=(data.features||[]).filter(feature=>{
-            const coords=feature?.geometry?.coordinates||[],p=feature?.properties||{};
-            const lng=Number(coords[0]),lat=Number(coords[1]),country=String(p.countrycode||'za').toLowerCase();
-            return Number.isFinite(lng)&&Number.isFinite(lat)&&lng>=16&&lng<=33&&lat>=-35&&lat<=-22&&country==='za';
-          });
-          resultCache.set(cacheKey,features);
+          features=await googlePlacesSearch(query,activeController.signal);
+          if(features===null){
+            const params=new URLSearchParams({q:query,limit:'8',lang:'en',bbox:'16,-35,33,-22',countrycode:'ZA'});
+            for(const layer of ['house','street','locality','district','city','other'])params.append('layer',layer);
+            const response=await fetch('https://photon.komoot.io/api/?'+params.toString(),{signal:activeController.signal,headers:{Accept:'application/json'}});
+            if(!response.ok)throw new Error('South African address search unavailable ('+response.status+').');
+            const data=await response.json();
+            features=(data.features||[]).filter(feature=>{
+              const coords=feature?.geometry?.coordinates||[],p=feature?.properties||{};
+              const lng=Number(coords[0]),lat=Number(coords[1]),country=String(p.countrycode||'za').toLowerCase();
+              return Number.isFinite(lng)&&Number.isFinite(lat)&&lng>=16&&lng<=33&&lat>=-35&&lat<=-22&&country==='za';
+            });
+          }
+          resultCache.set(cacheKey,features||[]);
           if(resultCache.size>80)resultCache.delete(resultCache.keys().next().value);
         }
         if(activeController.signal.aborted||sequence!==requestNumber)return;
-        const items=features.map(asFeature).filter(item=>Number.isFinite(item.geometry.coordinates[0])&&Number.isFinite(item.geometry.coordinates[1]));
+        const items=(features||[]).map(asFeature).filter(item=>Number.isFinite(item.geometry.coordinates[0])&&Number.isFinite(item.geometry.coordinates[1]));
         render(items);
-        status.textContent=items.length?'Choose the matching street, suburb and city. The map pin will use this result’s coordinates.':'No matching South African address found. Add the street, suburb and city, or try a nearby landmark.';
+        status.textContent=items.length?'Choose the matching address. Google Maps coordinates will be used for the map pin and route.':'No matching South African address found. Add the street, suburb and city, or try a nearby landmark.';
       }catch(error){
         if(error.name==='AbortError'||activeController.signal.aborted)return;
-        close();status.textContent='South African address search is temporarily unavailable. Please try again.';
+        close();status.textContent='Google Maps address search is temporarily unavailable. Please try again.';
       }
     }
     input.addEventListener('input',()=>{
