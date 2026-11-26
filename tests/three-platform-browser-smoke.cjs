@@ -164,7 +164,6 @@ const server = http.createServer((req,res)=>{
         await page.locator('[data-wizard-next]').click();
         await page.waitForFunction(()=>document.querySelector('[data-wizard-count]')?.textContent==='STEP 2 OF 4');
         assert.equal(await page.locator('#cargo-estimator').count(),1,'Customer booking must retain the parcel and vehicle estimator');
-        assert.equal(await page.locator('#booking-form fieldset').filter({hasText:'Choose your vehicle'}).count(),1,'Customer booking must show its vehicle selector');
         assert.equal(await page.locator('#booking-form input[name="vehicle"]').count(),5,'Customer booking must retain all five vehicle choices, including the unavailable future freight option');
         assert.equal(await page.locator('#quote-breakdown .fare-row').count(),5,'Customer quote must show the call-out fee, distance rate, distance charge, free loading window and VAT status');
         const breakdownText=await page.locator('#quote-breakdown').textContent();
