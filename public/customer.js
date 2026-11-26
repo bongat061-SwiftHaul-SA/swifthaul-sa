@@ -1,7 +1,8 @@
 const form = document.getElementById('booking-form');
 const message = document.getElementById('message');
 const container = document.getElementById('ordersContainer');
-let currentQuote = null;\nlet waitForCloserDriver = false;
+let currentQuote = null;
+let waitForCloserDriver = false;
 let quoteRequest;
 let quoteMap;
 let accountEpoch = 0;
