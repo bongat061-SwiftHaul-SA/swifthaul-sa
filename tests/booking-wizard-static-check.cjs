@@ -10,7 +10,7 @@ const driverShell = read('apps/driver/public/premium-shell.js');
 const driverPages = read('apps/driver/public/section-pages.js');
 const assert = (condition, message) => { if (!condition) throw new Error(message); };
 assert(html.includes('booking-wizard.js') && html.includes('booking-wizard.css'), 'Customer page must load the booking wizard JS and CSS.');
-assert(['Confirm pickup & drop-off','Parcel details','Assistance & protection','Review & book'].every(label => wizard.includes(label)), 'The booking wizard must contain all four requested stages.');
+assert(['Confirm pickup & drop-off','Items & vehicle','More options & protection','Review & book'].every(label => wizard.includes(label)), 'The booking wizard must contain all four current requested stages.');
 assert(wizard.includes('form.noValidate = true') && wizard.includes('checkValidity()'), 'Wizard must validate the visible step without hidden-field focus traps.');
 assert(wizard.includes("const mapStage = form.querySelector('#delivery-map-stage')") && wizard.includes('move(mapStage,0)'), 'The pickup/drop-off map stage must remain intact in the first wizard step.');
 assert(wizard.includes('[schedule,returnTrip].forEach(node=>move(node,0))') && wizard.includes('[recipient,parcel,vehicle,vehicleNote,calculate,pricingNote,quote].forEach(node=>move(node,1))'), 'Recipient information must be collected with parcel details so it cannot block the map-to-parcel transition.');
