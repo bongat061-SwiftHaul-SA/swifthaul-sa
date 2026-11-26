@@ -373,6 +373,7 @@ document.getElementById('wait-for-closer-driver')?.addEventListener('click',()=>
 calculateButton.addEventListener('click', async () => {
   if (document.body.dataset.guestPreview === 'true') return;
   if (!form.elements.pickup.reportValidity() || !form.elements.dropoff.reportValidity()) return;
+  if(!form.querySelector('[name=vehicle]:checked')){quoteStatus.textContent='Choose the vehicle you want to use. The recommendation is only a guide.';form.querySelector('[name=vehicle]')?.focus();return;}
   if(!Number(form.elements.namedItem('weight')?.value)||['length','width','height'].some(key=>!form.elements.namedItem(key).reportValidity())){quoteStatus.textContent='Add a photo or description, estimate your load, then review the suggested dimensions.';return;}
   const data=Object.fromEntries(new FormData(form));
   if (!data.pickup.trim() || !data.dropoff.trim()) {quoteStatus.textContent='Enter both pickup and drop-off addresses.';return;}
