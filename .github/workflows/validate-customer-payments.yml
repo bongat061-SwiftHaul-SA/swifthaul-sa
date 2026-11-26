@@ -45,10 +45,11 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - name: Type-check Customer payment Edge Functions
-        run: |
-          deno check --node-modules-dir=auto supabase/functions/customer-portal/index.ts
-          deno check --node-modules-dir=auto supabase/functions/paystack-payment-initialize/index.ts
-          deno check --node-modules-dir=auto supabase/functions/paystack-webhook/index.ts
+      - name: Type-check Customer booking API
+        run: deno check --node-modules-dir=auto supabase/functions/customer-portal/index.ts
+      - name: Type-check Paystack checkout API
+        run: deno check --node-modules-dir=auto supabase/functions/paystack-payment-initialize/index.ts
+      - name: Type-check Paystack webhook
+        run: deno check --node-modules-dir=auto supabase/functions/paystack-webhook/index.ts
       - name: Check Customer payment and wallet restrictions
         run: node tests/customer-payment-flow-static-check.cjs
