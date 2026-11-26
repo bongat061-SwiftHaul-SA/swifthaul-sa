@@ -35,6 +35,8 @@
   let selectedCategory = null;
   let selectedItem = null;
   const cargoItems = [];
+  const manualWeight = $('manual-item-weight');
+  manualWeight?.addEventListener('input',()=>{if(!cargoItems.length&&weight){weight.value=manualWeight.value;weight.dispatchEvent(new Event('input',{bubbles:true}));}});
   const addItemButton = $('cargo-add-item');
   const selectedList = $('cargo-selected-list');
 
