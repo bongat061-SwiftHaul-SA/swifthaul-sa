@@ -34,7 +34,7 @@
   const oldHeading = form.querySelector(':scope > h2');
   oldHeading?.remove();
   const steps = [
-    {title:'Confirm pickup & drop-off',hint:'Check the map first, enter or select both addresses below it, and adjust each pin to the exact gate or entrance. Then continue to your parcel details.'},
+    {title:'Confirm pickup & drop-off',hint:'Type each address and tap the correct suggestion. Then continue to your parcel details.'},
     {title:'Parcel details',hint:'Describe your load, review the recommended vehicle and calculate your mapped fare.'},
     {title:'Assistance & protection',hint:'Choose payment and optional handling, then review the customer protection terms.'},
     {title:'Review & book',hint:'Check your delivery details, fare and any counteroffer before submitting.'}
@@ -125,8 +125,8 @@
     next.textContent=active===0?'Continue to parcel details':active===2?'Review booking':'Continue';
     
     if(active===3)updateReview();
-    if(pageHeading)pageHeading.textContent=active===0?'Confirm pickup & drop-off.':'Book a delivery.';
-    if(pageDescription)pageDescription.textContent=active===0?'Verify the map pins and address details, then continue to parcel selection.':'Add your parcel details, review the fare and complete your booking request.';
+    if(pageHeading)pageHeading.textContent=active===0?'Choose pickup & drop-off.':'Book a delivery.';
+    if(pageDescription)pageDescription.textContent=active===0?'Select the correct addresses from the dropdown suggestions.':'Add your parcel details, review the fare and complete your booking request.';
     controls.hidden=false;
     shell.scrollIntoView({behavior:'smooth',block:'start'});
   };
@@ -136,12 +136,12 @@
     if(invalid){invalid.reportValidity();return false;}
     if(active===0){
       const complete = ['pickup','dropoff'].every(key => {
+        const address = form.querySelector('[name="'+key+'"]')?.value.trim();
         const lat = form.querySelector('[name="'+key+'_latitude"]')?.value;
         const lng = form.querySelector('[name="'+key+'_longitude"]')?.value;
-        const code = form.querySelector('[name="'+key+'_plus_code"]')?.value;
-        return lat && lng && code;
+        return Boolean(address && lat && lng);
       });
-      if(!complete){announce('Confirm both exact map pins and Plus Codes before continuing.');return false;}
+      if(!complete){announce('Choose a pickup and drop-off address from the suggestions.');return false;}
     }
     if(active===1){
       if(!(Number(form.elements.weight.value)>0)){announce('Please estimate your parcel weight and dimensions before continuing.');return false;}
@@ -152,24 +152,6 @@
   next.addEventListener('click',()=>{
     if(!validateStep())return;
     show(active+1);
-  });
-  document.addEventListener('swift-haul:locations-confirmed',()=>{
-    if(active!==0)return;
-    // The location picker emits this event only after both pins and Plus Codes
-    // are saved. Do not run the full pane validator again here: it can inspect
-    // controls nested in the map sheet or optional controls moved by the wizard.
-    const routeReady = ['pickup','dropoff'].every(key => {
-      const address = form.querySelector('[name="'+key+'"]')?.value.trim();
-      const lat = form.querySelector('[name="'+key+'_latitude"]')?.value;
-      const lng = form.querySelector('[name="'+key+'_longitude"]')?.value;
-      const code = form.querySelector('[name="'+key+'_plus_code"]')?.value;
-      return Boolean(address && lat && lng && code);
-    });
-    if(!routeReady){
-      announce('Please confirm both pickup and drop-off addresses and map pins before continuing.');
-      return;
-    }
-    show(1);
   });
   back.addEventListener('click',()=>show(active-1));
   form.addEventListener('submit',event=>{
