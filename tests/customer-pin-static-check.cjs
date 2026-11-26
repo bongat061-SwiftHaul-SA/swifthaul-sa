@@ -48,7 +48,6 @@ assert.match(customerLogic, /pickup_latitude:data\.pickup_latitude[\s\S]*dropoff
 
 assert.match(driverMap, /openlocationcode\/1\.0\.5\/openlocationcode\.min\.js/,
   'Driver map must load the Plus Code library');
-assert.match(driverMap, /map\.on\('click',event=>placePin\(activePin,/,
 assert.match(driverMap, /map\.addListener\('click',event=>placePin\(activePin,/,
   'Driver map taps must place a pin');
 assert.match(driverMap, /OpenLocationCode\?\.encode/,
