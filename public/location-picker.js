@@ -189,7 +189,7 @@
       const callbackName='__swiftHaulGoogleMapsReady';
       const script=document.createElement('script');
       window[callbackName]=()=>{delete window[callbackName];resolve();};
-      script.src='https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(googleMapsApiKey)+'&callback='+callbackName+'&loading=async&v=weekly&language=en&region=ZA';
+      script.src='https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(googleMapsApiKey)+'&callback='+callbackName+'&loading=async&libraries=places&v=weekly&language=en&region=ZA';
       script.async=true;script.defer=true;
       script.onerror=()=>{delete window[callbackName];reject(new Error('Google Maps JavaScript API could not be loaded.'));};
       document.head.appendChild(script);
