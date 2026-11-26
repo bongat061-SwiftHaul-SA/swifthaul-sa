@@ -33,6 +33,8 @@ function resetQuote() {
   quoteRequest?.abort();quoteRequest=null;currentQuote=null;
   updatePaymentOptions();
   if (quoteMap) {quoteMap.stop();quoteMap.remove();quoteMap=null;}
+  window.swiftHaulShowNearbyDrivers?.([]);
+  const nearbySummary=document.getElementById('nearby-driver-summary');if(nearbySummary)nearbySummary.textContent='';
   document.getElementById('quote-result').hidden=true;
   const approachBox=document.getElementById('pickup-approach-box');if(approachBox)approachBox.hidden=true;
   const approachApproval=document.getElementById('pickup-approach-approval');if(approachApproval)approachApproval.checked=false;
@@ -374,7 +376,6 @@ calculateButton.addEventListener('click', async () => {
   if (document.body.dataset.guestPreview === 'true') return;
   if (!form.elements.pickup.reportValidity() || !form.elements.dropoff.reportValidity()) return;
   if(!form.querySelector('[name=vehicle]:checked')){quoteStatus.textContent='Choose the vehicle you want to use.';form.querySelector('[name=vehicle]')?.focus();return;}
-  if(!Number(form.elements.namedItem('weight')?.value)||['length','width','height'].some(key=>!form.elements.namedItem(key).reportValidity())){quoteStatus.textContent='Add a photo or description, estimate your load, then review the suggested dimensions.';return;}
   const data=Object.fromEntries(new FormData(form));
   if (!data.pickup.trim() || !data.dropoff.trim()) {quoteStatus.textContent='Enter both pickup and drop-off addresses.';return;}
   const requestedWait=waitForCloserDriver;resetQuote();waitForCloserDriver=requestedWait;const active=new AbortController();quoteRequest=active;calculateButton.disabled=true;
@@ -384,6 +385,12 @@ calculateButton.addEventListener('click', async () => {
     if (quoteRequest!==active || active.signal.aborted) return;
     if (!result.quote) throw new Error('Unable to calculate the route.');
     currentQuote=result.quote;assistanceQuote();updatePaymentOptions();window.swiftHaulUpdateVehiclePreview?.(currentQuote.vehicle,currentQuote.load?.chargeable,currentQuote.load?.truckClass || (currentQuote.vehicle||'').toUpperCase());const route=currentQuote.route;window.swiftHaulSetRoadRoute?.(route);
+    const nearby=currentQuote.nearbyDrivers||[];
+    window.swiftHaulShowNearbyDrivers?.(nearby);
+    const nearbySummary=document.getElementById('nearby-driver-summary');
+    if(nearbySummary)nearbySummary.textContent=nearby.length
+      ? nearby.length+' matching driver vehicle(s) are online within 30 km of your pickup. Map icons show approximate positions only; no driver is assigned until dispatch confirms.'
+      : 'No matching online drivers are currently visible within 30 km of this pickup. Dispatch will still search for a driver after booking.';
     document.getElementById('quote-result').hidden=false;
     document.getElementById('quote-distance').textContent=`${km(route.distance)} km`;
     document.getElementById('quote-price').textContent=money(currentQuote.price);
