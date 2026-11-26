@@ -94,8 +94,7 @@
     counterButton.textContent=counterCheckbox.checked?'Cancel counter-offer':'Make a counter-offer';
   });
   // The location picker builds a map stage containing the pickup/drop-off inputs.
-  // Keep that stage intact on step one so the map, address suggestions, draggable
-  // pins and Plus Code readout stay together. The previous implementation moved
+  // Keep that stage intact on step one so the map and selected address markers stay together. The previous implementation moved
   // the input wrappers out of the map sheet, leaving a large empty map behind.
   const mapStage = form.querySelector('#delivery-map-stage');
   if (mapStage) {
