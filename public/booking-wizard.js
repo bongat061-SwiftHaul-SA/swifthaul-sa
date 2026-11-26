@@ -15,8 +15,11 @@
   const schedule = form.querySelector('#schedule-later')?.closest('fieldset');
   const returnTrip = form.querySelector('#request-return')?.closest('fieldset');
   const parcel = byText('fieldset', 'what are you sending');
-  const vehicle = byText('fieldset', 'vehicle class');
-  const payment = byText('fieldset', 'payment & counteroffer');
+  const vehicle = byText('fieldset', 'choose your vehicle');
+  const payment = byText('fieldset', 'payment option');
+  const counterToggle = form.querySelector('#make-counter-offer')?.closest('label');
+  const counterField = form.querySelector('#counter-offer-field');
+  const counterNote = form.querySelector('#counter-offer-note');
   const assistance = form.querySelector('#handling-assistance');
   const protection = form.querySelector('.customer-terms-acknowledgement');
   const calculate = form.querySelector('#calculate-route');
@@ -36,7 +39,7 @@
   const steps = [
     {title:'Confirm pickup & drop-off',hint:'Type each address and tap the correct suggestion. Then continue to your parcel details.'},
     {title:'Parcel details',hint:'Describe your load, review the recommended vehicle and calculate your mapped fare.'},
-    {title:'Assistance & protection',hint:'Choose payment and optional handling, then review the customer protection terms.'},
+    {title:'More options & protection',hint:'Open More options for pickup time, return delivery and payment. You can also make a counter-offer here.'},
     {title:'Review & book',hint:'Check your delivery details, fare and any counteroffer before submitting.'}
   ];
   const shell = document.createElement('section');
@@ -64,6 +67,16 @@
   form.noValidate = true;
 
   const move = (node,index) => { if(node) panes[index].append(node); };
+  const moreOptions = document.createElement('details');
+  moreOptions.className = 'booking-more-options';
+  moreOptions.innerHTML = '<summary>More options <span>Pickup time · Return · Payment</span></summary>';
+  [schedule,returnTrip,payment].forEach(node=>{if(node)moreOptions.append(node);});
+  const counterPanel = document.createElement('section');
+  counterPanel.className = 'customer-counteroffer-panel';
+  const counterHeading = document.createElement('h3');
+  counterHeading.textContent = 'Make a counter-offer';
+  counterPanel.append(counterHeading);
+  [counterToggle,counterField,counterNote].forEach(node=>{if(node)counterPanel.append(node);});
   // The location picker builds a map stage containing the pickup/drop-off inputs.
   // Keep that stage intact on step one so the map, address suggestions, draggable
   // pins and Plus Code readout stay together. The previous implementation moved
