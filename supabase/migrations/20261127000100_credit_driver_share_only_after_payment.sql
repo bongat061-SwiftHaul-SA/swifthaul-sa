@@ -1,6 +1,7 @@
 -- A delivery earns the driver share only after both delivery and payment are confirmed.
 -- This preserves the 25% platform / 75% driver pool and existing fleet-contract split.
 -- Apply in staging first; do not deploy this migration to production without a separate approval.
+begin;
 create or replace function public.credit_driver_earning_on_delivery()
 returns trigger language plpgsql set search_path=public as $$
 declare
@@ -80,3 +81,5 @@ for each row when(new.status='delivered' and new.paid_at is not null
 execute function public.credit_driver_earning_on_delivery();
 revoke all on function public.credit_driver_earning_on_delivery() from public,anon,authenticated;
 grant execute on function public.credit_driver_earning_on_delivery() to service_role;
+
+commit;
