@@ -373,14 +373,14 @@ document.getElementById('wait-for-closer-driver')?.addEventListener('click',()=>
 calculateButton.addEventListener('click', async () => {
   if (document.body.dataset.guestPreview === 'true') return;
   if (!form.elements.pickup.reportValidity() || !form.elements.dropoff.reportValidity()) return;
-  if(!form.querySelector('[name=vehicle]:checked')){quoteStatus.textContent='Choose the vehicle you want to use. The recommendation is only a guide.';form.querySelector('[name=vehicle]')?.focus();return;}
+  if(!form.querySelector('[name=vehicle]:checked')){quoteStatus.textContent='Choose the vehicle you want to use.';form.querySelector('[name=vehicle]')?.focus();return;}
   if(!Number(form.elements.namedItem('weight')?.value)||['length','width','height'].some(key=>!form.elements.namedItem(key).reportValidity())){quoteStatus.textContent='Add a photo or description, estimate your load, then review the suggested dimensions.';return;}
   const data=Object.fromEntries(new FormData(form));
   if (!data.pickup.trim() || !data.dropoff.trim()) {quoteStatus.textContent='Enter both pickup and drop-off addresses.';return;}
   const requestedWait=waitForCloserDriver;resetQuote();waitForCloserDriver=requestedWait;const active=new AbortController();quoteRequest=active;calculateButton.disabled=true;
   quoteStatus.textContent='Mapping the addresses and calculating your fare…';
   try {
-    const result=await customerApi('POST',{action:'quote',pickup:data.pickup,dropoff:data.dropoff,pickup_location:data.pickup_latitude?{latitude:Number(data.pickup_latitude),longitude:Number(data.pickup_longitude)}:null,dropoff_location:data.dropoff_latitude?{latitude:Number(data.dropoff_latitude),longitude:Number(data.dropoff_longitude)}:null,selected_vehicle:form.querySelector('[name=vehicle]:checked')?.value,item_description:data.item_description||'',wait_for_closer_driver:waitForCloserDriver,parcel:Object.fromEntries(['weight','length','width','height'].map(key=>[key,Number(data[key])]))});
+    const result=await customerApi('POST',{action:'quote',pickup:data.pickup,dropoff:data.dropoff,pickup_location:data.pickup_latitude?{latitude:Number(data.pickup_latitude),longitude:Number(data.pickup_longitude)}:null,dropoff_location:data.dropoff_latitude?{latitude:Number(data.dropoff_latitude),longitude:Number(data.dropoff_longitude)}:null,selected_vehicle:form.querySelector('[name=vehicle]:checked')?.value,item_description:data.item_description||data.preset_items||'',wait_for_closer_driver:waitForCloserDriver,parcel:{}});
     if (quoteRequest!==active || active.signal.aborted) return;
     if (!result.quote) throw new Error('Unable to calculate the route.');
     currentQuote=result.quote;assistanceQuote();updatePaymentOptions();window.swiftHaulUpdateVehiclePreview?.(currentQuote.vehicle,currentQuote.load?.chargeable,currentQuote.load?.truckClass || (currentQuote.vehicle||'').toUpperCase());const route=currentQuote.route;window.swiftHaulSetRoadRoute?.(route);
@@ -473,7 +473,7 @@ previewLoad();
 function updatePaymentOptions(){
   const distance=currentQuote?.route.distance;
   const cash=Number.isFinite(distance)&&distance<12000;
-  const counter=Number.isFinite(distance)&&distance<24000;
+  const counterEligible=Number.isFinite(distance)&&distance<24000&&form.elements.payment_method.value==='dispatch';
   document.getElementById('cash-payment-option').disabled=!cash;
   const walletOption=document.getElementById('wallet-payment-option');
   const walletRequired=currentQuote?Math.round(Number(currentQuote.price)*100):Infinity;
@@ -481,17 +481,20 @@ function updatePaymentOptions(){
   walletOption.disabled=!walletEligible;
   if(form.elements.payment_method.value==='cash'&&!cash)form.elements.payment_method.value='dispatch';
   if(form.elements.payment_method.value==='wallet'&&!walletEligible)form.elements.payment_method.value='dispatch';
-  const checkbox=document.getElementById('make-counter-offer');checkbox.disabled=!counter;
-  if(!counter)checkbox.checked=false;
-  if(checkbox.checked&&form.elements.payment_method.value!=='dispatch') checkbox.checked=false;
-  const show=counter&&checkbox.checked&&form.elements.payment_method.value==='dispatch';
+  const checkbox=document.getElementById('make-counter-offer');
+  checkbox.disabled=!counterEligible;
+  if(!counterEligible)checkbox.checked=false;
+  const show=counterEligible&&checkbox.checked;
+  const counterButton=document.getElementById('customer-counteroffer-button');
+  if(counterButton){counterButton.disabled=!counterEligible;counterButton.setAttribute('aria-pressed',String(checkbox.checked));counterButton.textContent=checkbox.checked?'Cancel counter-offer':'Make a counter-offer';}
   document.getElementById('counter-offer-field').hidden=!show;
   document.getElementById('counter-offer-note').hidden=!show;
   form.elements.counter_offer.disabled=!show;form.elements.counter_offer.required=show;
   if(!show)form.elements.counter_offer.value='';
   updateBookButton();
-  document.getElementById('payment-eligibility').textContent=!currentQuote?'Calculate a route to check cash, wallet and counteroffer eligibility.':walletEligible?'Wallet balance '+money(walletAvailableCents/100)+' is sufficient for this booking. Refund credits are used before promotional credits.': 'Wallet available '+money(walletAvailableCents/100)+'; '+money(walletRequired/100)+' required. '+(cash?'Cash or payment through dispatch is also available.':'Arrange payment through dispatch. Cash is unavailable for this distance.')+(counter?' Counteroffers are available only when paying by dispatch.':'');
+  document.getElementById('payment-eligibility').textContent=!currentQuote?'Calculate a route to check cash and counter-offer eligibility.':walletEligible?'Wallet balance '+money(walletAvailableCents/100)+' is sufficient for this booking. Refund credits are used before promotional credits.':'Wallet available '+money(walletAvailableCents/100)+'; '+money(walletRequired/100)+' required. '+(cash?'Cash or payment through dispatch is also available.':'Arrange payment through dispatch. Cash is unavailable for this distance.')+(Number.isFinite(distance)&&distance<24000?' Counter-offers are available when dispatch payment is selected.':'');
 }
+
 document.getElementById('make-counter-offer').addEventListener('change',updatePaymentOptions);
 form.elements.counter_offer.addEventListener('input',updateBookButton);
 form.elements.payment_method.addEventListener('change',updatePaymentOptions);
