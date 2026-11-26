@@ -71,7 +71,7 @@
     window.swiftHaulShowAddressOnMap?.(input,lat,lng);
   }
   function asFeature(result){
-    if(result?.type==='Feature'&&result.geometry?.type==='Point')return result;
+    if(result?.type==='Feature'&&result.properties)return result;
     const address=result.address||{};
     return {type:'Feature',geometry:{type:'Point',coordinates:[Number(result.lon),Number(result.lat)]},properties:{...address,name:result.name||'',display_name:result.display_name||'',countrycode:'za'}};
   }
@@ -184,6 +184,7 @@
         let features=resultCache.get(cacheKey);
         if(!features){
           features=await googlePlacesSearch(query,activeController.signal);
+          const fromGoogle=features!==null;
           if(features===null){
             const params=new URLSearchParams({q:query,limit:'8',lang:'en',bbox:'16,-35,33,-22',countrycode:'ZA'});
             for(const layer of ['house','street','locality','district','city','other'])params.append('layer',layer);
@@ -196,8 +197,10 @@
               return Number.isFinite(lng)&&Number.isFinite(lat)&&lng>=16&&lng<=33&&lat>=-35&&lat<=-22&&country==='za';
             });
           }
-          resultCache.set(cacheKey,features||[]);
-          if(resultCache.size>80)resultCache.delete(resultCache.keys().next().value);
+          if(!fromGoogle){
+            resultCache.set(cacheKey,features||[]);
+            if(resultCache.size>80)resultCache.delete(resultCache.keys().next().value);
+          }
         }
         if(activeController.signal.aborted||sequence!==requestNumber)return;
         const items=(features||[]).filter(item=>item?.properties?.__googlePrediction||(Array.isArray(item?.geometry?.coordinates)&&item.geometry.coordinates.length>=2)).map(asFeature).filter(item=>item.properties?.__googlePrediction||(Number.isFinite(item.geometry.coordinates[0])&&Number.isFinite(item.geometry.coordinates[1])));
