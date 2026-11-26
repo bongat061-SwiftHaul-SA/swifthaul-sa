@@ -23,7 +23,7 @@
   document.getElementById('load-summary')?.remove();
   const panel = document.createElement('section');
   panel.id = 'cargo-estimator';
-  panel.innerHTML = '<h3>What are you sending?</h3><p class="cargo-intro">Choose the closest parcel type. We’ll use a typical packed size and weight as a starting estimate.</p><div class="cargo-categories" role="group" aria-label="Parcel categories"></div><div class="cargo-choice-row"><div><label for="cargo-item">Choose your item</label><select id="cargo-item" disabled><option>Select a category first</option></select></div><div><label for="cargo-quantity">Quantity</label><input id="cargo-quantity" type="number" min="1" max="50" step="1" value="1" disabled></div></div><button type="button" id="cargo-add-item" class="cargo-add-item" disabled>Add item to load</button><div id="cargo-selected-list" class="cargo-selected-list" aria-live="polite"><p class="cargo-empty">No parcels added yet. Select a category and add an item.</p></div><p class="cargo-estimate-note" id="cargo-estimate-note" aria-live="polite">Select a category to see the estimated load and recommended vehicle.</p><div class="cargo-dimensions"><div class="cargo-dimensions-title">Estimated packed dimensions · editable</div><div class="load-grid"><label>Length (cm)<input type="number" name="length" min="0.001" max="100000" step="any" required placeholder="Estimated"></label><label>Width (cm)<input type="number" name="width" min="0.001" max="100000" step="any" required placeholder="Estimated"></label><label>Height (cm)<input type="number" name="height" min="0.001" max="100000" step="any" required placeholder="Estimated"></label></div></div><div class="cargo-vehicle" aria-live="polite"><div class="cargo-vehicle-head"><strong>Recommended vehicle</strong><span id="cargo-vehicle-tag">Awaiting selection</span></div><div class="cargo-vehicle-visual" id="cargo-vehicle-visual"><span class="cargo-empty">Your vehicle recommendation will appear here</span></div><p class="cargo-vehicle-copy" id="cargo-vehicle-copy">Select a parcel category to preview a suitable vehicle.</p></div>';
+  panel.innerHTML = '<h3>What are you sending?</h3><p class="cargo-intro">Choose preset items or describe your delivery in your own words. No weight or packed-dimension charges apply.</p><div class="cargo-categories" role="group" aria-label="Parcel categories"></div><div class="cargo-choice-row"><div><label for="cargo-item">Choose your item</label><select id="cargo-item" disabled><option>Select a category first</option></select></div><div><label for="cargo-quantity">Quantity</label><input id="cargo-quantity" type="number" min="1" max="50" step="1" value="1" disabled></div></div><button type="button" id="cargo-add-item" class="cargo-add-item" disabled>Add item to load</button><div id="cargo-selected-list" class="cargo-selected-list" aria-live="polite"><p class="cargo-empty">No preset items added. You can also describe your items below.</p></div><input type="hidden" name="preset_items" value=""><p class="cargo-estimate-note" id="cargo-estimate-note" aria-live="polite">Add preset items or write your own item description below, then choose your vehicle.</p>';
   parcel.insertBefore(panel, parcel.querySelector('.load-grid'));
 
   const $ = id => document.getElementById(id);
@@ -35,8 +35,6 @@
   let selectedCategory = null;
   let selectedItem = null;
   const cargoItems = [];
-  const manualWeight = $('manual-item-weight');
-  manualWeight?.addEventListener('input',()=>{if(!cargoItems.length&&weight){weight.value=manualWeight.value;weight.dispatchEvent(new Event('input',{bubbles:true}));}});
   const addItemButton = $('cargo-add-item');
   const selectedList = $('cargo-selected-list');
 
@@ -83,31 +81,14 @@
   }
 
   function updateLoad() {
-    if (!cargoItems.length) {
-      $('cargo-estimate-note').textContent='Add parcels from more than one category to build your combined load.';
-      renderVehicle(null,0);
-      if (weight) weight.value='';
-      return;
-    }
-    const totalWeight=cargoItems.reduce((sum,item)=>sum+item.weight*item.quantity,0);
+    const preset=form.querySelector('[name="preset_items"]');
+    if(preset)preset.value=cargoItems.map(item=>item.quantity+' × '+item.name).join(', ');
+    if(weight)weight.value='';
     const totalPieces=cargoItems.reduce((sum,item)=>sum+item.quantity,0);
-    const maxLength=Math.max(...cargoItems.map(item=>item.l));
-    const maxWidth=Math.max(...cargoItems.map(item=>item.w));
-    const maxHeight=Math.max(...cargoItems.map(item=>item.h));
-    const columns=Math.ceil(Math.sqrt(totalPieces));
-    const rows=Math.ceil(totalPieces/columns);
-    const dims={length:maxLength*columns,width:maxWidth*rows,height:maxHeight};
-    for(const [key,value] of Object.entries(dims)){
-      const input=form.elements.namedItem(key);
-      if(input){input.value=String(value);input.dispatchEvent(new Event('input',{bubbles:true}));}
-    }
-    if(weight){weight.value=String(totalWeight);weight.dispatchEvent(new Event('input',{bubbles:true}));}
-    const chargeable=Math.max(totalWeight,dims.length*dims.width*dims.height/5000);
-    const type=chargeable<=600?'light_commercial':chargeable<=1000?'one_ton_bakkie':chargeable<=3000?'closed_truck':'freight_truck';
-    $('cargo-estimate-note').textContent=totalPieces+' parcel item(s) across '+new Set(cargoItems.map(item=>item.category)).size+' categories · estimated payload '+chargeable.toFixed(1)+' kg including volumetric estimate. No per-item weight charge applies; vehicle selection is based on this estimate.';
-    const labels={light_commercial:'Mini-Van / Light Commercial',one_ton_bakkie:'1-Ton Bakkie / Panel Van',closed_truck:'1.5-Ton – 3-Ton Closed Truck',freight_truck:'4-Ton – 8-Ton Freight Truck'};
-    const chosen=form.querySelector('[name=vehicle]:checked')?.value || type;
-    renderVehicle(chosen,chargeable,labels[chosen]+(chosen===type?' recommended':' selected'));
+    const categoryCount=new Set(cargoItems.map(item=>item.category)).size;
+    $('cargo-estimate-note').textContent=totalPieces
+      ? totalPieces+' preset item(s) selected across '+categoryCount+' categories. Add any extra details above. Choose the vehicle you want below; the fare is based on road kilometres and that vehicle.'
+      : 'No preset items selected. Write your items in the description field above, then choose the vehicle you want below.';
   }
 
   function chooseCategory(id) {
@@ -140,5 +121,5 @@
   addItemButton.addEventListener('click',addCurrentItem);
   renderSelectedItems();
 
-  window.swiftHaulUpdateVehiclePreview = (type, chargeable, label) => renderVehicle(type, chargeable, label);
+  window.swiftHaulUpdateVehiclePreview = () => {};
 })();
