@@ -123,3 +123,39 @@ body[data-app="customer"] .customer-counteroffer-button:disabled{opacity:.45;cur
 body[data-app="customer"] .customer-counteroffer-button[aria-pressed="true"]{background:#cfd7df;border-color:#aeb9c5}
 body[data-app="customer"] .counter-offer-help{margin:0;color:#9eabba;font-size:10px;line-height:1.4}
 body[data-app="customer"] .booking-more-options[open]{margin-bottom:12px}
+
+
+/* Compact, dark-surface More options layout matching the supplied mobile reference. */
+body[data-app="customer"] #booking-form .booking-more-options fieldset{
+  display:grid!important;gap:8px!important;margin:10px 0 0!important;padding:12px!important;
+  min-width:0!important;border:1px solid #354252!important;border-radius:12px!important;
+  background:#151d28!important;color:#edf1f5!important;box-shadow:none!important
+}
+body[data-app="customer"] #booking-form .booking-more-options fieldset legend{
+  float:none!important;width:auto!important;padding:0 3px!important;margin:0!important;
+  color:#dce2e9!important;font-size:12px!important;font-weight:800!important
+}
+body[data-app="customer"] #booking-form .booking-more-options fieldset>label{
+  display:flex!important;align-items:center!important;gap:10px!important;margin:0!important;
+  padding:8px 2px!important;color:#e3e8ee!important;font-size:12px!important;line-height:1.45!important
+}
+body[data-app="customer"] #booking-form .booking-more-options fieldset input:not([type=checkbox]),
+body[data-app="customer"] #booking-form .booking-more-options fieldset select{
+  box-sizing:border-box!important;width:100%!important;min-height:44px!important;padding:10px 12px!important;
+  border:1px solid #465363!important;border-radius:10px!important;background:#080e17!important;
+  color:#f5f7fa!important;font:inherit!important
+}
+body[data-app="customer"] #booking-form .booking-more-options fieldset input[type=checkbox]{
+  width:19px!important;height:19px!important;min-width:19px!important;margin:0!important;accent-color:#dce2e9!important
+}
+body[data-app="customer"] #booking-form .booking-more-options fieldset p{
+  margin:2px 0 0!important;color:#aab5c3!important;font-size:11px!important;line-height:1.5!important
+}
+body[data-app="customer"] #booking-form .customer-counteroffer-panel{
+  background:#151d28!important;border-color:#354252!important;border-radius:14px!important
+}
+body[data-app="customer"] #booking-form .customer-counteroffer-button{
+  background:#e8edf2!important;color:#10151c!important;border-color:#dce2e9!important
+}
+body[data-app="customer"] #booking-form #handling-assistance,
+body[data-app="customer"] #booking-form .customer-terms-acknowledgement{display:none!important}
