@@ -422,7 +422,7 @@ document.getElementById('request-return').addEventListener('change',toggleBookin
 toggleBookingOptions();
 
 function previewLoad(){
-  const values=['weight','length','width','height'].map(key=>Number(form.elements.namedItem(key).value));
+  const values=['weight','length','width','height'].map(key=>Number(form.elements.namedItem(key)?.value||0));
   let vehicle='',text='Choose your items to estimate the load and recommended vehicle.';
   let chargeable=0,label='';
   if(values.every(value=>Number.isFinite(value)&&value>0)){
