@@ -20,7 +20,7 @@ for (const [name, source] of [['Customer page', customerHtml], ['Wallet page', w
   assert.doesNotMatch(source, /wallet-payment-option|value="wallet"/, name + ' must not offer wallet-funded booking.');
 }
 assert.match(customer, /functions\.invoke\('paystack-payment-initialize'/, 'Customer card checkout must be initialized server-side.');
-assert.match(customer, /namedItem\\(key\\)\\?\\.value/, 'Legacy load preview must tolerate fields removed by the current cargo estimator.');
+assert.match(customer, /namedItem\(key\)\?\.value/, 'Legacy load preview must tolerate fields removed by the current cargo estimator.');
 assert.match(customer, /order\.payment_method!=='cash'&&order\.counter_offer_status!=='pending'/, 'Paystack action must not appear for cash bookings or unresolved counter-offers.');
 assert.match(customer, /payment_method==='dispatch' && !counterSelected/, 'Admin review selection must be reserved for counter-offer bookings.');
 assert.match(portal, /const method = body\.payment_method \?\? "card"/, 'New bookings must default to Paystack card payment.');
