@@ -113,9 +113,9 @@
   const stage = document.createElement('section');
   stage.id = 'delivery-map-stage';
   stage.setAttribute('aria-label', 'Delivery route map and location selector');
-  stage.innerHTML = '<div id="global-location-map" role="application" aria-label="Interactive map showing pickup and drop-off locations. Tap the map to place the selected pin or drag a marker."></div>' +
+  stage.innerHTML = '<div id="global-location-map" role="img" aria-label="Map showing the selected pickup and drop-off addresses."></div>' +
     '<section class="swift-location-sheet" aria-label="Pickup and drop-off details">' +
-    '<div class="swift-sheet-head"><div><h3>Where should we collect and deliver?</h3><p>Choose an address, then confirm the exact point on the map.</p></div>' +
+    '<div class="swift-sheet-head"><div><h3>Pickup and drop-off</h3><p>Choose an address from the suggestions.</p></div>' +
     '<div class="swift-route-steps" aria-label="Pickup to drop-off"><span class="step-dot"></span><span>Pickup</span><span class="step-line"></span><span class="step-dot drop"></span><span>Drop-off</span></div></div>' +
     '<div class="swift-location-fields"></div>' +
     '<div class="swift-sheet-tools"><button type="button" id="loc-current" class="swift-current">◎ Use my location</button><button type="button" id="loc-open">Re-centre map</button><button type="button" id="loc-google-pickup" class="swift-google-check">Verify pickup in Google Maps ↗</button><button type="button" id="loc-google-dropoff" class="swift-google-check">Verify drop-off in Google Maps ↗</button></div>' +
@@ -231,7 +231,7 @@
         });
         for(const key of ['pickup','dropoff']) if(state[key]) placeMarker(key,state[key].lat,state[key].lng);
         fitLocations();resizeMap();
-        $('loc-status').textContent='Google Maps is ready. Tap the map or drag a pin to the exact entrance.';
+        $('loc-status').textContent='Map ready. Select addresses from the dropdowns to place the locations.';
       }).catch(()=>{
         $('loc-status').textContent='Google Maps is unavailable right now. Loading the free backup map…';
         ensureMapLibre();
@@ -304,13 +304,11 @@
       if(state[key].marker?.__swiftGoogleMarker){state[key].marker.setPosition({lat,lng});return;}
       const marker=new google.maps.Marker({map:googleMap,position:{lat,lng},draggable:true,title:key==='pickup'?'Pickup location':'Drop-off location',label:{text:key==='pickup'?'P':'D',color:'#ffffff',fontWeight:'800'}});
       marker.__swiftGoogleMarker=true;
-      marker.addListener('dragend',event=>{const p=event.latLng;if(!p)return;saveLocation(input,p.lat(),p.lng(),'Pin moved. Updating the nearest mapped address…');reverseLabel(input,p.lat(),p.lng());});
       state[key].marker=marker;return;
     }
     if(state[key].marker){state[key].marker.setLngLat([lng,lat]);return;}
-    const marker=new maplibregl.Marker({element:markerNode(key),draggable:true,anchor:'bottom'})
+    const marker=new maplibregl.Marker({element:markerNode(key),draggable:false,anchor:'bottom'})
       .setLngLat([lng,lat]).addTo(map);
-    marker.on('dragend',()=>{const p=marker.getLngLat();saveLocation(input,p.lat,p.lng,'Pin moved. Updating the nearest mapped address…');reverseLabel(input,p.lat,p.lng);});
     state[key].marker=marker;
   }
   function removeMarker(marker){if(!marker)return;if(marker.__swiftGoogleMarker)marker.setMap(null);else marker.remove();}
@@ -318,7 +316,7 @@
     if(!hasMap()) return;
     const points=['pickup','dropoff'].filter(key=>state[key]).map(key=>[state[key].lng,state[key].lat]);
     if(googleMap){
-      if(points.length===2){const bounds=new google.maps.LatLngBounds();points.forEach(([lng,lat])=>bounds.extend({lat,lng}));googleMap.fitBounds(bounds,{top:38,bottom:230,left:38,right:38});if(!googleRoute)googleRoute=new google.maps.Polyline({map:googleMap,geodesic:true,strokeColor:'#176b52',strokeOpacity:0.95,strokeWeight:5});googleRoute.setPath(points.map(([lng,lat])=>({lat,lng})));}
+      if(points.length===2){const bounds=new google.maps.LatLngBounds();points.forEach(([lng,lat])=>bounds.extend({lat,lng}));googleMap.fitBounds(bounds,{top:38,bottom:230,left:38,right:38});if(googleRoute)googleRoute.setPath([]);}
       else if(points.length===1){cameraMove(points[0],16);if(googleRoute)googleRoute.setPath([]);}
       return;
     }
@@ -338,14 +336,14 @@
       const path=routeData.geometry.coordinates.map(([lng,lat])=>({lat,lng}));
       if(!googleRoute)googleRoute=new google.maps.Polyline({map:googleMap,geodesic:true,strokeColor:'#176b52',strokeOpacity:0.95,strokeWeight:5});
       googleRoute.setPath(path);const bounds=new google.maps.LatLngBounds();path.forEach(point=>bounds.extend(point));googleMap.fitBounds(bounds,{top:38,bottom:230,left:38,right:38});
-      $('loc-status').textContent='Road route loaded. Adjust either pin if the pickup or drop-off entrance is incorrect.';return true;
+      $('loc-status').textContent='Mapped road route loaded for the selected addresses.';return true;
     }
     routeLine=true;
     if(mapLoaded){routeStyle();map.getSource('customer-route').setData(routeData);}
     const coords=routeData.geometry.coordinates;
     const lngs=coords.map(p=>p[0]),lats=coords.map(p=>p[1]);
     map.fitBounds([[Math.min(...lngs),Math.min(...lats)],[Math.max(...lngs),Math.max(...lats)]],{padding:{top:38,bottom:230,left:38,right:38},maxZoom:17,duration:450});
-    $('loc-status').textContent='Road route loaded. Adjust either pin if the pickup or drop-off entrance is incorrect.';
+    $('loc-status').textContent='Mapped road route loaded for the selected addresses.';
     return true;
   };
 
@@ -489,7 +487,7 @@
       activeField = input;
       ensureMap();
       stage.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      $('loc-status').textContent = 'Tap the map or drag the ' + label + ' marker to the exact point.';
+      $('loc-status').textContent = 'Select an address from the dropdown to update its map location.';
       setTimeout(() => map && map.resize(), 140);
     });
     input.insertAdjacentElement('afterend', button);
