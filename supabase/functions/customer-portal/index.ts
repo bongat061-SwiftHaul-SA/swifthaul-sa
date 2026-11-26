@@ -28,7 +28,13 @@ function recommendedVehicleClass(chargeable: number): VehicleClass {
   if (chargeable <= 3000) return "closed_truck";
   return "freight_truck";
 }
-function calculateLoad(input: unknown, selectedClass: unknown) {
+type CalculatedLoad = {
+  weight: number; length: number; width: number; height: number; volumetric: number; chargeable: number;
+  vehicle: Vehicle; vehicleClass: VehicleClass; truckClass: string; recommendedVehicleClass: VehicleClass;
+  capacity: number; callOutFee: number; distanceRate: number; freeMinutes: number; divisor: number;
+  customer_description: string;
+};
+function calculateLoad(input: unknown, selectedClass: unknown): CalculatedLoad {
   if (typeof selectedClass !== "string" || !Object.hasOwn(tariffClasses, selectedClass) || selectedClass === "freight_truck")
     throw new InputError("Choose an available vehicle before calculating the fare.");
   const vehicleClass = selectedClass as VehicleClass;
