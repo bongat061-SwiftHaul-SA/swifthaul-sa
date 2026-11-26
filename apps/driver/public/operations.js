@@ -69,6 +69,8 @@ if (app === 'driver' || app === 'company') {
         payout.textContent = (offer.add_on_order ? 'Add-On Order · ' : 'Net payout · ') + money(offer.net_payout_zar);
         const route = document.createElement('p');
         route.textContent = (booking.pickup || 'Pickup') + ' → ' + (booking.dropoff || 'Drop-off');
+        if (booking.load?.customer_description) { const items=document.createElement('p'); items.className='driver-offer-items'; items.textContent='Items: '+booking.load.customer_description; card.append(items); }
+        else if (booking.load?.chargeable != null) { const items=document.createElement('p'); items.className='driver-offer-items'; items.textContent='Estimated load: '+Number(booking.load.chargeable).toFixed(1)+' kg'; card.append(items); }
         const actions = document.createElement('div');
         actions.className = 'driver-offer-actions';
         const countdown = document.createElement('small');
