@@ -13,6 +13,19 @@ begin
  if new.status<>'delivered' or new.paid_at is null
    or (old.status is not distinct from 'delivered' and old.paid_at is not null)
    or new.driver_user_id is null or coalesce(new.price,0)<=0 then return new; end if;
+ -- Prevent replayed delivery/payment transitions from reapplying weekly rental totals
+ -- or creating another payout after a prior delivery event has already been credited.
+ if exists (
+   select 1 from public.driver_earnings_ledger
+   where waybill=new.waybill
+     and event_key in ('delivery-earning:'||new.waybill,'fleet-driver-share:'||new.waybill)
+ ) or exists (
+   select 1 from public.fleet_wallet_ledger
+   where waybill=new.waybill
+     and event_key in ('fleet-share:'||new.waybill,'fleet-rental:'||new.waybill)
+ ) or exists (
+   select 1 from public.fleet_payout_transfers where waybill=new.waybill
+ ) then return new; end if;
  v_gross:=round(new.price*100)::bigint;
  v_platform:=round(v_gross*0.25)::bigint;
  v_net:=v_gross-v_platform;
