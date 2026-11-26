@@ -266,10 +266,11 @@ form.addEventListener('submit', async event => {
       form.elements.password.value = '';
       if (!data.session) {
         if (data.user?.id) {
-          const { error: signupNoticeError } = await supabase.functions.invoke('customer-welcome-notify', {
+          void supabase.functions.invoke('customer-welcome-notify', {
             body: { user_id: data.user.id }
-          });
-          if (signupNoticeError) console.warn('Customer signup notifications are pending:', signupNoticeError.message);
+          }).then(({ error: signupNoticeError }) => {
+            if (signupNoticeError) console.warn('Customer signup notifications are pending:', signupNoticeError.message);
+          }).catch(error => console.warn('Customer signup notifications are pending:', error?.message || error));
         }
         setMode('login');
         status.textContent = 'Customer account created. Check your email to confirm it, then sign in.';
