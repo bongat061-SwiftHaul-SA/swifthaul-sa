@@ -471,8 +471,8 @@ function updatePaymentOptions(){
   updateBookButton();
   document.getElementById('payment-eligibility').textContent=!currentQuote
     ?'Calculate a route to check cash eligibility and counter-offer availability.'
-    :cash?'Pay securely with Paystack or request cash payment. Admin review is available for counter-offers on eligible routes.'
-    :'Pay securely with Paystack. Cash is available only for routes below 12 km. Admin review is available for counter-offers on eligible routes.';
+    :cash?'Pay securely with Paystack or request cash payment. Admin review is available for counter-offers on eligible routes. Bank payment will be added after API integration.'
+    :'Pay securely with Paystack. Cash is available only for routes below 12 km. Admin review is available for counter-offers on eligible routes. Bank payment will be added after API integration.';
 }
 
 document.getElementById('make-counter-offer').addEventListener('change',updatePaymentOptions);
