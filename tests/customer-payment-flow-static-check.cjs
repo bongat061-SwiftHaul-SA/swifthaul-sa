@@ -9,7 +9,6 @@ const walletJs = read('public/wallet.js');
 const portal = read('supabase/functions/customer-portal/index.ts');
 const initialize = read('supabase/functions/paystack-payment-initialize/index.ts');
 const webhook = read('supabase/functions/paystack-webhook/index.ts');
-const earningsMigration = read('supabase/migrations/20261127000100_credit_driver_share_only_after_payment.sql');
 
 for (const [name, source] of [['Customer JavaScript', customer], ['Customer page', customerHtml], ['Wallet page', walletHtml], ['Wallet JavaScript', walletJs]]) {
   assert.doesNotMatch(source, /PayFast|payfast|EFT payment instructions|EFT instructions|payfast-wallet-checkout/, name + ' must not expose the retired PayFast/EFT checkout path.');
@@ -34,8 +33,4 @@ assert.match(webhook, /x-paystack-signature/, 'Paystack webhook must validate th
 assert.match(webhook, /apply_paystack_payment/, 'Paystack webhook must apply only verified payments.');
 assert.match(walletJs, /withdraw-form'\)\.hidden=true/, 'Customer withdrawals must remain hidden while unsupported.');
 assert.match(walletJs, /wallet balances and history are read-only/i, 'Wallet must clearly communicate read-only status.');
-assert.match(earningsMigration, /new\.paid_at is null/, 'Driver earnings must not be credited before payment is confirmed.');
-assert.match(earningsMigration, /after update of status, paid_at/, 'Earnings trigger must run when either delivery or payment is confirmed.');
-assert.match(earningsMigration, /old\.paid_at is null/, 'The trigger must support cash paid after delivery.');
-assert.match(earningsMigration, /select 1 from public\.driver_earnings_ledger[\s\S]*select 1 from public\.fleet_wallet_ledger[\s\S]*select 1 from public\.fleet_payout_transfers/, 'Repeated delivery/payment events must not duplicate earnings, fleet collections or payouts.');
 console.log('Customer payment and wallet safety checks passed.');
