@@ -1,9 +1,9 @@
 {
-  "id": "/",
+  "id": "./",
   "name": "SwiftHaul SA Customer",
   "short_name": "SH Customer",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#080a0e",
   "theme_color": "#080a0e",
