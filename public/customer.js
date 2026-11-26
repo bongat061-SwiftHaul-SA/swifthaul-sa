@@ -7,7 +7,6 @@ let quoteRequest;
 let quoteMap;
 let accountEpoch = 0;
 let bookingBusy = false;
-let walletAvailableCents = 0;
 let knownCustomerOrderStates = new Map();
 let firstCustomerOrderLoad = true;
 const quoteStatus = document.getElementById('quote-status');
@@ -197,7 +196,6 @@ async function startPaystackPageCheckout(order, button) {
 async function loadOrders(silent = false) {
   if (document.body.dataset.guestPreview === 'true') return;
   const version = ++loadVersion;
-  walletAvailableCents = 0;
   updatePaymentOptions();
   document.getElementById('submit').disabled = true;
   document.getElementById('retry').hidden = true;
@@ -209,7 +207,6 @@ async function loadOrders(silent = false) {
     container.replaceChildren();
     refundRequestsByWaybill = new Map((data.refundRequests || []).map(request => [request.waybill, request]));
     data.orders.forEach(order => addOrder(order));
-    walletAvailableCents = Number(data.wallet?.available_cents) || 0;
     updatePaymentOptions();
     if (!data.orders.length) {
       const empty = document.createElement('p'); empty.className = 'empty'; empty.textContent = 'Your next delivery starts here. Submit a quote to create your first booking.'; container.append(empty);
