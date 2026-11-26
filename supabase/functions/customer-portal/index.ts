@@ -39,7 +39,7 @@ function calculateLoad(input: unknown, selectedClass: unknown) {
     vehicle: tariff.vehicle, vehicleClass, truckClass: tariff.label,
     recommendedVehicleClass: vehicleClass, capacity: tariff.capacity,
     callOutFee: tariff.callOutFee, distanceRate: tariff.distanceRate,
-    freeMinutes: tariff.freeMinutes, divisor: 5000
+    freeMinutes: tariff.freeMinutes, divisor: 5000, customer_description: ""
   };
 }
 
@@ -252,7 +252,7 @@ Deno.serve(async (req: Request) => {
         }
       }
       const band = 0;
-      let callOutFee = load.callOutFee;
+      let callOutFee: number = load.callOutFee;
       let distanceFee = 0;
       if (load.vehicleClass === "motorbike") {
         const distanceTotal = route.distance / 1000 * load.distanceRate;
