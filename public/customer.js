@@ -277,7 +277,7 @@ form.addEventListener('submit', async event => {
   const epoch=accountEpoch;
   const acceptedQuote=currentQuote;
   const termsAcknowledgement=document.getElementById('booking-terms-accepted');
-  if(!termsAcknowledgement?.checked){termsAcknowledgement?.focus();report('Please read and acknowledge the customer protection and handling terms before booking.',true);return;}
+  if(!termsAcknowledgement?.checked){termsAcknowledgement?.focus();report('Please acknowledge the customer protection and handling terms on the review step before booking.',true);return;}
   const data = Object.fromEntries(new FormData(form));
   const counterSelected=document.getElementById('make-counter-offer').checked;
   if(counterSelected && (data.payment_method!=='dispatch' || !data.counter_offer ||
@@ -493,7 +493,7 @@ function updatePaymentOptions(){
   if(!counterEligible)checkbox.checked=false;
   const show=counterEligible&&checkbox.checked;
   const counterButton=document.getElementById('customer-counteroffer-button');
-  if(counterButton){counterButton.disabled=!counterEligible;counterButton.setAttribute('aria-pressed',String(checkbox.checked));counterButton.textContent=checkbox.checked?'Cancel counter-offer':'Make a counter-offer';}
+  if(counterButton){counterButton.disabled=false;counterButton.setAttribute('aria-pressed',String(checkbox.checked));counterButton.textContent=checkbox.checked?'Cancel counter-offer':'Make a counter-offer';}
   document.getElementById('counter-offer-field').hidden=!show;
   document.getElementById('counter-offer-note').hidden=!show;
   form.elements.counter_offer.disabled=!show;form.elements.counter_offer.required=show;
