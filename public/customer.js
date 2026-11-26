@@ -405,6 +405,9 @@ calculateButton.addEventListener('click', async () => {
       waitButton.hidden=Number(approach.fee)<=0;
     }
     waitForCloserDriver=false;
+    quoteStatus.textContent=approach.driverMatched
+      ? 'Route and fare calculated. A nearby driver is available for the pickup estimate; dispatch still confirms the assignment.'
+      : 'Route and fare calculated. Driver availability will be checked when dispatch receives your booking.';
     approachApproval.onchange=updateBookButton;
 
     document.getElementById('priceBadge').textContent=money(currentQuote.price);
