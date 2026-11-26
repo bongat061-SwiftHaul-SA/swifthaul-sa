@@ -4,16 +4,15 @@
 
   const style = document.createElement('style');
   style.textContent = `
-    .address-suggestions{position:absolute;z-index:1200;left:0;right:0;top:100%;margin-top:5px;background:#fff;border:1px solid #c8d3c7;border-radius:10px;box-shadow:0 12px 30px #17352e1c;max-height:260px;overflow:auto}
     .address-field-wrap{position:relative}
-    .address-suggestions button{display:block;width:100%;padding:12px 14px;border:0;border-bottom:1px solid #edf1eb;border-radius:0;background:#fff;text-align:left;font-size:12px;line-height:1.55;color:#17352e;white-space:normal}
+    .address-suggestions{position:absolute;z-index:1500;left:0;right:0;top:100%;margin-top:5px;background:#fff;border:1px solid #d8e1dc;border-radius:12px;box-shadow:0 14px 34px #142d2326;max-height:250px;overflow:auto}
+    .address-suggestions button{display:block;width:100%;padding:12px 14px;border:0;border-bottom:1px solid #edf1ee;border-radius:0;background:#fff;text-align:left;font-size:12px;line-height:1.45;color:#17352e;white-space:normal}
     .address-suggestions button:last-child{border-bottom:0}
-    .address-suggestions button:hover,.address-suggestions button[aria-selected=true]{background:#edf4e9}
-    .address-suggestions .suggestion-main{display:block;font-weight:700}
-    .address-suggestions .suggestion-meta{display:block;margin-top:3px;color:#61776f;font-size:10px;font-weight:500}
-    .address-search-status{min-height:16px;margin:5px 0 0;color:#61776f;font-size:10px;line-height:1.5}
-    .address-search-button{margin:6px 0 0!important;padding:7px 10px!important;border:1px solid #d6ded8!important;border-radius:8px!important;background:#f3f6f4!important;color:#263b30!important;font-size:10px!important;font-weight:800}
-    .address-helper{margin:0 0 14px;color:#61776f;font-size:11px;line-height:1.65}
+    .address-suggestions button:hover,.address-suggestions button[aria-selected=true]{background:#f0f5f2}
+    .address-suggestions .suggestion-main{display:block;font-weight:750}
+    .address-suggestions .suggestion-meta{display:block;margin-top:3px;color:#687970;font-size:10px;font-weight:500}
+    .address-search-status{min-height:14px;margin:4px 0 0;color:#718078;font-size:10px;line-height:1.4}
+    .address-helper,.address-search-button,.swift-pin-button{display:none!important}
   `;
   document.head.append(style);
 
@@ -47,9 +46,9 @@
   function addressLabel(properties){
     const p=properties||{};
     const road=p.road||p.pedestrian||p.footway||p.street||'';
-    const street=[p.house_number,p.housenumber,road].filter(Boolean).join(' ');
+    const street=[p.house_number||p.housenumber,road].filter(Boolean).join(' ');
     const first=street||p.name||p.display_name?.split(',')[0]||road;
-    const areas=[p.neighbourhood,p.suburb,p.city_district,p.district,p.city||p.town||p.village,p.county,p.state,p.postcode,p.country].filter(Boolean);
+    const areas=[p.neighbourhood,p.suburb,p.city_district,p.city||p.town||p.village,p.county,p.state,p.postcode,p.country].filter(Boolean);
     return [...new Set([first,...areas].filter(Boolean))].join(', ')||p.display_name||'';
   }
   function setLocation(input,feature){
@@ -60,16 +59,14 @@
     const prefix=input.name;
     input.value=addressLabel(feature.properties)||input.value;
     input.dataset.justSelected='true';
+    input.dataset.locationSelected='true';
     input.dispatchEvent(new Event('input',{bubbles:true}));
     const code=window.OpenLocationCode?.encode(lat,lng,10)||'';
     for(const [suffix,value] of Object.entries({latitude:lat,longitude:lng,plus_code:code,geohash:geohash(lat,lng)})){
       ensureHidden(prefix+'_'+suffix).value=String(value);
     }
-    input.dataset.locationSelected='true';
     input.dispatchEvent(new Event('change',{bubbles:true}));
     window.swiftHaulShowAddressOnMap?.(input,lat,lng);
-    const pinButton=input.nextElementSibling;
-    if(pinButton&&pinButton.classList.contains('swift-pin-button'))pinButton.textContent='◎ Adjust pin on map';
   }
   function asFeature(result){
     const address=result.address||{};
@@ -78,7 +75,7 @@
       properties:{...address,name:result.name||'',display_name:result.display_name||''}
     };
   }
-  function attach(input,label){
+  function attach(input){
     const wrap=input.parentElement;
     wrap.classList.add('address-field-wrap');
     const list=document.createElement('div');
@@ -92,22 +89,18 @@
     input.setAttribute('aria-expanded','false');
     input.setAttribute('aria-controls',list.id);
     input.setAttribute('autocomplete','off');
-    const searchButton=document.createElement('button');
-    searchButton.type='button';
-    searchButton.className='address-search-button';
-    searchButton.textContent='Search address';
-    input.insertAdjacentElement('afterend',searchButton);
     const status=document.createElement('p');
     status.className='address-search-status';
     status.setAttribute('role','status');
     status.setAttribute('aria-live','polite');
     wrap.append(status);
-    let controller=null,features=[],active=-1;
+    let controller=null,features=[],active=-1,debounce=null,requestNumber=0;
     const close=()=>{list.hidden=true;input.setAttribute('aria-expanded','false');input.removeAttribute('aria-activedescendant');active=-1;};
     const choose=index=>{
       const feature=features[index];if(!feature)return;
       setLocation(input,feature);
-      close();status.textContent='Address selected. Check the pin and adjust it if the entrance is different.';
+      close();
+      status.textContent='Address selected.';
     };
     const highlight=()=>{
       [...list.querySelectorAll('button')].forEach((button,i)=>button.setAttribute('aria-selected',String(i===active)));
@@ -117,8 +110,7 @@
     const render=items=>{
       features=items;list.replaceChildren();active=-1;
       items.forEach((feature,index)=>{
-        const props=feature.properties||{};
-        const full=addressLabel(props);
+        const props=feature.properties||{},full=addressLabel(props);
         if(!full)return;
         const button=document.createElement('button');button.type='button';button.id=list.id+'-'+index;button.setAttribute('role','option');button.setAttribute('aria-selected','false');
         const main=document.createElement('span');main.className='suggestion-main';main.textContent=props.name||[props.house_number,props.road].filter(Boolean).join(' ')||full.split(',')[0];
@@ -131,38 +123,45 @@
       if(list.children.length){list.hidden=false;input.setAttribute('aria-expanded','true');}
       else close();
     };
-    async function search(){
-      const query=input.value.trim();
-      if(query.length<3){status.textContent='Enter at least 3 characters, then search.';return;}
+    async function search(query,sequence){
       controller?.abort();const activeController=new AbortController();controller=activeController;
-      status.textContent='Searching OpenStreetMap addresses…';
+      status.textContent='Finding matching addresses…';
       const cacheKey=query.toLocaleLowerCase();
       try{
         let results=resultCache.get(cacheKey);
         if(!results){
-          const params=new URLSearchParams({q:query,format:'jsonv2',addressdetails:'1',limit:'8','accept-language':'en'});
-          const response=await window.swiftHaulNominatimFetch('https://nominatim.openstreetmap.org/search?'+params.toString(),{
-            signal:activeController.signal,headers:{Accept:'application/json'}
-          });
-          if(!response.ok)throw new Error('Nominatim address search unavailable ('+response.status+').');
+          const params=new URLSearchParams({q:query,format:'jsonv2',addressdetails:'1',namedetails:'1',limit:'7','accept-language':'en',countrycodes:'za',viewbox:'16,-22,33,-35'});
+          const response=await window.swiftHaulNominatimFetch('https://nominatim.openstreetmap.org/search?'+params.toString(),{signal:activeController.signal,headers:{Accept:'application/json'}});
+          if(!response.ok)throw new Error('Address search unavailable ('+response.status+').');
           results=await response.json();
           resultCache.set(cacheKey,results);
           if(resultCache.size>80)resultCache.delete(resultCache.keys().next().value);
         }
-        if(activeController.signal.aborted)return;
+        if(activeController.signal.aborted||sequence!==requestNumber)return;
         const items=results.map(asFeature).filter(item=>Number.isFinite(item.geometry.coordinates[0])&&Number.isFinite(item.geometry.coordinates[1]));
         render(items);
-        status.textContent=items.length?'Choose the closest match. Then check and adjust its exact map pin.':'No matching address found. Try adding the suburb, city, province or postal code.';
+        status.textContent=items.length?'Tap the correct address below.':'No matching address found. Add the suburb or city and try again.';
       }catch(error){
         if(error.name==='AbortError'||activeController.signal.aborted)return;
-        close();status.textContent='Nominatim search is temporarily unavailable. You can still type an address and place both pins manually.';
+        close();status.textContent='Address suggestions are temporarily unavailable. Please try again.';
       }
     }
-    searchButton.addEventListener('click',search);
+    input.addEventListener('input',()=>{
+      if(input.dataset.justSelected==='true'){delete input.dataset.justSelected;return;}
+      input.dataset.locationSelected='false';
+      for(const suffix of ['latitude','longitude','plus_code','geohash']){
+        const hidden=form.querySelector('[name="'+input.name+'_'+suffix+'"]');
+        if(hidden)hidden.value='';
+      }
+      controller?.abort();close();clearTimeout(debounce);
+      const query=input.value.trim(),sequence=++requestNumber;
+      if(query.length<3){status.textContent='';return;}
+      debounce=setTimeout(()=>search(query,sequence),450);
+    });
     input.addEventListener('keydown',event=>{
       if(event.key==='Enter'){
-        event.preventDefault();
-        if(!list.hidden&&active>=0)choose(active);else search();
+        if(!list.hidden&&active>=0){event.preventDefault();choose(active);}
+        else if(!list.hidden&&list.children.length===1){event.preventDefault();choose(0);}
         return;
       }
       if(list.hidden)return;
@@ -171,27 +170,12 @@
       else if(event.key==='ArrowUp'){event.preventDefault();active=Math.max(active-1,0);highlight();}
       else if(event.key==='Escape'){close();}
     });
-    input.addEventListener('input',()=>{
-      if(input.dataset.justSelected==='true'){delete input.dataset.justSelected;return;}
-      input.dataset.locationSelected='false';
-      for(const suffix of ['latitude','longitude','plus_code','geohash']){
-        const hidden=form.querySelector('[name="'+input.name+'_'+suffix+'"]');
-        if(hidden)hidden.value='';
-      }
-      controller?.abort();close();
-      status.textContent='Edit the address, then tap Search address. The public Nominatim service is queried only when requested.';
-    });
-    input.addEventListener('blur',()=>setTimeout(()=>{if(!wrap.contains(document.activeElement))close();},120));
+    input.addEventListener('blur',()=>setTimeout(()=>{if(!wrap.contains(document.activeElement))close();},150));
     input.addEventListener('change',()=>{if(!input.value.trim())status.textContent='';});
-    status.textContent='Enter an address and tap Search address to see OpenStreetMap matches.';
+    status.textContent='';
   }
-  for(const [id,label] of [['custPickup','Pickup'],['custDropoff','Drop-off']]){
+  for(const id of ['custPickup','custDropoff']){
     const input=document.getElementById(id);
-    if(input)attach(input,label);
+    if(input)attach(input);
   }
-  const helper=document.createElement('p');
-  helper.className='address-helper';
-  helper.textContent='Search for each address, choose the closest OpenStreetMap match, then confirm the exact gate or entrance on the map. Plus Codes are generated from the confirmed pin.';
-  const first=document.getElementById('custPickup');
-  first?.parentElement?.insertAdjacentElement('afterend',helper);
 })();
