@@ -129,7 +129,7 @@
       try{
         let features=resultCache.get(cacheKey);
         if(!features){
-          const params=new URLSearchParams({q:query,limit:'8',lang:'en',bbox:'16,-35,33,-22'});
+          const params=new URLSearchParams({q:query,limit:'8',lang:'en',bbox:'16,-35,33,-22',countrycode:'ZA'});
           for(const layer of ['house','street','locality','district','city','other'])params.append('layer',layer);
           const response=await fetch('https://photon.komoot.io/api/?'+params.toString(),{signal:activeController.signal,headers:{Accept:'application/json'}});
           if(!response.ok)throw new Error('South African address search unavailable ('+response.status+').');
