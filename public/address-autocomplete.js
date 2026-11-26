@@ -45,11 +45,12 @@
   }
   function addressLabel(properties){
     const p=properties||{};
-    const road=p.road||p.pedestrian||p.footway||p.street||'';
-    const street=[p.house_number||p.housenumber,road].filter(Boolean).join(' ');
-    const first=street||p.name||p.display_name?.split(',')[0]||road;
-    const areas=[p.neighbourhood,p.suburb,p.city_district,p.city||p.town||p.village,p.county,p.state,p.postcode,p.country].filter(Boolean);
-    return [...new Set([first,...areas].filter(Boolean))].join(', ')||p.display_name||'';
+    const house=p.housenumber||p.house_number||p.house_no||'';
+    const road=p.street||p.road||p.pedestrian||p.footway||'';
+    const street=[house,road].filter(Boolean).join(' ').trim();
+    const first=street||p.name||road||p.locality||'';
+    const areas=[p.suburb,p.neighbourhood,p.district,p.city||p.town||p.village,p.county,p.state,p.postcode,p.country||'South Africa'];
+    return [...new Set([first,...areas].map(x=>String(x||'').trim()).filter(Boolean))].join(', ')||p.name||'';
   }
   function setLocation(input,feature){
     const coords=feature?.geometry?.coordinates;
@@ -69,11 +70,9 @@
     window.swiftHaulShowAddressOnMap?.(input,lat,lng);
   }
   function asFeature(result){
+    if(result?.type==='Feature'&&result.geometry?.type==='Point')return result;
     const address=result.address||{};
-    return {
-      geometry:{type:'Point',coordinates:[Number(result.lon),Number(result.lat)]},
-      properties:{...address,name:result.name||'',display_name:result.display_name||''}
-    };
+    return {type:'Feature',geometry:{type:'Point',coordinates:[Number(result.lon),Number(result.lat)]},properties:{...address,name:result.name||'',display_name:result.display_name||'',countrycode:'za'}};
   }
   function attach(input){
     const wrap=input.parentElement;
@@ -100,7 +99,7 @@
       const feature=features[index];if(!feature)return;
       setLocation(input,feature);
       close();
-      status.textContent='Address selected.';
+      status.textContent='Address selected. The map pin and route will use these exact coordinates.';
     };
     const highlight=()=>{
       [...list.querySelectorAll('button')].forEach((button,i)=>button.setAttribute('aria-selected',String(i===active)));
@@ -125,25 +124,31 @@
     };
     async function search(query,sequence){
       controller?.abort();const activeController=new AbortController();controller=activeController;
-      status.textContent='Finding matching addresses…';
+      status.textContent='Searching South African street addresses…';
       const cacheKey=query.toLocaleLowerCase();
       try{
-        let results=resultCache.get(cacheKey);
-        if(!results){
-          const params=new URLSearchParams({q:query,format:'jsonv2',addressdetails:'1',namedetails:'1',limit:'7','accept-language':'en',countrycodes:'za',viewbox:'16,-22,33,-35'});
-          const response=await window.swiftHaulNominatimFetch('https://nominatim.openstreetmap.org/search?'+params.toString(),{signal:activeController.signal,headers:{Accept:'application/json'}});
-          if(!response.ok)throw new Error('Address search unavailable ('+response.status+').');
-          results=await response.json();
-          resultCache.set(cacheKey,results);
+        let features=resultCache.get(cacheKey);
+        if(!features){
+          const params=new URLSearchParams({q:query,limit:'8',lang:'en',bbox:'16,-35,33,-22'});
+          for(const layer of ['house','street','locality','district','city','other'])params.append('layer',layer);
+          const response=await fetch('https://photon.komoot.io/api/?'+params.toString(),{signal:activeController.signal,headers:{Accept:'application/json'}});
+          if(!response.ok)throw new Error('South African address search unavailable ('+response.status+').');
+          const data=await response.json();
+          features=(data.features||[]).filter(feature=>{
+            const coords=feature?.geometry?.coordinates||[],p=feature?.properties||{};
+            const lng=Number(coords[0]),lat=Number(coords[1]),country=String(p.countrycode||'za').toLowerCase();
+            return Number.isFinite(lng)&&Number.isFinite(lat)&&lng>=16&&lng<=33&&lat>=-35&&lat<=-22&&country==='za';
+          });
+          resultCache.set(cacheKey,features);
           if(resultCache.size>80)resultCache.delete(resultCache.keys().next().value);
         }
         if(activeController.signal.aborted||sequence!==requestNumber)return;
-        const items=results.map(asFeature).filter(item=>Number.isFinite(item.geometry.coordinates[0])&&Number.isFinite(item.geometry.coordinates[1]));
+        const items=features.map(asFeature).filter(item=>Number.isFinite(item.geometry.coordinates[0])&&Number.isFinite(item.geometry.coordinates[1]));
         render(items);
-        status.textContent=items.length?'Tap the correct address below.':'No matching address found. Add the suburb or city and try again.';
+        status.textContent=items.length?'Choose the matching street, suburb and city. The map pin will use this result’s coordinates.':'No matching South African address found. Add the street, suburb and city, or try a nearby landmark.';
       }catch(error){
         if(error.name==='AbortError'||activeController.signal.aborted)return;
-        close();status.textContent='Address suggestions are temporarily unavailable. Please try again.';
+        close();status.textContent='South African address search is temporarily unavailable. Please try again.';
       }
     }
     input.addEventListener('input',()=>{
@@ -155,7 +160,7 @@
       }
       controller?.abort();close();clearTimeout(debounce);
       const query=input.value.trim(),sequence=++requestNumber;
-      if(query.length<3){status.textContent='';return;}
+      if(query.length<3){status.textContent='Enter at least 3 characters to search South African addresses.';return;}
       debounce=setTimeout(()=>search(query,sequence),450);
     });
     input.addEventListener('keydown',event=>{
