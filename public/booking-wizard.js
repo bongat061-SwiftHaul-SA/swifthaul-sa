@@ -32,7 +32,10 @@
   const message = form.querySelector('#message');
   const pageHeading = document.querySelector('#workspace .page-heading h1');
   const pageDescription = document.querySelector('#workspace .page-heading .subtle');
-  if (![pickup,dropoff,recipient,parcel,vehicle,payment,assistance,protection,calculate,quote,submit,counterSubmit].every(Boolean)) return;
+  if (![pickup,dropoff,recipient,parcel,vehicle,payment,calculate,quote,submit,counterSubmit].every(Boolean)) return;
+  // Loading help is free and protection details belong in the terms, not this booking step.
+  if (assistance) assistance.hidden = true;
+  if (protection) protection.hidden = true;
   form.dataset.wizardReady = 'true';
 
   const oldHeading = form.querySelector(':scope > h2');
@@ -84,7 +87,7 @@
   counterButton.disabled=counterCheckbox?.disabled!==false;
   counterToggle?.setAttribute('hidden','');
   counterPanel.append(counterButton);
-  const counterHelp=document.createElement('p');counterHelp.className='counter-offer-help';counterHelp.textContent='Available for eligible routes below 24 km when “Arrange payment with dispatch” is selected.';counterPanel.append(counterHelp);
+  const counterHelp=document.createElement('p');counterHelp.className='counter-offer-help';counterHelp.textContent='For routes under 24 km: select “Arrange payment with dispatch” above to enable a counter-offer.';counterPanel.append(counterHelp);
   [counterField,counterNote].forEach(node=>{if(node)counterPanel.append(node);});
   counterButton.addEventListener('click',()=>{
     if(!counterCheckbox||counterButton.disabled)return;
@@ -104,7 +107,7 @@
     // The location picker initially places the recipient and parcel estimator
     // in its map sheet. Move them into step two while leaving the map intact.
     [recipient,parcel,vehicle,vehicleNote,calculate,pricingNote,quote].forEach(node=>move(node,1));
-    [moreOptions,counterPanel,assistance,protection].forEach(node=>move(node,2));
+    [moreOptions,counterPanel].forEach(node=>move(node,2));
   } else {
     [pickup,dropoff].forEach(node=>move(node,0));
     [recipient,parcel,vehicle,vehicleNote,calculate,pricingNote,quote].forEach(node=>move(node,1));
@@ -112,7 +115,7 @@
   }
   const review = document.createElement('section');
   review.className = 'booking-review-card';
-  review.innerHTML = '<h3>Delivery summary</h3><dl><div><dt>Pickup</dt><dd data-review-pickup>Not entered</dd></div><div><dt>Drop-off</dt><dd data-review-dropoff>Not entered</dd></div><div><dt>Recipient</dt><dd data-review-recipient>Not entered</dd></div><div><dt>Parcel & vehicle</dt><dd data-review-parcel>Complete parcel details</dd></div><div><dt>Fare</dt><dd data-review-fare>Calculate your route</dd></div><div><dt>Payment</dt><dd data-review-payment>Arrange with dispatch</dd></div><div><dt>Assistance</dt><dd data-review-assistance>Not requested</dd></div></dl><p class="booking-review-note">Your request is only confirmed after SwiftHaul dispatch accepts it. Payment is not confirmed by submitting this request.</p>';
+  review.innerHTML = '<h3>Delivery summary</h3><dl><div><dt>Pickup</dt><dd data-review-pickup>Not entered</dd></div><div><dt>Drop-off</dt><dd data-review-dropoff>Not entered</dd></div><div><dt>Recipient</dt><dd data-review-recipient>Not entered</dd></div><div><dt>Parcel & vehicle</dt><dd data-review-parcel>Complete parcel details</dd></div><div><dt>Fare</dt><dd data-review-fare>Calculate your route</dd></div><div><dt>Payment</dt><dd data-review-payment>Arrange with dispatch</dd></div></dl><p class="booking-review-note">Your request is only confirmed after SwiftHaul dispatch accepts it. Payment is not confirmed by submitting this request.</p>';
   panes[3].append(review,submit,counterSubmit,message);
 
   let active = 0;
