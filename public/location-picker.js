@@ -103,7 +103,7 @@
     '.swift-booking-actions #submit{min-height:46px!important;border-radius:11px!important;background:#142d23!important;font-size:12px!important}',
     '@media(max-width:650px){#delivery-map-stage{height:430px!important;min-height:390px!important;max-height:58svh!important;margin:0 -4px 16px!important;border-radius:15px!important}.swift-location-sheet{left:8px!important;right:8px!important;bottom:8px!important;max-height:76%!important;padding:11px 12px 10px!important;border-radius:15px!important}.swift-sheet-head h3{font-size:14px!important}.swift-sheet-head p{font-size:9px!important}.swift-route-steps{gap:5px!important;padding:5px 7px!important;font-size:7px!important}.swift-location-fields{gap:4px!important}.swift-location-fields input{height:37px!important;min-height:37px!important;font-size:11px!important}.swift-sheet-tools{gap:5px!important}.swift-sheet-tools button{min-height:29px!important;padding:5px 7px!important;font-size:8px!important}.swift-pin-meta{font-size:8px!important}.swift-sheet-quote #quote-map{height:110px!important}.swift-booking-actions{margin:8px -12px -10px!important;padding:8px 12px 10px!important}}'
   ].join('\n');
-  style.textContent += '\n.swift-google-check{border:1px solid #d8e1ec!important;background:#f5f8fc!important;color:#18385f!important;border-radius:9px!important;padding:7px 9px!important;font-size:9px!important;font-weight:800!important;min-height:32px!important}\n.swift-google-check:focus-visible{outline:2px solid #4285f4!important;outline-offset:2px!important}\n@media(max-width:650px){.swift-google-check{font-size:8px!important;padding:6px 7px!important}}';
+  style.textContent += '\n.swift-google-check,.swift-pin-button,.swift-pin-meta,#loc-status,#loc-continue-booking,#loc-current,#loc-open{display:none!important}';
   document.head.append(style);
 
   const pickupWrap = pickup.closest('.field');
@@ -226,9 +226,7 @@
           gestureHandling:'greedy',controlSize:32
         });
         mapLoaded=true;
-        googleMap.addListener('click',event=>{
-          if(activeField&&event.latLng){const lat=event.latLng.lat(),lng=event.latLng.lng();saveLocation(activeField,lat,lng,'Map pin adjusted. Finding the nearest mapped address…');reverseLabel(activeField,lat,lng);}
-        });
+      // Address markers are read-only; the selected dropdown result controls their position.
         for(const key of ['pickup','dropoff']) if(state[key]) placeMarker(key,state[key].lat,state[key].lng);
         fitLocations();resizeMap();
         $('loc-status').textContent='Map ready. Select addresses from the dropdowns to place the locations.';
@@ -292,9 +290,7 @@
       if(event?.error) $('loc-status').textContent='Some map tiles could not load. The address fields and exact pin coordinates remain available.';
     });
     armWatchdog();
-    map.on('click',event=>{
-      if(activeField){saveLocation(activeField,event.lngLat.lat,event.lngLat.lng,'Map pin adjusted. Finding the nearest mapped address…');reverseLabel(activeField,event.lngLat.lat,event.lngLat.lng);}
-    });
+      // Address markers are read-only; the selected dropdown result controls their position.
     requestAnimationFrame(()=>map&&map.resize());
   }
   function placeMarker(key,lat,lng) {
@@ -302,7 +298,7 @@
     const input=key==='pickup'?pickup:dropoff;
     if(googleMap){
       if(state[key].marker?.__swiftGoogleMarker){state[key].marker.setPosition({lat,lng});return;}
-      const marker=new google.maps.Marker({map:googleMap,position:{lat,lng},draggable:true,title:key==='pickup'?'Pickup location':'Drop-off location',label:{text:key==='pickup'?'P':'D',color:'#ffffff',fontWeight:'800'}});
+      const marker=new google.maps.Marker({map:googleMap,position:{lat,lng},draggable:false,title:key==='pickup'?'Pickup location':'Drop-off location',label:{text:key==='pickup'?'P':'D',color:'#ffffff',fontWeight:'800'}});
       marker.__swiftGoogleMarker=true;
       state[key].marker=marker;return;
     }
@@ -322,8 +318,7 @@
     }
     if(points.length===2) {
       map.fitBounds([[Math.min(points[0][0],points[1][0]),Math.min(points[0][1],points[1][1])],[Math.max(points[0][0],points[1][0]),Math.max(points[0][1],points[1][1])]],{padding:{top:38,bottom:230,left:38,right:38},maxZoom:17,duration:350});
-      routeData.geometry.coordinates=points;routeLine=true;routeStyle();
-      if(mapLoaded&&map.getSource('customer-route'))map.getSource('customer-route').setData(routeData);
+      clearRoute();
     } else if(points.length===1) {
       cameraMove(points[0],16);clearRoute();
     }
@@ -357,7 +352,7 @@
   $('loc-continue-booking')?.addEventListener('click', () => {
     updateContinueButton();
     if ($('loc-continue-booking').hidden) {
-      $('loc-status').textContent = 'Choose and confirm both pickup and drop-off pins before continuing.';
+      $('loc-status').textContent = 'Select both pickup and drop-off addresses before continuing.';
       return;
     }
     document.dispatchEvent(new CustomEvent('swift-haul:locations-confirmed'));
@@ -397,7 +392,7 @@
     const plusCode=encodePlusCode(lat,lng,10);
     Object.entries({latitude:lat,longitude:lng,plus_code:plusCode,geohash:geohash(lat,lng)}).forEach(([suffix,value])=>{hiddenField(key+'_'+suffix).value=String(value);});
     const pinButton=input.parentElement.querySelector('.swift-pin-button');
-    if(pinButton){pinButton.setAttribute('aria-pressed','true');pinButton.textContent='✓ Pin confirmed';}
+    if(pinButton){pinButton.setAttribute('aria-pressed','true');pinButton.textContent='✓ Address selected';}
     activeField=input;
     $('loc-coordinates').textContent=lat.toFixed(6)+', '+lng.toFixed(6);
     $('loc-plus-code').textContent=plusCode||'Unavailable';
