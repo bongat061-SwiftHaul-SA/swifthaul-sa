@@ -29,25 +29,20 @@ function recommendedVehicleClass(chargeable: number): VehicleClass {
   return "freight_truck";
 }
 function calculateLoad(input: unknown, selectedClass: unknown) {
-  const p = input as Record<string, unknown> | null;
-  const keys = ["weight", "length", "width", "height"] as const;
-  if (!p || keys.some(k => typeof p[k] !== "number" || !Number.isFinite(p[k]) || Number(p[k]) <= 0 || Number(p[k]) > 100000))
-    throw new InputError("Select your items and enter valid packed dimensions so we can recommend a vehicle.");
-  const weight = Number(p.weight), length = Number(p.length), width = Number(p.width), height = Number(p.height);
-  const volumetric = length * width * height / 5000, chargeable = Math.max(weight, volumetric);
-  if (chargeable > 8000) throw new InputError("Loads above 8,000 chargeable kg require a manual quote. Contact dispatch.", 422);
-  const recommendation = recommendedVehicleClass(chargeable);
-  const vehicleClass = (typeof selectedClass === "string" && Object.hasOwn(tariffClasses, selectedClass) ? selectedClass : recommendation) as VehicleClass;
+  if (typeof selectedClass !== "string" || !Object.hasOwn(tariffClasses, selectedClass) || selectedClass === "freight_truck")
+    throw new InputError("Choose an available vehicle before calculating the fare.");
+  const vehicleClass = selectedClass as VehicleClass;
   const tariff = tariffClasses[vehicleClass];
-  if (vehicleClass !== "motorbike" && chargeable > tariff.capacity)
-    throw new InputError("The selected vehicle class is below the estimated payload. Please choose the recommended or a larger vehicle.", 422);
+  // Item weights and dimensions are descriptive only; they do not affect price or block the customer's vehicle choice.
   return {
-    weight, length, width, height, volumetric, chargeable, vehicle: tariff.vehicle,
-    vehicleClass, truckClass: tariff.label, recommendedVehicleClass: recommendation,
-    capacity: tariff.capacity, callOutFee: tariff.callOutFee,
-    distanceRate: tariff.distanceRate, freeMinutes: tariff.freeMinutes, divisor: 5000
+    weight: 0, length: 0, width: 0, height: 0, volumetric: 0, chargeable: 0,
+    vehicle: tariff.vehicle, vehicleClass, truckClass: tariff.label,
+    recommendedVehicleClass: vehicleClass, capacity: tariff.capacity,
+    callOutFee: tariff.callOutFee, distanceRate: tariff.distanceRate,
+    freeMinutes: tariff.freeMinutes, divisor: 5000
   };
 }
+
 function pin(value: unknown) {
   if (value == null) return null;
   const p = value as Record<string, unknown>;
