@@ -89,3 +89,22 @@ body[data-app="customer"] #booking-form .vehicles{grid-template-columns:repeat(2
 body[data-app="customer"] #booking-form .vehicle:has(input:disabled){opacity:.42;cursor:not-allowed}
 body[data-app="customer"] #booking-form .vehicle input:checked+span{border-color:#3ce3f6}
 @media(max-width:560px){body[data-app="customer"] #booking-form .vehicles{grid-template-columns:1fr}}
+
+/* More options, customer-written item descriptions and in-app alerts. */
+body[data-app="customer"] .booking-more-options{margin:10px 0;padding:13px 14px;border:1px solid #46515e;border-radius:14px;background:#101722;color:#f2f5f8}
+body[data-app="customer"] .booking-more-options>summary{cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;font-weight:800;font-size:13px;list-style:none}
+body[data-app="customer"] .booking-more-options>summary::-webkit-details-marker{display:none}
+body[data-app="customer"] .booking-more-options>summary span{font-size:10px;color:#aeb8c5;font-weight:600;text-align:right}
+body[data-app="customer"] .booking-more-options[open]>summary{padding-bottom:10px;border-bottom:1px solid #34404e}
+body[data-app="customer"] .booking-more-options fieldset{margin:10px 0 0}
+body[data-app="customer"] .customer-counteroffer-panel{margin:12px 0;padding:14px;border:1px solid #65717e;border-radius:14px;background:#151e29;color:#f3f5f8}
+body[data-app="customer"] .customer-counteroffer-panel h3{margin:0 0 8px;font-size:14px}
+body[data-app="customer"] .customer-counteroffer-panel>label{display:block;margin:8px 0}
+body[data-app="customer"] .manual-items-label,body[data-app="customer"] .manual-weight-label{display:block;margin-top:12px;color:#e2e8ef;font-size:12px;font-weight:700}
+body[data-app="customer"] .manual-items-label textarea,body[data-app="customer"] .manual-weight-label input{display:block;box-sizing:border-box;width:100%;margin-top:7px;padding:11px 12px;border:1px solid #465363;border-radius:11px;background:#080e17;color:#f5f7fa;font:inherit}
+body[data-app="customer"] .manual-weight-label span{display:block;color:#9eabba;font-size:10px;font-weight:500;margin-top:3px}
+body[data-app="customer"] .customer-alert-banner{position:sticky;top:0;z-index:1000;display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 12px;padding:12px 15px;border:1px solid #c5d0dc;border-radius:12px;background:#e7edf3;color:#111820;font-weight:800;box-shadow:0 6px 22px #0005}
+body[data-app="customer"] .customer-alert-banner[hidden]{display:none}
+body[data-app="customer"] .customer-alert-banner button{border:0;background:transparent;color:#111820;font-size:22px;line-height:1;cursor:pointer}
+body[data-app="customer"] .customer-alert-banner.is-flashing{animation:customerAlertFlash 1s ease-in-out 3}
+@keyframes customerAlertFlash{0%,100%{filter:brightness(1)}50%{filter:brightness(1.45);box-shadow:0 0 0 3px #c5d0dc66,0 6px 22px #0008}}
