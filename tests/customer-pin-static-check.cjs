@@ -33,11 +33,11 @@ assert.match(picker, /new MutationObserver/,
   'The customer pin map must wait for the hidden authenticated workspace to open');
 assert.match(picker, /new ResizeObserver/,
   'The map must resize after the authenticated workspace becomes visible');
-assert.match(picker, /map\.on\('click',[\s\S]*saveLocation\(activeField,event\.lngLat\.lat,event\.lngLat\.lng/,
-  'Tapping the map must save the selected pickup/drop-off pin');
-assert.match(picker, /marker\.on\('dragend'/,
-  'The selected pin marker must remain draggable');
-assert.match(picker, /latitude:lat,longitude:lng,plus_code:plusCode,geohash:geohash\(lat,lng\)/,
+assert.match(picker, /function saveLocation\(input, lat, lng, message\)/,
+  'The customer pin picker must save selected pickup/drop-off coordinates.');
+assert.match(picker, /draggable:false/,
+  'Address markers must remain read-only and follow the selected address result.');
+assert.match(picker, /Object\.entries\(\{latitude:lat,longitude:lng,plus_code:plusCode,geohash:geohash\(lat,lng\)\}\)/,
   'Pin selection must save coordinates, Plus Code and Geohash');
 assert.match(picker, /style\.load',[\s\S]*placeMarker\(key,state\[key\]\.lat,state\[key\]\.lng\)/,
   'Pins selected while map tiles load must be restored after the map style loads');
