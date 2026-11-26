@@ -173,6 +173,9 @@ Deno.serve(async (req: Request) => {
     if (!validText(body.pickup) || !validText(body.dropoff)) return reply(400, { error: "enter_pickup_and_dropoff" });
     try {
       const pickupPin = pin(body.pickup_location), dropoffPin = pin(body.dropoff_location), load = calculateLoad(body.parcel, body.selected_vehicle);
+      if (body.item_description !== undefined && (typeof body.item_description !== "string" || body.item_description.length > 1000)) return reply(400, { error: "item_description_too_long_or_invalid" });
+      const itemDescription = typeof body.item_description === "string" ? body.item_description.trim() : "";
+      if (itemDescription) load.customer_description = itemDescription;
       const route = await routeFor(body.pickup.trim(), body.dropoff.trim(), pickupPin, dropoffPin);
       let approachDriverId: string | null = null;
       let approachDistanceMeters = 0;
