@@ -37,6 +37,19 @@
   const cargoItems = [];
   const addItemButton = $('cargo-add-item');
   const selectedList = $('cargo-selected-list');
+  const categoriesNode = panel.querySelector('.cargo-categories');
+  categories.forEach(category => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'cargo-category';
+    button.dataset.category = category.id;
+    button.setAttribute('aria-pressed', 'false');
+    const title = document.createElement('strong'); title.textContent = category.name;
+    const hint = document.createElement('small'); hint.textContent = category.hint;
+    button.append(title, hint);
+    button.addEventListener('click', () => chooseCategory(category.id));
+    categoriesNode.append(button);
+  });
 
   function renderSelectedItems() {
     selectedList.replaceChildren();
