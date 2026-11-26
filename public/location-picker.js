@@ -138,24 +138,6 @@
   const parcelFields = form.querySelector('.parcel-fields');
   if (parcelFields) sheet.insertBefore(parcelFields, quoteArea);
 
-  const vehicleFieldset = form.querySelector('input[name="vehicle"]')?.closest('fieldset');
-  if (vehicleFieldset) vehicleFieldset.hidden = true;
-
-  const moreOptions = document.createElement('details');
-  moreOptions.className = 'swift-more-options';
-  const moreSummary = document.createElement('summary');
-  moreSummary.textContent = 'More options · pickup time, return and payment';
-  const moreContent = document.createElement('div');
-  moreContent.className = 'swift-more-content';
-  moreOptions.append(moreSummary, moreContent);
-  for (const selector of ['#schedule-later', '#request-return', '#payment-method']) {
-    const fieldset = form.querySelector(selector)?.closest('fieldset');
-    if (fieldset) moreContent.append(fieldset);
-  }
-  const pricingNote = form.querySelector('a[href="terms.html#pricing"]')?.closest('p');
-  if (pricingNote) moreContent.append(pricingNote);
-  sheet.insertBefore(moreOptions, quoteArea);
-
   const quoteStatus = document.getElementById('quote-status');
   if (quoteStatus) quoteArea.append(quoteStatus);
   if (calculate) quoteArea.append(calculate);
@@ -296,15 +278,16 @@
   function placeMarker(key,lat,lng) {
     if(!hasMap() || !mapLoaded) return;
     const input=key==='pickup'?pickup:dropoff;
+    const addressLabel=input.value.trim() || (key==='pickup'?'Pickup location':'Drop-off location');
     if(googleMap){
-      if(state[key].marker?.__swiftGoogleMarker){state[key].marker.setPosition({lat,lng});return;}
-      const marker=new google.maps.Marker({map:googleMap,position:{lat,lng},draggable:false,title:key==='pickup'?'Pickup location':'Drop-off location',label:{text:key==='pickup'?'P':'D',color:'#ffffff',fontWeight:'800'}});
+      if(state[key].marker?.__swiftGoogleMarker){state[key].marker.setPosition({lat,lng});state[key].marker.setTitle(addressLabel);return;}
+      const marker=new google.maps.Marker({map:googleMap,position:{lat,lng},draggable:false,title:addressLabel,label:{text:key==='pickup'?'P':'D',color:'#ffffff',fontWeight:'800'}});
       marker.__swiftGoogleMarker=true;
       state[key].marker=marker;return;
     }
-    if(state[key].marker){state[key].marker.setLngLat([lng,lat]);return;}
+    if(state[key].marker){state[key].marker.setLngLat([lng,lat]);state[key].marker.setPopup(new maplibregl.Popup({offset:24}).setText(addressLabel));return;}
     const marker=new maplibregl.Marker({element:markerNode(key),draggable:false,anchor:'bottom'})
-      .setLngLat([lng,lat]).addTo(map);
+      .setLngLat([lng,lat]).setPopup(new maplibregl.Popup({offset:24}).setText(addressLabel)).addTo(map);
     state[key].marker=marker;
   }
   function removeMarker(marker){if(!marker)return;if(marker.__swiftGoogleMarker)marker.setMap(null);else marker.remove();}
