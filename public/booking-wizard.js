@@ -84,17 +84,27 @@
   const counterButton=document.createElement('button');
   counterButton.type='button';counterButton.id='customer-counteroffer-button';counterButton.className='customer-counteroffer-button';
   counterButton.textContent='Make a counter-offer';counterButton.setAttribute('aria-pressed','false');
-  counterButton.disabled=counterCheckbox?.disabled!==false;
+  counterButton.disabled=false;
   counterToggle?.setAttribute('hidden','');
   counterPanel.append(counterButton);
-  const counterHelp=document.createElement('p');counterHelp.className='counter-offer-help';counterHelp.textContent='For routes under 24 km: select “Arrange payment with dispatch” above to enable a counter-offer.';counterPanel.append(counterHelp);
+  const counterHelp=document.createElement('p');counterHelp.className='counter-offer-help';counterHelp.setAttribute('role','status');counterHelp.textContent='Tap to make an offer. A calculated route under 24 km is required; payment will be switched to Arrange payment with dispatch.';counterPanel.append(counterHelp);
   [counterField,counterNote].forEach(node=>{if(node)counterPanel.append(node);});
   counterButton.addEventListener('click',()=>{
-    if(!counterCheckbox||counterButton.disabled)return;
+    if(!counterCheckbox)return;
+    const paymentSelect=form.elements.payment_method;
+    if(paymentSelect.value!=='dispatch'){
+      paymentSelect.value='dispatch';
+      paymentSelect.dispatchEvent(new Event('change',{bubbles:true}));
+    }
+    if(counterCheckbox.disabled){
+      counterHelp.textContent='Counter-offers require a valid calculated route under 24 km. Calculate or refresh your route, then try again.';
+      return;
+    }
     counterCheckbox.checked=!counterCheckbox.checked;
     counterCheckbox.dispatchEvent(new Event('change',{bubbles:true}));
     counterButton.setAttribute('aria-pressed',String(counterCheckbox.checked));
     counterButton.textContent=counterCheckbox.checked?'Cancel counter-offer':'Make a counter-offer';
+    counterHelp.textContent=counterCheckbox.checked?'Enter your offered fare below. Your offer will be reviewed by SwiftHaul dispatch.':'You can make a counter-offer again before submitting your booking.';
   });
   // The location picker builds a map stage containing the pickup/drop-off inputs.
   // Keep that stage intact on step one so the map and selected address markers stay together. The previous implementation moved
@@ -116,6 +126,17 @@
   const review = document.createElement('section');
   review.className = 'booking-review-card';
   review.innerHTML = '<h3>Delivery summary</h3><dl><div><dt>Pickup</dt><dd data-review-pickup>Not entered</dd></div><div><dt>Drop-off</dt><dd data-review-dropoff>Not entered</dd></div><div><dt>Recipient</dt><dd data-review-recipient>Not entered</dd></div><div><dt>Parcel & vehicle</dt><dd data-review-parcel>Complete parcel details</dd></div><div><dt>Fare</dt><dd data-review-fare>Calculate your route</dd></div><div><dt>Payment</dt><dd data-review-payment>Arrange with dispatch</dd></div></dl><p class="booking-review-note">Your request is only confirmed after SwiftHaul dispatch accepts it. Payment is not confirmed by submitting this request.</p>';
+  // Keep the required terms acknowledgement visible on the review step,
+  // even though the larger protection card is removed from the booking flow.
+  const termsLabel=protection?.querySelector('label:has(#booking-terms-accepted)');
+  if(termsLabel){
+    const consent=document.createElement('div');
+    consent.className='booking-review-consent';
+    const consentText=document.createElement('p');
+    consentText.textContent='I have read and agree to the customer protection and handling terms.';
+    consent.append(consentText,termsLabel);
+    review.append(consent);
+  }
   panes[3].append(review,submit,counterSubmit,message);
 
   let active = 0;
