@@ -108,3 +108,18 @@ body[data-app="customer"] .customer-alert-banner[hidden]{display:none}
 body[data-app="customer"] .customer-alert-banner button{border:0;background:transparent;color:#111820;font-size:22px;line-height:1;cursor:pointer}
 body[data-app="customer"] .customer-alert-banner.is-flashing{animation:customerAlertFlash 1s ease-in-out 3}
 @keyframes customerAlertFlash{0%,100%{filter:brightness(1)}50%{filter:brightness(1.45);box-shadow:0 0 0 3px #c5d0dc66,0 6px 22px #0008}}
+
+/* Customer-selected vehicle, visible counter-offer action and simplified item list. */
+body[data-app="customer"] #booking-form fieldset:has(.vehicles){display:block!important;visibility:visible!important;opacity:1!important}
+body[data-app="customer"] #booking-form .vehicles{display:grid;gap:8px;margin-top:12px}
+body[data-app="customer"] #booking-form .vehicle{display:flex;align-items:center;gap:11px;padding:12px;border:1px solid #354252;border-radius:12px;background:#151d28;color:#f0f3f7;cursor:pointer}
+body[data-app="customer"] #booking-form .vehicle:has(input:checked){border:2px solid #dce2e9;background:#222b36}
+body[data-app="customer"] #booking-form .vehicle input{accent-color:#dce2e9;flex:0 0 auto}
+body[data-app="customer"] #cargo-estimator .cargo-intro{margin-bottom:10px}
+body[data-app="customer"] #cargo-estimator .cargo-estimate-note{background:#18212c;color:#c2cad4}
+body[data-app="customer"] .customer-counteroffer-panel{display:grid;gap:9px}
+body[data-app="customer"] .customer-counteroffer-button{width:100%;min-height:46px;padding:11px 14px;border:1px solid #dce2e9;border-radius:11px;background:#e8edf2;color:#121820;font-weight:850;cursor:pointer}
+body[data-app="customer"] .customer-counteroffer-button:disabled{opacity:.45;cursor:not-allowed}
+body[data-app="customer"] .customer-counteroffer-button[aria-pressed="true"]{background:#cfd7df;border-color:#aeb9c5}
+body[data-app="customer"] .counter-offer-help{margin:0;color:#9eabba;font-size:10px;line-height:1.4}
+body[data-app="customer"] .booking-more-options[open]{margin-bottom:12px}
