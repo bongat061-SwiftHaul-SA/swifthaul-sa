@@ -1,6 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.49.1";
 
-export type NotificationEvent = "order_dispatched" | "delivery_otp" | "document_expiry" | "payout_success" | "document_rejected" | "sos_alert";
+export type NotificationEvent = "order_dispatched" | "delivery_otp" | "document_expiry" | "payout_success" | "document_rejected" | "sos_alert" | "driver_en_route_pickup" | "driver_arrived_pickup" | "driver_en_route_dropoff" | "driver_arrived_dropoff";
 export type RecipientType = "sender" | "recipient" | "driver";
 
 export function formatSAPhoneNumber(input: string): string {
@@ -68,6 +68,10 @@ export function plainTextFor(event: NotificationEvent, payload: Record<string, u
     case "document_rejected": return "SwiftHaul: Your " + p("document_name") + " was not approved. Reason: " + p("rejection_reason") + ". Please upload a replacement in the Driver app.";
     case "payout_success": return "SwiftHaul payout completed: R" + p("amount_zar") + " has been transferred to your verified bank account. Reference: " + p("reference");
     case "sos_alert": return "URGENT SwiftHaul SOS (" + p("recipient_type") + "). " + p("alert_text") + " Incident: " + p("incident_id") + ". Vehicle: " + p("vehicle_plate") + ". Order: " + p("order_id");
+    case "driver_en_route_pickup": return "SwiftHaul: Your driver is on the way to the pickup address for delivery " + p("waybill") + ".";
+    case "driver_arrived_pickup": return "SwiftHaul: Your driver has arrived at the pickup address for delivery " + p("waybill") + ".";
+    case "driver_en_route_dropoff": return "SwiftHaul: Your parcel has been collected. Your driver is on the way to the delivery address for " + p("waybill") + ".";
+    case "driver_arrived_dropoff": return "SwiftHaul: Your driver has arrived at the delivery address for " + p("waybill") + ".";
   }
 }
 
