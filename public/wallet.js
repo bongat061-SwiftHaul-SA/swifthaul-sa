@@ -30,7 +30,7 @@ async function load(){
  if(!data.loans.length)entry(loans,'No pay-later balances.');
  const withdrawals=document.getElementById('wallet-withdrawals');withdrawals.replaceChildren();for(const row of data.withdrawals)entry(withdrawals,`${date(row.created_at)} · ${row.speed} · ${row.state} · ${rand(row.gross_cents)} less ${rand(row.fee_cents)} fee = ${rand(row.net_cents)}`);if(!data.withdrawals.length)entry(withdrawals,'No withdrawals yet.');
  document.getElementById('withdraw-form').hidden=true;
- document.getElementById('wallet-provider-note').textContent='Wallet balances and history are read-only for now. Online repayments, wallet-funded bookings and withdrawals are paused. Existing records and balances have not been changed.';
+ document.getElementById('wallet-provider-note').textContent='Wallet balances and history are read-only for now. Older wallet records are still being reconciled; online repayments, wallet-funded bookings and withdrawals are paused. Contact SwiftHaul Admin before relying on an older balance.';
  status.textContent='';
  for(const field of document.querySelectorAll('#withdraw-form input,#withdraw-form select,#withdraw-form button'))field.disabled=true;
  }catch(error){if(current===version)status.textContent=error.message;}
