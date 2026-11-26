@@ -72,13 +72,13 @@
   if (mapStage) {
     move(mapStage,0);
     // Keep the address map on step one; scheduling and return controls live in More options.
-    [schedule,returnTrip].forEach(node=>move(node,0));
+    // Scheduling and return options are already grouped in More options.
     // The location picker initially places the recipient and parcel estimator
     // in its map sheet. Move them into step two while leaving the map intact.
     [recipient,parcel,vehicle,vehicleNote,calculate,pricingNote,quote].forEach(node=>move(node,1));
     [moreOptions,counterPanel,assistance,protection].forEach(node=>move(node,2));
   } else {
-    [pickup,dropoff,schedule,returnTrip].forEach(node=>move(node,0));
+    [pickup,dropoff].forEach(node=>move(node,0));
     [recipient,parcel,vehicle,vehicleNote,calculate,pricingNote,quote].forEach(node=>move(node,1));
     [moreOptions,counterPanel,assistance,protection].forEach(node=>move(node,2));
   }
