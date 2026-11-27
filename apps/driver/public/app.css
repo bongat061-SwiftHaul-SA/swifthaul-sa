@@ -360,5 +360,5 @@ body[data-app="driver"] .driver-application-step input[type="file"]::file-select
 /* SwiftHaul SA refreshed brand identity */
 .wordmark{display:inline-flex;align-items:center;min-height:38px;font-size:0!important;letter-spacing:0!important;text-decoration:none;}
 .wordmark span,.wordmark small{display:none!important;}
-.wordmark::before{content:"";display:block;width:190px;height:36px;max-width:52vw;background:url("../../../shared/logo-horizontal.svg") left center/contain no-repeat;}
+.wordmark::before{content:"";display:block;width:190px;height:36px;max-width:52vw;background:url("../.././logo-horizontal.svg") left center/contain no-repeat;}
 @media(max-width:520px){.wordmark::before{width:158px;height:32px;}}
