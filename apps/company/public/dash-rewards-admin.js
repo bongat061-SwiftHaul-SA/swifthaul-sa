@@ -6,7 +6,8 @@
  async function load(){
   queue.textContent='Loading pending reward milestones…';status.textContent='';
   try{
-   const client=window.swiftHaulSupabase;if(!client)throw new Error('Admin sign-in is still loading.');\n   const {data,error}=await client.functions.invoke('customer-dash-rewards',{body:{action:'list_pending'}});
+   const client=window.swiftHaulSupabase;if(!client)throw new Error('Admin sign-in is still loading.');
+   const {data,error}=await client.functions.invoke('customer-dash-rewards',{body:{action:'list_pending'}});
    if(error)throw error;
    const rows=data?.pending||[];queue.replaceChildren();
    if(!rows.length){const p=document.createElement('p');p.className='subtle';p.textContent='No reward milestones are waiting for verification.';queue.append(p);return;}
