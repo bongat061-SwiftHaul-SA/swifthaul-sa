@@ -25,14 +25,14 @@
   overlay.innerHTML = `
     <div class="driver-dash-panel">
       <header class="driver-dash-header">
-        <div><p class="driver-dash-kicker">SWIFTHAUL MINI GAME</p><h2 id="driver-dash-title">Driver Dash</h2><p>Collect parcels. Dodge cones. Beat your best score.</p></div>
+        <div><p class="driver-dash-kicker">SWIFTHAUL MINI GAME</p><h2 id="driver-dash-title">Driver Dash</h2><p>Collect parcels. Avoid traffic, cars and trees. Beat your best score.</p></div>
         <button type="button" class="driver-dash-close" aria-label="Close game">×</button>
       </header>
       <section class="driver-dash-rewards" data-dash-rewards hidden><strong>SwiftHaul Dash Rewards</strong><p data-reward-progress>Sign in to earn reward points.</p><div class="driver-dash-reward-track"><span data-reward-fill></span></div><small data-reward-best>Account best score: —</small><p data-reward-history class="driver-dash-reward-history">Your reward milestones will appear here.</p><p class="driver-dash-reward-note">Rewards: 1,000 = R10 · 2,500 = R20 · 5,000 = R40. Admin verification required. Offline and guest games do not earn rewards.</p></section><div class="driver-dash-stats"><span>Score <strong data-dash-score>0</strong></span><span>Time <strong data-dash-time>30</strong>s</span><span>Best <strong data-dash-best>0</strong></span></div>
-      <canvas class="driver-dash-canvas" width="360" height="480" aria-label="Delivery van game. Use the left and right controls to collect parcels and avoid cones."></canvas>
+      <canvas class="driver-dash-canvas" width="360" height="480" aria-label="Delivery van game. Use the left and right controls to collect parcels and avoid traffic obstacles."></canvas>
       <p class="driver-dash-message" role="status" aria-live="polite">Tap Start, then steer left and right to collect parcels.</p>
       <div class="driver-dash-controls"><button type="button" data-dash-left aria-label="Steer left">←</button><button type="button" data-dash-start>Start game</button><button type="button" data-dash-right aria-label="Steer right">→</button></div>
-      <p class="driver-dash-footnote">Just for fun — game points do not affect delivery prices, driver matching or rewards.</p>
+      <p class="driver-dash-footnote">Game points can earn customer rewards, but never affect delivery prices, driver matching or driver earnings.</p>
     </div>`;
   document.body.append(overlay);
   const canvas=overlay.querySelector('canvas'), ctx=canvas.getContext('2d');
