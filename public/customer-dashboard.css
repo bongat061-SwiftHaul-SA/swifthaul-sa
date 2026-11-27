@@ -75,3 +75,25 @@ body[data-app="customer"] #workspace .customer-bottom-nav-link.is-active{backgro
 body[data-app="customer"] #workspace .customer-bottom-nav-link.is-active>span{color:#f1f3f6}
 body[data-app="customer"] #workspace main.page{padding-bottom:calc(94px + env(safe-area-inset-bottom))!important}
 @media(min-width:760px){body[data-app="customer"] #workspace .customer-bottom-nav{bottom:12px;border:1px solid #303946;border-radius:16px;padding:8px;max-width:650px}body[data-app="customer"] #workspace main.page{padding-bottom:110px!important}}
+
+
+/* Customer identity header + responsive workspace breakpoints */
+body[data-app="customer"] #workspace .customer-profile-welcome{display:flex;align-items:center;gap:11px;margin:0 0 17px;padding:2px 2px}
+body[data-app="customer"] #workspace .customer-profile-avatar,body[data-app="customer"] #workspace .customer-profile-fallback{width:46px;height:46px;flex:0 0 46px;border-radius:50%;object-fit:cover;border:1px solid #687587;background:#202733}
+body[data-app="customer"] #workspace .customer-profile-fallback{display:grid;place-items:center;color:#e7ebf0;font-size:22px}
+body[data-app="customer"] #workspace .customer-profile-copy{display:grid;gap:3px}
+body[data-app="customer"] #workspace .customer-profile-copy small{color:#aeb8c6;font-size:9px;font-weight:800;letter-spacing:1.5px}
+body[data-app="customer"] #workspace .customer-profile-copy strong{color:#f5f7fa;font-size:17px;font-weight:800}
+@media(min-width:760px){
+ body[data-app="customer"] #workspace .page{max-width:1120px;margin:0 auto;padding:24px 32px 48px}
+ body[data-app="customer"] #workspace .customer-home-intro{padding:34px 38px}
+ body[data-app="customer"] #workspace .customer-bottom-nav{position:sticky;left:auto;bottom:auto;transform:none;width:100%;max-width:100%;margin:28px 0 0;border-radius:16px;grid-template-columns:repeat(6,minmax(0,1fr))}
+}
+@media(min-width:1100px){
+ body[data-app="customer"] #workspace .customer-bottom-nav{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);width:min(100% - 48px,900px)}
+ body[data-app="customer"] #workspace .page{padding-bottom:112px}
+ body[data-app="customer"] #workspace .customer-home{max-width:980px;margin-left:auto;margin-right:auto}
+}
+@media(max-width:759px){
+ body[data-app="customer"] #workspace .customer-bottom-nav{position:fixed;left:0;right:0;bottom:0;transform:none;width:100%;border-radius:16px 16px 0 0}
+}
