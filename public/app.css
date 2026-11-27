@@ -169,3 +169,9 @@ body[data-app="customer"] .customer-terms-acknowledgement legend{padding:0 7px;f
 body[data-app="customer"] .customer-terms-acknowledgement>p{font-size:12px;line-height:1.65;color:#52645a}
 body[data-app="customer"] .customer-terms-acknowledgement label{display:flex;align-items:flex-start;gap:10px;font-size:12px;line-height:1.55;font-weight:700}
 body[data-app="customer"] .customer-terms-acknowledgement input[type="checkbox"]{width:19px;height:19px;min-width:19px;margin:1px 0 0;accent-color:#176b52}
+
+/* SwiftHaul SA refreshed brand identity */
+.wordmark{display:inline-flex;align-items:center;min-height:38px;font-size:0!important;letter-spacing:0!important;text-decoration:none;}
+.wordmark span,.wordmark small{display:none!important;}
+.wordmark::before{content:"";display:block;width:190px;height:36px;max-width:52vw;background:url("../shared/logo-horizontal.svg") left center/contain no-repeat;}
+@media(max-width:520px){.wordmark::before{width:158px;height:32px;}}
