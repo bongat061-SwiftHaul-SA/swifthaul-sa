@@ -50,7 +50,7 @@ Deno.serve(async (req: Request) => {
   }
 
   const { data: booking, error: bookingError } = await db.from("customer_bookings")
-    .select("waybill,owner_hash,price,paid_at,refunded_at,status,counter_offer_status")
+    .select("waybill,owner_hash,price,customer_total_cents,paid_at,refunded_at,status,counter_offer_status")
     .eq("waybill", body.waybill).eq("owner_hash", user.id).maybeSingle();
   if (bookingError) return reply(503, { error: "booking_lookup_failed" });
   if (!booking) return reply(404, { error: "booking_not_found" });
@@ -59,8 +59,8 @@ Deno.serve(async (req: Request) => {
     return reply(409, { error: "booking_not_payable" });
   }
 
-  const amount = Number(booking.price);
-  const amountCents = Math.round(amount * 100);
+  const amountCents = booking.customer_total_cents==null?Math.round(Number(booking.price)*100):Number(booking.customer_total_cents);
+  const amount = amountCents / 100;
   if (!Number.isSafeInteger(amountCents) || amountCents < 100 || amountCents > 100000000) {
     return reply(422, { error: "invalid_booking_amount" });
   }
