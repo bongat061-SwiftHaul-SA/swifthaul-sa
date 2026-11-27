@@ -43,7 +43,7 @@
     lastFetch=Date.now(); $("availability-refresh").disabled=true;
     setStatus("Checking nearby drivers…","Looking for recently updated, opted-in online drivers.");
     try {
-      const response=await fetch(endpoint+"?"+query,{headers:{"apikey":window.SWIFTHAUL_SUPABASE_ANON_KEY||""},cache:"no-store"});
+      const response=await fetch(endpoint+"?"+query,{headers:{"apikey":"sb_publishable_QWOeGbSVs2nXECI-KsAmWQ_K_Rav892"},cache:"no-store"});
       if(!response.ok) throw new Error("Availability check is temporarily unavailable.");
       const data=await response.json(); clearMarkers();
       const maps=window.google.maps;
@@ -73,6 +73,7 @@
     $("availability-use-location").disabled=true;
     navigator.geolocation.getCurrentPosition(p=>{init().then(()=>{map.setCenter({lat:p.coords.latitude,lng:p.coords.longitude});map.setZoom(12);$("availability-use-location").disabled=false;});},()=>{setStatus("Location permission unavailable","Enter your suburb or city instead.");$("availability-use-location").disabled=false;},{enableHighAccuracy:false,maximumAge:60000,timeout:10000});
   });
-  init();
+  document.addEventListener("account-ready", () => setTimeout(init, 250));
+  document.addEventListener("guest-preview", () => setTimeout(init, 250));
   setInterval(()=>{if(document.body.dataset.customerPage==="home"&&ready)fetchAvailability(true);},30000);
 })();
