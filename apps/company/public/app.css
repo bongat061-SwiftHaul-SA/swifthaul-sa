@@ -184,3 +184,9 @@ body[data-app="company"] .company-tracking-legend i{display:inline-block;width:8
 body[data-app="company"] .company-pickup-dot{background:#176b52}body[data-app="company"] .company-dropoff-dot{background:#e39b35}
 body[data-app="company"] .company-tracking-map .leaflet-control-attribution{font-size:8px}
 @media(max-width:600px){body[data-app="company"] .company-tracking{margin:14px -5px 8px;border-radius:17px}body[data-app="company"] .company-trip-details{grid-template-columns:1fr;gap:7px;padding:0 13px 10px}body[data-app="company"] .company-tracking-head{padding:14px}body[data-app="company"] .company-tracking-note{padding:0 14px 11px}body[data-app="company"] .company-tracking-map-stage{height:52dvh;min-height:320px}}
+
+/* SwiftHaul SA refreshed brand identity */
+.wordmark{display:inline-flex;align-items:center;min-height:38px;font-size:0!important;letter-spacing:0!important;text-decoration:none;}
+.wordmark span,.wordmark small{display:none!important;}
+.wordmark::before{content:"";display:block;width:190px;height:36px;max-width:52vw;background:url("../../../shared/logo-horizontal.svg") left center/contain no-repeat;}
+@media(max-width:520px){.wordmark::before{width:158px;height:32px;}}
