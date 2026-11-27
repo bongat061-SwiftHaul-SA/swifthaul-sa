@@ -41,6 +41,11 @@
   const lanes=[76,180,284]; let lane=1, score=0, seconds=30, running=false, items=[], lastSpawn=0, frame=0, raf=0, lastTime=0;
   let best=0; try{best=Number(localStorage.getItem('swifthaul-driver-dash-best')||0)}catch{}
   bestEl.textContent=best;
+  function saveBestIfNeeded(){
+    if(score<=best)return;
+    best=score;bestEl.textContent=String(best);
+    try{localStorage.setItem('swifthaul-driver-dash-best',String(best));}catch{}
+  }
   function draw(){
     ctx.clearRect(0,0,360,480);
     ctx.fillStyle='#222a33';ctx.fillRect(0,0,360,480);
@@ -54,7 +59,7 @@
   function endGame(){
     running=false;cancelAnimationFrame(raf);startBtn.textContent='Play again';
     message.textContent='Run complete! You collected '+score+' parcel points.'+(score>best?' New personal best!':'');
-    if(score>best){best=score;bestEl.textContent=best;try{localStorage.setItem('swifthaul-driver-dash-best',String(best))}catch{}}
+    saveBestIfNeeded();
     draw();
   }
   function tick(now){
@@ -63,7 +68,7 @@
     if(frame-lastSpawn>650){items.push({lane:Math.floor(Math.random()*3),y:-20,type:Math.random()<.68?'parcel':'cone'});lastSpawn=frame}
     items.forEach(o=>o.y+=dt*.23);
     const hit=items.find(o=>o.y>375&&o.y<445&&o.lane===lane);
-    if(hit){if(hit.type==='parcel'){score+=10;scoreEl.textContent=score;items=items.filter(x=>x!==hit)}else{seconds=Math.max(0,seconds-3);timeEl.textContent=seconds;items=items.filter(x=>x!==hit);message.textContent='Watch those cones — 3 seconds lost!'}}
+    if(hit){if(hit.type==='parcel'){score+=10;scoreEl.textContent=score;saveBestIfNeeded();items=items.filter(x=>x!==hit)}else{seconds=Math.max(0,seconds-3);timeEl.textContent=seconds;items=items.filter(x=>x!==hit);message.textContent='Watch those cones — 3 seconds lost!'}}
     items=items.filter(o=>o.y<510);
     if(frame>=30000){endGame();return}
     timeEl.textContent=Math.max(0,Math.ceil((30000-frame)/1000));
