@@ -65,7 +65,7 @@ Deno.serve(async(req:Request)=>{
   for(const upload of pendingUploads??[]){
    const {data:signed,error:signedError}=await admin.storage.from("driver-application-documents").createSignedUrl(upload.storage_path,600);
    if(signedError||!signed?.signedUrl)return reply(500,{error:"pending_driver_upload_link_failed"});
-   const {error:logError}=await admin.from("document_access_logs").insert({admin_id:authResult.user.id,driver_id:upload.driver_user_id,document_type:"unclassified_upload",access_action:"admin_dashboard_signed_read_url"});
+   const {error:logError}=await admin.from("document_access_logs").insert({admin_id:authResult.user.id,driver_id:upload.driver_user_id,document_id:null,upload_batch_id:upload.id,document_type:"unclassified_upload",access_action:"admin_dashboard_signed_read_url"});
    if(logError)return reply(500,{error:"document_access_audit_failed"});
    pendingWithLinks.push({...upload,signed_url:signed.signedUrl});
   }
@@ -144,7 +144,7 @@ Deno.serve(async(req:Request)=>{
   if(!profile.criminal_background_clearance)return reply(409,{error:"criminal_background_clearance_required"});
   if(!profile.license_expiry||profile.license_expiry<today())return reply(409,{error:"valid_driver_licence_required"});
   const required=profile.identity_type==="sa_citizen"?["id_front","id_back","profile_selfie","licence_front","licence_back","vehicle_licence_disc","vehicle_insurance","proof_of_address"]:["passport","work_permit","licence_front","licence_back","vehicle_licence_disc","vehicle_insurance","proof_of_address"];
-  const {data:documents,error:docError}=await admin.from("driver_documents").select("document_type,verification_status,expiry_date").eq("driver_user_id",driverId);
+  const {data:documents,error:docError}=await admin.from("driver_documents").select("document_type,verification_status,expiry_date,issued_at").eq("driver_user_id",driverId);
   if(docError)return reply(500,{error:"driver_documents_lookup_failed"});
   const valid=(d:any)=>{const expiryRequired=["licence_front","licence_back","vehicle_licence_disc","vehicle_insurance","passport","work_permit","enatis_certificate","fleet_lease_agreement","prdp"].includes(d.document_type);return d.verification_status==="approved"&&(!expiryRequired||(!!d.expiry_date&&d.expiry_date>=today()))&&(!d.expiry_date||d.expiry_date>=today())&&(d.document_type!=="proof_of_address"||!!d.issued_at&&d.issued_at>=new Date(Date.now()-92*86400000).toISOString().slice(0,10)&&d.issued_at<=today());};
   const missing=required.filter(t=>!(documents??[]).some((d:any)=>d.document_type===t&&valid(d)));
