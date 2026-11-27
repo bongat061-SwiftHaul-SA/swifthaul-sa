@@ -38,7 +38,7 @@
   const canvas=overlay.querySelector('canvas'), ctx=canvas.getContext('2d');
   const scoreEl=overlay.querySelector('[data-dash-score]'), timeEl=overlay.querySelector('[data-dash-time]'), bestEl=overlay.querySelector('[data-dash-best]');
   const startBtn=overlay.querySelector('[data-dash-start]'), message=overlay.querySelector('.driver-dash-message');
-  const rewardsPanel=overlay.querySelector('[data-dash-rewards]'), rewardProgress=overlay.querySelector('[data-reward-progress]'), rewardFill=overlay.querySelector('[data-reward-fill]'), rewardBest=overlay.querySelector('[data-reward-best]');
+  const rewardsPanel=overlay.querySelector('[data-dash-rewards]'), rewardProgress=overlay.querySelector('[data-reward-progress]'), rewardFill=overlay.querySelector('[data-reward-fill]'), rewardBest=overlay.querySelector('[data-reward-best]'), rewardHistory=overlay.querySelector('[data-reward-history]');
   let rewardRoundId=null, rewardEligible=false, rewardSubmitting=false, rewardSummary=null;
   function signedInCustomer(){return document.body.dataset.authState==='authenticated'&&document.body.dataset.guestPreview!=='true'&&!!window.swiftHaulSupabase;}
   async function refreshRewards(){
