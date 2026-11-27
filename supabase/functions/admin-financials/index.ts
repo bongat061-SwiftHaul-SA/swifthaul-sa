@@ -47,7 +47,7 @@ Deno.serve(async (req: Request) => {
 
   try {
     const [bookings, payments, memberships, refunds, earnings, rewards, payouts, loans] = await Promise.all([
-      allRows(db, "customer_bookings", "waybill,status,price,completed_at,paid_at,refunded_at"),
+      allRows(db, "customer_bookings", "waybill,status,price,voucher_discount_cents,completed_at,paid_at,refunded_at"),
       allRows(db, "payment_transactions", "amount,status,refunded_at,completed_at,provider"),
       allRows(db, "driver_memberships", "amount_cents,status,provider,provider_payment_id,starts_at,ends_at"),
       allRows(db, "booking_refund_requests", "refund_amount_cents,status,refund_source"),
@@ -69,6 +69,8 @@ Deno.serve(async (req: Request) => {
     const deliveryEarningsCents = sum(earnings, "amount_cents", r => String(r.event_key ?? "").startsWith("delivery-earning:"));
     const driverShareCents = Math.round(grossDeliveryCents * 0.75);
     const platformShareCents = grossDeliveryCents - driverShareCents;
+    const voucherDiscountCents = sum(completed, "voucher_discount_cents");
+    const platformAfterVoucherCents = platformShareCents - voucherDiscountCents;
     const fuelRebateCents = sum(rewards, "amount_cents", r => String(r.event_type).includes("fuel"));
     const milestoneCents = sum(rewards, "amount_cents", r => String(r.event_type).includes("milestone"));
     const payoutPendingCents = sum(payouts, "amount_cents", r => r.status === "pending");
@@ -84,7 +86,7 @@ Deno.serve(async (req: Request) => {
       currency: "ZAR",
       bookings: { total: bookings.length, completed: completed.length },
       customer_payments: { gross_received_cents: paidCustomerCents, refunds_cents: refundCents, net_received_cents: Math.max(0, paidCustomerCents - refundCents) },
-      delivery: { completed_gross_charge_cents: grossDeliveryCents, driver_share_75_cents: driverShareCents, swift_haul_share_25_cents: platformShareCents, ledger_driver_earnings_cents: deliveryEarningsCents },
+      delivery: { completed_gross_charge_cents: grossDeliveryCents, driver_share_75_cents: driverShareCents, swift_haul_share_25_cents: platformShareCents, voucher_discounts_absorbed_cents: voucherDiscountCents, swift_haul_share_after_vouchers_cents: platformAfterVoucherCents, ledger_driver_earnings_cents: deliveryEarningsCents },
       premium: { verified_membership_revenue_cents: membershipRevenueCents, paid_memberships: membershipPaid.length, fuel_rebates_cents: fuelRebateCents, milestone_bonuses_cents: milestoneCents, total_rewards_cents: fuelRebateCents + milestoneCents },
       payouts: { pending_cents: payoutPendingCents, approved_reserved_cents: payoutApprovedCents, paid_cents: payoutPaidCents, outstanding_requests_cents: outstandingPayoutCents, driver_liability_estimate_cents: driverLiabilityCents },
       loans: { disbursed_principal_cents: loanPrincipalCents, outstanding_balance_cents: loanBalanceCents, active_count: loans.filter(r => !["repaid", "cancelled"].includes(String(r.status))).length, compliance_enabled: false },
@@ -93,6 +95,7 @@ Deno.serve(async (req: Request) => {
         "Membership revenue includes records with a provider payment ID and a paid lifecycle status; refunds or chargebacks on memberships are not yet reconciled.",
         "Refund totals include recorded external refund requests and fully refunded completed transactions; wallet-only refunds are excluded from cash refunds.",
         "Driver liability is an estimate from positive delivery and reward credits less paid payout requests. Pending and approved payout requests are shown separately and are not double-subtracted.",
+        "Dash Rewards voucher discounts are funded by SwiftHaul and deducted from the platform 25% share; driver 75% earnings remain calculated on the undiscounted delivery fare.",
         "Loan repayments are not yet represented by a dedicated repayment ledger; loan balances reflect the current loan table only."
       ]
     });
