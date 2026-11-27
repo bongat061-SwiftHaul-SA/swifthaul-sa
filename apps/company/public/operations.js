@@ -437,12 +437,30 @@ if (app === 'driver' || app === 'company') {
       label.append(id);
       const submit = document.createElement('button');
       submit.type = 'submit';
-      submit.textContent = 'Assign selected driver';
+      submit.textContent = 'Send dispatch offer';
       submit.disabled=approvedDrivers.length===0;
       form.append(label, submit);
-      form.addEventListener('submit', event => {
+      form.addEventListener('submit', async event => {
         event.preventDefault();
-        action({ waybill: order.waybill, action: 'assign', driver_id: id.value.trim() }, submit);
+        if (!id.value.trim()) { message.textContent = 'Select an eligible driver first.'; return; }
+        const current = requestNumber;
+        submit.disabled = true;
+        message.textContent = 'Sending dispatch offer…';
+        try {
+          const client = window.swiftHaulSupabase;
+          if (!client) throw new Error('Secure account connection is unavailable. Reload the page.');
+          const { data, error } = await client.functions.invoke('dispatch-offers', {
+            body: { action: 'next_offer', waybill: order.waybill, driver_id: id.value.trim() }
+          });
+          if (error || data?.error) throw new Error(data?.error || error.message || 'Unable to send dispatch offer.');
+          if (current !== requestNumber) return;
+          await load();
+          message.textContent = 'Dispatch offer sent to the selected driver. The booking remains pending until the driver accepts.';
+        } catch (error) {
+          if (current === requestNumber) message.textContent = error.message || 'Unable to send dispatch offer.';
+        } finally {
+          submit.disabled = false;
+        }
       });
       card.append(form);
     }
