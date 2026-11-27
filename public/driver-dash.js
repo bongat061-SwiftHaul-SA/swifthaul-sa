@@ -48,10 +48,13 @@
       rewardWallet.replaceChildren();
       const balance=document.createElement('p');balance.textContent='Available points: '+Number(s.available_points||0).toLocaleString()+' · Points used: '+Number(s.points_spent||0).toLocaleString();rewardWallet.append(balance);
       const activeCashout=(data.cashouts||[]).some(c=>c.status==='pending');
-      if(Number(s.available_points||0)>=25000&&!activeCashout){
+      const latestRejectedCashout=(data.cashouts||[]).find(c=>c.status==='rejected');
+      const cashoutPromptKey=String(s.cycle_number||1)+':'+String(latestRejectedCashout?.id||'none');
+      let cashoutPromptDismissed=false;try{cashoutPromptDismissed=localStorage.getItem('swifthaul-dash-cashout-dismissed')===cashoutPromptKey;}catch{}
+      if(Number(s.available_points||0)>=25000&&!activeCashout&&!cashoutPromptDismissed){
         const prompt=document.createElement('div');prompt.style.cssText='padding:12px;border:1px solid #8b929b;border-radius:12px;display:grid;gap:8px';
         const promptText=document.createElement('strong');promptText.textContent='You have reached 25,000 unused points. Keep your points or request the R150 cash-out.';prompt.append(promptText);
-        const keep=document.createElement('button');keep.type='button';keep.textContent='Keep my points';keep.addEventListener('click',()=>{prompt.remove();const n=document.createElement('small');n.textContent='Your points remain available. You can request a cash-out later.';rewardWallet.append(n)});prompt.append(keep);
+        const keep=document.createElement('button');keep.type='button';keep.textContent='Keep my points';keep.addEventListener('click',()=>{try{localStorage.setItem('swifthaul-dash-cashout-dismissed',cashoutPromptKey);}catch{}prompt.remove();const n=document.createElement('small');n.textContent='Your points remain available. You can request a cash-out later.';rewardWallet.append(n)});prompt.append(keep);
         const cash=document.createElement('button');cash.type='button';cash.className='primary';cash.textContent='Request R150 cash-out';cash.addEventListener('click',async()=>{cash.disabled=true;try{const {error}=await window.swiftHaulSupabase.functions.invoke('customer-dash-rewards',{body:{action:'request_cashout'}});if(error)throw error;await refreshRewards();}catch{cash.disabled=false;message.textContent='Cash-out request could not be submitted. Your points have not been deducted.';}});prompt.append(cash);rewardWallet.append(prompt);
       } else if(activeCashout){const pending=document.createElement('p');pending.textContent='R150 cash-out request submitted. Your points are held while Admin reviews it.';rewardWallet.append(pending);}
       (data.milestones||[]).filter(m=>m.status==='redeemed'&&!m.voucher_applied_booking_waybill&&m.voucher_code).forEach(m=>{
