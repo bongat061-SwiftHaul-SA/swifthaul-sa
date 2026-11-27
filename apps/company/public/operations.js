@@ -417,15 +417,15 @@ if (app === 'driver' || app === 'company') {
         });
         card.append(form);
       }
-    } else if (!['delivered', 'failed', 'cancelled'].includes(order.status)) {
+    } else if (order.status === 'pending' && !order.driver_user_id && !order.refunded_at) {
       const form = document.createElement('form');
       const label = document.createElement('label');
-      label.textContent = 'Select an approved, cleared driver';
+      label.textContent = 'Select an online, approved and cleared driver';
       const id = document.createElement('select');
       id.required = true;
       const placeholder=document.createElement('option');
       placeholder.value='';
-      placeholder.textContent=approvedDrivers.length?'Choose approved driver':'No approved and cleared drivers available';
+      placeholder.textContent=approvedDrivers.length?'Choose eligible online driver':'No eligible online drivers available';
       id.append(placeholder);
       for(const driver of approvedDrivers){
         const option=document.createElement('option');
