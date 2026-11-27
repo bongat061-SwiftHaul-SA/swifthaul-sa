@@ -114,8 +114,9 @@ Deno.serve(async req => {
         db.from("user_profiles").select("full_name").eq("id",actor).maybeSingle()
       ]);
       const trackingCode=String(bookingDetails.tracking_code||bookingDetails.waybill||"");
-      const appUrl=(Deno.env.get("CUSTOMER_APP_URL")||"https://bongat061-swifthaul-sa.github.io/swifthaul-sa-preview").replace(/\\/$/,"");
-      const payload={driver_first_name:String(driverUser?.full_name||"Your driver").trim().split(/\\s+/)[0],vehicle_registration:String(driverContact?.vehicle_registration||""),tracking_url:appUrl+"/track/"+encodeURIComponent(trackingCode),pickup_area:String(bookingDetails.pickup||""),dropoff_area:String(bookingDetails.dropoff||"")};
+      const appUrlValue=Deno.env.get("CUSTOMER_APP_URL")||"https://bongat061-swifthaul-sa.github.io/swifthaul-sa-preview";
+      const appUrl=appUrlValue.endsWith("/")?appUrlValue.slice(0,-1):appUrlValue;
+      const payload={driver_first_name:String(driverUser?.full_name||"Your driver").trim().split(/\s+/)[0],vehicle_registration:String(driverContact?.vehicle_registration||""),tracking_url:appUrl+"/track/"+encodeURIComponent(trackingCode),pickup_area:String(bookingDetails.pickup||""),dropoff_area:String(bookingDetails.dropoff||"")};
       if(sender?.phone&&bookingDetails.recipient_phone) await sendNotification({event_type:"order_dispatched",recipients:[{recipient_type:"sender",recipient_phone:sender.phone},{recipient_type:"recipient",recipient_phone:bookingDetails.recipient_phone}],payload_json:payload});
     }
     return reply(200,{accepted:true,waybill:offer.waybill});
