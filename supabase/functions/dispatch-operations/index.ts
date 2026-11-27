@@ -28,7 +28,7 @@ Deno.serve(async (req: Request) => {
 
   const admin = createClient(url, service, { auth: { persistSession: false, autoRefreshToken: false } });
   const sendNotification=async(payload:Record<string,unknown>)=>{try{const response=await fetch(url+"/functions/v1/notification-dispatch",{method:"POST",headers:{Authorization:"Bearer "+service,apikey:anon,"Content-Type":"application/json"},body:JSON.stringify({action:"send",...payload})});if(!response.ok)console.error("Notification dispatch failed",response.status,await response.text());}catch(error){console.error("Notification dispatch unavailable",String(error));}};
-  const notifyCustomerMilestone=async(event:string,subject:string,message:string)=>{
+  const notifyCustomerMilestone=async(event:string,subject:string,message:string,order:Record<string,unknown>)=>{
     const ownerId=String(order.owner_hash||"");
     if(!ownerId)return;
     const [{data:customer},{data:authResult}]=await Promise.all([
@@ -164,14 +164,14 @@ Deno.serve(async (req: Request) => {
     if(order.status!=="accepted")return reply(409,{error:"driver_must_accept_delivery_before_pickup_arrival"});
     if(!order.arrived_pickup_at){const at=new Date().toISOString();const {error}=await admin.from("customer_bookings").update({arrived_pickup_at:at}).eq("waybill",order.waybill);if(error)return reply(500,{error:"pickup_arrival_save_failed"});await admin.from("delivery_status_events").insert({waybill:order.waybill,actor_user_id:actorId,previous_status:order.status,new_status:order.status,notes:"Driver arrived at pickup"});}
     await admin.from("driver_route_stops").update({status:"arrived"}).eq("order_id",order.waybill).eq("stop_type","pickup").eq("status","pending");
-    if(!order.arrived_pickup_at)await notifyCustomerMilestone("driver_arrived_pickup","Your driver has arrived at pickup","Your driver has arrived at the pickup address.");
+    if(!order.arrived_pickup_at)await notifyCustomerMilestone("driver_arrived_pickup","Your driver has arrived at pickup","Your driver has arrived at the pickup address.",order);
     return reply(200,{updated:true,checkpoint:"arrived_pickup"});
   }
   if(body.action==="arrive_dropoff"){
     if(order.status!=="in_transit")return reply(409,{error:"delivery_must_be_in_transit_before_dropoff_arrival"});
     if(!order.arrived_dropoff_at){const at=new Date().toISOString();const {error}=await admin.from("customer_bookings").update({arrived_dropoff_at:at}).eq("waybill",order.waybill);if(error)return reply(500,{error:"dropoff_arrival_save_failed"});await admin.from("delivery_status_events").insert({waybill:order.waybill,actor_user_id:actorId,previous_status:order.status,new_status:order.status,notes:"Driver arrived at drop-off"});}
     await admin.from("driver_route_stops").update({status:"arrived"}).eq("order_id",order.waybill).eq("stop_type","dropoff").eq("status","pending");
-    if(!order.arrived_dropoff_at)await notifyCustomerMilestone("driver_arrived_dropoff","Your driver has arrived at delivery","Your driver has arrived at the delivery address.");
+    if(!order.arrived_dropoff_at)await notifyCustomerMilestone("driver_arrived_dropoff","Your driver has arrived at delivery","Your driver has arrived at the delivery address.",order);
     if(order.recipient_phone&&/^\\d{4}$/.test(String(order.pin||"")))await sendNotification({event_type:"delivery_otp",recipient_type:"recipient",recipient_phone:order.recipient_phone,payload_json:{otp:String(order.pin),waybill:order.waybill}});
     return reply(200,{updated:true,checkpoint:"arrived_dropoff"});
   }
@@ -189,8 +189,8 @@ Deno.serve(async (req: Request) => {
     if(body.action==="pickup"&&!order.arrived_pickup_at)return reply(409,{error:"confirm_arrived_at_pickup_first"});
     if (!transition.from.includes(order.status)) return reply(409, { error: "invalid_status_transition" });
     await setStatus(transition.to);
-    if(body.action==="accept")await notifyCustomerMilestone("driver_en_route_pickup","Your driver is on the way","Your assigned driver is on the way to the pickup address.");
-    if(body.action==="in_transit")await notifyCustomerMilestone("driver_en_route_dropoff","Your parcel is on the way","Your parcel has been collected and your driver is on the way to the delivery address.");
+    if(body.action==="accept")await notifyCustomerMilestone("driver_en_route_pickup","Your driver is on the way","Your assigned driver is on the way to the pickup address.",order);
+    if(body.action==="in_transit")await notifyCustomerMilestone("driver_en_route_dropoff","Your parcel is on the way","Your parcel has been collected and your driver is on the way to the delivery address.",order);
     if(body.action==="pickup")await admin.from("driver_route_stops").update({status:"completed",completed_at:new Date().toISOString()}).eq("order_id",order.waybill).eq("driver_id",actorId).eq("stop_type","pickup");
     return reply(200, { updated: true, status: transition.to });
   }
