@@ -11,7 +11,7 @@ if(panel){
   const qualityTitle=document.createElement('h3');qualityTitle.textContent='Driver Quality & Ratings';
   const qualityFilter=document.createElement('select');qualityFilter.setAttribute('aria-label','Filter driver quality');qualityFilter.innerHTML='<option value="all">All drivers</option><option value="watchlist">Watchlist</option><option value="review_required">Review required</option><option value="low_rated">Below 4 stars</option>';
   const qualityList=document.createElement('div');qualityList.className='admin-quality-list';quality.append(qualityTitle,qualityFilter,qualityList);
-  panel.append(note,refresh,status,quality,list);
+  const uploadQueue=document.createElement('section');uploadQueue.className='driver-upload-review-queue';const uploadHeading=document.createElement('h3');uploadHeading.textContent='Unclassified driver uploads';const uploadList=document.createElement('div');uploadList.className='operations-list';uploadQueue.append(uploadHeading,uploadList);panel.append(note,refresh,status,quality,uploadQueue,list);
   let active=false,epoch=0,isAdmin=false;
   async function call(method,body){
     const client=window.swiftHaulSupabase;
@@ -45,8 +45,37 @@ if(panel){
       list.replaceChildren();
       if(!data.drivers?.length){status.textContent='No driver applications yet.';return;}
       for(const driver of data.drivers)render(driver);
+      renderPendingUploads(data.pending_uploads||[]);
       status.textContent='';
     }catch(error){if(current===epoch)status.textContent=error.message;}
+  }
+  async function renderPendingUploads(uploads){
+    uploadList.replaceChildren();
+    if(!uploads.length){const empty=document.createElement('p');empty.textContent='No files are waiting for classification.';uploadList.append(empty);return;}
+    const types=[['id_front','SA ID — front'],['id_back','SA ID — back'],['profile_selfie','Profile selfie'],['passport','Passport'],['work_permit','Work permit'],['licence_front','Driver licence — front'],['licence_back','Driver licence — back'],['vehicle_licence_disc','Vehicle licence disc'],['proof_of_address','Proof of address'],['enatis_certificate','eNaTIS certificate'],['vehicle_insurance','Vehicle insurance'],['fleet_lease_agreement','Fleet lease agreement'],['prdp','PrDP'],['vehicle_document','Vehicle registration document'],['traffic_register_number','Traffic register number'],['bank_confirmation','Bank confirmation'],['drivers_licence','Driver licence'],['id_document','Identity document']];
+    for(const upload of uploads){
+      const card=document.createElement('article');card.className='order';
+      const heading=document.createElement('strong');heading.textContent=(upload.original_filename||'Uploaded file')+' · '+Math.round(Number(upload.file_size_bytes||0)/1024)+' KB';
+      const driver=document.createElement('p');driver.textContent='Driver account: '+upload.driver_user_id+' · Received '+new Date(upload.created_at).toLocaleString();
+      const preview=document.createElement('a');preview.href=upload.signed_url;preview.target='_blank';preview.rel='noopener noreferrer';preview.textContent='View file securely';
+      const type=document.createElement('select');type.setAttribute('aria-label','Assign document type');
+      const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='Choose document type';type.append(placeholder);
+      for(const [value,label] of types){const option=document.createElement('option');option.value=value;option.textContent=label;type.append(option);}
+      const expiry=document.createElement('input');expiry.type='date';expiry.setAttribute('aria-label','Document expiry date (if required)');
+      const issued=document.createElement('input');issued.type='date';issued.setAttribute('aria-label','Proof of address issue date (if applicable)');
+      const save=document.createElement('button');save.type='button';save.textContent='Classify and add to review';
+      save.addEventListener('click',async()=>{
+        if(!type.value){status.textContent='Choose a document type before saving.';return;}
+        save.disabled=true;
+        try{
+          await call('POST',{action:'classify_upload',upload_id:upload.id,user_id:upload.driver_user_id,document_type:type.value,expiry_date:expiry.value,issued_at:issued.value});
+          status.textContent='File classified. It is now pending normal document verification.';
+          await load();
+        }catch(error){status.textContent=error.message;}
+        finally{save.disabled=false;}
+      });
+      card.append(heading,driver,preview,type,expiry,issued,save);uploadList.append(card);
+    }
   }
   async function review(driver,action,button){
     button.disabled=true;
