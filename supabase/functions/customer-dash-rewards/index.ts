@@ -80,7 +80,14 @@ Deno.serve(async(req:Request)=>{
    if(!admin)return reply(403,{error:"administrator_access_required"});
    const {data,error}=await db.from("customer_dash_cashouts").select("id,user_id,points_snapshot,amount_cents,status,requested_at").eq("status","pending").order("requested_at",{ascending:true}).limit(200);
    if(error)throw error;
-   return reply(200,{pending_cashouts:data??[]});
+   const enriched=await Promise.all((data??[]).map(async row=>{
+    const [{data:customer},{data:authUser}]=await Promise.all([
+     db.from("user_profiles").select("full_name").eq("id",row.user_id).maybeSingle(),
+     db.auth.admin.getUserById(row.user_id)
+    ]);
+    return {...row,customer_name:customer?.full_name||authUser?.user?.email||"Customer",customer_email:authUser?.user?.email||""};
+   }));
+   return reply(200,{pending_cashouts:enriched});
   }
   if(action==="review_cashout"){
    if(!admin)return reply(403,{error:"administrator_access_required"});
