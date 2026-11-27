@@ -54,6 +54,14 @@
         const keep=document.createElement('button');keep.type='button';keep.textContent='Keep my points';keep.addEventListener('click',()=>{prompt.remove();const n=document.createElement('small');n.textContent='Your points remain available. You can request a cash-out later.';rewardWallet.append(n)});prompt.append(keep);
         const cash=document.createElement('button');cash.type='button';cash.className='primary';cash.textContent='Request R150 cash-out';cash.addEventListener('click',async()=>{cash.disabled=true;try{const {error}=await window.swiftHaulSupabase.functions.invoke('customer-dash-rewards',{body:{action:'request_cashout'}});if(error)throw error;await refreshRewards();}catch{cash.disabled=false;message.textContent='Cash-out request could not be submitted. Your points have not been deducted.';}});prompt.append(cash);rewardWallet.append(prompt);
       } else if(activeCashout){const pending=document.createElement('p');pending.textContent='R150 cash-out request submitted. Your points are held while Admin reviews it.';rewardWallet.append(pending);}
+      (data.milestones||[]).filter(m=>m.status==='redeemed'&&!m.voucher_applied_booking_waybill&&m.voucher_code).forEach(m=>{
+        const ready=document.createElement('div');ready.style.cssText='display:grid;gap:5px;padding:10px;border:1px solid #8b929b;border-radius:10px';
+        const label=document.createElement('strong');label.textContent='Ready to use · R'+(Number(m.reward_cents||0)/100).toFixed(0)+' off a R200+ delivery';ready.append(label);
+        const code=document.createElement('code');code.textContent=m.voucher_code;ready.append(code);
+        const copy=document.createElement('button');copy.type='button';copy.textContent='Copy voucher code';copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(m.voucher_code);copy.textContent='Copied';}catch{copy.textContent='Select and copy the code above';}});ready.append(copy);
+        rewardWallet.append(ready);
+      });
+      (data.milestones||[]).filter(m=>m.voucher_applied_booking_waybill).forEach(m=>{const used=document.createElement('small');used.textContent='Voucher '+m.voucher_code+' applied to booking '+m.voucher_applied_booking_waybill;rewardWallet.append(used)});
       (data.milestones||[]).filter(m=>m.status==='approved').forEach(m=>{
         const item=document.createElement('div');item.style.cssText='display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap';
         const label=document.createElement('span');label.textContent=m.milestone_points.toLocaleString()+' points · '+(m.voucher_code||'Approved voucher');item.append(label);
