@@ -28,7 +28,7 @@
         <div><p class="driver-dash-kicker">SWIFTHAUL MINI GAME</p><h2 id="driver-dash-title">Driver Dash</h2><p>Collect parcels. Dodge cones. Beat your best score.</p></div>
         <button type="button" class="driver-dash-close" aria-label="Close game">×</button>
       </header>
-      <div class="driver-dash-stats"><span>Score <strong data-dash-score>0</strong></span><span>Time <strong data-dash-time>30</strong>s</span><span>Best <strong data-dash-best>0</strong></span></div>
+      <section class="driver-dash-rewards" data-dash-rewards hidden><strong>SwiftHaul Dash Rewards</strong><p data-reward-progress>Sign in to earn reward points.</p><div class="driver-dash-reward-track"><span data-reward-fill></span></div><small data-reward-best>Account best score: —</small><p class="driver-dash-reward-note">Rewards: 1,000 = R10 · 2,500 = R20 · 5,000 = R40. Admin verification required. Offline and guest games do not earn rewards.</p></section><div class="driver-dash-stats"><span>Score <strong data-dash-score>0</strong></span><span>Time <strong data-dash-time>30</strong>s</span><span>Best <strong data-dash-best>0</strong></span></div>
       <canvas class="driver-dash-canvas" width="360" height="480" aria-label="Delivery van game. Use the left and right controls to collect parcels and avoid cones."></canvas>
       <p class="driver-dash-message" role="status" aria-live="polite">Tap Start, then steer left and right to collect parcels.</p>
       <div class="driver-dash-controls"><button type="button" data-dash-left aria-label="Steer left">←</button><button type="button" data-dash-start>Start game</button><button type="button" data-dash-right aria-label="Steer right">→</button></div>
@@ -37,7 +37,7 @@
   document.body.append(overlay);
   const canvas=overlay.querySelector('canvas'), ctx=canvas.getContext('2d');
   const scoreEl=overlay.querySelector('[data-dash-score]'), timeEl=overlay.querySelector('[data-dash-time]'), bestEl=overlay.querySelector('[data-dash-best]');
-  const startBtn=overlay.querySelector('[data-dash-start]'), message=overlay.querySelector('.driver-dash-message');
+  const startBtn=overlay.querySelector('[data-dash-start]'), message=overlay.querySelector('.driver-dash-message');\n  const rewardsPanel=overlay.querySelector('[data-dash-rewards]'), rewardProgress=overlay.querySelector('[data-reward-progress]'), rewardFill=overlay.querySelector('[data-reward-fill]'), rewardBest=overlay.querySelector('[data-reward-best]');\n  let rewardRoundId=null, rewardEligible=false, rewardSubmitting=false, rewardSummary=null;\n  function signedInCustomer(){return document.body.dataset.authState==='authenticated'&&document.body.dataset.guestPreview!=='true'&&!!window.swiftHaulSupabase;}\n  async function refreshRewards(){\n    rewardsPanel.hidden=false;\n    if(!signedInCustomer()){rewardProgress.textContent='Sign in to earn reward points. Guest and offline games are for fun only.';rewardFill.style.width='0%';rewardBest.textContent='Account best score: sign in to view';return;}\n    try{const {data,error}=await window.swiftHaulSupabase.functions.invoke('customer-dash-rewards',{method:'GET'});if(error)throw error;rewardSummary=data;const s=data.summary||{};const pts=Number(s.cycle_points||0);rewardProgress.textContent='Cycle '+(s.cycle_number||1)+': '+pts.toLocaleString()+' / 5,000 points · Lifetime '+Number(s.lifetime_points||0).toLocaleString();rewardFill.style.width=Math.min(100,pts/50)+'%';rewardBest.textContent='Account best score: '+Number(s.best_score||0).toLocaleString()+' · All-time personal best';const pending=(data.milestones||[]).filter(m=>m.status==='pending');if(pending.length)rewardProgress.textContent+=' · '+pending.length+' milestone(s) awaiting Admin verification';}catch{rewardProgress.textContent='Rewards need an internet connection. You can still play for fun.';rewardFill.style.width='0%';rewardBest.textContent='Account best score temporarily unavailable';}\n  }\n  refreshRewards();\n  document.addEventListener('account-ready',refreshRewards);document.addEventListener('account-cleared',refreshRewards);
   const lanes=[76,180,284]; let lane=1, score=0, seconds=30, running=false, items=[], lastSpawn=0, frame=0, raf=0, lastTime=0;
   let best=0; try{best=Number(localStorage.getItem('swifthaul-driver-dash-best')||0)}catch{}
   bestEl.textContent=best;
@@ -74,11 +74,11 @@
     timeEl.textContent=Math.max(0,Math.ceil((30000-frame)/1000));
     draw();raf=requestAnimationFrame(tick);
   }
-  function start(){cancelAnimationFrame(raf);lane=1;score=0;seconds=30;frame=0;lastSpawn=0;lastTime=0;items=[];scoreEl.textContent='0';timeEl.textContent='30';running=true;startBtn.textContent='Restart';message.textContent='Collect the parcels and avoid the cones!';raf=requestAnimationFrame(tick)}
+  async function start(){cancelAnimationFrame(raf);rewardRoundId=null;rewardEligible=false;if(signedInCustomer()){try{const {data,error}=await window.swiftHaulSupabase.functions.invoke('customer-dash-rewards',{body:{action:'start_round'}});if(error)throw error;rewardRoundId=data.round_id;rewardEligible=true;}catch{message.textContent='Rewards connection unavailable — this run is for fun only.';}}lane=1;score=0;seconds=30;frame=0;lastSpawn=0;lastTime=0;items=[];scoreEl.textContent='0';timeEl.textContent='30';running=true;startBtn.textContent='Restart';message.textContent='Collect the parcels and avoid the cones!';raf=requestAnimationFrame(tick)}
   function move(dir){if(running)lane=Math.max(0,Math.min(2,lane+dir))}
   overlay.querySelector('[data-dash-left]').addEventListener('click',()=>move(-1));
   overlay.querySelector('[data-dash-right]').addEventListener('click',()=>move(1));
-  startBtn.addEventListener('click',start);
+  startBtn.addEventListener('click',()=>{void start()});
   function close(){running=false;cancelAnimationFrame(raf);overlay.hidden=true;document.body.classList.remove('driver-dash-open');launch.focus()}
   overlay.querySelector('.driver-dash-close').addEventListener('click',close);
   launch.addEventListener('click',()=>{overlay.hidden=false;document.body.classList.add('driver-dash-open');draw();overlay.querySelector('.driver-dash-close').focus()});
