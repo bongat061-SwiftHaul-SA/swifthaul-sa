@@ -1,7 +1,9 @@
 (() => {
   'use strict';
+  function boot() {
   const home = document.getElementById('customer-home');
-  if (!home || document.getElementById('driver-dash-launch')) return;
+  if (!home) return false;
+  if (document.getElementById('driver-dash-launch')) return true;
 
   const launch = document.createElement('button');
   launch.type = 'button';
@@ -82,4 +84,12 @@
   const launchHint = launch.querySelector('small');
   window.addEventListener('swifthaul:no-drivers',()=>{launch.hidden=false;if(launchHint)launchHint.textContent='No drivers showing nearby? Play a quick delivery run while you wait.'});
   window.addEventListener('swifthaul:drivers-available',()=>{launch.hidden=false;if(launchHint)launchHint.textContent='Take a quick delivery run while you explore SwiftHaul.'});
+  return true;
+  }
+  if (!boot()) {
+    const observer = new MutationObserver(() => {
+      if (boot()) observer.disconnect();
+    });
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+  }
 })();
