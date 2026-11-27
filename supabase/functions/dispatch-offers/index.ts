@@ -100,6 +100,8 @@ Deno.serve(async req => {
       await db.from("driver_delivery_offers").update({status:"declined",responded_at:new Date().toISOString()}).eq("id",offer.id).eq("status","offered");
       return reply(200,{declined:true});
     }
+    const {data:eligible,error:eligibilityError}=await db.rpc("driver_can_accept_work",{p_driver_user_id:actor});
+    if(eligibilityError||eligible!==true) return reply(409,{error:"driver_onboarding_documents_or_background_clearance_incomplete"});
     const {data:accepted,error:acceptError}=await db.rpc("accept_driver_delivery_offer",{p_driver_user_id:actor,p_waybill:offer.waybill,p_offer_id:offer.id});
     if(acceptError||!accepted?.accepted) return reply(409,{error:acceptError?.message||"delivery_already_assigned"});
     await db.from("delivery_status_events").insert({waybill:offer.waybill,actor_user_id:actor,previous_status:"pending",new_status:"assigned",notes:"Accepted driver dispatch offer"});
@@ -114,8 +116,8 @@ Deno.serve(async req => {
     await db.from("driver_delivery_offers").update({status:"expired"}).eq("waybill",booking.waybill).eq("status","offered").lte("expires_at",now);
     const {data:sent}=await db.from("driver_delivery_offers").select("driver_user_id,status").eq("waybill",booking.waybill);
     if((sent??[]).some(x=>x.status==="accepted")) return reply(409,{error:"delivery_offer_already_accepted"});
-    const excluded=new Set((sent??[]).map(x=>x.driver_user_id));
-    const {data:drivers,error:de}=await db.from("driver_profiles").select("user_id,vehicle_type,is_online,verification_status,allow_stacked_orders,performance_tier").eq("is_online",true).eq("verification_status","approved");
+    const excluded=new Set((sent??[]).filter(x=>!body.driver_id||["offered","accepted"].includes(x.status)).map(x=>x.driver_user_id));
+    const {data:drivers,error:de}=await db.from("driver_profiles").select("user_id,vehicle_type,is_online,verification_status,can_go_online,allow_stacked_orders,performance_tier").eq("is_online",true).eq("can_go_online",true).eq("verification_status","approved");
     if(de) return reply(500,{error:"driver_candidate_lookup_failed"});
     const vehicleType=(value:string)=>{const v=value.toLowerCase();if(v.includes("motor")||v==="bike")return "motorbike";if(v.includes("bakkie")||v.includes("van")||v.includes("panel"))return "bakkie/panel van";if(v.includes("truck")||v.includes("ton"))return "truck";return "hatchback/sedan";};
     const {data:classes}=await db.from("vehicle_classes").select("vehicle_type,max_concurrent_orders");
@@ -146,7 +148,8 @@ Deno.serve(async req => {
       if(presenceError)return reply(500,{error:"pickup_driver_presence_check_failed"});
       if(!presence)return reply(409,{error:"quoted_pickup_driver_location_expired_requote_required"});
     }
-    if(!eligible.length) return reply(404,{error:"no_eligible_online_drivers"});
+    if(typeof body.driver_id==="string") eligible=eligible.filter(d=>d.user_id===body.driver_id);
+    if(!eligible.length) return reply(typeof body.driver_id==="string"?409:404,{error:typeof body.driver_id==="string"?"selected_driver_not_dispatch_eligible":"no_eligible_online_drivers"});
     const ids=eligible.map(d=>d.user_id);
     const {data:members,error:me}=await db.from("driver_memberships").select("driver_user_id").in("driver_user_id",ids).eq("status","active").lte("starts_at",now).gt("ends_at",now);
     if(me) return reply(500,{error:"membership_lookup_failed"});
