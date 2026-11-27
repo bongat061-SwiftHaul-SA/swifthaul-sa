@@ -42,7 +42,7 @@ Deno.serve(async (req: Request) => {
     return reply(400, { error: "invalid_payment_request" });
 
   const { data: booking, error: bookingError } = await admin.from("customer_bookings")
-    .select("waybill,owner_hash,price,paid_at,refunded_at,status,counter_offer_status")
+    .select("waybill,owner_hash,price,customer_total_cents,paid_at,refunded_at,status,counter_offer_status")
     .eq("waybill", body.waybill).eq("owner_hash", user.id).maybeSingle();
   if (bookingError || !booking) return reply(404, { error: "booking_not_found" });
   if (booking.paid_at || booking.refunded_at || ["cancelled","completed"].includes(booking.status))
@@ -51,7 +51,7 @@ Deno.serve(async (req: Request) => {
     return reply(409, { error: "counter_offer_pending_dispatch_decision" });
   const { data: deletion } = await admin.from("customer_deletions").select("owner_hash").eq("owner_hash", user.id).maybeSingle();
   if (deletion) return reply(403, { error: "profile_deletion_pending" });
-  const amount = Number(booking.price);
+  const amount = booking.customer_total_cents==null?Number(booking.price):Number(booking.customer_total_cents)/100;
   if (!Number.isFinite(amount) || amount < 5 || amount > 1000000)
     return reply(422, { error: "payfast_sandbox_requires_a_valid_amount_of_at_least_R5" });
 
