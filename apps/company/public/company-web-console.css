@@ -51,3 +51,21 @@ body[data-app="company"] .footer{padding:22px clamp(22px,3vw,48px);background:#f
 
 /* Environment identity: visible on staging Company Admin only. */
 .environment-banner{position:sticky;top:0;z-index:1200;padding:10px 18px;text-align:center;background:#fff4d6;border-bottom:1px solid #e7c66f;color:#714b00;font-size:11px;font-weight:850;letter-spacing:1.1px}.environment-banner span{padding:0 7px;color:#a47720}
+
+/* SwiftHaul premium signed-in workspace alignment — staging */
+body[data-app] #workspace .workspace-navigation>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border:1px solid #303946;border-radius:15px;background:#12161d;color:#aeb8c6;list-style:none;cursor:pointer}
+body[data-app] #workspace .workspace-navigation>summary::-webkit-details-marker{display:none}
+body[data-app] #workspace .workspace-navigation>summary strong{color:#f4f6f8}
+body[data-app] #workspace .workspace-navigation[open]>.section-links{display:flex!important;position:static;margin-top:8px}
+body[data-app] #workspace .section-links a.is-active,body[data-app] #workspace .section-links a[aria-current="page"]{background:#e7ebf0!important;color:#11151b!important}
+body[data-app] #workspace .stats .stat{background:#12161d!important;border:1px solid #303946!important;border-radius:16px!important;box-shadow:none!important}
+body[data-app] #workspace .stats .stat strong{color:#f4f6f8!important}
+@media(max-width:760px){body[data-app] #workspace .page{padding-left:14px!important;padding-right:14px!important}}
+
+body[data-app="company"] #workspace .workspace-navigation{grid-column:1;grid-row:1 / span 12;position:sticky;top:94px;align-self:start;margin:0}
+body[data-app="company"] #workspace .workspace-navigation>.section-links{position:static;display:flex!important;flex-direction:column;margin-top:8px;padding:10px;background:#12161d;border:1px solid #303946;border-radius:15px}
+body[data-app="company"] #workspace .workspace-navigation:not([open])>.section-links{display:none!important}
+body[data-app="company"] #workspace .workspace-navigation[open]>.section-links{display:flex!important}
+body[data-app="company"] #workspace .section-links a{color:#b8c1cd!important}
+body[data-app="company"] #workspace .workspace-grid>.panel,body[data-app="company"] #workspace .workspace-grid aside>.panel,body[data-app="company"] #workspace .page>section.panel{background:#12161d!important;border:1px solid #303946!important;border-radius:17px!important;box-shadow:none!important}
+@media(max-width:760px){body[data-app="company"] #workspace .workspace-navigation{position:sticky;top:61px;z-index:80;margin:0 0 15px}body[data-app="company"] #workspace .workspace-navigation>.section-links{flex-direction:row;overflow-x:auto;white-space:nowrap}}

@@ -42,3 +42,24 @@ body[data-app="driver"] .primary{border-radius:12px;box-shadow:0 5px 12px #176b5
  body[data-app="driver"] .panel{padding:18px;border-radius:16px}
  body[data-app="driver"] .footer{padding:20px 16px}
 }
+
+/* SwiftHaul premium signed-in workspace alignment — staging */
+body[data-app] #workspace .workspace-navigation>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border:1px solid #303946;border-radius:15px;background:#12161d;color:#aeb8c6;list-style:none;cursor:pointer}
+body[data-app] #workspace .workspace-navigation>summary::-webkit-details-marker{display:none}
+body[data-app] #workspace .workspace-navigation>summary strong{color:#f4f6f8}
+body[data-app] #workspace .workspace-navigation[open]>.section-links{display:flex!important;position:static;margin-top:8px}
+body[data-app] #workspace .section-links a.is-active,body[data-app] #workspace .section-links a[aria-current="page"]{background:#e7ebf0!important;color:#11151b!important}
+body[data-app] #workspace .stats .stat{background:#12161d!important;border:1px solid #303946!important;border-radius:16px!important;box-shadow:none!important}
+body[data-app] #workspace .stats .stat strong{color:#f4f6f8!important}
+@media(max-width:760px){body[data-app] #workspace .page{padding-left:14px!important;padding-right:14px!important}}
+
+body[data-app="driver"] #workspace .driver-home-hero{background:linear-gradient(145deg,#1b222c,#12171e 72%,#10141a)!important;border:1px solid #343d49!important;border-radius:21px!important;box-shadow:0 14px 34px #0003!important}
+body[data-app="driver"] #workspace .driver-home-kicker{color:#c0c7d1!important}
+body[data-app="driver"] #workspace .driver-home-copy h2{color:#f5f6f8!important;letter-spacing:-1.2px}
+body[data-app="driver"] #workspace .driver-home-copy p{color:#aeb8c6!important}
+body[data-app="driver"] #workspace .driver-home-actions a{background:linear-gradient(180deg,#f7f8fa,#dfe4ea)!important;color:#11151b!important;border:1px solid #f7f8fa!important;border-radius:12px!important}
+body[data-app="driver"] #workspace .driver-home-actions a+a{background:#202733!important;color:#f2f4f7!important;border-color:#414c5b!important}
+body[data-app="driver"] #workspace .driver-home-mark{background:#202733!important;border:1px solid #414c5b!important;color:#f4f6f8!important}
+body[data-app="driver"] #workspace .workspace-grid .panel{background:#12161d!important;border:1px solid #303946!important;border-radius:17px!important}
+body[data-app="driver"] #workspace #dispatches{border-top:1px solid #303946!important}
+body[data-app="driver"] #workspace .accent-panel{background:linear-gradient(145deg,#1b222c,#12171e)!important;border:1px solid #343d49!important}
