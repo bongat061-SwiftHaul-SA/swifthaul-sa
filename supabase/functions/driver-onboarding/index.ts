@@ -95,31 +95,21 @@ if(!["sa_citizen","foreign_national"].includes(identityType))return reply(400,{e
  if((vehicleType==="bakkie_panel_van"&&(!Number.isFinite(gvm)||gvm<=0))||(heavy&&!prdp)|| (prdp&&(!["goods","passengers","dangerous_goods"].includes(prdpCategory)||!validDate(prdpExpiry)||Date.parse(prdpExpiry+"T00:00:00")<=Date.now())))return reply(400,{error:"valid_prdp_details_required"});
  const proofDate=text(form.get("proof_of_address_date"),10),discExpiry=text(form.get("vehicle_disc_expiry"),10),insuranceExpiry=text(form.get("insurance_expiry"),10);
  if(!validDate(discExpiry)||Date.parse(discExpiry+"T00:00:00")<=Date.now())return reply(400,{error:"vehicle_licence_disc_must_be_current"});if(insuranceExpiry&&(!validDate(insuranceExpiry)||Date.parse(insuranceExpiry+"T00:00:00")<=Date.now()))return reply(400,{error:"vehicle_insurance_expiry_must_be_future"});
- const enatisFile=form.get("enatis_certificate"),leaseFile=form.get("fleet_lease_agreement");
- if(!(enatisFile instanceof File&&enatisFile.size>0))return reply(400,{error:"enatis_certificate_required"});
+ const uploadIdsRaw=text(form.get("upload_batch_ids"),5000);
+ let uploadBatchIds:string[]=[];try{const parsed=JSON.parse(uploadIdsRaw);if(Array.isArray(parsed))uploadBatchIds=parsed.filter((v:any)=>typeof v==="string");}catch{}
+ if(!uploadBatchIds.length||uploadBatchIds.length>15||new Set(uploadBatchIds).size!==uploadBatchIds.length)return reply(400,{error:"select_and_upload_your_documents_first"});
  if(!validDate(proofDate)||Date.now()-Date.parse(proofDate+"T00:00:00")>92*86400000||Date.parse(proofDate+"T00:00:00")>Date.now())return reply(400,{error:"proof_of_residence_must_be_under_three_months_old"});
  if(identityType==="foreign_national"&&(!validDate(text(form.get("passport_expiry"),10))||Date.parse(text(form.get("passport_expiry"),10)+"T00:00:00")<=Date.now()||!validDate(text(form.get("work_permit_expiry"),10))||Date.parse(text(form.get("work_permit_expiry"),10)+"T00:00:00")<=Date.now()))return reply(400,{error:"passport_and_work_permit_must_be_current"});
  if(!validDate(text(form.get("registration_document_expiry"),10))||Date.parse(text(form.get("registration_document_expiry"),10)+"T00:00:00")<=Date.now())return reply(400,{error:"registration_document_must_be_current"});
- for(const t of requiredFiles){const f=form.get(t);if(!(f instanceof File)||f.size<1||f.size>10485760||!allowed.has(f.type))return reply(400,{error:"missing_or_invalid_document_"+t});}
- if(prdp){const f=form.get("prdp");if(!(f instanceof File)||f.size<1||f.size>10485760||!allowed.has(f.type))return reply(400,{error:"prdp_document_required"});}
+ // Required document types are now assigned by an administrator after the batch is received.
+ // Activation remains blocked until every required type is present and approved.
  if(text(form.get("background_consent"),5)!=="on")return reply(400,{error:"background_verification_consent_required"});
  const bank=text(form.get("bank_name"),40),holder=text(form.get("account_holder"),120),account=text(form.get("account_number"),30),accountType=text(form.get("account_type"),20);
  if(!["FNB","Nedbank","Standard Bank","Absa","Capitec","TymeBank"].includes(bank)||!holder||!/^\d{6,20}$/.test(account)||!["current","cheque","savings","transmission","other"].includes(accountType))return reply(400,{error:"valid_sa_bank_details_required"});
- const files=[...requiredFiles,...(form.get("enatis_certificate") instanceof File&&(form.get("enatis_certificate") as File).size>0?["enatis_certificate"]:[]),...(form.get("fleet_lease_agreement") instanceof File&&(form.get("fleet_lease_agreement") as File).size>0?["fleet_lease_agreement"]:[]),...(prdp?["prdp"]:[])],uploaded:string[]=[];
- const expiryFor=(type:string):string|null=>({licence_front:licenceExpiry,licence_back:licenceExpiry,vehicle_licence_disc:discExpiry,vehicle_insurance:insuranceExpiry||null,prdp:prdpExpiry,passport:text(form.get("passport_expiry"),10)||null,work_permit:text(form.get("work_permit_expiry"),10)||null,enatis_certificate:text(form.get("registration_document_expiry"),10)||null,fleet_lease_agreement:text(form.get("registration_document_expiry"),10)||null}[type]??null);
- const issuedFor=(type:string):string|null=>type==="proof_of_address"?proofDate:null;
+ const {data:batchRows,error:batchError}=await db.from("driver_document_upload_batches")
+  .select("id,classification_status").eq("driver_user_id",u.user.id).in("id",uploadBatchIds);
+ if(batchError||!batchRows||batchRows.length!==uploadBatchIds.length||batchRows.some((row:any)=>row.classification_status!=="pending_classification"))return reply(409,{error:"uploaded_document_batch_not_found_or_already_submitted"});
  try{
-  for(const type of files){
-   const file=form.get(type) as File;
-   const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,"_").slice(-100)||"document";
-   const path=u.user.id+"/onboarding/"+type+"/"+crypto.randomUUID()+"-"+safe;
-   const {error}=await db.storage.from("driver-application-documents").upload(path,new Uint8Array(await file.arrayBuffer()),{contentType:file.type,upsert:false});
-   if(error)throw new Error("document_upload_failed");
-   uploaded.push(path);
-   const expiry=expiryFor(type);if(expiry&&(!validDate(expiry)||Date.parse(expiry+"T00:00:00")<=Date.now()))throw new Error("document_expiry_must_be_in_future_"+type);
-   const {error:recordError}=await db.from("driver_documents").insert({driver_user_id:u.user.id,document_type:type,storage_path:path,file_url:path,original_name:safe,content_type:file.type,file_size_bytes:file.size,expiry_date:expiry,issued_at:issuedFor(type),verification_status:"pending",review_status:"pending"});
-   if(recordError)throw new Error("document_record_failed");
-  }
   const identity={full_name:fullName,phone,email,citizenship:identityType,date_of_birth:dob,traffic_register_number:identityType==="foreign_national"?trn:null};
   const licence={code:licenceCode,expiry:licenceExpiry,prdp_holder:prdp,prdp_category:prdp?prdpCategory:null,prdp_expiry:prdp?prdpExpiry:null};
   const vehicle={type:vehicleType,gross_vehicle_mass_kg:gvm,make:text(form.get("vehicle_make"),60),model:text(form.get("vehicle_model"),60),year,registration_plate:plate.toUpperCase(),vehicle_licence_disc_expiry:text(form.get("vehicle_disc_expiry"),10),insurance_expiry:text(form.get("insurance_expiry"),10)};
@@ -149,12 +139,11 @@ if(!["sa_citizen","foreign_national"].includes(identityType))return reply(400,{e
    bank_name:null,bank_account_holder:null,bank_account_encrypted:null,bank_details_encrypted:bankDetailsCipher.data,universal_branch_code:null
   }).eq("user_id",u.user.id);
   if(profileSaveError)throw new Error("driver_profile_onboarding_update_failed");
-  await db.from("driver_verification_audit").insert({driver_user_id:u.user.id,event_type:"onboarding_submitted",details:{identity_type:identityType,document_count:files.length}});
+  await db.from("driver_verification_audit").insert({driver_user_id:u.user.id,event_type:"onboarding_submitted",details:{identity_type:identityType,document_count:batchRows.length,document_upload_mode:"single_batch"}});
   await db.from("driver_onboarding_notifications").insert({driver_user_id:u.user.id,notification_type:"application_submitted",title:"Application received",message:"Your driver onboarding application is pending document and background verification."});
   await db.from("driver_onboarding_drafts").delete().eq("driver_user_id",u.user.id);
   return reply(201,{submitted:true,status:"pending",message:"Application submitted. You cannot go online until SwiftHaul approves your documents."});
  }catch(e){
-  if(uploaded.length){await db.from("driver_documents").delete().eq("driver_user_id",u.user.id).in("storage_path",uploaded);await db.storage.from("driver-application-documents").remove(uploaded);}
   return reply(500,{error:e instanceof Error?e.message:"application_submission_failed"});
  }
 });
