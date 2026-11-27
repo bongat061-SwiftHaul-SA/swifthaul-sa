@@ -37,3 +37,15 @@ alter table public.driver_document_upload_batches enable row level security;
 -- Edge Functions using server-side authorization and the service-role client.
 comment on table public.driver_document_upload_batches is
   'Private staging queue for multi-file driver onboarding uploads pending admin classification.';
+
+-- Record access to unclassified uploads without fabricating a driver_documents row.
+alter table public.document_access_logs
+  alter column document_id drop not null;
+
+alter table public.document_access_logs
+  add column if not exists upload_batch_id uuid null
+    references public.driver_document_upload_batches(id) on delete set null;
+
+create index if not exists document_access_logs_upload_batch_idx
+  on public.document_access_logs(upload_batch_id)
+  where upload_batch_id is not null;
