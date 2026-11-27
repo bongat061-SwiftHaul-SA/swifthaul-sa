@@ -97,3 +97,9 @@ body[data-app="customer"] #workspace .customer-profile-copy strong{color:#f5f7fa
 @media(max-width:759px){
  body[data-app="customer"] #workspace .customer-bottom-nav{position:fixed;left:0;right:0;bottom:0;transform:none;width:100%;border-radius:16px 16px 0 0}
 }
+
+/* Tablet keeps the same easy-to-reach dock; desktop moves it to a compact top rail. */
+@media(min-width:760px) and (max-width:1099px){
+ body[data-app="customer"] #workspace .customer-bottom-nav{position:fixed;left:50%;right:auto;top:auto;bottom:12px;transform:translateX(-50%);width:min(calc(100% - 40px),900px);max-width:900px;margin:0;border-radius:16px}
+ body[data-app="customer"] #workspace main.page{padding-bottom:118px!important}
+}
