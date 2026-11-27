@@ -81,8 +81,8 @@ Deno.serve(async(req:Request)=>{
   const expiry=typeof body.expiry_date==="string"?body.expiry_date:"";
   const issued=typeof body.issued_at==="string"?body.issued_at:"";
   const expiryRequired=["licence_front","licence_back","vehicle_licence_disc","vehicle_insurance","passport","work_permit","enatis_certificate","fleet_lease_agreement","prdp"].includes(type);
-  if(expiryRequired&&(!/^\\d{4}-\\d{2}-\\d{2}$/.test(expiry)||expiry<today()))return reply(400,{error:"valid_future_expiry_date_required"});
-  if(type==="proof_of_address"&&(!/^\\d{4}-\\d{2}-\\d{2}$/.test(issued)||issued<new Date(Date.now()-92*86400000).toISOString().slice(0,10)||issued>today()))return reply(400,{error:"proof_of_address_issue_date_must_be_within_92_days"});
+  if(expiryRequired&&(!/^\d{4}-\d{2}-\d{2}$/.test(expiry)||expiry<today()))return reply(400,{error:"valid_future_expiry_date_required"});
+  if(type==="proof_of_address"&&(!/^\d{4}-\d{2}-\d{2}$/.test(issued)||issued<new Date(Date.now()-92*86400000).toISOString().slice(0,10)||issued>today()))return reply(400,{error:"proof_of_address_issue_date_must_be_within_92_days"});
   const {data:upload,error:uploadError}=await admin.from("driver_document_upload_batches").select("id,driver_user_id,storage_path,original_filename,content_type,file_size_bytes,classification_status,upload_completed").eq("id",uploadId).maybeSingle();
   if(uploadError)return reply(500,{error:"upload_record_lookup_failed"});
   if(!upload||upload.driver_user_id!==driverId||upload.classification_status!=="pending_classification"||upload.upload_completed!==true)return reply(404,{error:"pending_upload_not_found"});
