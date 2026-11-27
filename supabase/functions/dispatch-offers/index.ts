@@ -16,6 +16,7 @@ Deno.serve(async req => {
   const {data:u,error:ae}=await auth.auth.getUser(token);
   if(ae||!u.user) return reply(401,{error:"invalid_or_expired_session"});
   const db=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});
+  const sendNotification=async(payload:Record<string,unknown>)=>{try{const response=await fetch(url+"/functions/v1/notification-dispatch",{method:"POST",headers:{Authorization:"Bearer "+service,apikey:anon,"Content-Type":"application/json"},body:JSON.stringify({action:"send",...payload})});if(!response.ok)console.error("Dispatch notification failed",response.status,await response.text());}catch(error){console.error("Dispatch notification unavailable",String(error));}};
   const actor=u.user.id;
   const {data:p,error:pe}=await db.from("user_profiles").select("role,account_status").eq("id",actor).maybeSingle();
   if(pe) return reply(500,{error:"profile_lookup_failed"});
@@ -105,6 +106,18 @@ Deno.serve(async req => {
     const {data:accepted,error:acceptError}=await db.rpc("accept_driver_delivery_offer",{p_driver_user_id:actor,p_waybill:offer.waybill,p_offer_id:offer.id});
     if(acceptError||!accepted?.accepted) return reply(409,{error:acceptError?.message||"delivery_already_assigned"});
     await db.from("delivery_status_events").insert({waybill:offer.waybill,actor_user_id:actor,previous_status:"pending",new_status:"assigned",notes:"Accepted driver dispatch offer"});
+    const {data:bookingDetails}=await db.from("customer_bookings").select("owner_hash,recipient_phone,tracking_code,waybill,pickup,dropoff").eq("waybill",offer.waybill).maybeSingle();
+    if(bookingDetails){
+      const [{data:sender},{data:driverContact},{data:driverUser}]=await Promise.all([
+        db.from("customer_profiles").select("phone").eq("owner_hash",bookingDetails.owner_hash).maybeSingle(),
+        db.from("driver_profiles").select("phone,vehicle_registration").eq("user_id",actor).maybeSingle(),
+        db.from("user_profiles").select("full_name").eq("id",actor).maybeSingle()
+      ]);
+      const trackingCode=String(bookingDetails.tracking_code||bookingDetails.waybill||"");
+      const appUrl=(Deno.env.get("CUSTOMER_APP_URL")||"https://bongat061-swifthaul-sa.github.io/swifthaul-sa-preview").replace(/\\/$/,"");
+      const payload={driver_first_name:String(driverUser?.full_name||"Your driver").trim().split(/\\s+/)[0],vehicle_registration:String(driverContact?.vehicle_registration||""),tracking_url:appUrl+"/track/"+encodeURIComponent(trackingCode),pickup_area:String(bookingDetails.pickup||""),dropoff_area:String(bookingDetails.dropoff||"")};
+      if(sender?.phone&&bookingDetails.recipient_phone) await sendNotification({event_type:"order_dispatched",recipients:[{recipient_type:"sender",recipient_phone:sender.phone},{recipient_type:"recipient",recipient_phone:bookingDetails.recipient_phone}],payload_json:payload});
+    }
     return reply(200,{accepted:true,waybill:offer.waybill});
   }
   if(body.action==="next_offer") {
