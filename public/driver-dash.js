@@ -7,7 +7,8 @@
   launch.type = 'button';
   launch.id = 'driver-dash-launch';
   launch.className = 'driver-dash-launch';
-  launch.hidden = true;
+  // Keep the game discoverable after refreshes; availability only changes the hint copy.
+  launch.hidden = false;
   launch.innerHTML = '<span class="driver-dash-launch-icon" aria-hidden="true">🚚</span><span><strong>Play SwiftHaul Driver Dash</strong><small>Take a quick delivery run while you wait</small></span><span aria-hidden="true">→</span>';
   const intro = home.querySelector('.customer-home-intro');
   (intro || home).append(launch);
@@ -78,7 +79,7 @@
   document.addEventListener('keydown',e=>{if(overlay.hidden)return;if(e.key==='Escape')close();if(e.key==='ArrowLeft')move(-1);if(e.key==='ArrowRight')move(1)});
   let startX=null;canvas.addEventListener('touchstart',e=>{startX=e.touches[0].clientX},{passive:true});
   canvas.addEventListener('touchend',e=>{if(startX===null)return;const dx=e.changedTouches[0].clientX-startX;if(Math.abs(dx)>18)move(dx<0?-1:1);startX=null},{passive:true});
-  window.addEventListener('swifthaul:no-drivers',()=>{launch.hidden=false});
-  window.addEventListener('swifthaul:drivers-available',()=>{launch.hidden=true;closeIfHidden()});
-  function closeIfHidden(){if(!overlay.hidden)close()}
+  const launchHint = launch.querySelector('small');
+  window.addEventListener('swifthaul:no-drivers',()=>{launch.hidden=false;if(launchHint)launchHint.textContent='No drivers showing nearby? Play a quick delivery run while you wait.'});
+  window.addEventListener('swifthaul:drivers-available',()=>{launch.hidden=false;if(launchHint)launchHint.textContent='Take a quick delivery run while you explore SwiftHaul.'});
 })();
