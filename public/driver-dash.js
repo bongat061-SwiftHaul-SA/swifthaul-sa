@@ -56,10 +56,20 @@
     ctx.font='38px sans-serif';ctx.textAlign='center';ctx.fillText('🚚',lanes[lane],410);
     ctx.fillStyle='#f4f6f8';ctx.font='12px system-ui';ctx.fillText('SWIFTHAUL DELIVERY RUN',180,24);
   }
-  function endGame(){
+  async function endGame(){
     running=false;cancelAnimationFrame(raf);startBtn.textContent='Play again';
     message.textContent='Run complete! You collected '+score+' parcel points.'+(score>best?' New personal best!':'');
     saveBestIfNeeded();
+    if(rewardEligible&&rewardRoundId&&!rewardSubmitting){
+      rewardSubmitting=true;
+      try{
+        const {data,error}=await window.swiftHaulSupabase.functions.invoke('customer-dash-rewards',{body:{action:'submit_round',round_id:rewardRoundId,score}});
+        if(error)throw error;
+        message.textContent+=' Reward points submitted for Admin verification.';
+        await refreshRewards();
+      }catch{message.textContent+=' Reward points could not be submitted; this run will not count.';}
+      finally{rewardSubmitting=false;rewardRoundId=null;rewardEligible=false;}
+    }
     draw();
   }
   function tick(now){
