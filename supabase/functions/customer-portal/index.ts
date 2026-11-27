@@ -423,7 +423,7 @@ Deno.serve(async (req: Request) => {
     const { data: retry } = await admin.from("customer_bookings")
       .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status")
       .eq("quote_id", body.quote_id).eq("owner_hash", owner).maybeSingle();
-    if (retry) return reply(200, { order: retry });
+    if (retry) { if (voucherClaim) await admin.rpc("customer_dash_release_voucher_claim", { p_user_id: owner, p_voucher_code: voucherCode, p_booking_waybill: waybill }); return reply(200, { order: retry }); }
     if (voucherClaim) await admin.rpc("customer_dash_release_voucher_claim", { p_user_id: owner, p_voucher_code: voucherCode, p_booking_waybill: waybill });
     console.error("Customer booking insert failed", insertError.message);
     return reply(503, { error: "booking_save_failed" });
