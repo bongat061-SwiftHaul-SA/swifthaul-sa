@@ -49,3 +49,8 @@ alter table public.document_access_logs
 create index if not exists document_access_logs_upload_batch_idx
   on public.document_access_logs(upload_batch_id)
   where upload_batch_id is not null;
+
+-- Efficiently find abandoned incomplete tickets for opportunistic cleanup.
+create index if not exists driver_document_upload_batches_incomplete_cleanup_idx
+  on public.driver_document_upload_batches(created_at)
+  where upload_completed = false and classification_status = 'pending_classification';
