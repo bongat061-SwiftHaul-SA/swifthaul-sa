@@ -3,7 +3,7 @@
  if(!panel||!queue)return;
 
  const money=cents=>'R'+(Number(cents||0)/100).toFixed(2);
- const cashoutPanel=document.createElement('section');cashoutPanel.className='panel';cashoutPanel.style.marginTop='18px';cashoutPanel.innerHTML='<h3>R150 customer cash-out requests</h3><p class="subtle">Verify the customer and points balance. Make the bank transfer manually, then record its payment reference here. Rejecting a request returns the points to the customer.</p><div id="dash-cashout-queue">Loading cash-out requests…</div>';panel.append(cashoutPanel);
+ const cashoutPanel=document.createElement('section');cashoutPanel.className='panel';cashoutPanel.style.marginTop='18px';cashoutPanel.innerHTML='<h3>R150 customer cash-out requests</h3><p class="subtle">Verify the customer and points balance. Make the bank transfer manually, then record its payment reference here. Obtain and verify bank details through a secure channel; never put account numbers in Admin notes. Rejecting a request returns the points to the customer.</p><div id="dash-cashout-queue">Loading cash-out requests…</div>';panel.append(cashoutPanel);
  const cashoutQueue=cashoutPanel.querySelector('#dash-cashout-queue');
  async function loadCashouts(client){
   cashoutQueue.textContent='Loading cash-out requests…';
