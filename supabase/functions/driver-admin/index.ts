@@ -59,7 +59,7 @@ Deno.serve(async(req:Request)=>{
     licence_details:app.licence_details,vehicle_details:app.vehicle_details,banking_details:banking,
     verification_status:app.verification_status,submitted_at:app.submitted_at,review_note:app.review_note});
   }
-  const {data:pendingUploads,error:pendingError}=await admin.from("driver_document_upload_batches").select("id,driver_user_id,storage_path,original_filename,content_type,file_size_bytes,created_at").eq("classification_status","pending_classification").order("created_at",{ascending:true}).limit(200);
+  const {data:pendingUploads,error:pendingError}=await admin.from("driver_document_upload_batches").select("id,driver_user_id,storage_path,original_filename,content_type,file_size_bytes,created_at").eq("classification_status","pending_classification").eq("upload_completed",true).order("created_at",{ascending:true}).limit(200);
   if(pendingError)return reply(500,{error:"pending_driver_uploads_lookup_failed"});
   const pendingWithLinks=[];
   for(const upload of pendingUploads??[]){
@@ -83,9 +83,9 @@ Deno.serve(async(req:Request)=>{
   const expiryRequired=["licence_front","licence_back","vehicle_licence_disc","vehicle_insurance","passport","work_permit","enatis_certificate","fleet_lease_agreement","prdp"].includes(type);
   if(expiryRequired&&(!/^\\d{4}-\\d{2}-\\d{2}$/.test(expiry)||expiry<today()))return reply(400,{error:"valid_future_expiry_date_required"});
   if(type==="proof_of_address"&&(!/^\\d{4}-\\d{2}-\\d{2}$/.test(issued)||issued<new Date(Date.now()-92*86400000).toISOString().slice(0,10)||issued>today()))return reply(400,{error:"proof_of_address_issue_date_must_be_within_92_days"});
-  const {data:upload,error:uploadError}=await admin.from("driver_document_upload_batches").select("id,driver_user_id,storage_path,original_filename,content_type,file_size_bytes,classification_status").eq("id",uploadId).maybeSingle();
+  const {data:upload,error:uploadError}=await admin.from("driver_document_upload_batches").select("id,driver_user_id,storage_path,original_filename,content_type,file_size_bytes,classification_status,upload_completed").eq("id",uploadId).maybeSingle();
   if(uploadError)return reply(500,{error:"upload_record_lookup_failed"});
-  if(!upload||upload.driver_user_id!==driverId||upload.classification_status!=="pending_classification")return reply(404,{error:"pending_upload_not_found"});
+  if(!upload||upload.driver_user_id!==driverId||upload.classification_status!=="pending_classification"||upload.upload_completed!==true)return reply(404,{error:"pending_upload_not_found"});
   const {data:doc,error:insertError}=await admin.from("driver_documents").insert({
    driver_user_id:driverId,document_type:type,storage_path:upload.storage_path,file_url:upload.storage_path,
    original_name:upload.original_filename,content_type:upload.content_type,file_size_bytes:upload.file_size_bytes,
