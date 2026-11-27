@@ -286,6 +286,7 @@ Deno.serve(async (req: Request) => {
   }
 
   if (body.action !== "book" || typeof body.quote_id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.quote_id) ||
+      (body.voucher_code !== undefined && (typeof body.voucher_code !== "string" || body.voucher_code.trim().length > 40)) ||
       body.terms_accepted !== true || body.terms_version !== "2026-11-14-gauteng-vehicle-tariffs" ||
       typeof body.recipient !== "string" || !body.recipient.trim() || body.recipient.length > 500)
     return reply(400, { error: "calculate_a_quote_and_enter_recipient" });
@@ -353,11 +354,23 @@ Deno.serve(async (req: Request) => {
       (body.return_at && (!returnAt || !returnAddress)) || (scheduled && returnAt && Date.parse(returnAt) < Date.parse(scheduled)))
     return reply(400, { error: "use_valid_future_pickup_and_return_times" });
 
+  if (method === "wallet" && typeof body.voucher_code === "string" && body.voucher_code.trim()) return reply(400, { error: "voucher_not_available_with_wallet_payment_yet" });
   const waybill = "SH-" + crypto.randomUUID().toUpperCase();
   const pinCode = String(crypto.getRandomValues(new Uint32Array(1))[0] % 9000 + 1000);
+  let voucherClaim: Record<string, unknown> | null = null;
+  const grossCents = Math.round(Number(quote.price) * 100);
+  const voucherCode = typeof body.voucher_code === "string" ? body.voucher_code.trim() : "";
+  if (voucherCode) {
+    const { data, error } = await admin.rpc("customer_dash_claim_voucher", { p_user_id: owner, p_voucher_code: voucherCode, p_booking_waybill: waybill, p_gross_cents: grossCents });
+    if (error || !data?.ok) return reply(409, { error: grossCents < 20000 ? "voucher_requires_quote_of_at_least_R200" : "voucher_invalid_already_used_or_not_redeemed" });
+    voucherClaim = data;
+  }
   const insert = {
     waybill, owner_hash: owner, pin: pinCode, pickup: quote.pickup, dropoff: quote.dropoff,
     recipient: body.recipient.trim(), vehicle: quote.vehicle, price: quote.price,
+    customer_total_cents: voucherClaim ? Number(voucherClaim.customer_total_cents) : grossCents,
+    voucher_discount_cents: voucherClaim ? Number(voucherClaim.discount_cents) : 0,
+    voucher_code: voucherClaim ? String(voucherClaim.voucher_code) : null,
     distance_meters: distance, price_band: quote.price_band, quote_id: quote.id,
     load: quote.load, distance_fee: quote.distance_fee, scheduled_at: scheduled,
     pickup_approach_driver_user_id: quote.pickup_approach_driver_user_id || null,
@@ -411,6 +424,7 @@ Deno.serve(async (req: Request) => {
       .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status")
       .eq("quote_id", body.quote_id).eq("owner_hash", owner).maybeSingle();
     if (retry) return reply(200, { order: retry });
+    if (voucherClaim) await admin.rpc("customer_dash_release_voucher_claim", { p_user_id: owner, p_voucher_code: voucherCode, p_booking_waybill: waybill });
     console.error("Customer booking insert failed", insertError.message);
     return reply(503, { error: "booking_save_failed" });
   }
