@@ -5,7 +5,7 @@ const reply=(status:number,body:Record<string,unknown>)=>new Response(JSON.strin
 Deno.serve(async(req:Request)=>{
  if(req.method==="OPTIONS")return new Response("ok",{headers});
  if(!["GET","POST"].includes(req.method))return reply(405,{error:"method_not_allowed"});
- const token=(req.headers.get("Authorization")??"").match(/^Bearer\\s+(.+)$/i)?.[1];
+ const token=(req.headers.get("Authorization")??"").match(/^Bearer\s+(.+)$/i)?.[1];
  if(!token)return reply(401,{error:"sign_in_required"});
  const url=Deno.env.get("SUPABASE_URL"),anon=Deno.env.get("SUPABASE_ANON_KEY"),service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
  if(!url||!anon||!service)return reply(500,{error:"server_configuration_error"});
