@@ -22,6 +22,15 @@ fs.mkdirSync(output, { recursive: true });
 
 // Customer assets are served from the preview root.
 copy('public', '');
+// The SwiftHaul public landing page is the preview homepage.
+copy('index.html', 'index.html');
+copy('investor-login.html', 'investor-login.html');
+copy('icon.svg', 'icon.svg');
+copy('manifest.webmanifest', 'manifest.webmanifest');
+copy('sw.js', 'sw.js');
+copy('offline.html', 'offline.html');
+copy('profile-banner.svg', 'profile-banner.svg');
+copy('profile-banner-mobile.svg', 'profile-banner-mobile.svg');
 // Driver and Company Admin use the shared core through /public/map-core.js.
 copy('public', 'public');
 copy('apps/driver/public', 'apps/driver/public');
@@ -29,6 +38,14 @@ copy('apps/company/public', 'apps/company/public');
 
 for (const file of [
   'customer.html',
+  'index.html',
+  'investor-login.html',
+  'icon.svg',
+  'manifest.webmanifest',
+  'sw.js',
+  'offline.html',
+  'profile-banner.svg',
+  'profile-banner-mobile.svg',
   'map-core.js',
   'apps/driver/public/index.html',
   'apps/company/public/index.html'
