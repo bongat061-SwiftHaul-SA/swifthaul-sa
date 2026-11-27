@@ -36,7 +36,7 @@ Deno.serve(async(req:Request)=>{
    if(summaryError)throw summaryError;
    const {data:cashouts,error:cashoutError}=await db.from("customer_dash_cashouts").select("id,points_snapshot,amount_cents,status,requested_at,reviewed_at,admin_note").eq("user_id",user.id).order("requested_at",{ascending:false}).limit(10);
    if(cashoutError)throw cashoutError;
-   const {data:milestones,error:milestoneError}=await db.from("customer_dash_milestones").select("id,cycle_number,milestone_points,reward_cents,status,voucher_code,created_at,reviewed_at").eq("user_id",user.id).order("created_at",{ascending:false}).limit(30);
+   const {data:milestones,error:milestoneError}=await db.from("customer_dash_milestones").select("id,cycle_number,milestone_points,reward_cents,status,voucher_code,voucher_applied_booking_waybill,voucher_applied_at,created_at,reviewed_at").eq("user_id",user.id).order("created_at",{ascending:false}).limit(30);
    if(milestoneError)throw milestoneError;
    return reply(200,{summary:summary??{lifetime_points:0,cycle_points:0,cycle_number:1,best_score:0,available_points:0,points_spent:0},milestones:milestones??[],cashouts:cashouts??[]});
   }
