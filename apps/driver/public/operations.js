@@ -398,7 +398,9 @@ if (app === 'driver' || app === 'company') {
     const summary = document.createElement('p');
     summary.textContent = [
       String(order.vehicle || '').toUpperCase(),
-      money(order.price),
+      'Driver fare: '+money(order.price),
+      Number(order.voucher_discount_cents||0)>0?'Customer total: '+money(Number(order.customer_total_cents)/100):'',
+      order.payment_method==='cash'&&!order.paid_at?'Cash to collect: '+money(order.customer_total_cents==null?order.price:Number(order.customer_total_cents)/100):'',
       statusLabel(order.status),
       order.paid_at ? 'Paid' : 'Payment pending'
     ].filter(Boolean).join(' · ');
