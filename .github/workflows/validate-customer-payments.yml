@@ -1,0 +1,55 @@
+name: Validate Customer payment and wallet safety
+on:
+  pull_request:
+    paths:
+      - "public/customer.js"
+      - "public/customer.html"
+      - "public/wallet.js"
+      - "public/wallet.html"
+      - "supabase/functions/customer-portal/**"
+      - "supabase/functions/paystack-payment-initialize/**"
+      - "supabase/functions/paystack-webhook/**"
+      - "supabase/migrations/*credit_driver_share_only_after_payment*"
+      - "tests/customer-payment-flow-static-check.cjs"
+      - ".github/workflows/validate-customer-payments.yml"
+  push:
+    branches:
+      - "staging/wallet-payments-namhost"
+    paths:
+      - "public/customer.js"
+      - "public/customer.html"
+      - "public/wallet.js"
+      - "public/wallet.html"
+      - "supabase/functions/customer-portal/**"
+      - "supabase/functions/paystack-payment-initialize/**"
+      - "supabase/functions/paystack-webhook/**"
+      - "supabase/migrations/*credit_driver_share_only_after_payment*"
+      - "tests/customer-payment-flow-static-check.cjs"
+      - ".github/workflows/validate-customer-payments.yml"
+permissions:
+  contents: read
+jobs:
+  payment-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check Customer JavaScript syntax
+        run: |
+          node --check public/customer.js
+          node --check public/wallet.js
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check Customer booking API
+        run: deno check --node-modules-dir=auto supabase/functions/customer-portal/index.ts
+      - name: Type-check Paystack checkout API
+        run: deno check --node-modules-dir=auto supabase/functions/paystack-payment-initialize/index.ts
+      - name: Type-check Paystack webhook
+        run: deno check --node-modules-dir=auto supabase/functions/paystack-webhook/index.ts
+      - name: Check Customer payment and wallet restrictions
+        run: node tests/customer-payment-flow-static-check.cjs
