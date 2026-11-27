@@ -29,7 +29,8 @@
     if (!cards.length) { reportStatus.textContent = 'Refresh the administrator Financial dashboard first. No financial figures are available to export.'; return; }
     const rows = [['SwiftHaul SA monthly performance report'],['Selected month',month],['Generated at',new Date().toISOString()],['Data scope','Cumulative snapshot from current admin-financials service; figures are not month-filtered.'],['Metric','Value','Scope']];
     cards.forEach(card => { const label=card.querySelector('span')?.textContent || 'Metric'; const value=card.querySelector('strong')?.textContent || ''; const note=card.querySelector('p')?.textContent || ''; rows.push([label,value,note]); });
-    const csv=rows.map(row=>row.map(value=>'"'+String(value).replaceAll('"','""')+'"').join(',')).join('\r\n');
+    const csv=rows.map(row=>row.map(value=>'"'+String(value).replaceAll('"','""')+'"').join(',')).join('\r
+');
     const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='swifthaul-monthly-performance-'+month+'-snapshot.csv';a.click();URL.revokeObjectURL(url);reportStatus.textContent='CSV snapshot downloaded. Note: figures are cumulative, not month-filtered.';
   });
   const pages = {
@@ -46,10 +47,11 @@
     insurance: { title:'Driver insurance management.', description:'Verify Premium eligibility and manage insurer-issued driver policies.', show:['insurance'] },
     'insurance-claims': { title:'Insurance claims review.', description:'Review dispatch-bound GPS evidence, route compliance and insurer decisions.', show:['insurance-claims'] },
     deletions: { title:'Account deletion requests.', description:'Review customer and driver account closure requests while protecting active deliveries and financial records.', show:['deletions'] },
-    notifications: { title:'Notifications & sign-up activity.', description:'Review customer registrations, driver applications, WhatsApp and SMS delivery receipts, automatic fallback and failed-message retries.', show:['notifications','signup-notifications'] },\n    'dash-rewards': { title:'Dash Rewards verification.', description:'Verify customer game milestones and approve or reject discount rewards.', show:['dash-rewards'] },
+    notifications: { title:'Notifications & sign-up activity.', description:'Review customer registrations, driver applications, WhatsApp and SMS delivery receipts, automatic fallback and failed-message retries.', show:['notifications','signup-notifications'] },
+    'dash-rewards': { title:'Dash Rewards verification.', description:'Verify customer game milestones and approve or reject discount rewards.', show:['dash-rewards'] },
     account: { title:'Company account.', description:'Company administrator profile and support information.', show:['account'] }
   };
-  const nodes = { stats, dispatches, drivers, account, refunds, payouts, offers, finance, paystack: root.querySelector('#paystack-balance'), reports, insurance, "insurance-claims": root.querySelector("#insurance-claims-admin"), deletions: root.querySelector("#account-deletions"), notifications: root.querySelector("#notification-audit"), "signup-notifications": root.querySelector("#signup-notifications"), "cash-reconciliation": root.querySelector("#cash-reconciliation") };
+  const nodes = { stats, dispatches, drivers, account, refunds, payouts, offers, finance, paystack: root.querySelector('#paystack-balance'), reports, insurance, "insurance-claims": root.querySelector("#insurance-claims-admin"), deletions: root.querySelector("#account-deletions"), notifications: root.querySelector("#notification-audit"), "signup-notifications": root.querySelector("#signup-notifications"), "cash-reconciliation": root.querySelector("#cash-reconciliation"), "dash-rewards": root.querySelector("#dash-rewards-admin") };
   function render(key, updateUrl) {
     const page = pages[key] || pages.overview;
     Object.entries(nodes).forEach(([name,node]) => { if(node) node.hidden = !page.show.includes(name); });
