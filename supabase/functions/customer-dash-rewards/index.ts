@@ -34,7 +34,9 @@ Deno.serve(async(req:Request)=>{
    if(admin)return reply(403,{error:"customer_account_required"});
    const {data:summary,error:summaryError}=await db.from("customer_dash_rewards").select("lifetime_points,cycle_points,cycle_number,best_score,available_points,points_spent,updated_at").eq("user_id",user.id).maybeSingle();
    if(summaryError)throw summaryError;
-   const {data:cashouts,error:cashoutError}=await db.from("customer_dash_cashouts").select("id,points_snapshot,amount_cents,status,requested_at,reviewed_at,admin_note").eq("user_id",user.id).order("requested_at",{ascending:false}).limit(10);\n   if(cashoutError)throw cashoutError;\n   const {data:milestones,error:milestoneError}=await db.from("customer_dash_milestones").select("id,cycle_number,milestone_points,reward_cents,status,voucher_code,created_at,reviewed_at").eq("user_id",user.id).order("created_at",{ascending:false}).limit(30);
+   const {data:cashouts,error:cashoutError}=await db.from("customer_dash_cashouts").select("id,points_snapshot,amount_cents,status,requested_at,reviewed_at,admin_note").eq("user_id",user.id).order("requested_at",{ascending:false}).limit(10);
+   if(cashoutError)throw cashoutError;
+   const {data:milestones,error:milestoneError}=await db.from("customer_dash_milestones").select("id,cycle_number,milestone_points,reward_cents,status,voucher_code,created_at,reviewed_at").eq("user_id",user.id).order("created_at",{ascending:false}).limit(30);
    if(milestoneError)throw milestoneError;
    return reply(200,{summary:summary??{lifetime_points:0,cycle_points:0,cycle_number:1,best_score:0,available_points:0,points_spent:0},milestones:milestones??[],cashouts:cashouts??[]});
   }
@@ -60,7 +62,35 @@ Deno.serve(async(req:Request)=>{
    if(error)return reply(400,{error:"round_not_eligible_or_already_submitted"});
    return reply(200,{ok:true,summary:data});
   }
-  if(action==="redeem_coupon"){\n   if(admin)return reply(403,{error:"customer_account_required"});\n   const id=String(body.milestone_id??"");\n   if(!/^[0-9a-f-]{36}$/i.test(id))return reply(400,{error:"invalid_milestone"});\n   const {data,error}=await db.rpc("customer_dash_redeem_coupon",{p_user_id:user.id,p_milestone_id:id});\n   if(error)return reply(400,{error:"coupon_not_redeemable_or_insufficient_points"});\n   return reply(200,{ok:true,result:data});\n  }\n  if(action==="request_cashout"){\n   if(admin)return reply(403,{error:"customer_account_required"});\n   const {data,error}=await db.rpc("customer_dash_request_cashout",{p_user_id:user.id});\n   if(error)return reply(400,{error:"cashout_threshold_not_met_or_request_pending"});\n   return reply(201,{ok:true,result:data});\n  }\n  if(action==="list_cashouts"){\n   if(!admin)return reply(403,{error:"administrator_access_required"});\n   const {data,error}=await db.from("customer_dash_cashouts").select("id,user_id,points_snapshot,amount_cents,status,requested_at").eq("status","pending").order("requested_at",{ascending:true}).limit(200);\n   if(error)throw error;\n   return reply(200,{pending_cashouts:data??[]});\n  }\n  if(action==="review_cashout"){\n   if(!admin)return reply(403,{error:"administrator_access_required"});\n   const id=String(body.cashout_id??""),decision=String(body.decision??""),reference=String(body.payout_reference??"").slice(0,120),note=String(body.note??"").slice(0,500);\n   if(!/^[0-9a-f-]{36}$/i.test(id)||!["paid","reject"].includes(decision))return reply(400,{error:"invalid_cashout_review"});\n   const {data,error}=await db.rpc("customer_dash_review_cashout",{p_cashout_id:id,p_admin_id:user.id,p_decision:decision,p_payout_reference:reference,p_note:note});\n   if(error)return reply(400,{error:"cashout_review_failed"});\n   return reply(200,{ok:true,result:data});\n  }\n  if(action==="review_milestone"){
+  if(action==="redeem_coupon"){
+   if(admin)return reply(403,{error:"customer_account_required"});
+   const id=String(body.milestone_id??"");
+   if(!/^[0-9a-f-]{36}$/i.test(id))return reply(400,{error:"invalid_milestone"});
+   const {data,error}=await db.rpc("customer_dash_redeem_coupon",{p_user_id:user.id,p_milestone_id:id});
+   if(error)return reply(400,{error:"coupon_not_redeemable_or_insufficient_points"});
+   return reply(200,{ok:true,result:data});
+  }
+  if(action==="request_cashout"){
+   if(admin)return reply(403,{error:"customer_account_required"});
+   const {data,error}=await db.rpc("customer_dash_request_cashout",{p_user_id:user.id});
+   if(error)return reply(400,{error:"cashout_threshold_not_met_or_request_pending"});
+   return reply(201,{ok:true,result:data});
+  }
+  if(action==="list_cashouts"){
+   if(!admin)return reply(403,{error:"administrator_access_required"});
+   const {data,error}=await db.from("customer_dash_cashouts").select("id,user_id,points_snapshot,amount_cents,status,requested_at").eq("status","pending").order("requested_at",{ascending:true}).limit(200);
+   if(error)throw error;
+   return reply(200,{pending_cashouts:data??[]});
+  }
+  if(action==="review_cashout"){
+   if(!admin)return reply(403,{error:"administrator_access_required"});
+   const id=String(body.cashout_id??""),decision=String(body.decision??""),reference=String(body.payout_reference??"").slice(0,120),note=String(body.note??"").slice(0,500);
+   if(!/^[0-9a-f-]{36}$/i.test(id)||!["paid","reject"].includes(decision))return reply(400,{error:"invalid_cashout_review"});
+   const {data,error}=await db.rpc("customer_dash_review_cashout",{p_cashout_id:id,p_admin_id:user.id,p_decision:decision,p_payout_reference:reference,p_note:note});
+   if(error)return reply(400,{error:"cashout_review_failed"});
+   return reply(200,{ok:true,result:data});
+  }
+  if(action==="review_milestone"){
    if(!admin)return reply(403,{error:"administrator_access_required"});
    const id=String(body.milestone_id??""),decision=String(body.decision??""),note=String(body.note??"").slice(0,500);
    if(!/^[0-9a-f-]{36}$/i.test(id)||!["approve","reject"].includes(decision))return reply(400,{error:"invalid_review"});
