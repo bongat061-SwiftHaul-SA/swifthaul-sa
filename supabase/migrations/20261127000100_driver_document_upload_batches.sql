@@ -8,6 +8,7 @@ create table if not exists public.driver_document_upload_batches (
   original_filename text not null,
   content_type text not null check (content_type in ('application/pdf','image/jpeg','image/png','image/webp')),
   file_size_bytes bigint not null check (file_size_bytes > 0 and file_size_bytes <= 10485760),
+  upload_completed boolean not null default false,
   classification_status text not null default 'pending_classification'
     check (classification_status in ('pending_classification','classified','discarded')),
   document_type text null check (document_type is null or document_type in (
