@@ -27,7 +27,7 @@
    });
   }catch(e){queue.textContent='Unable to load rewards. Confirm that you are signed in with an active Admin account.';status.textContent=e?.message||'Rewards service unavailable.';}
  }
- document.addEventListener('DOMContentLoaded',()=>{if(location.search.includes('page=dash-rewards'))load()});
+ document.addEventListener('account-ready',()=>{if(new URLSearchParams(location.search).get('page')==='dash-rewards')load()});
  document.querySelectorAll('.section-links a[data-page="dash-rewards"]').forEach(a=>a.addEventListener('click',()=>load()));
  window.addEventListener('popstate',()=>{if(new URLSearchParams(location.search).get('page')==='dash-rewards')load()});
  if(new URLSearchParams(location.search).get('page')==='dash-rewards')load();
