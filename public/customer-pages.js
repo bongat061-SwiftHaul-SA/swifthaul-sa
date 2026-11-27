@@ -27,7 +27,7 @@
   home.prepend(profileWelcome);
   function applyCustomerProfile(user = {}) {
     const name = String(user.name || user.full_name || user.email || 'Customer').trim();
-    profileWelcome.querySelector('[data-customer-welcome-name]').textContent = name.split(/\\s+/)[0] || 'Customer';
+    profileWelcome.querySelector('[data-customer-welcome-name]').textContent = name.split(/\s+/)[0] || 'Customer';
     const photo = user.photo_url || user.avatar_url || user.profile_photo_url || '';
     const avatar = profileWelcome.querySelector('.customer-profile-avatar');
     const fallback = profileWelcome.querySelector('.customer-profile-fallback');
