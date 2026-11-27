@@ -64,9 +64,14 @@ Deno.serve(async(req:Request)=>{
   if(!rows||rows.length!==body.upload_ids.length)return reply(409,{error:"saved_upload_expired_or_unavailable"});
   const uploads=[];
   for(const row of rows){
+   const slash=row.storage_path.lastIndexOf("/"),folder=row.storage_path.slice(0,slash),filename=row.storage_path.slice(slash+1);
+   const {data:objects,error:listError}=await admin.storage.from(bucket).list(folder,{search:filename,limit:10});
+   if(listError)return reply(500,{error:"upload_resume_object_check_failed"});
+   const alreadyUploaded=(objects||[]).some((item:any)=>item.name===filename);
+   if(alreadyUploaded){uploads.push({id:row.id,path:row.storage_path,uploaded:true,name:row.original_filename,type:row.content_type,size:row.file_size_bytes});continue;}
    const {data:signed,error:signedError}=await admin.storage.from(bucket).createSignedUploadUrl(row.storage_path,{upsert:false});
    if(signedError||!signed?.token)return reply(500,{error:"secure_upload_resume_ticket_creation_failed"});
-   uploads.push({id:row.id,path:row.storage_path,token:signed.token,name:row.original_filename,type:row.content_type,size:row.file_size_bytes});
+   uploads.push({id:row.id,path:row.storage_path,token:signed.token,uploaded:false,name:row.original_filename,type:row.content_type,size:row.file_size_bytes});
   }
   return reply(200,{uploads,chunk_size_bytes:6*1024*1024,retry_delays_ms:[0,3000,5000,10000,20000]});
  }
