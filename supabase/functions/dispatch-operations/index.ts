@@ -154,50 +154,7 @@ Deno.serve(async (req: Request) => {
     if (eventError) console.error("Status event insert failed", eventError.message);
   };
 
-  if (isDispatcher && body.action === "assign") {
-    if (["delivered", "failed", "cancelled"].includes(order.status) || order.refunded_at)
-      return reply(409, { error: "delivery_is_closed" });
-    if (typeof body.driver_id !== "string" || !/^[0-9a-f-]{36}$/i.test(body.driver_id))
-      return reply(400, { error: "enter_valid_driver_account_id" });
-    const { data: driver, error } = await admin.from("driver_profiles")
-      .select("user_id,verification_status,can_go_online,vehicle_type,allow_stacked_orders").eq("user_id", body.driver_id).maybeSingle();
-    if (error) return reply(500, { error: "driver_lookup_failed" });
-    if (!driver || driver.verification_status !== "approved") return reply(409, { error: "driver_not_approved" });
-    const {data:eligible,error:eligibilityError}=await admin.rpc("driver_can_accept_work",{p_driver_user_id:driver.user_id});
-    if(eligibilityError||eligible!==true) return reply(409,{error:"driver_onboarding_documents_or_background_clearance_incomplete"});
-    const {data:activeCount}=await admin.rpc("driver_active_order_count",{p_driver_id:driver.user_id});
-    const vehicleKey=/motor/i.test(driver.vehicle_type||"")?"motorbike":/bakkie|van|panel/i.test(driver.vehicle_type||"")?"bakkie/panel van":/truck|ton/i.test(driver.vehicle_type||"")?"truck":"hatchback/sedan";
-    const {data:vehicleClass}=await admin.from("vehicle_classes").select("max_concurrent_orders").eq("vehicle_type",vehicleKey).maybeSingle();
-    if(Number(activeCount||0)>=Number(vehicleClass?.max_concurrent_orders||1))return reply(409,{error:"driver_capacity_reached"});
-    if(Number(activeCount||0)>0&&!driver.allow_stacked_orders)return reply(409,{error:"stacked_orders_disabled"});
-    const { error: updateError } = await admin.from("customer_bookings")
-      .update({ driver_user_id: driver.user_id, assigned_driver: driver.user_id, status: "assigned" })
-      .eq("waybill", order.waybill);
-    if (updateError) return reply(500, { error: "assignment_failed" });
-    await admin.from("delivery_status_events").insert({
-      waybill: order.waybill, actor_user_id: actorId, previous_status: order.status,
-      new_status: "assigned", notes: "Assigned by dispatch",
-    });
-    const {data:lastStop}=await admin.from("driver_route_stops").select("sequence_order").eq("driver_id",driver.user_id).neq("status","completed").order("sequence_order",{ascending:false}).limit(1).maybeSingle();
-    const nextSequence=Number(lastStop?.sequence_order||0)+1;
-    await admin.from("driver_route_stops").upsert([
-      {driver_id:driver.user_id,order_id:order.waybill,stop_type:"pickup",sequence_order:nextSequence,address:order.pickup||"",lat:order.pickup_latitude,lng:order.pickup_longitude},
-      {driver_id:driver.user_id,order_id:order.waybill,stop_type:"dropoff",sequence_order:nextSequence+1,address:order.dropoff||"",lat:order.dropoff_latitude,lng:order.dropoff_longitude}
-    ],{onConflict:"order_id,stop_type"});
-    const [{data:sender},{data:driverContact},{data:driverUser}]=await Promise.all([
-      admin.from("customer_profiles").select("phone").eq("owner_hash",order.owner_hash).maybeSingle(),
-      admin.from("driver_profiles").select("phone,vehicle_registration").eq("user_id",driver.user_id).maybeSingle(),
-      admin.from("user_profiles").select("full_name").eq("id",driver.user_id).maybeSingle()
-    ]);
-    const trackingCode=String(order.tracking_code||order.waybill||"");
-    const appUrl=(Deno.env.get("CUSTOMER_APP_URL")||"https://bongat061-swifthaul-sa.github.io/swifthaul-sa-preview").replace(/\/$/,"");
-    const trackingUrl=appUrl+"/track/"+encodeURIComponent(trackingCode);
-    const payload={driver_first_name:String(driverUser?.full_name||"Your driver").trim().split(/\s+/)[0],vehicle_registration:String(driverContact?.vehicle_registration||""),tracking_url:trackingUrl,pickup_area:String(order.pickup||""),dropoff_area:String(order.dropoff||"")};
-    if(sender?.phone&&order.recipient_phone)await sendNotification({event_type:"order_dispatched",recipients:[{recipient_type:"sender",recipient_phone:sender.phone},{recipient_type:"recipient",recipient_phone:order.recipient_phone}],payload_json:payload});
-    else console.error("Dispatch notification skipped: sender or recipient phone missing",order.waybill);
-    return reply(200, { assigned: true });
-  }
-
+  if (isDispatcher && body.action === "assign") return reply(409, { error: "dispatch_offer_required" });
   if (!isDriver) return reply(403, { error: "driver_action_required" });
   if (order.driver_user_id !== actorId) return reply(404, { error: "delivery_not_found" });
   if (order.refunded_at || ["delivered", "failed", "cancelled"].includes(order.status))
