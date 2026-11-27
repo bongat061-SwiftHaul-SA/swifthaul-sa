@@ -1,6 +1,6 @@
-const CACHE = 'swifthaul-shell-v4';
+const CACHE = 'swifthaul-shell-v5';
 const SCOPE = self.registration.scope;
-const ASSETS = ['app.css', 'icon.svg', 'icon-192.png', 'icon-512.png', 'offline.html', 'location-picker.js']
+const ASSETS = ['app.css', 'icon.svg', 'icon-192.png', 'icon-512.png', 'offline.html', 'location-picker.js', 'driver-dash.css', 'driver-dash-offline.js']
   .map(name => new URL(name, SCOPE).pathname);
 const OFFLINE = new URL('offline.html', SCOPE).pathname;
 self.addEventListener('install', event => {event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));self.skipWaiting();});
