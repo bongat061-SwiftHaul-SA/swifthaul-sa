@@ -1,12 +1,12 @@
 (() => {
  const panel=document.getElementById('dash-rewards-admin'),queue=document.getElementById('dash-rewards-queue'),status=document.getElementById('dash-rewards-admin-status');
  if(!panel||!queue)return;
- const client=window.swiftHaulSupabase;
+
  const money=cents=>'R'+(Number(cents||0)/100).toFixed(2);
  async function load(){
   queue.textContent='Loading pending reward milestones…';status.textContent='';
   try{
-   const {data,error}=await client.functions.invoke('customer-dash-rewards',{body:{action:'list_pending'}});
+   const client=window.swiftHaulSupabase;if(!client)throw new Error('Admin sign-in is still loading.');\n   const {data,error}=await client.functions.invoke('customer-dash-rewards',{body:{action:'list_pending'}});
    if(error)throw error;
    const rows=data?.pending||[];queue.replaceChildren();
    if(!rows.length){const p=document.createElement('p');p.className='subtle';p.textContent='No reward milestones are waiting for verification.';queue.append(p);return;}
@@ -21,7 +21,7 @@
     const actions=document.createElement('div');actions.className='driver-dash-controls';
     const approve=document.createElement('button');approve.type='button';approve.className='primary';approve.textContent='Approve '+money(row.reward_cents);
     const reject=document.createElement('button');reject.type='button';reject.textContent='Reject';
-    async function review(decision,button){approve.disabled=true;reject.disabled=true;status.textContent='Saving verification…';try{const {error}=await client.functions.invoke('customer-dash-rewards',{body:{action:'review_milestone',milestone_id:row.id,decision,note:note.value}});if(error)throw error;status.textContent=decision==='approve'?'Milestone approved. Voucher issued.':'Milestone rejected.';await load();}catch{status.textContent='Could not save the review. Please refresh and retry.';approve.disabled=false;reject.disabled=false;}}
+    async function review(decision,button){approve.disabled=true;reject.disabled=true;status.textContent='Saving verification…';try{const client=window.swiftHaulSupabase;if(!client)throw new Error('Admin sign-in is still loading.');const {error}=await client.functions.invoke('customer-dash-rewards',{body:{action:'review_milestone',milestone_id:row.id,decision,note:note.value}});if(error)throw error;status.textContent=decision==='approve'?'Milestone approved. Voucher issued.':'Milestone rejected.';await load();}catch{status.textContent='Could not save the review. Please refresh and retry.';approve.disabled=false;reject.disabled=false;}}
     approve.addEventListener('click',()=>review('approve',approve));reject.addEventListener('click',()=>review('reject',reject));actions.append(approve,reject);card.append(actions);queue.append(card);
    });
   }catch(e){queue.textContent='Unable to load rewards. Confirm that you are signed in with an active Admin account.';status.textContent=e?.message||'Rewards service unavailable.';}
