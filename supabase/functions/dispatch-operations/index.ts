@@ -104,8 +104,8 @@ Deno.serve(async (req: Request) => {
     const {data:driverScores}=!isDriver&&driverIdsForQuality.length?await admin.from("driver_profiles").select("user_id,average_rating,total_ratings,on_time_percentage,completion_percentage,performance_score,performance_tier").in("user_id",driverIdsForQuality):{data:[]};
     const {data:approvedDrivers,error:approvedDriverError}=!isDriver
       ? await admin.from("driver_profiles")
-        .select("user_id,phone,vehicle_type,vehicle_registration,can_go_online,user_profiles!inner(full_name)")
-        .eq("verification_status","approved").eq("can_go_online",true)
+        .select("user_id,phone,vehicle_type,vehicle_registration,can_go_online,is_online,user_profiles!inner(full_name)")
+        .eq("verification_status","approved").eq("can_go_online",true).eq("is_online",true)
         .order("created_at",{ascending:false}).limit(200)
       : {data:[],error:null};
     if(approvedDriverError)return reply(500,{error:"approved_driver_list_failed"});
