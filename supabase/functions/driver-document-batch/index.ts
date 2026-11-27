@@ -21,6 +21,16 @@ Deno.serve(async(req:Request)=>{
  const admin=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});
  const {data:profile,error:profileError}=await admin.from("user_profiles").select("role,account_status").eq("id",userData.user.id).maybeSingle();
  if(profileError||profile?.role!=="driver"||profile?.account_status!=="active")return reply(403,{error:"active_driver_account_required"});
+
+ // Opportunistically remove abandoned, incomplete tickets after 48 hours.
+ // Completed uploads awaiting Admin classification are never touched.
+ const cutoff=new Date(Date.now()-48*60*60*1000).toISOString();
+ const {data:stale}=await admin.from("driver_document_upload_batches")
+  .select("id,storage_path").eq("upload_completed",false).eq("classification_status","pending_classification").lt("created_at",cutoff).limit(100);
+ for(const row of stale??[]){
+  await admin.storage.from(bucket).remove([row.storage_path]);
+  await admin.from("driver_document_upload_batches").delete().eq("id",row.id).eq("upload_completed",false);
+ }
  let body:any;try{body=await req.json();}catch{return reply(400,{error:"invalid_json"});}
  if(body?.action==="prepare"){
   if(!Array.isArray(body.files)||body.files.length<1||body.files.length>15)return reply(400,{error:"select_between_1_and_15_files"});
@@ -42,6 +52,23 @@ Deno.serve(async(req:Request)=>{
    prepared.push({id:row.id,path,token:signed.token,name,type:file.type,size:file.size});
   }
   return reply(200,{uploads:prepared,chunk_size_bytes:6*1024*1024,retry_delays_ms:[0,3000,5000,10000,20000]});
+ }
+
+ if(body?.action==="resume"){
+  if(!Array.isArray(body.upload_ids)||body.upload_ids.length<1||body.upload_ids.length>15||body.upload_ids.some((id:unknown)=>typeof id!=="string"))return reply(400,{error:"valid_upload_ids_required"});
+  const {data:rows,error:rowsError}=await admin.from("driver_document_upload_batches")
+   .select("id,storage_path,original_filename,content_type,file_size_bytes,upload_completed,classification_status")
+   .eq("driver_user_id",userData.user.id).in("id",body.upload_ids)
+   .eq("upload_completed",false).eq("classification_status","pending_classification");
+  if(rowsError)return reply(500,{error:"upload_batch_lookup_failed"});
+  if(!rows||rows.length!==body.upload_ids.length)return reply(409,{error:"saved_upload_expired_or_unavailable"});
+  const uploads=[];
+  for(const row of rows){
+   const {data:signed,error:signedError}=await admin.storage.from(bucket).createSignedUploadUrl(row.storage_path,{upsert:false});
+   if(signedError||!signed?.token)return reply(500,{error:"secure_upload_resume_ticket_creation_failed"});
+   uploads.push({id:row.id,path:row.storage_path,token:signed.token,name:row.original_filename,type:row.content_type,size:row.file_size_bytes});
+  }
+  return reply(200,{uploads,chunk_size_bytes:6*1024*1024,retry_delays_ms:[0,3000,5000,10000,20000]});
  }
  if(body?.action==="finalize"){
   if(!Array.isArray(body.upload_ids)||body.upload_ids.length<1||body.upload_ids.length>15||body.upload_ids.some((id:unknown)=>typeof id!=="string"))return reply(400,{error:"valid_upload_ids_required"});
