@@ -107,7 +107,7 @@ if(!["sa_citizen","foreign_national"].includes(identityType))return reply(400,{e
  const bank=text(form.get("bank_name"),40),holder=text(form.get("account_holder"),120),account=text(form.get("account_number"),30),accountType=text(form.get("account_type"),20);
  if(!["FNB","Nedbank","Standard Bank","Absa","Capitec","TymeBank"].includes(bank)||!holder||!/^\d{6,20}$/.test(account)||!["current","cheque","savings","transmission","other"].includes(accountType))return reply(400,{error:"valid_sa_bank_details_required"});
  const {data:batchRows,error:batchError}=await db.from("driver_document_upload_batches")
-  .select("id,classification_status").eq("driver_user_id",u.user.id).in("id",uploadBatchIds);
+  .select("id,classification_status,upload_completed").eq("driver_user_id",u.user.id).in("id",uploadBatchIds).eq("upload_completed",true);
  if(batchError||!batchRows||batchRows.length!==uploadBatchIds.length||batchRows.some((row:any)=>row.classification_status!=="pending_classification"))return reply(409,{error:"uploaded_document_batch_not_found_or_already_submitted"});
  try{
   const identity={full_name:fullName,phone,email,citizenship:identityType,date_of_birth:dob,traffic_register_number:identityType==="foreign_national"?trn:null};
