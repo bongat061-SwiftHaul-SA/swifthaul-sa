@@ -119,7 +119,7 @@ Deno.serve(async (req: Request) => {
 
   if (req.method === "GET") {
     const { data, error } = await admin.from("customer_bookings")
-      .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,wallet_refund_used,wallet_promo_used,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,tracking_code,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,status")
+      .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,wallet_refund_used,wallet_promo_used,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,tracking_code,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status,customer_total_cents,voucher_discount_cents,voucher_code,status")
       .eq("owner_hash", owner).order("created_at", { ascending: false }).limit(100);
     if (error) return reply(500, { error: "booking_list_failed" });
     const { data: wallet, error: walletError } = await admin.from("wallet_accounts")
@@ -291,7 +291,7 @@ Deno.serve(async (req: Request) => {
       typeof body.recipient !== "string" || !body.recipient.trim() || body.recipient.length > 500)
     return reply(400, { error: "calculate_a_quote_and_enter_recipient" });
   const { data: existing } = await admin.from("customer_bookings")
-    .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status")
+    .select("waybill,pin,pickup,dropoff,recipient,vehicle,price,customer_total_cents,voucher_discount_cents,voucher_code,distance_meters,price_band,load,distance_fee,scheduled_at,return_address,return_at,payment_method,counter_offer,counter_offer_status,original_price,paid_at,completed_at,payment_source,assigned_driver,pickup_latitude,pickup_longitude,pickup_plus_code,pickup_geohash,dropoff_latitude,dropoff_longitude,dropoff_plus_code,dropoff_geohash,refunded_at,created_at,assistance_requested,assistance_minutes,assistance_fee_cents,assistance_status")
     .eq("quote_id", body.quote_id).eq("owner_hash", owner).maybeSingle();
   if (existing) return reply(200, { order: existing });
   const { data: quote, error: quoteError } = await admin.from("delivery_quotes")
