@@ -59,11 +59,47 @@ Deno.serve(async(req:Request)=>{
     licence_details:app.licence_details,vehicle_details:app.vehicle_details,banking_details:banking,
     verification_status:app.verification_status,submitted_at:app.submitted_at,review_note:app.review_note});
   }
-  return reply(200,{drivers:(drivers??[]).map((d:any)=>{const {sa_id_number_aesgcm,passport_number_aesgcm,account_number_aesgcm,...safe}=d;return {...safe,documents:grouped[d.user_id]??[],application:appMap.get(d.user_id)??null};})});
+  const {data:pendingUploads,error:pendingError}=await admin.from("driver_document_upload_batches").select("id,driver_user_id,storage_path,original_filename,content_type,file_size_bytes,created_at").eq("classification_status","pending_classification").order("created_at",{ascending:true}).limit(200);
+  if(pendingError)return reply(500,{error:"pending_driver_uploads_lookup_failed"});
+  const pendingWithLinks=[];
+  for(const upload of pendingUploads??[]){
+   const {data:signed,error:signedError}=await admin.storage.from("driver-application-documents").createSignedUrl(upload.storage_path,600);
+   if(signedError||!signed?.signedUrl)return reply(500,{error:"pending_driver_upload_link_failed"});
+   const {error:logError}=await admin.from("document_access_logs").insert({admin_id:authResult.user.id,driver_id:upload.driver_user_id,document_type:"unclassified_upload",access_action:"admin_dashboard_signed_read_url"});
+   if(logError)return reply(500,{error:"document_access_audit_failed"});
+   pendingWithLinks.push({...upload,signed_url:signed.signedUrl});
+  }
+  return reply(200,{drivers:(drivers??[]).map((d:any)=>{const {sa_id_number_aesgcm,passport_number_aesgcm,account_number_aesgcm,...safe}=d;return {...safe,documents:grouped[d.user_id]??[],application:appMap.get(d.user_id)??null};}),pending_uploads:pendingWithLinks});
  }
  const raw=await req.text();if(raw.length>8192)return reply(413,{error:"request_too_large"});
  let body:Record<string,unknown>;try{body=JSON.parse(raw);}catch{return reply(400,{error:"invalid_json"});}
  const actorId=authResult.user.id;
+ if(body.action==="classify_upload"){
+  const uploadId=String(body.upload_id||""),driverId=String(body.user_id||""),type=String(body.document_type||"");
+  const allowedTypes=new Set(["id_document","id_front","id_back","profile_selfie","passport","work_permit","traffic_register_number","proof_of_address","bank_confirmation","drivers_licence","licence_front","licence_back","prdp","vehicle_document","vehicle_licence_disc","enatis_certificate","fleet_lease_agreement","vehicle_insurance"]);
+  if(!/^[0-9a-f-]{36}$/i.test(uploadId)||!/^[0-9a-f-]{36}$/i.test(driverId)||!allowedTypes.has(type))return reply(400,{error:"invalid_upload_classification"});
+  const expiry=typeof body.expiry_date==="string"?body.expiry_date:"";
+  const issued=typeof body.issued_at==="string"?body.issued_at:"";
+  const expiryRequired=["licence_front","licence_back","vehicle_licence_disc","vehicle_insurance","passport","work_permit","enatis_certificate","fleet_lease_agreement","prdp"].includes(type);
+  if(expiryRequired&&(!/^\\d{4}-\\d{2}-\\d{2}$/.test(expiry)||expiry<today()))return reply(400,{error:"valid_future_expiry_date_required"});
+  if(type==="proof_of_address"&&(!/^\\d{4}-\\d{2}-\\d{2}$/.test(issued)||issued<new Date(Date.now()-92*86400000).toISOString().slice(0,10)||issued>today()))return reply(400,{error:"proof_of_address_issue_date_must_be_within_92_days"});
+  const {data:upload,error:uploadError}=await admin.from("driver_document_upload_batches").select("id,driver_user_id,storage_path,original_filename,content_type,file_size_bytes,classification_status").eq("id",uploadId).maybeSingle();
+  if(uploadError)return reply(500,{error:"upload_record_lookup_failed"});
+  if(!upload||upload.driver_user_id!==driverId||upload.classification_status!=="pending_classification")return reply(404,{error:"pending_upload_not_found"});
+  const {data:doc,error:insertError}=await admin.from("driver_documents").insert({
+   driver_user_id:driverId,document_type:type,storage_path:upload.storage_path,file_url:upload.storage_path,
+   original_name:upload.original_filename,content_type:upload.content_type,file_size_bytes:upload.file_size_bytes,
+   expiry_date:expiryRequired?expiry:null,issued_at:type==="proof_of_address"?issued:null,
+   verification_status:"pending",review_status:"pending"
+  }).select("id").single();
+  if(insertError)return reply(500,{error:"classified_document_record_creation_failed"});
+  const {data:updated,error:updateError}=await admin.from("driver_document_upload_batches").update({
+   classification_status:"classified",document_type:type,document_id:doc.id,classified_at:new Date().toISOString(),classified_by:actorId
+  }).eq("id",uploadId).eq("classification_status","pending_classification").select("id").maybeSingle();
+  if(updateError||!updated){await admin.from("driver_documents").delete().eq("id",doc.id);return reply(409,{error:"upload_was_already_classified"});}
+  await admin.from("driver_verification_audit").insert({driver_user_id:driverId,document_id:doc.id,actor_user_id:actorId,event_type:"document_uploaded_for_review",details:{document_type:type,source:"single_upload_batch"}});
+  return reply(200,{classified:true,document_id:doc.id,document_type:type,verification_status:"pending"});
+ }
  if(body.action==="review_document"){
   if(typeof body.document_id!=="string"||!/^[0-9a-f-]{36}$/i.test(body.document_id)||typeof body.user_id!=="string")return reply(400,{error:"invalid_document_review_request"});
   const state=String(body.review_status);
