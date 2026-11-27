@@ -59,3 +59,19 @@ body[data-app="customer"] #workspace .customer-action-icon{background:#202733;bo
 body[data-app="customer"] #workspace .customer-home-note{background:#11161d;border-color:#303946}
 body[data-app="customer"] #workspace .workspace-navigation{margin-bottom:18px}
 @media(max-width:520px){body[data-app="customer"] #workspace .customer-home{gap:12px}body[data-app="customer"] #workspace .customer-home-intro{padding:21px 18px;border-radius:19px}}
+
+/* Simplified Customer app: bottom navigation with full-page section URLs */
+body[data-app="customer"] #workspace .workspace-navigation{display:none!important}
+body[data-app="customer"] #workspace .customer-home{gap:0;margin-bottom:24px}
+body[data-app="customer"] #workspace .customer-home-intro{padding:25px 21px;border-radius:20px}
+body[data-app="customer"] #workspace .customer-home-intro>p{margin-bottom:22px}
+body[data-app="customer"] #workspace .customer-home-actions,
+body[data-app="customer"] #workspace .customer-home-note{display:none!important}
+body[data-app="customer"] #workspace .customer-bottom-nav{position:fixed;z-index:1000;left:50%;bottom:0;transform:translateX(-50%);width:min(100%,760px);display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:2px;padding:9px 8px calc(9px + env(safe-area-inset-bottom));border:1px solid #303946;border-bottom:0;border-radius:18px 18px 0 0;background:rgba(12,16,22,.97);box-shadow:0 -10px 30px #0006;backdrop-filter:blur(16px)}
+body[data-app="customer"] #workspace .customer-bottom-nav-link{display:flex;min-width:0;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:7px 2px;border-radius:11px;color:#9da8b6;text-decoration:none}
+body[data-app="customer"] #workspace .customer-bottom-nav-link>span{display:grid;place-items:center;width:27px;height:25px;font-size:19px;font-weight:750}
+body[data-app="customer"] #workspace .customer-bottom-nav-link>small{font-size:9px;font-weight:700;line-height:1.2;white-space:nowrap}
+body[data-app="customer"] #workspace .customer-bottom-nav-link.is-active{background:#202733;color:#fff}
+body[data-app="customer"] #workspace .customer-bottom-nav-link.is-active>span{color:#f1f3f6}
+body[data-app="customer"] #workspace main.page{padding-bottom:calc(94px + env(safe-area-inset-bottom))!important}
+@media(min-width:760px){body[data-app="customer"] #workspace .customer-bottom-nav{bottom:12px;border:1px solid #303946;border-radius:16px;padding:8px;max-width:650px}body[data-app="customer"] #workspace main.page{padding-bottom:110px!important}}
