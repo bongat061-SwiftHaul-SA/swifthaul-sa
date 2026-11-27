@@ -45,7 +45,7 @@ Deno.serve(async(req:Request)=>{
  }
  if(body?.action==="finalize"){
   if(!Array.isArray(body.upload_ids)||body.upload_ids.length<1||body.upload_ids.length>15||body.upload_ids.some((id:unknown)=>typeof id!=="string"))return reply(400,{error:"valid_upload_ids_required"});
-  const {data:rows,error:rowsError}=await admin.from("driver_document_upload_batches").select("id,storage_path,original_filename,content_type,file_size_bytes,classification_status").eq("driver_user_id",userData.user.id).in("id",body.upload_ids);
+  const {data:rows,error:rowsError}=await admin.from("driver_document_upload_batches").select("id,storage_path,original_filename,content_type,file_size_bytes,classification_status").eq("driver_user_id",userData.user.id).in("id",body.upload_ids).eq("upload_completed",false);
   if(rowsError)return reply(500,{error:"upload_batch_lookup_failed"});
   if(!rows||rows.length!==body.upload_ids.length||rows.some((row:any)=>row.classification_status!=="pending_classification"))return reply(409,{error:"upload_batch_not_found_or_already_finalized"});
   for(const row of rows){
@@ -58,6 +58,8 @@ Deno.serve(async(req:Request)=>{
    const actualType=String(object.metadata?.mimetype??object.metadata?.contentType??"");
    if(actualSize!==Number(row.file_size_bytes)||actualType&&actualType!==row.content_type)return reply(409,{error:"uploaded_file_metadata_mismatch",file:row.original_filename});
   }
+  const {error:completeError}=await admin.from("driver_document_upload_batches").update({upload_completed:true}).eq("driver_user_id",userData.user.id).in("id",body.upload_ids).eq("upload_completed",false);
+  if(completeError)return reply(500,{error:"upload_completion_record_failed"});
   return reply(200,{finalized:true,count:rows.length,message:"All files received securely and queued for SwiftHaul document review."});
  }
  return reply(400,{error:"unknown_action"});
