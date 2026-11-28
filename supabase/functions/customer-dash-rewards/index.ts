@@ -64,21 +64,13 @@ Deno.serve(async(req:Request)=>{
   if(action==="redeem_coupon"){
    if(admin)return reply(403,{error:"customer_account_required"});
    const id=String(body.milestone_id??"");
-   const termsVersion=String(body.terms_version??"");
    if(!/^[0-9a-f-]{36}$/i.test(id))return reply(400,{error:"invalid_milestone"});
-   if(body.terms_accepted!==true||termsVersion!=="2026-11-28-v1")return reply(400,{error:"reward_terms_acceptance_required"});
-   const {error:termsError}=await db.from("customer_dash_reward_terms_acceptances").insert({user_id:user.id,action:"voucher_claim",terms_version:termsVersion});
-   if(termsError)throw termsError;
    const {data,error}=await db.rpc("customer_dash_redeem_coupon",{p_user_id:user.id,p_milestone_id:id});
    if(error)return reply(400,{error:"coupon_not_redeemable_or_insufficient_points"});
    return reply(200,{ok:true,result:data});
   }
   if(action==="request_cashout"){
    if(admin)return reply(403,{error:"customer_account_required"});
-   const termsVersion=String(body.terms_version??"");
-   if(body.terms_accepted!==true||termsVersion!=="2026-11-28-v1")return reply(400,{error:"reward_terms_acceptance_required"});
-   const {error:termsError}=await db.from("customer_dash_reward_terms_acceptances").insert({user_id:user.id,action:"cashout_request",terms_version:termsVersion});
-   if(termsError)throw termsError;
    const {data,error}=await db.rpc("customer_dash_request_cashout",{p_user_id:user.id});
    if(error)return reply(400,{error:"cashout_threshold_not_met_or_request_pending"});
    return reply(201,{ok:true,result:data});
