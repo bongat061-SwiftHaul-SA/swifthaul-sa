@@ -60,7 +60,7 @@ if(panel){
       status.textContent=allDrivers.length?'':'No driver applications yet.';
     }catch(error){if(current===epoch)status.textContent=error.message;}
   }
-  async function renderPendingUploads(uploads,container,driver){
+  async function renderPendingUploads(uploads,container){
     if(!uploads.length)return;
     const types=[['id_front','SA ID — front'],['id_back','SA ID — back'],['profile_selfie','Profile selfie'],['passport','Passport'],['work_permit','Work permit'],['licence_front','Driver licence — front'],['licence_back','Driver licence — back'],['vehicle_licence_disc','Vehicle licence disc'],['proof_of_address','Proof of address'],['enatis_certificate','eNaTIS certificate'],['vehicle_insurance','Vehicle insurance'],['fleet_lease_agreement','Fleet lease agreement'],['prdp','PrDP'],['vehicle_document','Vehicle registration document'],['traffic_register_number','Traffic register number'],['bank_confirmation','Bank confirmation'],['drivers_licence','Driver licence'],['id_document','Identity document']];
     for(const upload of uploads){
