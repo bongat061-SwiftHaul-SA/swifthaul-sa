@@ -41,6 +41,45 @@
   const rewardsPanel=overlay.querySelector('[data-dash-rewards]'), rewardProgress=overlay.querySelector('[data-reward-progress]'), rewardFill=overlay.querySelector('[data-reward-fill]'), rewardBest=overlay.querySelector('[data-reward-best]'), rewardHistory=overlay.querySelector('[data-reward-history]'), rewardWallet=overlay.querySelector('[data-reward-wallet]');
   let rewardRoundId=null, rewardEligible=false, rewardSubmitting=false, rewardSummary=null, lifetimeRewardPoints=0, hardMode=false;
   function signedInCustomer(){return document.body.dataset.authState==='authenticated'&&document.body.dataset.guestPreview!=='true'&&!!window.swiftHaulSupabase;}
+
+  const REWARD_TERMS_VERSION='2026-11-28-v1';
+  function confirmRewardTerms(action){
+    return new Promise(resolve=>{
+      const dialog=document.createElement('dialog');
+      dialog.setAttribute('aria-labelledby','dash-reward-terms-title');
+      dialog.style.cssText='max-width:min(92vw,560px);max-height:85vh;overflow:auto;border:1px solid #8b929b;border-radius:16px;padding:22px;background:#11151b;color:#f4f5f6;box-shadow:0 20px 70px #000b';
+      const heading=document.createElement('h2');heading.id='dash-reward-terms-title';heading.textContent=action==='cashout'?'R150 cash-out terms and conditions':'Voucher redemption terms and conditions';
+      const intro=document.createElement('p');intro.textContent=action==='cashout'?'Please read and accept these conditions before submitting your cash-out request.':'Please read and accept these conditions before redeeming your reward.';
+      const list=document.createElement('ul');list.style.cssText='padding-left:22px;line-height:1.55';
+      const terms=action==='cashout'?[
+        'You may request the once-off R150 cash-out only when your available unused balance is at least 25,000 points. This means points, not voucher claims.',
+        'Your request is subject to Admin verification. The request is not a payment confirmation.',
+        'Only after Admin confirms the R150 payment, all remaining unused points and unredeemed milestone rewards are forfeited.',
+        'If Admin rejects the request, your points remain available. While a request is pending, further reward earning and voucher actions are paused.'
+      ]:[
+        'Voucher values: 1,000 points = R10; 2,500 points = R20; 5,000 points = R40.',
+        'The relevant points are deducted from your available balance when the voucher is successfully claimed.',
+        'A voucher may be applied only to a delivery quote of R200 or more. SwiftHaul absorbs the discount; the driver/platform split is unchanged.',
+        'Voucher claims are subject to account eligibility and Admin verification.'
+      ];
+      terms.forEach(t=>{const li=document.createElement('li');li.textContent=t;list.append(li)});
+      const label=document.createElement('label');label.style.cssText='display:flex;gap:10px;align-items:flex-start;margin-top:16px;line-height:1.45';
+      const checkbox=document.createElement('input');checkbox.type='checkbox';checkbox.style.cssText='width:18px;height:18px;flex:0 0 auto;margin-top:2px';
+      const textNode=document.createElement('span');textNode.textContent='I confirm that I have read, understood and agree to these Terms & Conditions.';
+      label.append(checkbox,textNode);
+      const buttons=document.createElement('div');buttons.style.cssText='display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:20px';
+      const cancel=document.createElement('button');cancel.type='button';cancel.textContent='Cancel';
+      const accept=document.createElement('button');accept.type='button';accept.textContent='Accept & continue';accept.disabled=true;
+      checkbox.addEventListener('change',()=>{accept.disabled=!checkbox.checked});
+      buttons.append(cancel,accept);dialog.append(heading,intro,list,label,buttons);
+      document.body.append(dialog);
+      const finish=value=>{if(dialog.open)dialog.close();dialog.remove();resolve(value)};
+      cancel.addEventListener('click',()=>finish(false));
+      accept.addEventListener('click',()=>finish(checkbox.checked));
+      dialog.addEventListener('cancel',event=>{event.preventDefault();finish(false)});
+      dialog.showModal();
+    });
+  }
   async function refreshRewards(){
     rewardsPanel.hidden=false;
     if(!signedInCustomer()){rewardProgress.textContent='Sign in to earn reward points. Guest and offline games are for fun only.';rewardFill.style.width='0%';rewardBest.textContent='Account best score: sign in to view';rewardHistory.textContent='Sign in to see approved vouchers and milestone reviews.';rewardWallet.replaceChildren();return;}
