@@ -101,7 +101,7 @@
       try{
         const {data,error}=await window.swiftHaulSupabase.functions.invoke('customer-dash-rewards',{body:{action:'submit_round',round_id:rewardRoundId,score}});
         if(error)throw error;
-        message.textContent+=' Reward points submitted for Admin verification.';
+        const earned=Number(data.summary?.points_earned_this_round||score);const daily=Number(data.summary?.daily_bonus_points||0);const streak=Number(data.summary?.streak_bonus_points||0);message.textContent+=' '+earned.toLocaleString()+' reward points added to your account.'+(daily?' Includes +'+daily+' daily verified-play bonus.':'')+(streak?' Includes +'+streak+' five-day streak bonus!':'')+' Milestone vouchers still require Admin approval.';
         await refreshRewards();
       }catch{message.textContent+=' Reward points could not be submitted; this run will not count.';}
       finally{rewardSubmitting=false;rewardRoundId=null;rewardEligible=false;}
