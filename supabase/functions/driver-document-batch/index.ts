@@ -6,7 +6,7 @@ const reply=(status:number,body:Record<string,unknown>)=>new Response(JSON.strin
 const allowed=new Set(["application/pdf","image/jpeg","image/png","image/webp"]);
 const bucket="driver-application-documents";
 const maxBytes=10*1024*1024;
-const groups=new Set(["identity_personal","licence_prdp","vehicle_insurance","residential_address","general"]);
+const groups=new Set(["identity_personal","driver_licence","prdp","vehicle_registration","vehicle_licence_disc","residential_address","vehicle_insurance","other","licence_prdp","general"]);
 const safeName=(name:string)=>name.replace(/[^a-zA-Z0-9._-]/g,"_").slice(-100)||"document";
 
 Deno.serve(async(req:Request)=>{
