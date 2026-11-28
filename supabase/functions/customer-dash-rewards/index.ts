@@ -126,14 +126,6 @@ Deno.serve(async(req:Request)=>{
    await db.from("customer_dash_admin_notifications").update({resolved_at:new Date().toISOString()}).eq("related_id",id).eq("notification_type","cashout_request").is("resolved_at",null);
    return reply(200,{ok:true,result:data});
   }
-  if(action==="review_milestone"){
-   if(!admin)return reply(403,{error:"administrator_access_required"});
-   const id=String(body.milestone_id??""),decision=String(body.decision??""),note=String(body.note??"").slice(0,500);
-   if(!/^[0-9a-f-]{36}$/i.test(id)||!["approve","reject"].includes(decision))return reply(400,{error:"invalid_review"});
-   const {data,error}=await db.rpc("customer_dash_review_milestone",{p_milestone_id:id,p_admin_id:user.id,p_decision:decision,p_note:note});
-   if(error)return reply(400,{error:"milestone_review_failed"});
-   return reply(200,{ok:true,result:data});
-  }
   return reply(400,{error:"unknown_action"});
  }catch(error){console.error("customer dash rewards error",error instanceof Error?error.message:String(error));return reply(503,{error:"rewards_service_unavailable"});}
 });
