@@ -190,3 +190,24 @@ body[data-app="company"] .company-tracking-map .leaflet-control-attribution{font
 .wordmark span,.wordmark small{display:none!important;}
 .wordmark::before{content:"";display:block;width:190px;height:36px;max-width:52vw;background:url("./logo-horizontal.svg") left center/contain no-repeat;}
 @media(max-width:520px){.wordmark::before{width:158px;height:32px;}}
+
+
+/* Driver management: searchable directory and profile-first document review */
+body[data-app="company"] #drivers .driver-directory{display:grid;gap:12px;margin-top:14px}
+body[data-app="company"] #drivers .driver-directory-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}
+body[data-app="company"] #drivers .driver-stat-tile{display:grid;gap:4px;min-width:0;padding:12px;border:1px solid var(--line,#dce4df);border-radius:13px;background:var(--surface,#fff)}
+body[data-app="company"] #drivers .driver-stat-tile strong{font-size:22px;line-height:1.15;font-weight:850}
+body[data-app="company"] #drivers .driver-stat-tile span{font-size:11px;color:var(--muted,#66756d)}
+body[data-app="company"] #drivers .driver-directory input[type="search"]{width:100%;min-height:44px;padding:10px 13px;border:1px solid var(--line,#dce4df);border-radius:11px;background:var(--surface,#fff);color:inherit}
+body[data-app="company"] #drivers .driver-directory-filters{display:flex;flex-wrap:wrap;gap:9px}
+body[data-app="company"] #drivers .driver-directory-filters select{min-height:40px;padding:8px 12px;border:1px solid var(--line,#dce4df);border-radius:10px;background:var(--surface,#fff);color:inherit}
+body[data-app="company"] #drivers .driver-directory-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0}
+body[data-app="company"] #drivers .driver-directory-pager span{font-size:12px;color:var(--muted,#66756d)}
+body[data-app="company"] #drivers .driver-directory-pager button{min-height:38px;padding:7px 13px}
+body[data-app="company"] #drivers .driver-review-details{margin-top:10px;padding:11px;border:1px solid var(--line,#dce4df);border-radius:12px;background:var(--surface-soft,#f7f9f8)}
+body[data-app="company"] #drivers .driver-review-details>summary{cursor:pointer;font-weight:800;padding:5px 0}
+body[data-app="company"] #drivers .driver-pending-upload-list{display:grid;gap:10px;margin:9px 0 16px}
+body[data-app="company"] #drivers .driver-pending-upload-list .order{padding:12px;border:1px solid var(--line,#dce4df);border-radius:11px;background:var(--surface,#fff)}
+body[data-app="company"] #drivers .driver-pending-upload-list select,
+body[data-app="company"] #drivers .driver-pending-upload-list input[type="date"]{display:block;width:100%;min-height:40px;margin:8px 0;padding:8px;border:1px solid var(--line,#dce4df);border-radius:9px;background:var(--surface,#fff);color:inherit}
+@media(max-width:760px){body[data-app="company"] #drivers .driver-directory-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
