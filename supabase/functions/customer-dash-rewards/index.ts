@@ -18,15 +18,14 @@ Deno.serve(async(req:Request)=>{
  if(!profile||profile.account_status!=="active"||!["customer","admin"].includes(profile.role))return reply(403,{error:"active_customer_account_required"});
  const admin=profile.role==="admin";
  const pending=async()=>{
-  const {data:rows,error}=await db.from("customer_dash_milestones").select("id,user_id,cycle_number,milestone_points,reward_cents,status,admin_note,created_at").eq("status","pending").order("created_at",{ascending:true}).limit(200);
+  const {data:rows,error}=await db.from("customer_dash_rounds").select("id,user_id,score,cycle_number,started_at,submitted_at,status").eq("status","submitted").order("submitted_at",{ascending:true}).limit(200);
   if(error)throw error;
   return await Promise.all((rows??[]).map(async row=>{
-   const [{data:customer},{data:rounds},{data:authUser}]=await Promise.all([
+   const [{data:customer},{data:authUser}]=await Promise.all([
     db.from("user_profiles").select("full_name").eq("id",row.user_id).maybeSingle(),
-    db.from("customer_dash_rounds").select("id,score,started_at,submitted_at,status").eq("user_id",row.user_id).eq("cycle_number",row.cycle_number).eq("status","submitted").order("submitted_at",{ascending:false}).limit(30),
     db.auth.admin.getUserById(row.user_id)
    ]);
-   return {...row,customer_name:customer?.full_name||authUser?.user?.email||"Customer",customer_email:authUser?.user?.email||"",rounds:rounds??[]};
+   return {...row,customer_name:customer?.full_name||authUser?.user?.email||"Customer",customer_email:authUser?.user?.email||""};
   }));
  };
  try{
@@ -76,6 +75,35 @@ Deno.serve(async(req:Request)=>{
    if(error)return reply(400,{error:"cashout_threshold_not_met_or_request_pending"});
    return reply(201,{ok:true,result:data});
   }
+  if(action==="review_round"){
+   if(!admin)return reply(403,{error:"administrator_access_required"});
+   const id=String(body.round_id??""),decision=String(body.decision??""),note=String(body.note??"").slice(0,500);
+   if(!/^[0-9a-f-]{36}$/i.test(id)||!["approve","reject"].includes(decision))return reply(400,{error:"invalid_round_review"});
+   const {data,error}=await db.rpc("customer_dash_review_round",{p_round_id:id,p_admin_id:user.id,p_decision:decision,p_note:note});
+   if(error)return reply(400,{error:"round_review_failed"});
+   return reply(200,{ok:true,result:data});
+  }
+  if(action==="list_admin_notifications"){
+   if(!admin)return reply(403,{error:"administrator_access_required"});
+   const {data,error}=await db.from("customer_dash_admin_notifications").select("id,notification_type,title,message,customer_user_id,related_id,created_at,read_at,resolved_at").is("resolved_at",null).order("created_at",{ascending:false}).limit(100);
+   if(error)throw error;
+   const enriched=await Promise.all((data??[]).map(async row=>{
+    const [{data:customer},{data:authUser}]=await Promise.all([
+     db.from("user_profiles").select("full_name").eq("id",row.customer_user_id).maybeSingle(),
+     db.auth.admin.getUserById(row.customer_user_id)
+    ]);
+    return {...row,customer_name:customer?.full_name||authUser?.user?.email||"Customer",customer_email:authUser?.user?.email||""};
+   }));
+   return reply(200,{notifications:enriched});
+  }
+  if(action==="mark_admin_notification_read"){
+   if(!admin)return reply(403,{error:"administrator_access_required"});
+   const id=String(body.notification_id??"");
+   if(!/^[0-9a-f-]{36}$/i.test(id))return reply(400,{error:"invalid_notification"});
+   const {error}=await db.from("customer_dash_admin_notifications").update({read_at:new Date().toISOString()}).eq("id",id).is("resolved_at",null);
+   if(error)throw error;
+   return reply(200,{ok:true});
+  }
   if(action==="list_cashouts"){
    if(!admin)return reply(403,{error:"administrator_access_required"});
    const {data,error}=await db.from("customer_dash_cashouts").select("id,user_id,points_snapshot,amount_cents,status,requested_at").eq("status","pending").order("requested_at",{ascending:true}).limit(200);
@@ -95,14 +123,7 @@ Deno.serve(async(req:Request)=>{
    if(!/^[0-9a-f-]{36}$/i.test(id)||!["paid","reject"].includes(decision))return reply(400,{error:"invalid_cashout_review"});
    const {data,error}=await db.rpc("customer_dash_review_cashout",{p_cashout_id:id,p_admin_id:user.id,p_decision:decision,p_payout_reference:reference,p_note:note});
    if(error)return reply(400,{error:"cashout_review_failed"});
-   return reply(200,{ok:true,result:data});
-  }
-  if(action==="review_milestone"){
-   if(!admin)return reply(403,{error:"administrator_access_required"});
-   const id=String(body.milestone_id??""),decision=String(body.decision??""),note=String(body.note??"").slice(0,500);
-   if(!/^[0-9a-f-]{36}$/i.test(id)||!["approve","reject"].includes(decision))return reply(400,{error:"invalid_review"});
-   const {data,error}=await db.rpc("customer_dash_review_milestone",{p_milestone_id:id,p_admin_id:user.id,p_decision:decision,p_note:note});
-   if(error)return reply(400,{error:"milestone_review_failed"});
+   await db.from("customer_dash_admin_notifications").update({resolved_at:new Date().toISOString()}).eq("related_id",id).eq("notification_type","cashout_request").is("resolved_at",null);
    return reply(200,{ok:true,result:data});
   }
   return reply(400,{error:"unknown_action"});
