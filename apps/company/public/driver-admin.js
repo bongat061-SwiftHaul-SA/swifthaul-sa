@@ -7,12 +7,25 @@ if(panel){
   refresh.type='button';refresh.textContent='Refresh driver applications';
   const status=document.createElement('p');status.setAttribute('role','status');
   const list=document.createElement('div');list.className='operations-list';
+  const directory=document.createElement('section');directory.className='driver-directory';
+  const stats=document.createElement('div');stats.className='driver-directory-stats';
+  const search=document.createElement('input');search.type='search';search.placeholder='Search name, phone, registration or driver ID';search.setAttribute('aria-label','Search drivers');
+  const filters=document.createElement('div');filters.className='driver-directory-filters';
+  const statusFilter=document.createElement('select');statusFilter.setAttribute('aria-label','Filter drivers by status');statusFilter.innerHTML='<option value="all">All drivers</option><option value="pending">Pending review</option><option value="approved">Approved</option><option value="rejected">Rejected</option><option value="incomplete">Incomplete profiles</option><option value="documents">Documents need attention</option>';
+  const pageSize=document.createElement('select');pageSize.setAttribute('aria-label','Drivers per page');pageSize.innerHTML='<option value="25">25 per page</option><option value="50">50 per page</option><option value="100">100 per page</option>';
+  filters.append(statusFilter,pageSize);
+  const pager=document.createElement('div');pager.className='driver-directory-pager';
+  const previous=document.createElement('button');previous.type='button';previous.textContent='Previous';
+  const pageLabel=document.createElement('span');
+  const next=document.createElement('button');next.type='button';next.textContent='Next';
+  pager.append(previous,pageLabel,next);
+  directory.append(stats,search,filters,list,pager);
   const quality=document.createElement('section');quality.className='admin-quality-panel';
   const qualityTitle=document.createElement('h3');qualityTitle.textContent='Driver Quality & Ratings';
   const qualityFilter=document.createElement('select');qualityFilter.setAttribute('aria-label','Filter driver quality');qualityFilter.innerHTML='<option value="all">All drivers</option><option value="watchlist">Watchlist</option><option value="review_required">Review required</option><option value="low_rated">Below 4 stars</option>';
   const qualityList=document.createElement('div');qualityList.className='admin-quality-list';quality.append(qualityTitle,qualityFilter,qualityList);
-  panel.append(note,refresh,status,quality,list);
-  let active=false,epoch=0,isAdmin=false;
+  panel.append(note,refresh,status,quality,directory);
+  let active=false,epoch=0,isAdmin=false,allDrivers=[],pendingUploads=[],currentPage=1;
   async function call(method,body){
     const client=window.swiftHaulSupabase;
     if(!client)throw new Error('Secure account connection is unavailable.');
@@ -42,11 +55,37 @@ if(panel){
       try{
         const q=await window.swiftHaulSupabase.functions.invoke('dispatch-operations',{method:'GET'});
         if(!q.error&&!q.data?.error){const scores=q.data.driverScores||[],alerts=q.data.qualityAlerts||[];qualityList.replaceChildren();const filter=qualityFilter.value;const filtered=scores.filter(d=>filter==='all'||(filter==='low_rated'?Number(d.average_rating)<4:d.performance_tier===filter));if(!filtered.length){const empty=document.createElement('p');empty.textContent='No drivers match this quality filter.';qualityList.append(empty);}for(const d of filtered){const row=document.createElement('article');row.className='admin-quality-card';const name=document.createElement('strong');name.textContent=String(d.user_id)+' · '+String(d.performance_tier||'unrated').replace('_',' ').toUpperCase();const metrics=document.createElement('p');metrics.textContent='Score '+d.performance_score+'/100 · ★ '+Number(d.average_rating||5).toFixed(2)+' ('+d.total_ratings+' ratings) · On time '+d.on_time_percentage+'% · Completion '+d.completion_percentage+'%';const related=alerts.filter(a=>a.driver_id===d.user_id&&a.status!=='dismissed');const alertText=document.createElement('p');alertText.textContent=related.length+' open quality alert(s)';row.append(name,metrics,alertText);qualityList.append(row);}}}catch(e){console.warn('Driver quality panel unavailable',e);}
-      list.replaceChildren();
-      if(!data.drivers?.length){status.textContent='No driver applications yet.';return;}
-      for(const driver of data.drivers)render(driver);
-      status.textContent='';
+      allDrivers=data.drivers||[];pendingUploads=data.pending_uploads||[];currentPage=1;
+      renderDirectory();
+      status.textContent=allDrivers.length?'':'No driver applications yet.';
     }catch(error){if(current===epoch)status.textContent=error.message;}
+  }
+  async function renderPendingUploads(uploads,container){
+    if(!uploads.length)return;
+    const types=[['id_front','SA ID — front'],['id_back','SA ID — back'],['profile_selfie','Profile selfie'],['passport','Passport'],['work_permit','Work permit'],['licence_front','Driver licence — front'],['licence_back','Driver licence — back'],['vehicle_licence_disc','Vehicle licence disc'],['proof_of_address','Proof of address'],['enatis_certificate','eNaTIS certificate'],['vehicle_insurance','Vehicle insurance'],['fleet_lease_agreement','Fleet lease agreement'],['prdp','PrDP'],['vehicle_document','Vehicle registration document'],['traffic_register_number','Traffic register number'],['bank_confirmation','Bank confirmation'],['drivers_licence','Driver licence'],['id_document','Identity document']];
+    for(const upload of uploads){
+      const card=document.createElement('article');card.className='order';
+      const heading=document.createElement('strong');const groupNames={identity_personal:'Identity and personal documents',licence_prdp:'Driver licence and PrDP',vehicle_insurance:'Vehicle and insurance documents',residential_address:'Proof of residential address'};heading.textContent=(groupNames[upload.document_group]||'Uncategorised upload')+' · '+(upload.original_filename||'Uploaded file')+' · '+Math.round(Number(upload.file_size_bytes||0)/1024)+' KB';
+      const driver=document.createElement('p');driver.textContent='Driver account: '+upload.driver_user_id+' · Received '+new Date(upload.created_at).toLocaleString();
+      const preview=document.createElement('a');preview.href=upload.signed_url;preview.target='_blank';preview.rel='noopener noreferrer';preview.textContent='View file securely';
+      const type=document.createElement('select');type.setAttribute('aria-label','Assign document type');
+      const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='Choose document type';type.append(placeholder);
+      for(const [value,label] of types){const option=document.createElement('option');option.value=value;option.textContent=label;type.append(option);}
+      const expiry=document.createElement('input');expiry.type='date';expiry.setAttribute('aria-label','Document expiry date (if required)');
+      const issued=document.createElement('input');issued.type='date';issued.setAttribute('aria-label','Proof of address issue date (if applicable)');
+      const save=document.createElement('button');save.type='button';save.textContent='Classify and add to review';
+      save.addEventListener('click',async()=>{
+        if(!type.value){status.textContent='Choose a document type before saving.';return;}
+        save.disabled=true;
+        try{
+          await call('POST',{action:'classify_upload',upload_id:upload.id,user_id:upload.driver_user_id,document_type:type.value,expiry_date:expiry.value,issued_at:issued.value});
+          status.textContent='File classified. It is now pending normal document verification.';
+          await load();
+        }catch(error){status.textContent=error.message;}
+        finally{save.disabled=false;}
+      });
+      card.append(heading,driver,preview,type,expiry,issued,save);container.append(card);
+    }
   }
   async function review(driver,action,button){
     button.disabled=true;
@@ -69,7 +108,7 @@ if(panel){
     }catch(error){status.textContent=error.message;}
     finally{button.disabled=false;}
   }
-  function render(driver){
+  function render(driver,unclassified){
     const card=document.createElement('article');card.className='order';
     const title=document.createElement('h3');title.textContent=driver.user_profiles?.full_name||'Driver applicant';
     const details=document.createElement('p');
@@ -83,7 +122,7 @@ if(panel){
     copyId.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(String(driver.user_id));status.textContent='Driver account ID copied.';}catch{status.textContent='Copy unavailable. Select the account ID shown on the driver profile.';}});
     card.append(copyId);
     const reviewPanel=document.createElement('details');reviewPanel.className='driver-review-details';
-    const reviewSummary=document.createElement('summary');reviewSummary.textContent='View driver details & verification documents';
+    const reviewSummary=document.createElement('summary');reviewSummary.textContent='Open individual driver profile · Details, documents & activity';
     reviewPanel.append(reviewSummary);
     card.append(reviewPanel);
     const app=driver.application;
@@ -105,6 +144,14 @@ if(panel){
       if(app.review_note)profileRows.push('Review note: '+app.review_note);
     }else profileRows.push('No completed onboarding application has been submitted by this driver yet.');
     for(const value of profileRows){const row=document.createElement('p');row.textContent=value;reviewPanel.append(row);}
+    const pendingForDriver=unclassified||[];
+    const pendingTitle=document.createElement('strong');pendingTitle.textContent='Unclassified uploads · '+pendingForDriver.length;
+    reviewPanel.append(pendingTitle);
+    if(pendingForDriver.length){
+      const pendingHint=document.createElement('p');pendingHint.textContent='These private uploads belong to this driver. Classify each file here before normal document verification.';reviewPanel.append(pendingHint);
+      const pendingContainer=document.createElement('div');pendingContainer.className='driver-pending-upload-list';reviewPanel.append(pendingContainer);
+      renderPendingUploads(pendingForDriver,pendingContainer,driver);
+    }else{const none=document.createElement('p');none.textContent='No unclassified uploads for this driver.';reviewPanel.append(none);}
     const docsTitle=document.createElement('strong');docsTitle.textContent='Verification documents';
     reviewPanel.append(docsTitle);
     const docs=driver.documents||[];
@@ -129,6 +176,37 @@ if(panel){
     if(driver.verification_status==='approved')button('Suspend driver','suspend');
     list.append(card);
   }
+  function renderDirectory(){
+    const total=allDrivers.length, pending=allDrivers.filter(d=>d.verification_status!=='approved'&&d.verification_status!=='rejected').length;
+    const approved=allDrivers.filter(d=>d.verification_status==='approved').length;
+    const incomplete=allDrivers.filter(d=>!d.application||!d.application.submitted_at).length;
+    const needsDocs=pendingUploads.length;
+    stats.innerHTML='';
+    for(const [value,label] of [[total,'Total drivers'],[pending,'Pending review'],[approved,'Approved'],[incomplete,'Incomplete profiles'],[needsDocs,'Uploads to classify']]){
+      const tile=document.createElement('div');tile.className='driver-stat-tile';const number=document.createElement('strong');number.textContent=String(value);const caption=document.createElement('span');caption.textContent=label;tile.append(number,caption);stats.append(tile);
+    }
+    const term=search.value.trim().toLowerCase(),filter=statusFilter.value;
+    const filtered=allDrivers.filter(d=>{
+      const text=[d.user_profiles?.full_name,d.phone,d.vehicle_registration,d.license_number,d.user_id].join(' ').toLowerCase();
+      const docs=pendingUploads.some(u=>u.driver_user_id===d.user_id);
+      const statusMatch=filter==='all'||(filter==='pending'?d.verification_status!=='approved'&&d.verification_status!=='rejected':filter==='approved'?d.verification_status==='approved':filter==='rejected'?d.verification_status==='rejected':filter==='incomplete'?(!d.application||!d.application.submitted_at):filter==='documents'?docs:false);
+      return statusMatch&&(!term||text.includes(term));
+    });
+    const size=Number(pageSize.value)||25,pages=Math.max(1,Math.ceil(filtered.length/size));currentPage=Math.min(currentPage,pages);
+    list.replaceChildren();
+    const start=(currentPage-1)*size;
+    for(const driver of filtered.slice(start,start+size)){
+      const mine=pendingUploads.filter(u=>u.driver_user_id===driver.user_id);
+      render(driver,mine);
+    }
+    pageLabel.textContent=filtered.length?('Showing '+(start+1)+'–'+Math.min(start+size,filtered.length)+' of '+filtered.length+' · Page '+currentPage+' / '+pages):'No matching drivers';
+    previous.disabled=currentPage<=1;next.disabled=currentPage>=pages;
+  }
+  search.addEventListener('input',()=>{currentPage=1;renderDirectory();});
+  statusFilter.addEventListener('change',()=>{currentPage=1;renderDirectory();});
+  pageSize.addEventListener('change',()=>{currentPage=1;renderDirectory();});
+  previous.addEventListener('click',()=>{currentPage=Math.max(1,currentPage-1);renderDirectory();});
+  next.addEventListener('click',()=>{currentPage++;renderDirectory();});
   qualityFilter.addEventListener('change',()=>{if(active)isAdmin&&load();});
   refresh.addEventListener('click',load);
   document.addEventListener('account-ready',event=>{
@@ -136,7 +214,7 @@ if(panel){
     if(!isAdmin){status.textContent='Only company administrators can approve driver applications.';return;}
     load();
   });
-  document.addEventListener('account-cleared',()=>{active=false;isAdmin=false;epoch++;list.replaceChildren();status.textContent='';});
+  document.addEventListener('account-cleared',()=>{active=false;isAdmin=false;epoch++;allDrivers=[];pendingUploads=[];list.replaceChildren();stats.replaceChildren();status.textContent='';});
 }
 
 })();
