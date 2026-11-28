@@ -42,6 +42,22 @@
   const rewardsPanel=overlay.querySelector('[data-dash-rewards]'), rewardProgress=overlay.querySelector('[data-reward-progress]'), rewardFill=overlay.querySelector('[data-reward-fill]'), rewardBest=overlay.querySelector('[data-reward-best]'), rewardHistory=overlay.querySelector('[data-reward-history]'), rewardWallet=overlay.querySelector('[data-reward-wallet]');
   let rewardRoundId=null, rewardEligible=false, rewardSubmitting=false, rewardSummary=null, lifetimeRewardPoints=0, hardMode=false;
   function signedInCustomer(){return document.body.dataset.authState==='authenticated'&&document.body.dataset.guestPreview!=='true'&&!!window.swiftHaulSupabase;}
+  const REWARD_TERMS_VERSION='2026-11-28-v2';
+  function confirmRewardTerms(action){
+    return new Promise(resolve=>{
+      const dialog=document.createElement('dialog');
+      dialog.className='driver-dash-terms-dialog';
+      dialog.innerHTML='<form method="dialog" class="driver-dash-terms-card"><button type="button" class="driver-dash-terms-close" aria-label="Close">×</button><p class="driver-dash-kicker">SWIFTHAUL DASH REWARDS · TERMS v2</p><h2>Rewards and R150 cash-out terms</h2><div class="driver-dash-terms-copy"><h3>Voucher stages</h3><p>1,000 points = R10; 2,500 points = R20; 5,000 points = R40. You may choose to claim a milestone voucher. It is only usable after Admin approval and applies to a delivery quote of R200 or more. SwiftHaul absorbs the discount; it does not reduce driver earnings.</p><h3>Optional R150 cash-out</h3><p>Instead of claiming voucher stages, you may keep your unused points and work towards 25,000 unused points. At 25,000 unused points, you may choose to keep saving or request the optional R150 cash-out. Reaching the threshold does not automatically submit a request.</p><h3>Admin review and points</h3><p>Every game round is reviewed by Admin before points are credited. Voucher claims and cash-out requests are also reviewed. If a cash-out request is rejected, your points remain intact. While a cash-out is pending, reward earning and voucher actions are paused.</p><p><strong>After Admin confirms payment of the R150 cash-out, all remaining unused points and unredeemed milestone rewards are forfeited.</strong> Already redeemed vouchers remain subject to their stated use conditions.</p><h3>Game rules</h3><p>Only signed-in customers earn reward points; guest and offline play earns no points. Game rewards do not affect delivery prices, driver matching or driver earnings. At 15,000 lifetime points, the game becomes faster and more difficult.</p></div><label class="driver-dash-terms-check"><input type="checkbox" required><span>I have read and agree to these Dash Rewards terms, including the optional R150 cash-out conditions.</span></label><div class="driver-dash-terms-actions"><button type="button" data-terms-cancel>Cancel</button><button type="submit" class="primary">Accept and continue</button></div></form>';
+      const form=dialog.querySelector('form');
+      const finish=value=>{try{dialog.close()}catch{}dialog.remove();resolve(value)};
+      dialog.querySelector('.driver-dash-terms-close').addEventListener('click',()=>finish(false));
+      dialog.querySelector('[data-terms-cancel]').addEventListener('click',()=>finish(false));
+      form.addEventListener('submit',event=>{event.preventDefault();const checkbox=dialog.querySelector('input[type=checkbox]');if(!checkbox.checked)return;finish(true)});
+      dialog.addEventListener('cancel',event=>{event.preventDefault();finish(false)});
+      document.body.append(dialog);
+      if(typeof dialog.showModal==='function')dialog.showModal();else{dialog.setAttribute('open','');dialog.style.display='block';}
+    });
+  }
   async function refreshRewards(){
     rewardsPanel.hidden=false;
     if(!signedInCustomer()){rewardProgress.textContent='Sign in to earn reward points. Guest and offline games are for fun only.';rewardFill.style.width='0%';rewardBest.textContent='Account best score: sign in to view';rewardHistory.textContent='Sign in to see approved vouchers and milestone reviews.';rewardWallet.replaceChildren();return;}
